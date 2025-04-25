@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./docker/postgres_bootstrap.sql:/docker-entrypoint-initdb.d/bootstrap.sql
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "8080:8080" # for HTTP
+      - "50051:50051" # for gRPC
+    depends_on:
+      - postgres
+    environment:
+      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
