@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/jyablonski/lotus/internal/db"
-	"github.com/jyablonski/lotus/internal/user_pb"
+	pb "github.com/jyablonski/lotus/internal/user_pb/proto/user"
 	"google.golang.org/grpc"
 )
 
@@ -16,7 +16,7 @@ func StartGRPCServer(queries *db.Queries) error {
 	}
 
 	grpcServer := grpc.NewServer()
-	user_pb.RegisterUserServiceServer(grpcServer, &server{db: queries})
+	pb.RegisterUserServiceServer(grpcServer, &Server{DB: queries})
 
 	log.Println("Starting gRPC server on :50051")
 	return grpcServer.Serve(lis)

@@ -1,0 +1,17 @@
+CREATE SCHEMA IF NOT EXISTS source;
+SET search_path TO source;
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE IF NOT EXISTS users
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    salt VARCHAR NOT NULL,
+    role VARCHAR DEFAULT 'Consumer' NOT NULL,
+    created_at TIMESTAMP DEFAULT now() NOT NULL,
+    modified_at TIMESTAMP DEFAULT now() NOT NULL,
+    timezone VARCHAR DEFAULT 'UTC' NOT NULL
+);

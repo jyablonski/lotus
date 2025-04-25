@@ -1,13 +1,14 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE SCHEMA source;
 SET search_path TO source;
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users
 (
-    id serial primary key,
-    username varchar not null,
+    id UUID primary key default uuid_generate_v4(),
+    email varchar not null unique,
     password varchar not null,
-    email varchar not null,
     salt varchar not null,
 	role varchar default 'Consumer' not null,
     created_at timestamp default now() not null,

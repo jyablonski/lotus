@@ -6,13 +6,14 @@ package db
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type SourceUser struct {
-	ID         int32
-	Username   string
-	Password   string
+	ID         uuid.UUID
 	Email      string
+	Password   string
 	Salt       string
 	Role       string
 	CreatedAt  time.Time
