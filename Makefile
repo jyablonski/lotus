@@ -8,7 +8,7 @@ down:
 
 .PHONY: start-postgres
 start-postgres:
-	@docker compose -f docker/docker-compose-postgres.yaml up
+	@docker compose -f docker/docker-compose-postgres.yaml -d up
 
 .PHONY: stop-postgres
 stop-postgres:
