@@ -42,6 +42,20 @@ Partial Page Rendering (PPR) - Nextjs builds a static shell and dynamically stre
 
 ## Proto
 
+Protocol Buffers (protobuf) are a language-agnostic way to serialize structured data. They also provide auto-generated code for reading and writing data, so you can focus on your implementation of what the service does like write to Postgres etc.
+
+In gRPC, `.proto` files define the structure of your data and services—they act as a contract between the client and server. You define request and response messages, including the fields and their types.
+
+``` proto
+message User {
+  int32 id = 1;
+  string name = 2;
+}
+
+```
+
+You then compile that proto file into language-specific stubs to handle all of the boilerplate code. They handle all the low-level networking, serialization, and deserialization for you. You can use `protoc` for this, but `buf` seems to be a better alternative
+
 ``` sh
 protoc --go_out=./backend --go-grpc_out=./backend ./backend/internal/user.proto
 
@@ -64,4 +78,16 @@ protoc -I. \
   --go-grpc_out=internal/user_pb \
   --grpc-gateway_out=internal/user_pb \
   internal/user.proto
+```
+
+With `buf`, you setup `buf.yaml` and `buf.gen.yaml` files
+
+- `buf.gen.yaml` defines defines how to generate code (e.g., Go, Python, gRPC stubs) from your .proto files using plugins.
+- `buf.yaml` defines config options like linting, how protobuf files are organized, and other dependencies etc
+- A `buf.lock` file locks those dependencies and versions similar to a `package-lock.json` or `go.sum` file
+
+``` sh
+buf dep update
+
+buf generate
 ```
