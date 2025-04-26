@@ -58,6 +58,15 @@ services:
       # - "traefik.http.routers.backend-grpc.service=backend-grpc"
       # - "traefik.http.services.backend-grpc.loadbalancer.server.port=50051"
 
+  nextjs:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
   # envoy:
   #   image: envoyproxy/envoy:v1.29-latest
   #   container_name: envoy
