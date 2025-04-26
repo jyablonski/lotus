@@ -40,6 +40,10 @@ Static Site Rendering (SSR)
 
 Partial Page Rendering (PPR) - Nextjs builds a static shell and dynamically streams in content where needed
 
+### Implementation
+
+
+
 ## Proto
 
 Protocol Buffers (protobuf) are a language-agnostic way to serialize structured data. They also provide auto-generated code for reading and writing data, so you can focus on your implementation of what the service does like write to Postgres etc.
@@ -91,3 +95,5 @@ buf dep update
 
 buf generate
 ```
+
+##
