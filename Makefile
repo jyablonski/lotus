@@ -6,6 +6,11 @@ up:
 down:
 	@docker compose -f docker/docker-compose-local.yaml down
 
+.PHONY: build
+build:
+	@docker compose -f docker/docker-compose-local.yaml build
+
+
 .PHONY: start-postgres
 start-postgres:
 	@docker compose -f docker/docker-compose-postgres.yaml up -d

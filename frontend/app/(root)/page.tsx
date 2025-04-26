@@ -1,11 +1,9 @@
-import Hello from "@/app/components/hello";
-
 export default function Home() {
   console.log("What am I - SERVER?");
 
   return (
     <>
-      <Hello />
+      <h1 className="heading">Home</h1>
     </>
   );
 }

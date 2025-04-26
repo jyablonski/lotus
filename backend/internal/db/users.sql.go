@@ -10,31 +10,24 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO source.users(username, password, email, salt)
-VALUES ($1, $2, $3, $4)
-RETURNING id, username, password, email, salt, role, created_at, modified_at, timezone
+INSERT INTO source.users(email, password, salt)
+VALUES ($1, $2, $3)
+RETURNING id, email, password, salt, role, created_at, modified_at, timezone
 `
 
 type CreateUserParams struct {
-	Username string
-	Password string
 	Email    string
+	Password string
 	Salt     string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
-		arg.Username,
-		arg.Password,
-		arg.Email,
-		arg.Salt,
-	)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.Password, arg.Salt)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,
-		&i.Username,
-		&i.Password,
 		&i.Email,
+		&i.Password,
 		&i.Salt,
 		&i.Role,
 		&i.CreatedAt,
@@ -44,18 +37,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceU
 	return i, err
 }
 
-const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password, email, salt, role, created_at, modified_at, timezone FROM source.users WHERE username = $1
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, email, password, salt, role, created_at, modified_at, timezone FROM source.users WHERE email = $1
 `
 
-func (q *Queries) GetUserByUsername(ctx context.Context, username string) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, getUserByUsername, username)
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (SourceUser, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,
-		&i.Username,
-		&i.Password,
 		&i.Email,
+		&i.Password,
 		&i.Salt,
 		&i.Role,
 		&i.CreatedAt,

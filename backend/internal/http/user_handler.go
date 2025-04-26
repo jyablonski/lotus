@@ -6,9 +6,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/jyablonski/lotus/internal/db"
+	"github.com/jyablonski/lotus/internal/utils"
+
+	"golang.org/x/crypto/bcrypt" // for password hashing
 )
+
+// regex to verify email format
+var emailRegex = regexp.MustCompile(`^[a-z0-9]+@[a-z0-9]+\.[a-z]{2,}$`)
 
 type UserHandler struct {
 	queries *db.Queries
@@ -39,8 +46,8 @@ func (h *UserHandler) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Query user from the database
-	user, err := h.queries.GetUserByUsername(context.Background(), username)
+	// query user from the database
+	user, err := h.queries.GetUserByEmail(context.Background(), username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "User not found", http.StatusNotFound)
@@ -52,7 +59,7 @@ func (h *UserHandler) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with user data
+	// respond with user data
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(user); err != nil {
@@ -61,10 +68,10 @@ func (h *UserHandler) getUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// createUser handles POST requests to create a new user
 func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received request to create user")
 
+	// read in the request params
 	var input db.CreateUserParams
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		log.Printf("Error decoding request body: %v\n", err)
@@ -72,30 +79,59 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Creating user with username: %s\n", input.Username)
-
-	// check if the username already exists in the database
-	_, err := h.queries.GetUserByUsername(context.Background(), input.Username)
-	if err == nil {
-		// Username already exists
-		log.Printf("Username %s already exists\n", input.Username)
-		http.Error(w, "Username already taken", http.StatusConflict)
-		return
-	} else if err != sql.ErrNoRows {
-		// Some other error occurred while querying the database
-		log.Printf("Error checking username existence: %v\n", err)
-		http.Error(w, "Error checking username availability", http.StatusInternalServerError)
+	// validate the email format
+	if !emailRegex.MatchString(input.Email) {
+		log.Printf("Invalid email format: %s\n", input.Email)
+		http.Error(w, "Invalid email format", http.StatusBadRequest)
 		return
 	}
 
-	// Hash password and generate salt before storing (placeholder)
+	log.Printf("Creating user with email: %s\n", input.Email)
+
+	// check if the email already exists in the database
+	_, err := h.queries.GetUserByEmail(context.Background(), input.Email)
+	if err == nil {
+		// email already exists
+		log.Printf("Email %s already exists\n", input.Email)
+		http.Error(w, "Email already taken", http.StatusConflict)
+		return
+	} else if err != sql.ErrNoRows {
+		// some other error occurred while querying the database
+		log.Printf("Error checking email existence: %v\n", err)
+		http.Error(w, "Error checking email availability", http.StatusInternalServerError)
+		return
+	}
+
+	// hash password and generate salt before storing
 	if input.Password == "" {
 		log.Println("Error: Password cannot be empty")
 		http.Error(w, "Password cannot be empty", http.StatusBadRequest)
 		return
 	}
 
-	// Create the user in the database
+	// generate salt using utils.generateSalt
+	salt, err := utils.GenerateSalt(24) // this creates a 32-character salt
+	if err != nil {
+		log.Printf("Error generating salt: %v\n", err)
+		http.Error(w, "Failed to generate salt", http.StatusInternalServerError)
+		return
+	}
+
+	saltedPassword := salt + input.Password
+
+	// hash the concatenated password (salt + password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("Error hashing password: %v\n", err)
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	// assign the salt and hashed password to the input
+	input.Salt = salt
+	input.Password = string(hashedPassword) // Store the hashed password, not the raw one
+
+	// create the user in the database
 	user, err := h.queries.CreateUser(context.Background(), input)
 	if err != nil {
 		log.Printf("Error inserting user into database: %v\n", err)
@@ -103,7 +139,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Successfully created user: ID=%d, Username=%s, Email=%s\n", user.ID, user.Username, user.Email)
+	log.Printf("Successfully created user: ID=%s, Email=%s\n", user.ID, user.Email)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

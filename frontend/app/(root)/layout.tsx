@@ -1,12 +1,11 @@
+import Navbar from "@/components/navbar";
 import React from "react";
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div>
-      <h1 className="text-3-xl"> NAVBAR</h1>
+    <main className="font-work-sans">
+      <Navbar />
       {children}
-    </div>
-  );
-};
-
-export default Layout;
+    </main>
+  )
+}

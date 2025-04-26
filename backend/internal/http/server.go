@@ -24,7 +24,7 @@ func StartHTTPServer(queries *db.Queries) {
 	mux := NewMux(queries)
 
 	server := &http.Server{
-		Addr:           ":8080",
+		Addr:           ":8081",
 		Handler:        mux,
 		ReadTimeout:    2 * time.Second,
 		WriteTimeout:   2 * time.Second,
