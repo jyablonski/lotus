@@ -51,7 +51,7 @@ func TestCreateUser(t *testing.T) {
 	// Prepare request body
 	input := db.CreateUserParams{
 		Email:    "testuser@example.com",
-		Password: "password123", // Should ideally be hashed
+		Password: sql.NullString{String: "password123", Valid: true}, // Should ideally be hashed
 	}
 
 	body, err := json.Marshal(input)
@@ -90,7 +90,7 @@ func TestCreateUser_WithSaltedPassword(t *testing.T) {
 	// Prepare request body
 	input := db.CreateUserParams{
 		Email:    "testuser@example.com",
-		Password: "password123",
+		Password: sql.NullString{String: "password123", Valid: true},
 	}
 
 	body, err := json.Marshal(input)
@@ -127,7 +127,7 @@ func TestCreateUser_EmailExists(t *testing.T) {
 	// Insert a user directly into the test DB
 	input := db.CreateUserParams{
 		Email:    "existinguser@example.com",
-		Password: "password123", // Should ideally be hashed
+		Password: sql.NullString{String: "password123", Valid: true}, // Should ideally be hashed
 	}
 
 	_, err := testQueries.CreateUser(context.Background(), input)
@@ -141,7 +141,7 @@ func TestCreateUser_EmailExists(t *testing.T) {
 	// Prepare request body for another user with the same email
 	newInput := db.CreateUserParams{
 		Email:    "existinguser@example.com",
-		Password: "newpassword123",
+		Password: sql.NullString{String: "newpassword123", Valid: true},
 	}
 
 	body, err := json.Marshal(newInput)
@@ -173,7 +173,7 @@ func TestCreateUser_InvalidPassword(t *testing.T) {
 	// Prepare request body with an empty password
 	input := db.CreateUserParams{
 		Email:    "testuser@example.com",
-		Password: "",
+		Password: sql.NullString{String: "", Valid: true},
 	}
 
 	body, err := json.Marshal(input)

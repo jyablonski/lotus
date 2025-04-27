@@ -21,12 +21,13 @@ type SourceJournal struct {
 }
 
 type SourceUser struct {
-	ID         uuid.UUID
-	Email      string
-	Password   string
-	Salt       string
-	Role       string
-	CreatedAt  time.Time
-	ModifiedAt time.Time
-	Timezone   string
+	ID            uuid.UUID
+	Email         string
+	Password      sql.NullString
+	Salt          sql.NullString
+	OauthProvider sql.NullString
+	Role          string
+	CreatedAt     time.Time
+	ModifiedAt    time.Time
+	Timezone      string
 }

@@ -78,6 +78,13 @@ curl -X POST http://localhost:8080/v1/users \
            "password": "This123"
          }'
 
+curl -X POST http://localhost:8080/v1/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "email": "user@email.com",
+           "oauth_provider": "github"
+         }'
+
 curl -X POST http://localhost:8080/v1/journals \
      -H "Content-Type: application/json" \
      -d '{

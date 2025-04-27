@@ -9,8 +9,9 @@ CREATE TABLE IF NOT EXISTS users
 (
     id UUID primary key default uuid_generate_v4(),
     email varchar not null unique,
-    password varchar not null,
-    salt varchar not null,
+    password varchar,
+    salt varchar,
+    oauth_provider varchar,
 	role varchar default 'Consumer' not null,
     created_at timestamp default now() not null,
 	modified_at timestamp default now() not null,
