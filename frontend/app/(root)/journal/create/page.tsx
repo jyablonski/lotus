@@ -26,7 +26,7 @@ export default function CreateJournalEntry() {
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-md">
-      <h1 className="text-2xl font-bold mb-6">Create a Journal Entry</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">Create a Journal Entry</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <textarea
           className="border rounded-lg p-3 resize-none h-40"

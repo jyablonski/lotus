@@ -10,7 +10,7 @@ const Navbar = async () => {
     <header className="navbar-header">
       <nav className="navbar-container">
         <Link href="/" className="navbar-logo">
-          <Image src="/logo.png" alt="Logo" width={40} height={40} />
+          <Image src="/lotus.png" alt="Logo" width={40} height={40} />
           <span className="navbar-logo-text">Lotus</span>
         </Link>
 
