@@ -7,7 +7,7 @@ import (
 
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/grpc"
-	pb "github.com/jyablonski/lotus/internal/user_pb/proto/user"
+	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +29,7 @@ func TestCreateUser(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set up gRPC service instance
-	svc := &grpc.Server{ // We'll create this type below
+	svc := &grpc.UserServer{ // We'll create this type below
 		DB: queries,
 	}
 
@@ -41,6 +41,36 @@ func TestCreateUser(t *testing.T) {
 
 	// Call the gRPC method
 	resp, err := svc.CreateUser(ctx, req)
+	require.NoError(t, err)
+	require.NotEmpty(t, resp.UserId)
+
+	// Optional: Check if user really exists in DB
+	user, err := queries.GetUserByEmail(ctx, req.Email)
+	require.NoError(t, err)
+	require.Equal(t, req.Email, user.Email)
+}
+
+func TestCreateUserOauth(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	// Optional: Clean up table for idempotent test
+	_, err := dbConn.Exec("DELETE FROM users")
+	require.NoError(t, err)
+
+	// Set up gRPC service instance
+	svc := &grpc.UserServer{ // We'll create this type below
+		DB: queries,
+	}
+
+	ctx := context.Background()
+	req := &pb.CreateUserOauthRequest{
+		Email:         "grpc_test@example.com",
+		OauthProvider: "github",
+	}
+
+	// Call the gRPC method
+	resp, err := svc.CreateUserOauth(ctx, req)
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.UserId)
 

@@ -14,7 +14,8 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	grpcSrv "github.com/jyablonski/lotus/internal/grpc"
 	httpSrv "github.com/jyablonski/lotus/internal/http"
-	user_pb "github.com/jyablonski/lotus/internal/user_pb/proto/user"
+	journal_pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
+	user_pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 
 	_ "github.com/lib/pq"
 )
@@ -55,7 +56,12 @@ func main() {
 
 		err := user_pb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts)
 		if err != nil {
-			log.Fatalf("Failed to register gRPC-Gateway: %v", err)
+			log.Fatalf("Failed to register UserService gRPC-Gateway: %v", err)
+		}
+
+		err = journal_pb.RegisterJournalServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts) // Register JournalService
+		if err != nil {
+			log.Fatalf("Failed to register JournalService gRPC-Gateway: %v", err)
 		}
 
 		if err := http.ListenAndServe(":8080", mux); err != nil {

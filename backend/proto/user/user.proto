@@ -13,11 +13,23 @@ service UserService {
       body: "*"
     };
   }
+
+  rpc CreateUserOauth(CreateUserOauthRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/oauth/users"
+      body: "*"
+    };
+  }
 }
 
 message CreateUserRequest {
   string email = 1;
   string password = 2;
+}
+
+message CreateUserOauthRequest {
+  string email = 1;
+  string oauth_provider = 2;
 }
 
 message CreateUserResponse {

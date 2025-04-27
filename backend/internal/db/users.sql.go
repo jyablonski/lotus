@@ -7,18 +7,19 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO source.users(email, password, salt)
 VALUES ($1, $2, $3)
-RETURNING id, email, password, salt, role, created_at, modified_at, timezone
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone
 `
 
 type CreateUserParams struct {
 	Email    string
-	Password string
-	Salt     string
+	Password sql.NullString
+	Salt     sql.NullString
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceUser, error) {
@@ -29,6 +30,35 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceU
 		&i.Email,
 		&i.Password,
 		&i.Salt,
+		&i.OauthProvider,
+		&i.Role,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+		&i.Timezone,
+	)
+	return i, err
+}
+
+const createUserOauth = `-- name: CreateUserOauth :one
+INSERT INTO source.users(email, oauth_provider)
+VALUES ($1, $2)
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone
+`
+
+type CreateUserOauthParams struct {
+	Email         string
+	OauthProvider sql.NullString
+}
+
+func (q *Queries) CreateUserOauth(ctx context.Context, arg CreateUserOauthParams) (SourceUser, error) {
+	row := q.db.QueryRowContext(ctx, createUserOauth, arg.Email, arg.OauthProvider)
+	var i SourceUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Salt,
+		&i.OauthProvider,
 		&i.Role,
 		&i.CreatedAt,
 		&i.ModifiedAt,
@@ -38,7 +68,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password, salt, role, created_at, modified_at, timezone FROM source.users WHERE email = $1
+SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone FROM source.users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (SourceUser, error) {
@@ -49,6 +79,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (SourceUser,
 		&i.Email,
 		&i.Password,
 		&i.Salt,
+		&i.OauthProvider,
 		&i.Role,
 		&i.CreatedAt,
 		&i.ModifiedAt,

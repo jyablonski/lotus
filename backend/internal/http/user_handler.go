@@ -40,21 +40,21 @@ func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // getUser handles GET requests to retrieve user information
 func (h *UserHandler) getUser(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		http.Error(w, "Missing username query parameter", http.StatusBadRequest)
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "Missing email query parameter", http.StatusBadRequest)
 		return
 	}
 
 	// query user from the database
-	user, err := h.queries.GetUserByEmail(context.Background(), username)
+	user, err := h.queries.GetUserByEmail(context.Background(), email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "User not found", http.StatusNotFound)
-			log.Printf("User %s not found", username)
+			log.Printf("User %s not found", email)
 		} else {
 			http.Error(w, "Failed to retrieve user", http.StatusInternalServerError)
-			log.Printf("Error retrieving user %s: %v", username, err)
+			log.Printf("Error retrieving user %s: %v", email, err)
 		}
 		return
 	}
@@ -64,7 +64,7 @@ func (h *UserHandler) getUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		log.Printf("Failed to encode user %s: %v", username, err)
+		log.Printf("Failed to encode user %s: %v", email, err)
 	}
 }
 
@@ -102,8 +102,8 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// hash password and generate salt before storing
-	if input.Password == "" {
+	// validate the password
+	if !input.Password.Valid || input.Password.String == "" {
 		log.Println("Error: Password cannot be empty")
 		http.Error(w, "Password cannot be empty", http.StatusBadRequest)
 		return
@@ -117,7 +117,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	saltedPassword := salt + input.Password
+	saltedPassword := salt + input.Password.String // Concatenate salt and password
 
 	// hash the concatenated password (salt + password)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
@@ -128,8 +128,8 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// assign the salt and hashed password to the input
-	input.Salt = salt
-	input.Password = string(hashedPassword) // Store the hashed password, not the raw one
+	input.Salt = sql.NullString{String: salt, Valid: true}
+	input.Password = sql.NullString{String: string(hashedPassword), Valid: true}
 
 	// create the user in the database
 	user, err := h.queries.CreateUser(context.Background(), input)
