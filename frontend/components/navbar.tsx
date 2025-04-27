@@ -1,50 +1,62 @@
 import Link from "next/link";
 import Image from "next/image";
-import React from 'react';
+import React from "react";
 import { auth, signOut, signIn } from "@/auth";
 
 const Navbar = async () => {
   const session = await auth();
 
   return (
-    <div className="px-5 py-3 bg-white shadow-sm font-work-sans">
-      <nav className="flex justify-between items-center">
-        <Link href="/">
-          <Image src="/logo.png" alt="Logo" width={50} height={30} />
+    <header className="navbar-header">
+      <nav className="navbar-container">
+        <Link href="/" className="navbar-logo">
+          <Image src="/logo.png" alt="Logo" width={40} height={40} />
+          <span className="navbar-logo-text">Lotus</span>
         </Link>
 
-        <div className="flex items-center gap-5 text-black">
-          {session && session?.user ? (
+        <div className="navbar-items">
+          {session && session.user ? (
             <>
-              <Link href="/journal/create">
-                <span>Create</span>
+              <Link href="/journal/create" className="navbar-link">
+                Create
               </Link>
 
-              <form action={async () => {
-                "use server";
-
-                await signOut({ redirectTo: "/" });
-              }}>
-                <button type="submit">Logout</button>
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/" });
+                }}
+              >
+                <button type="submit" className="navbar-logout-button">
+                  Logout
+                </button>
               </form>
 
-              <Link href={`/profile/hi`}>
-                <span>{session?.user?.name}</span>
+
+              <Link href={`/about`} className="navbar-link">
+                About
+              </Link>
+
+              <Link href={`/profile/hi`} className="navbar-profile-button">
+                {session.user.name}
               </Link>
             </>
           ) : (
-            <form action={async () => {
-              "use server";
-
-              await signIn('github')
-            }}>
-              <button type="submit">Login</button>
+            <form
+              action={async () => {
+                "use server";
+                await signIn("github");
+              }}
+            >
+              <button type="submit" className="navbar-login-button">
+                Login
+              </button>
             </form>
           )}
         </div>
       </nav>
-      navbar</div>
-  )
-}
+    </header>
+  );
+};
 
-export default Navbar
+export default Navbar;

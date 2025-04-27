@@ -5,10 +5,20 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type SourceJournal struct {
+	ID          int32
+	UserID      uuid.UUID
+	JournalText string
+	MoodScore   sql.NullInt32
+	CreatedAt   time.Time
+	ModifiedAt  time.Time
+}
 
 type SourceUser struct {
 	ID         uuid.UUID

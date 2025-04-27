@@ -7,7 +7,7 @@ import (
 
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/grpc"
-	pb "github.com/jyablonski/lotus/internal/user_pb/proto/user"
+	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +29,7 @@ func TestCreateUser(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set up gRPC service instance
-	svc := &grpc.Server{ // We'll create this type below
+	svc := &grpc.UserServer{ // We'll create this type below
 		DB: queries,
 	}
 

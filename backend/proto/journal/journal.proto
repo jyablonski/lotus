@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package internal;
+
+option go_package = "github.com/jyablonski/lotus/internal/journal_pb/gen/go/proto/journal;journal_pb";
+
+import "google/api/annotations.proto";
+
+service JournalService {
+  rpc CreateJournal(CreateJournalRequest) returns (CreateJournalResponse) {
+    option (google.api.http) = {
+      post: "/v1/journals"
+      body: "*"
+    };
+  }
+
+  // GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+  rpc GetJournals(GetJournalsRequest) returns (GetJournalsResponse) {
+    option (google.api.http) = {
+      get: "/v1/journals"
+    };
+  }
+}
+
+message CreateJournalRequest {
+  string user_id = 1;
+  string journal_text = 2;
+  string user_mood = 3;
+}
+
+message CreateJournalResponse {
+  string journal_id = 1;
+}
+
+message GetJournalsRequest {
+  string user_id = 1;
+}
+
+message JournalEntry {
+  string journal_id = 1;
+  string user_id = 2;
+  string journal_text = 3;
+  string user_mood = 4;
+  string created_at = 5;
+}
+
+message GetJournalsResponse {
+  repeated JournalEntry journals = 1;
+}

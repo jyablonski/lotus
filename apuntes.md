@@ -67,6 +67,27 @@ grpcurl -plaintext -proto ./backend/proto/user/user.proto \
   -d '{"email": "test@gmail.com", "password": "password"}' \
   localhost:50052 internal.UserService/CreateUser
 
+grpcurl -plaintext -proto ./backend/proto/journal/journal.proto \
+  -d '{"user_id": "AAAA", "journal_text": "hello world", "user_mood": 4}' \
+  localhost:50052 internal.JournalService/CreateJournal
+
+curl -X POST http://localhost:8080/v1/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "email": "user@email.com",
+           "password": "This123"
+         }'
+
+curl -X POST http://localhost:8080/v1/journals \
+     -H "Content-Type: application/json" \
+     -d '{
+           "user_id": "550e8400-e29b-41d4-a716-446655440000",
+           "journal_text": "This is a test journal entry.",
+           "user_mood": "8"
+         }'
+
+curl -X GET "http://localhost:8080/v1/journals?user_id=user-uuid-1234"
+
 protoc -I. \
   -I$(go list -f '{{ .Dir }}' -m github.com/grpc-ecosystem/grpc-gateway/v2) \
   -I$(go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis) \

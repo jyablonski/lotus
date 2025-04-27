@@ -138,3 +138,40 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Navbar styles */
+.navbar-header {
+  @apply px-6 py-4 bg-white shadow-md font-sans;
+}
+
+.navbar-container {
+  @apply flex justify-between items-center max-w-6xl mx-auto;
+}
+
+.navbar-logo {
+  @apply flex items-center gap-2;
+}
+
+.navbar-logo-text {
+  @apply text-xl font-semibold text-gray-700;
+}
+
+.navbar-items {
+  @apply flex items-center gap-6;
+}
+
+.navbar-link {
+  @apply text-gray-600 hover:text-black transition;
+}
+
+.navbar-logout-button {
+  @apply text-gray-600 hover:text-black transition;
+}
+
+.navbar-login-button {
+  @apply bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition;
+}
+
+.navbar-profile-button {
+  @apply flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition text-gray-700;
+}
