@@ -20,6 +20,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
+func allowCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// If this is a preflight request, respond immediately
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Otherwise, pass along to the next handler
+		h.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	connStr := os.Getenv("DB_CONN")
 	if connStr == "" {
@@ -64,7 +82,7 @@ func main() {
 			log.Fatalf("Failed to register JournalService gRPC-Gateway: %v", err)
 		}
 
-		if err := http.ListenAndServe(":8080", mux); err != nil {
+		if err := http.ListenAndServe(":8080", allowCORS(mux)); err != nil {
 			log.Fatalf("Failed to serve gRPC-Gateway: %v", err)
 		}
 	}()
