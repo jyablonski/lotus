@@ -78,7 +78,8 @@ curl -X POST http://localhost:8080/v1/users \
            "password": "This123"
          }'
 
-curl -X POST http://localhost:8080/v1/users \
+# /v1/oauth/users
+curl -X POST http://localhost:8080/v1/oauth/users \
      -H "Content-Type: application/json" \
      -d '{
            "email": "user@email.com",
@@ -124,4 +125,27 @@ buf dep update
 buf generate
 ```
 
-##
+## TypeScript
+
+
+```
+import { Login } from "@/components/auth/login-button";
+import { Logout } from "@/components/auth/logout-button";
+```
+
+- Importing a named export, not the default export from that file
+
+---
+
+There are **two types of exports** in a module:
+
+| Type | Syntax to Export | Syntax to Import | Example |
+|-----|-------------------|------------------|---------|
+| **Default Export** | `export default ComponentName;` | `import ComponentName from "path";` | `import Navbar from "./Navbar";` |
+| **Named Export** | `export { ComponentName };` or `export function ComponentName() {}` | `import { ComponentName } from "path";` | `import { Login } from "./login-button";` |
+
+---
+
+In JSX, all components (and HTML tags) must be properly closed.
+
+- That's why you write `<Logout />` and not `<Logout>` alone.
