@@ -3,11 +3,12 @@ package grpc
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/jyablonski/lotus/internal/db"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	"github.com/jyablonski/lotus/internal/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UserServer struct {
@@ -45,7 +46,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 	}
 
 	return &pb.CreateUserResponse{
-		UserId: fmt.Sprintf("%s", user.ID),
+		UserId: user.ID.String(),
 	}, nil
 }
 
@@ -64,6 +65,29 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 	}
 
 	return &pb.CreateUserResponse{
-		UserId: fmt.Sprintf("%s", user.ID),
+		UserId: user.ID.String(),
+	}, nil
+}
+
+func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+	email := req.GetEmail()
+	if email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email is required")
+	}
+
+	u, err := s.DB.GetUserByEmail(ctx, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
+	}
+
+	return &pb.GetUserResponse{
+		UserId:    u.ID.String(),
+		Email:     u.Email,
+		Role:      u.Role,
+		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: u.ModifiedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

@@ -79,3 +79,70 @@ func TestCreateUserOauth(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, req.Email, user.Email)
 }
+
+func TestGetUser(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	// Clean up
+	_, err := dbConn.Exec("DELETE FROM users")
+	require.NoError(t, err)
+
+	svc := &grpc.UserServer{
+		DB: queries,
+	}
+
+	ctx := context.Background()
+
+	// --- Create user
+	createReq := &pb.CreateUserRequest{
+		Email:    "getuser_test@example.com",
+		Password: "securepass",
+	}
+
+	createResp, err := svc.CreateUser(ctx, createReq)
+	require.NoError(t, err)
+	require.NotEmpty(t, createResp.UserId)
+
+	// --- Call GetUser using email now
+	getReq := &pb.GetUserRequest{
+		Email: createReq.Email,
+	}
+
+	getResp, err := svc.GetUser(ctx, getReq)
+	require.NoError(t, err)
+	require.Equal(t, createResp.UserId, getResp.UserId)
+	require.Equal(t, createReq.Email, getResp.Email)
+	require.NotEmpty(t, getResp.CreatedAt)
+	require.NotEmpty(t, getResp.UpdatedAt)
+}
+
+func TestGetUser_InvalidEmail(t *testing.T) {
+	svc := &grpc.UserServer{} // no DB needed for this case
+
+	_, err := svc.GetUser(context.Background(), &pb.GetUserRequest{
+		Email: "",
+	})
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "email is required")
+}
+
+func TestGetUser_NotFound(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	svc := &grpc.UserServer{
+		DB: queries,
+	}
+
+	// use a dummy email unlikely to exist
+	nonexistentEmail := "nobody@nowhere.com"
+
+	_, err := svc.GetUser(context.Background(), &pb.GetUserRequest{
+		Email: nonexistentEmail,
+	})
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "user not found")
+}

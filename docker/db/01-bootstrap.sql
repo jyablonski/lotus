@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS users
 	timezone varchar default 'UTC' not null
 );
 
+insert into users (email, password, salt, oauth_provider, role, created_at, modified_at, timezone)
+values ('jyablonski9@gmail.com', null, null, 'github', 'Consumer', now(), now(), 'UTC');
+
 DROP TABLE IF EXISTS journals;
 CREATE TABLE IF NOT EXISTS journals
 (

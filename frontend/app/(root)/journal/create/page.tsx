@@ -3,16 +3,25 @@
 import { useState } from "react";
 import Textarea from "@/components/Textarea";
 import MoodSlider from "@/components/MoodSlider";
+import { useSession } from "next-auth/react"; // Import the useSession hook
 
 export default function CreateJournalEntry() {
   const [entry, setEntry] = useState("");
   const [mood, setMood] = useState(5);
-  const [success, setSuccess] = useState(false); // <--- NEW success state
+  const [success, setSuccess] = useState(false);
+  const { data: session } = useSession(); // Get the session data
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const userId = "123e4567-e89b-12d3-a456-426614174000"; // Example UUID
+    // Access the userId from the session
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      console.error("User ID not found in session.");
+      alert("User not authenticated. Please try again.");
+      return;
+    }
 
     try {
       const response = await fetch("http://localhost:8080/v1/journals", {
@@ -32,9 +41,9 @@ export default function CreateJournalEntry() {
         throw new Error(`Server error: ${response.status} ${errorText}`);
       }
 
-      setSuccess(true); // Set success to true if everything went well
-      setEntry(""); // Clear the form
-      setMood(5);   // Reset mood slider if you want
+      setSuccess(true);
+      setEntry("");
+      setMood(5);
 
     } catch (error) {
       console.error("Failed to submit journal entry:", error);

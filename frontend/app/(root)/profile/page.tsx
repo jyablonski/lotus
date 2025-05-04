@@ -7,13 +7,14 @@ export default async function Page() {
 
     const name = session.user?.name ?? "Unknown User"
     const email = session.user?.email ?? "No Email Provided"
+    const signUpDate = session.user?.createdAt ?? "No Creation Date Provided"
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50">
             <ProfileCard
                 name={name}
                 email={email}
-                signupDate={session.expires}
+                signupDate={signUpDate}
             />
         </div>
     )

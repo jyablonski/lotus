@@ -10,3 +10,6 @@ RETURNING *;
 
 -- name: GetUserByEmail :one
 SELECT * FROM source.users WHERE email = $1;
+
+-- name: GetUserById :one
+SELECT * FROM source.users WHERE email = $1;
