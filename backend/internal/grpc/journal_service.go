@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -14,12 +15,14 @@ import (
 
 type JournalServer struct {
 	pb.UnimplementedJournalServiceServer
-	DB *db.Queries
+	DB     *db.Queries
+	Logger *slog.Logger
 }
 
-func JournalService(q *db.Queries) *JournalServer {
+func JournalService(q *db.Queries, logger *slog.Logger) *JournalServer {
 	return &JournalServer{
-		DB: q,
+		DB:     q,
+		Logger: logger,
 	}
 }
 

@@ -2,6 +2,7 @@ package http
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -20,7 +21,7 @@ func NewMux(queries *db.Queries) *http.ServeMux {
 	return mux
 }
 
-func StartHTTPServer(queries *db.Queries) {
+func StartHTTPServer(queries *db.Queries, logger *slog.Logger) {
 	mux := NewMux(queries)
 
 	server := &http.Server{

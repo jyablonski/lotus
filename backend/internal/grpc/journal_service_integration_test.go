@@ -3,6 +3,8 @@ package grpc
 import (
 	"context"
 	"database/sql"
+	"log/slog"
+	"os"
 	"strconv"
 	"testing"
 
@@ -25,7 +27,12 @@ func TestCreateJournal(t *testing.T) {
 	dbConn, queries := setupTestDB(t)
 	defer dbConn.Close()
 
-	server := JournalService(queries)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
+	server := JournalService(queries, logger)
 
 	userID := uuid.New()
 	userIDString := userID.String()
@@ -72,7 +79,12 @@ func TestGetJournals(t *testing.T) {
 	dbConn, queries := setupTestDB(t)
 	defer dbConn.Close()
 
-	server := JournalService(queries)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
+	server := JournalService(queries, logger)
 
 	userID := uuid.New().String()
 	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
@@ -102,7 +114,12 @@ func TestCreateJournalInvalidUserID(t *testing.T) {
 	dbConn, queries := setupTestDB(t)
 	defer dbConn.Close()
 
-	server := JournalService(queries)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
+	server := JournalService(queries, logger)
 
 	// invalid user ID (not a valid UUID)
 	req := &pb.CreateJournalRequest{
@@ -120,7 +137,12 @@ func TestGetJournalsInvalidUserID(t *testing.T) {
 	dbConn, queries := setupTestDB(t)
 	defer dbConn.Close()
 
-	server := JournalService(queries)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
+	server := JournalService(queries, logger)
 
 	// invalid user ID (not a valid UUID)
 	req := &pb.GetJournalsRequest{
