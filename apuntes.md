@@ -71,31 +71,6 @@ grpcurl -plaintext -proto ./backend/proto/journal/journal.proto \
   -d '{"user_id": "AAAA", "journal_text": "hello world", "user_mood": 4}' \
   localhost:50052 internal.JournalService/CreateJournal
 
-curl -X POST http://localhost:8080/v1/users \
-     -H "Content-Type: application/json" \
-     -d '{
-           "email": "user@email.com",
-           "password": "This123"
-         }'
-
-# /v1/oauth/users
-curl -X POST http://localhost:8080/v1/oauth/users \
-     -H "Content-Type: application/json" \
-     -d '{
-           "email": "user@email.com",
-           "oauth_provider": "github"
-         }'
-
-curl -X POST http://localhost:8080/v1/journals \
-     -H "Content-Type: application/json" \
-     -d '{
-           "user_id": "550e8400-e29b-41d4-a716-446655440000",
-           "journal_text": "This is a test journal entry.",
-           "user_mood": "8"
-         }'
-
-curl -X GET "http://localhost:8080/v1/journals?user_id=user-uuid-1234"
-
 protoc -I. \
   -I$(go list -f '{{ .Dir }}' -m github.com/grpc-ecosystem/grpc-gateway/v2) \
   -I$(go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis) \
@@ -149,3 +124,38 @@ There are **two types of exports** in a module:
 In JSX, all components (and HTML tags) must be properly closed.
 
 - That's why you write `<Logout />` and not `<Logout>` alone.
+
+## gRPC Gateway Queries
+
+``` sh
+curl -X POST http://localhost:8080/v1/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "email": "user@email.com",
+           "password": "This123"
+         }'
+
+# /v1/oauth/users
+curl -X POST http://localhost:8080/v1/oauth/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "email": "user_oauth2@email.com",
+           "oauth_provider": "github"
+         }'
+
+curl -X POST http://localhost:8080/v1/journals \
+     -H "Content-Type: application/json" \
+     -d '{
+           "user_id": "550e8400-e29b-41d4-a716-446655440000",
+           "journal_text": "This is a test journal entry.",
+           "user_mood": "8"
+         }'
+
+curl -X GET "http://localhost:8080/v1/journals?user_id=fe45963c-18d9-4b03-b098-9d0eac485c21"
+
+# known user
+curl -X GET "http://localhost:8080/v1/users?email=jyablonski9@gmail.com"
+
+# unknown user
+curl -X GET "http://localhost:8080/v1/users?email=jyablonskifake@gmail.com"
+```

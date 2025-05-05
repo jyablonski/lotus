@@ -3,30 +3,37 @@ package grpc
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"log/slog"
 
 	"github.com/jyablonski/lotus/internal/db"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	"github.com/jyablonski/lotus/internal/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UserServer struct {
 	pb.UnimplementedUserServiceServer
-	DB *db.Queries
+	DB     *db.Queries
+	Logger *slog.Logger
 }
 
-func UserService(q *db.Queries) *UserServer {
+func UserService(q *db.Queries, logger *slog.Logger) *UserServer {
 	return &UserServer{
-		DB: q,
+		DB:     q,
+		Logger: logger,
 	}
 }
 
 // CreateUser handles username/password-based user creation.
 func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+	s.Logger.Info("CreateUser request received", "email", req.Email)
+
 	// Salt and password are only used for non-OAuth users.
 	salt, err := utils.GenerateSalt(24) // base64 encoding of 24 bytes = ~32 characters
 	if err != nil {
-		return nil, err
+		s.Logger.Error("Failed to generate salt", "error", err)
+		return nil, status.Errorf(codes.Internal, "internal error")
 	}
 
 	hashed_password := utils.HashPassword(req.Password, salt)
@@ -41,11 +48,14 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 		Salt:     saltStr,
 	})
 	if err != nil {
-		return nil, err
+		s.Logger.Error("Failed to create user", "email", req.Email, "error", err)
+		return nil, status.Errorf(codes.Internal, "could not create user")
 	}
 
+	s.Logger.Info("User created successfully", "user_id", user.ID.String(), "email", req.Email)
+
 	return &pb.CreateUserResponse{
-		UserId: fmt.Sprintf("%s", user.ID),
+		UserId: user.ID.String(),
 	}, nil
 }
 
@@ -64,6 +74,29 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 	}
 
 	return &pb.CreateUserResponse{
-		UserId: fmt.Sprintf("%s", user.ID),
+		UserId: user.ID.String(),
+	}, nil
+}
+
+func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+	email := req.GetEmail()
+	if email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email is required")
+	}
+
+	u, err := s.DB.GetUserByEmail(ctx, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
+	}
+
+	return &pb.GetUserResponse{
+		UserId:    u.ID.String(),
+		Email:     u.Email,
+		Role:      u.Role,
+		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: u.ModifiedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

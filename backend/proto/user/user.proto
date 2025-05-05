@@ -20,6 +20,14 @@ service UserService {
       body: "*"
     };
   }
+
+  // GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/v1/users"
+    };
+  }
+
 }
 
 message CreateUserRequest {
@@ -34,4 +42,16 @@ message CreateUserOauthRequest {
 
 message CreateUserResponse {
   string user_id = 1;
+}
+
+message GetUserRequest {
+  string email = 1;
+}
+
+message GetUserResponse {
+  string user_id = 1;
+  string email = 2;
+  string role = 3;
+  string created_at = 4;
+  string updated_at = 5;
 }
