@@ -21,25 +21,22 @@ const features = [
 
 export default function Home() {
   return (
-    <div className="py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="heading text-center mb-12">Unlock the Power of Your App</h1>
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature) => (
-            <div key={feature.title} className="bg-gray-100 rounded-lg p-6 shadow-md hover:shadow-lg transition duration-300">
-              <div className="flex items-center mb-4">
-                <div className="mr-4">{feature.icon}</div> {/* Render the Lucide icon component */}
-                <h3 className="text-xl font-semibold text-gray-800">{feature.title}</h3>
-              </div>
-              <p className="text-gray-600">{feature.description}</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {features.map((feature) => (
+          <div key={feature.title} className="bg-gray-100 rounded-lg p-6 shadow-md hover:shadow-lg transition duration-300">
+            <div className="flex items-center mb-4">
+              <div className="mr-4">{feature.icon}</div> {/* Render the Lucide icon component */}
+              <h3 className="text-xl font-semibold text-gray-800">{feature.title}</h3>
             </div>
-          ))}
-        </div>
-        <div className="mt-12 text-center">
-          <Link href="/signup" className="bg-green-500 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-full transition duration-300">
-            Get Started Today
-          </Link>
-        </div>
+            <p className="text-gray-600">{feature.description}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-12 text-center">
+        <Link href="/signup" className="bg-green-500 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-full transition duration-300">
+          Get Started Today
+        </Link>
       </div>
     </div>
   );

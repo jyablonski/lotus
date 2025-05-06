@@ -130,9 +130,6 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
   body {
     @apply bg-background text-foreground;
   }
@@ -165,12 +162,8 @@
   @apply text-gray-600 hover:text-black transition;
 }
 
-.navbar-logout-button {
-  @apply text-gray-600 hover:text-black transition;
-}
-
-.navbar-login-button {
-  @apply bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition;
+.navbar-link-button {
+  @apply px-4 py-2 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition;
 }
 
 .navbar-profile-button {
