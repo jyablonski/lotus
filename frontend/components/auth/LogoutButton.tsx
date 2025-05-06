@@ -8,7 +8,7 @@ export function Logout() {
                 await signOut()
             }}
         >
-            <button type="submit" className="navbar-logout-button">Logout</button>
+            <button type="submit" className="navbar-link-button">Logout</button>
         </form>
     )
 }

@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { ProfileCard } from "@/components/profile-card"
+import { ProfileCard } from "@/components/ProfileCard"
 
 export default async function Page() {
     const session = await auth()
@@ -10,12 +10,10 @@ export default async function Page() {
     const signUpDate = session.user?.createdAt ?? "No Creation Date Provided"
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-50">
-            <ProfileCard
-                name={name}
-                email={email}
-                signupDate={signUpDate}
-            />
-        </div>
+        <ProfileCard
+            name={name}
+            email={email}
+            signupDate={signUpDate}
+        />
     )
 }

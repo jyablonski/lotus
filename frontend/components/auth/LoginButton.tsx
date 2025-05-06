@@ -8,7 +8,7 @@ export function Login() {
                 await signIn("github", { redirectTo: "/" })
             }}
         >
-            <button type="submit" className="navbar-login-button">Login</button>
+            <button type="submit" className="navbar-link-button">Login</button>
         </form>
     )
 }

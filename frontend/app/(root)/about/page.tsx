@@ -1,7 +1,10 @@
-import React from "react";
+import React from 'react';
+import AboutCard from '@/components/AboutCard';
 
-const Page = () => {
-  return <div>About Page</div>;
+const AboutPage: React.FC = () => {
+  return (
+    <AboutCard />
+  );
 };
 
-export default Page;
+export default AboutPage;
