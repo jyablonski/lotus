@@ -12,4 +12,4 @@ RETURNING *;
 SELECT * FROM source.users WHERE email = $1;
 
 -- name: GetUserById :one
-SELECT * FROM source.users WHERE email = $1;
+SELECT * FROM source.users WHERE id = $1;
