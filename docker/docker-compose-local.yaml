@@ -1,22 +1,4 @@
 services:
-  # traefik:
-  #   image: traefik
-  #   container_name: traefik
-  #   command:
-  #     - "--api.insecure=true"  # Enable Traefik Dashboard (insecure, can be disabled)
-  #     - "--providers.docker=true"  # Enable Docker provider
-  #     # - "--entrypoints.web.address=:80"  # HTTP entrypoint
-  #     - "--entrypoints.grpc.address=:50051"  # gRPC entrypoint
-  #     - "--entrypoints.traefik.address=:9090" # Traefik Dashboard entrypoint
-  #     - "--ping.entrypoint=traefik"  # Ping entrypoint
-  #   ports:
-  #     # - "80:80"       # HTTP
-  #     # - "443:443"     # HTTPS (optional)
-  #     - "9090:9090"   # Traefik Dashboard
-  #     - "50051:50051" # gRPC (external port 50052 maps to internal port 50051)
-  #   volumes:
-  #     - "/var/run/docker.sock:/var/run/docker.sock"  # Allow Traefik to access Docker
-
 
   postgres:
     image: postgres:16-alpine
@@ -32,50 +14,19 @@ services:
 
   backend:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
+      context: ${PWD}/backend
+      dockerfile: Dockerfile.dev
     container_name: backend
     ports:
-      - "8080:8080" # for gRPC Gateway
-      - "8081:8081" # for custom HTTP API
-      - "50051:50051" # gRPC (external port 50052 maps to internal port 50051)
+      - "8080:8080"
+      - "8081:8081"
+      - "50051:50051"
+    volumes:
+      - ${PWD}/backend:/app
+      - ${PWD}/backend/.air.toml:/app/.air.toml
     depends_on:
       - postgres
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
-    # labels:
-    #   - "traefik.enable=true"
-      
-      # HTTP routing
-      # - "traefik.http.routers.backend-http.rule=PathPrefix(`/api`)"
-      # - "traefik.http.routers.backend-http.entrypoints=web"
-      # - "traefik.http.routers.backend-http.service=backend-http"
-      # - "traefik.http.services.backend-http.loadbalancer.server.port=8080"
-
-      # gRPC routing
-      # - "traefik.http.routers.backend-grpc.rule=PathPrefix(`/rpc`)"
-      # - "traefik.http.routers.backend-grpc.entrypoints=grpc"
-      # - "traefik.http.routers.backend-grpc.service=backend-grpc"
-      # - "traefik.http.services.backend-grpc.loadbalancer.server.port=50051"
-
-  # frontend:
-  #   build:
-  #     context: ../frontend
-  #     dockerfile: Dockerfile
-  #   container_name: frontend
-  #   ports:
-  #     - "3000:3000"
-  #   env_file:
-  #     - ../frontend/.env.local  # Include the .env.local file from the frontend directory
-  #   environment:
-  #     - NODE_ENV=production
-  #     - NETHAUTH_URL=http://localhost:3000
-  # envoy:
-  #   image: envoyproxy/envoy:v1.29-latest
-  #   container_name: envoy
-  #   depends_on:
-  #     - backend
-  #   ports:
-  #     - "9090:9090"  # gRPC proxy
-  #   volumes:
-  #     - ${PWD}/envoy/envoy.yaml:/etc/envoy/envoy.yaml
+    working_dir: /app  # Ensure air runs in the correct dir
+    command: ["air", "-c", ".air.toml"]

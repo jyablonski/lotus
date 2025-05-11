@@ -32,7 +32,7 @@ func StartHTTPServer(queries *db.Queries, logger *slog.Logger) {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Println("Starting HTTP server on :8080")
+	log.Println("Starting HTTP server on :8081")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("HTTP server failed to start:", err)
 	}

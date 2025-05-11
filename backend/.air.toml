@@ -1,0 +1,19 @@
+[build]
+# Use the same build command a Dockerfile
+cmd = "go build -o lotus ./internal/main.go"
+bin = "lotus"
+# Optional: prevent rebuilds on vendor/ or hidden folders
+exclude_dir = ["vendor", ".git", "tmp"]
+include_ext = ["go", "tpl", "tmpl", "html"]
+delay = 1000
+stop_on_error = true
+send_interrupt = true
+
+# Logging settings
+[log]
+time = true
+
+# Watcher settings
+[watcher]
+# Optional: use polling instead of fsnotify
+poll = false
