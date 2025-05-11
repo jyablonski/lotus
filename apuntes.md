@@ -139,7 +139,7 @@ curl -X POST http://localhost:8080/v1/users \
 curl -X POST http://localhost:8080/v1/oauth/users \
      -H "Content-Type: application/json" \
      -d '{
-           "email": "user_oauth@email.com",
+           "email": "user_oauth2@email.com",
            "oauth_provider": "github"
          }'
 

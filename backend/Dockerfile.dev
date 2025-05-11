@@ -1,11 +1,11 @@
-FROM golang:1.23 AS builder
+FROM golang:1.23-alpine AS builder
 
 RUN go install github.com/air-verse/air@latest
 
 # ---- Final image ----
 # need to use golang:1.23 instead of slimmer image for glibc
 # because of the air binary
-FROM golang:1.23
+FROM golang:1.23-alpine
 
 COPY --from=builder /go/bin/air /usr/local/bin/air
 
@@ -14,10 +14,6 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-
-RUN useradd -m -s /bin/bash lotususer
-RUN chown -R lotususer:lotususer /app
-USER lotususer
 
 EXPOSE 8080 50051
 
