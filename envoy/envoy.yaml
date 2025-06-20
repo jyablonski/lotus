@@ -1,4 +1,4 @@
-# NOTE: opted for traefik so this isn't needed, but is an alternative
+# NOTE: opted for grpc gateway so this isn't needed, but is an alternative
 # that would need grpc-web to be installed in the frontend
 static_resources:
   listeners:
