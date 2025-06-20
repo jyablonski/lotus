@@ -20,12 +20,14 @@ export default function JournalPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!session?.user?.id) return; // Wait for session to be ready
+        const userId = session?.user?.id;
+        if (!userId) return; // Wait for session to be ready or no userId
+
 
         async function fetchJournals() {
-            console.log('Fetching journals for user:', session.user.id);
+            console.log('Fetching journals for user:', userId);
             try {
-                const res = await fetch(`http://localhost:8080/v1/journals?user_id=${session.user.id}`);
+                const res = await fetch(`http://localhost:8080/v1/journals?user_id=${userId}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                 const data: { journals: JournalEntry[] } = await res.json();
