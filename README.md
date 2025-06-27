@@ -19,9 +19,10 @@ When finished, run `make down`.
 
 ``` mermaid
 graph LR
-    A[Frontend] -->|HTTP Request| B[gRPC Gateway]
+    A[NextJS] -->|HTTP Request| B[Go gRPC Gateway]
     B -->|gRPC Request| C[gRPC Backend Service]
-    C -->|Process Request| D[Database]
+    C --> D[Database]
+    D --> C
     C -->|gRPC Response| B
     B -->|HTTP Response| A
 

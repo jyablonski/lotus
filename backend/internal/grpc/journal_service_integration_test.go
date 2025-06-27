@@ -153,3 +153,57 @@ func TestGetJournalsInvalidUserID(t *testing.T) {
 	_, err := server.GetJournals(context.Background(), req)
 	assert.Error(t, err, "Error should be returned for invalid user ID")
 }
+
+func TestCreateJournalInvalidMoodScore(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	server := JournalService(queries, logger)
+
+	req := &pb.CreateJournalRequest{
+		UserId:      uuid.New().String(),
+		JournalText: "Mood test",
+		UserMood:    "not-a-number", // <-- invalid
+	}
+
+	_, err := server.CreateJournal(context.Background(), req)
+	assert.Error(t, err, "Should return error for invalid mood score")
+}
+
+func TestCreateJournalDBError(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	server := JournalService(queries, logger)
+
+	// put in a bad user mood score to trigger a DB error
+	req := &pb.CreateJournalRequest{
+		UserId:      uuid.New().String(),
+		JournalText: "This will fail",
+		UserMood:    "nil",
+	}
+
+	_, err := server.CreateJournal(context.Background(), req)
+	assert.Error(t, err, "Should return error on DB failure")
+}
+
+func TestGetJournalsDBError(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	server := JournalService(queries, logger)
+
+	// Use a UUID with no journals (and trigger a query failure if possible)
+	req := &pb.GetJournalsRequest{
+		UserId: uuid.New().String(),
+	}
+
+	// Simulate DB error by closing the DB first (hacky)
+	_ = dbConn.Close()
+
+	_, err := server.GetJournals(context.Background(), req)
+	assert.Error(t, err, "Should return error when DB is unavailable")
+}
