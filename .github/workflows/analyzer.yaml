@@ -1,12 +1,15 @@
-name: Backend CI / CD Pipeline
+name: Analyzer CI / CD Pipeline
 
 on:
   pull_request:
     paths:
-      - 'services/backend/**'
+      - 'services/analyzer/**'
+
+env:
+  UV_VERSION: '0.8.0'
 
 jobs:
-  backend-pipeline:
+  analyzer-pipeline:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,25 +17,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-              services/backend/**
+              services/analyzer/**
               docker/**
               Makefile
           sparse-checkout-cone-mode: false
           # needed to checkout only a single file
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          go-version: '1.24'
-          cache-dependency-path: |
-               services/backend/go.sum
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
 
       - name: Start Postgres
         run: make start-postgres
      
-      - name: Run Backend Tests
-        working-directory: services/backend
-        run: go test ./... -v
+      - name: Run Analyzer Tests
+        working-directory: services/analyzer
+        run: uv run pytest
 
       - name: Stop Postgres
         run: make stop-postgres

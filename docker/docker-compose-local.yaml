@@ -14,7 +14,7 @@ services:
 
   backend:
     build:
-      context: ${PWD}/backend
+      context: ${PWD}/services/backend
       dockerfile: Dockerfile.dev
     container_name: backend
     ports:
@@ -30,3 +30,18 @@ services:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
     working_dir: /app  # Ensure air runs in the correct dir
     command: ["air", "-c", ".air.toml"]
+
+  analyzer:
+    build:
+      context: ${PWD}/services/analyzer
+      dockerfile: Dockerfile
+    container_name: analyzer
+    ports:
+      - "8083:8083"
+    volumes:
+      - ${PWD}/services/analyzer/src:/home/appuser/src
+      - ${PWD}/services/analyzer/config.yaml:/home/appuser/config.yaml
+    environment:
+      - ENV_TYPE=docker_dev
+    depends_on:
+      - postgres

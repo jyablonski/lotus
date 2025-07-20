@@ -1,0 +1,24 @@
+project:
+  name: "ANALYZER_${ENV_TYPE}"
+
+dev:
+  host: localhost
+  user: postgres
+  pass: postgres
+  database: postgres
+  schema: source
+  port: 5432
+docker_dev:
+  host: postgres
+  user: postgres
+  pass: postgres
+  database: postgres
+  schema: source
+  port: 5432
+prod:
+  host: ${IP}
+  user: ${POSTGRES_USERNAME}
+  pass: ${POSTGRES_PASSWORD}
+  database: ${POSTGRES_DATABASE}
+  schema: source
+  port: 17841
