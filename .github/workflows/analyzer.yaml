@@ -7,6 +7,7 @@ on:
 
 env:
   UV_VERSION: '0.8.0'
+  PYTHON_VERSION: '3.13'
 
 jobs:
   analyzer-pipeline:
@@ -27,6 +28,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION}}
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
