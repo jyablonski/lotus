@@ -22,8 +22,8 @@ services:
       - "8081:8081"
       - "50051:50051"
     volumes:
-      - ${PWD}/backend:/app
-      - ${PWD}/backend/.air.toml:/app/.air.toml
+      - ${PWD}/services/backend:/app
+      - ${PWD}/services/backend/.air.toml:/app/.air.toml
     depends_on:
       - postgres
     environment:
