@@ -17,6 +17,8 @@ jobs:
               services/frontend/**
               docker/**
               Makefile
+          sparse-checkout-cone-mode: false
+          # needed to checkout only a single file
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

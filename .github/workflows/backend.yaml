@@ -17,6 +17,8 @@ jobs:
               services/backend/**
               docker/**
               Makefile
+          sparse-checkout-cone-mode: false
+          # needed to checkout only a single file
 
       - name: Set up Go
         uses: actions/setup-go@v5
