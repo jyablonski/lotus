@@ -31,9 +31,6 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION}}
           enable-cache: true
           working-directory: services/analyzer
-          cache-dependency-glob: |
-            **/pyproject.toml
-            **/uv.lock
 
       - name: Start Postgres
         run: make start-postgres
