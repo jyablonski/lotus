@@ -34,6 +34,8 @@ jobs:
      
       - name: Run Analyzer Tests
         working-directory: services/analyzer
+        env:
+          ENV_TYPE: dev
         run: uv run pytest
 
       - name: Stop Postgres
