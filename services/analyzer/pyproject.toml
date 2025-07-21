@@ -16,6 +16,7 @@ dependencies = [
 dev = ["pytest>=8.4.1", "pytest-cov>=6.2.1"]
 local = ["ipykernel>=6.29.5", "ruff>=0.12.4", "ty>=0.0.1a15"]
 
+# use cpu version of torch to avoid mountains of cuda dependencies
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"

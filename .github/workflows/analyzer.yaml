@@ -30,6 +30,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           python-version: ${{ env.PYTHON_VERSION}}
           enable-cache: true
+          prune-cache: false
           working-directory: services/analyzer
 
       - name: Start Postgres
