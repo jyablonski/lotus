@@ -1,0 +1,46 @@
+name: Analyzer CI / CD Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'services/analyzer/**'
+
+env:
+  UV_VERSION: '0.8.0'
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  analyzer-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+              services/analyzer/**
+              docker/**
+              Makefile
+          sparse-checkout-cone-mode: false
+          # needed to checkout only a single file
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION}}
+          enable-cache: true
+          prune-cache: false
+          working-directory: services/analyzer
+
+      - name: Start Postgres
+        run: make start-postgres
+     
+      - name: Run Analyzer Tests
+        working-directory: services/analyzer
+        env:
+          ENV_TYPE: dev
+        run: uv run pytest
+
+      - name: Stop Postgres
+        run: make stop-postgres

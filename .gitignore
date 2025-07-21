@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-frontend/node_modules
+services/frontend/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -14,7 +14,7 @@ frontend/node_modules
 /coverage
 
 # next.js
-frontend/.next/
+services/frontend/.next/
 /out/
 
 # production
@@ -40,4 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-backend/lotus
+services/backend/lotus
+
+# python
+*.pyc
+__pycache__/
+*.pyo

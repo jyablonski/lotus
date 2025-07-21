@@ -3,7 +3,7 @@ name: Frontend CI / CD Pipeline
 on:
   pull_request:
     paths:
-      - 'frontend/**'
+      - 'services/frontend/**'
 
 jobs:
   frontend-pipeline:
@@ -12,6 +12,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+              services/frontend/**
+              docker/**
+              Makefile
+          sparse-checkout-cone-mode: false
+          # needed to checkout only a single file
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -19,9 +26,9 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        working-directory: frontend
+        working-directory: services/frontend
         run: npm install
 
       - name: Build project
-        working-directory: frontend
+        working-directory: services/frontend
         run: npm run build

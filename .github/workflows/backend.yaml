@@ -3,7 +3,7 @@ name: Backend CI / CD Pipeline
 on:
   pull_request:
     paths:
-      - 'backend/**'
+      - 'services/backend/**'
 
 jobs:
   backend-pipeline:
@@ -12,19 +12,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+              services/backend/**
+              docker/**
+              Makefile
+          sparse-checkout-cone-mode: false
+          # needed to checkout only a single file
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           cache-dependency-path: |
-                backend/go.sum
+               services/backend/go.sum
 
       - name: Start Postgres
         run: make start-postgres
      
-      - name: Run Go tests
-        working-directory: backend
+      - name: Run Backend Tests
+        working-directory: services/backend
         run: go test ./... -v
 
       - name: Stop Postgres

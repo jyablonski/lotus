@@ -6,8 +6,9 @@ Practice App w/ the following components
 2. Go Backend Service
     - gRPC Server
     - gRPC Gateway Server
-    - HTTP Server (Legacy)
-3. Postgres Database
+3. Python Journal Analyzer Service
+    - HTTP Server
+4. Postgres Database
 
 ## Running the App
 
@@ -21,15 +22,19 @@ When finished, run `make down`.
 graph LR
     A[NextJS] -->|HTTP Request| B[Go gRPC Gateway]
     B -->|gRPC Request| C[gRPC Backend Service]
-    C --> D[Database]
+    C --> D[Postgres Database]
     D --> C
     C -->|gRPC Response| B
     B -->|HTTP Response| A
 
+    C -->|HTTP Request| E[Python Text Analyzer Service]
+    E --> D
+
     subgraph Backend
         B[gRPC Gateway]
         C[gRPC Backend Service]
-        D[Database]
+        D[Postgres Database]
+        E[Python Text Analyzer Service]
     end
 
     subgraph Frontend
