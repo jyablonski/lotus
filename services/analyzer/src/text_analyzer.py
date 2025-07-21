@@ -2,7 +2,7 @@ from typing import Any
 
 from transformers import pipeline
 
-# Load once on startup
+# Load a default model once on startup
 sentiment_pipeline = pipeline("sentiment-analysis")
 
 
