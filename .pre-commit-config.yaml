@@ -38,3 +38,9 @@ repos:
     rev: v1.37.0
     hooks:
       - id: yamllint
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.10
+    hooks:
+      - id: ruff-check
+      - id: ruff-format

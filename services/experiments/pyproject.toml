@@ -1,0 +1,44 @@
+[project]
+name = "experiments"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["mlflow>=3.3.1", "pandas>=2.3.2", "scikit-learn>=1.7.1"]
+
+[dependency-groups]
+dev = ["pytest>=8.4.1", "pytest-cov>=6.2.1"]
+local = ["ipykernel>=6.30.1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings",
+    "--cov=src",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests with external services",
+    "slow: Tests that take more than 1 second",
+    "performance: Performance regression tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/test_*", "*/__init__.py", "*/training/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
