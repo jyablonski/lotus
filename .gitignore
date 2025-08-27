@@ -46,3 +46,5 @@ services/backend/lotus
 *.pyc
 __pycache__/
 *.pyo
+*.pkl
+**.coverage

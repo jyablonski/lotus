@@ -49,6 +49,7 @@ VALUES
   ('36ca3d17-0071-4526-a124-342fb025723e', 
    'Feeling grateful for the support from friends and family.', 9, now() - interval '4 days', now() - interval '4 days');
 
+-- table for original analyzer implementation
 CREATE TABLE IF NOT EXISTS journal_details (
     journal_id INTEGER PRIMARY KEY REFERENCES journals(id) ON DELETE CASCADE,
     sentiment_score FLOAT,
@@ -57,3 +58,24 @@ CREATE TABLE IF NOT EXISTS journal_details (
     created_at timestamp default now() not null,
     modified_at timestamp default now() not null
 );
+
+-- topics table for mlflow / experiment workflow
+CREATE TABLE IF NOT EXISTS journal_topics (
+    id SERIAL PRIMARY KEY,
+    journal_id INTEGER REFERENCES journals(id) ON DELETE CASCADE,
+    topic_name VARCHAR(100) NOT NULL,
+    confidence DECIMAL(5,4) NOT NULL,
+    ml_model_version VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance  
+CREATE INDEX idx_journal_topics_journal_id ON journal_topics(journal_id);
+CREATE INDEX idx_journal_topics_topic_name ON journal_topics(topic_name);
+
+-- Example of what the data might look like
+INSERT INTO journal_topics (journal_id, topic_name, confidence, ml_model_version) VALUES
+(1, 'productivity', 0.7234, 'v1.0.0'),
+(1, 'accomplishment', 0.2156, 'v1.0.0'),
+(2, 'anxiety', 0.8901, 'v1.0.0'),
+(2, 'work_stress', 0.3245, 'v1.0.0');

@@ -9,6 +9,7 @@ Practice App w/ the following components
 3. Python Journal Analyzer Service
     - HTTP Server
 4. Postgres Database
+5. MLFlow Server
 
 ## Running the App
 

@@ -1,16 +1,16 @@
-name: Analyzer CI / CD Pipeline
+name: Experiments CI / CD Pipeline
 
 on:
   pull_request:
     paths:
-      - 'services/analyzer/**'
+      - 'services/experiments/**'
 
 env:
   UV_VERSION: '0.8.13'
   PYTHON_VERSION: '3.13'
 
 jobs:
-  analyzer-pipeline:
+  experiments-pipeline:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-              services/analyzer/**
+              services/experiments/**
               docker/**
               Makefile
           sparse-checkout-cone-mode: false
@@ -31,16 +31,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION}}
           enable-cache: true
           prune-cache: false
-          working-directory: services/analyzer
+          working-directory: services/experiments
 
-      - name: Start Postgres
-        run: make start-postgres
-     
-      - name: Run Analyzer Tests
-        working-directory: services/analyzer
-        env:
-          ENV_TYPE: dev
+      - name: Run experiments Tests
+        working-directory: services/experiments
         run: uv run pytest
-
-      - name: Stop Postgres
-        run: make stop-postgres
