@@ -173,5 +173,17 @@ curl -X POST http://localhost:8083/v1/journals/1/topics \
 -H "Content-Type: application/json" \
 -v
 
+curl -X POST http://localhost:8083/v1/journals/2/topics \
+-H "Content-Type: application/json" \
+-v
+
+curl -X POST http://localhost:8083/v1/journals/3/topics \
+-H "Content-Type: application/json" \
+-v
+
+curl -X POST http://localhost:8083/v1/journals/4/topics \
+-H "Content-Type: application/json" \
+-v
+
   /journals/{journal_id}/analyze
 ```

@@ -2,18 +2,11 @@ import logging
 import sys
 
 
-def setup_logging() -> None:
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)  # or DEBUG for more verbosity
-
-    # Console handler for stdout
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
-
-    # Log message format
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+def setup_logging(level=logging.INFO):
+    """Configure logging for the application."""
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+        force=True,  # Override any existing configuration
     )
-    ch.setFormatter(formatter)
-
-    logger.addHandler(ch)

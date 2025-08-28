@@ -45,6 +45,7 @@ services:
       - ${PWD}/services/analyzer/config.yaml:/home/appuser/config.yaml
     environment:
       - ENV_TYPE=docker_dev
+      - MLFLOW_CONN_URI=http://mlflow:5000  # Add this line - use container name
     depends_on:
       - postgres
       - mlflow
@@ -58,6 +59,7 @@ services:
       - "5000:5000"
     environment:
       - MLFLOW_BACKEND_STORE_URI=postgresql://postgres:postgres@postgres:5432/postgres
+      - MLFLOW_ARTIFACTS_DESTINATION=/mlflow/artifacts  # Use environment variable
     volumes:
       - ${PWD}/docker/mlflow/artifacts:/mlflow/artifacts
     depends_on:
@@ -65,7 +67,7 @@ services:
     command: >
       mlflow server
       --backend-store-uri postgresql://postgres:postgres@postgres:5432/postgres
-      --default-artifact-root file:///mlflow/artifacts
+      --artifacts-destination /mlflow/artifacts
       --host 0.0.0.0
       --port 5000
 
