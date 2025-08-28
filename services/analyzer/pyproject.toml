@@ -6,10 +6,9 @@ readme = "README.md"
 requires-python = ">=3.13, <3.14"
 dependencies = [
     "fastapi[standard]>=0.116.1",
+    "mlflow>=3.3.2",
     "psycopg2-binary>=2.9.10",
     "sqlalchemy>=2.0.41",
-    "torch>=2.7.1",
-    "transformers>=4.53.2",
 ]
 
 [dependency-groups]
@@ -17,15 +16,6 @@ dev = ["pytest>=8.4.1", "pytest-cov>=6.2.1"]
 local = ["ipykernel>=6.29.5", "ruff>=0.12.4", "ty>=0.0.1a15"]
 
 # use cpu version of torch to avoid mountains of cuda dependencies
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[tool.uv.sources]
-torch = [
-  { index = "pytorch-cpu" },
-]
 
 [tool.ruff.lint]
 # Enable all `pydocstyle` rules

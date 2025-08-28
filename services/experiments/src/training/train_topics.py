@@ -78,19 +78,19 @@ def train_and_register():
 
         signature = infer_signature(sample_input, pipeline_output)
 
+        print("Starting Log Model")
         mlflow.sklearn.log_model(
             sk_model=extractor.topic_pipeline,
-            artifact_path="topic_model",
+            name="topic_model",
             registered_model_name="adaptive_journal_topics",
             signature=signature,
-            input_example=sample_input,
+            # input_example=sample_input,
         )
+        print("Finished Log Model")
 
         # Also save the full extractor with topic labels
         with open("adaptive_extractor.pkl", "wb") as f:
             pickle.dump(extractor, f)
-
-        # save pickle model file to mlflow server
         mlflow.log_artifact("adaptive_extractor.pkl")
 
         print(f"\nModel v{extractor.model_version} registered successfully!")
