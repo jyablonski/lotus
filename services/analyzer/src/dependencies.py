@@ -23,8 +23,23 @@ def get_db() -> Generator[Session]:
         db.close()
 
 
+# First request creates TopicClient and loads model, all subsequent requests reuse the
+# same client. 1000 requests = 1 model load. Without `lru_cache`, each request would
+# create a new TopicClient instance and load the model again, resulting in significant
+# overhead.
 @lru_cache
 def get_topic_client() -> TopicClient:
-    """Dependency to get the singleton TopicClient instance."""
+    """Dependency to get the singleton TopicClient instance.
+
+    Formatting this way enables clean FastAPI dependency injection
+
+    Example:
+
+    @router.post("/journals/{journal_id}/topics")
+    def extract_topics(
+        journal_id: int,
+        topic_client: TopicClient = Depends(get_topic_client),
+    ):
+    """
     logger.info("Creating TopicClient instance")
     return TopicClient()

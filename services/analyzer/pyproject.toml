@@ -51,6 +51,7 @@ ignore = [
     "D107",   # don't need docstrings for every func
     "D205",   # docstring formatting
     "D212",   # docstring formatting
+    "D412",   # docstring formatting
     "D415",   # requires period at end of docstring. get some cranberry juice mfer
 ]
 
