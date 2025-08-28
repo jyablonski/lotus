@@ -7,7 +7,9 @@ Practice App w/ the following components
     - gRPC Server
     - gRPC Gateway Server
 3. Python Journal Analyzer Service
-    - HTTP Server
+    - FastAPI HTTP Server
+    - MLflow Topic Extraction Client
+    - Journal Topic Classification
 4. Postgres Database
 5. MLFlow Server
 
@@ -28,18 +30,26 @@ graph LR
     C -->|gRPC Response| B
     B -->|HTTP Response| A
 
-    C -->|HTTP Request| E[Python Text Analyzer Service]
+    C -->|HTTP Request| E[Python Analyzer Service]
+    E -->|Load Models| F[MLflow Server]
     E --> D
+    F --> D
 
     subgraph Backend
         B[gRPC Gateway]
         C[gRPC Backend Service]
         D[Postgres Database]
-        E[Python Text Analyzer Service]
+        E[Python Analyzer Service<br/>FastAPI + TopicClient]
+        F[MLflow Server<br/>Model Registry]
     end
 
     subgraph Frontend
         A
+    end
+
+    subgraph ML Pipeline
+        E -.->|Topic Classification| G[Journal Topics Table]
+        G --> D
     end
 
 ```
