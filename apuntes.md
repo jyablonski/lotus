@@ -158,4 +158,32 @@ curl -X GET "http://localhost:8080/v1/users?email=jyablonski9@gmail.com"
 
 # unknown user
 curl -X GET "http://localhost:8080/v1/users?email=jyablonskifake@gmail.com"
+
+curl -X POST http://localhost:8083/journals/1/topics \
+  -H "Content-Type: application/json" \
+  -v
+
+curl -X POST http://localhost:8083/v1/journals/topics \
+     -H "Content-Type: application/json" \
+     -d '{
+           "journal_id": "1"
+         }'
+
+curl -X POST http://localhost:8083/v1/journals/1/topics \
+-H "Content-Type: application/json" \
+-v
+
+curl -X POST http://localhost:8083/v1/journals/2/topics \
+-H "Content-Type: application/json" \
+-v
+
+curl -X POST http://localhost:8083/v1/journals/3/topics \
+-H "Content-Type: application/json" \
+-v
+
+curl -X POST http://localhost:8083/v1/journals/4/topics \
+-H "Content-Type: application/json" \
+-v
+
+  /journals/{journal_id}/analyze
 ```

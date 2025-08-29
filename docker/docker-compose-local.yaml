@@ -37,6 +37,7 @@ services:
       context: ${PWD}/services/analyzer
       dockerfile: Dockerfile
     container_name: analyzer
+    restart: unless-stopped
     ports:
       - "8083:8083"
     volumes:
@@ -44,25 +45,29 @@ services:
       - ${PWD}/services/analyzer/config.yaml:/home/appuser/config.yaml
     environment:
       - ENV_TYPE=docker_dev
+      - MLFLOW_CONN_URI=http://mlflow:5000  # Add this line - use container name
     depends_on:
       - postgres
+      - mlflow
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v3.3.1
+    build:
+      context: ${PWD}/docker/mlflow
+      dockerfile: Dockerfile
     container_name: mlflow
     ports:
       - "5000:5000"
     environment:
       - MLFLOW_BACKEND_STORE_URI=postgresql://postgres:postgres@postgres:5432/postgres
-      - MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
+      - MLFLOW_ARTIFACTS_DESTINATION=/mlflow/artifacts  # Use environment variable
     volumes:
       - ${PWD}/docker/mlflow/artifacts:/mlflow/artifacts
     depends_on:
       - postgres
     command: >
       mlflow server
-      --backend-store-uri ${MLFLOW_BACKEND_STORE_URI}
-      --default-artifact-root ${MLFLOW_ARTIFACT_ROOT}
+      --backend-store-uri postgresql://postgres:postgres@postgres:5432/postgres
+      --artifacts-destination /mlflow/artifacts
       --host 0.0.0.0
       --port 5000
 
