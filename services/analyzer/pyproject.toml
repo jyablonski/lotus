@@ -49,10 +49,12 @@ ignore = [
     "D103",   # no docstring in public package ??? wtf
     "D104",   # no docstring in public package ??? wtf
     "D107",   # don't need docstrings for every func
+    "D202",
     "D205",   # docstring formatting
     "D212",   # docstring formatting
     "D412",   # docstring formatting
     "D415",   # requires period at end of docstring. get some cranberry juice mfer
+    "RET504"  # dumbass return statement shit
 ]
 
 [tool.ruff.format]

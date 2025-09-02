@@ -46,6 +46,7 @@ services:
     environment:
       - ENV_TYPE=docker_dev
       - MLFLOW_CONN_URI=http://mlflow:5000  # Add this line - use container name
+      - ENABLE_V1_ROUTER=true
     depends_on:
       - postgres
       - mlflow

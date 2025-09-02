@@ -68,14 +68,34 @@ CREATE TABLE IF NOT EXISTS journal_topics (
     ml_model_version VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
-
--- Indexes for performance  
+  
 CREATE INDEX idx_journal_topics_journal_id ON journal_topics(journal_id);
 CREATE INDEX idx_journal_topics_topic_name ON journal_topics(topic_name);
 
--- Example of what the data might look like
 INSERT INTO journal_topics (journal_id, topic_name, confidence, ml_model_version) VALUES
 (1, 'productivity', 0.7234, 'v1.0.0'),
 (1, 'accomplishment', 0.2156, 'v1.0.0'),
 (2, 'anxiety', 0.8901, 'v1.0.0'),
 (2, 'work_stress', 0.3245, 'v1.0.0');
+
+
+CREATE TABLE IF NOT EXISTS source.journal_sentiments (
+    id SERIAL PRIMARY KEY,
+    journal_id INTEGER REFERENCES journals(id) ON DELETE CASCADE,
+    sentiment VARCHAR(20) NOT NULL CHECK (sentiment IN ('positive', 'negative', 'neutral', 'uncertain')),
+    confidence DECIMAL(5,4) NOT NULL,
+    confidence_level VARCHAR(10) NOT NULL CHECK (confidence_level IN ('high', 'medium', 'low')),
+    is_reliable BOOLEAN NOT NULL DEFAULT TRUE,
+    ml_model_version VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    -- Optional: Store individual sentiment scores as JSON
+    all_scores JSONB,
+    
+    -- Ensure only one sentiment analysis per journal entry per model version
+    UNIQUE(journal_id, ml_model_version)
+);
+
+INSERT INTO source.journal_sentiments (journal_id, sentiment, confidence, confidence_level, is_reliable, ml_model_version, all_scores) VALUES
+(1, 'positive', 0.8234, 'high', TRUE, 'v1.0.0', '{"positive": 0.8234, "negative": 0.1234, "neutral": 0.0532}'),
+(2, 'negative', 0.7891, 'high', TRUE, 'v1.0.0', '{"positive": 0.0823, "negative": 0.7891, "neutral": 0.1286}');
