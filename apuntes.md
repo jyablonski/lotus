@@ -186,13 +186,9 @@ curl -X POST http://localhost:8083/v1/journals/4/topics \
 -v
 
 
-curl -X POST http://localhost:8083/v1/sentiment/analyze \
+curl -X POST http://localhost:8083/v1/journals/1/sentiment/analyze \
 -H "Content-Type: application/json" \
-     -d '{
-           "journal_id": "4",
-           "text": "fuck today i had an awful day"
-         }'
-
+-v
 
 
   /journals/{journal_id}/analyze

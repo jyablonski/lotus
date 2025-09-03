@@ -370,3 +370,29 @@ def bulk_create_sentiments(
         db.rollback()
         logger.error(f"Error bulk creating sentiment records: {e}")
         raise
+
+
+def delete_sentiment(
+    db: Session, journal_id: int, model_version: str | None = None
+) -> int:
+    """Delete sentiment analysis for a journal entry."""
+    try:
+        query = db.query(JournalSentiments).filter(
+            JournalSentiments.journal_id == journal_id
+        )
+
+        if model_version:
+            query = query.filter(JournalSentiments.ml_model_version == model_version)
+
+        deleted_count = query.delete()
+        db.commit()
+
+        logger.info(
+            f"Deleted {deleted_count} sentiment record(s) for journal {journal_id}"
+        )
+        return deleted_count
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting sentiment for journal {journal_id}: {e}")
+        raise
