@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from unittest.mock import Mock
 
@@ -5,9 +6,72 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.main import app
+from src.ml.sentiment_client import SentimentClient
 from src.ml.topic_client import TopicClient
 from src.models.journal_sentiments import JournalSentiments
 from src.models.journals import Journals
+
+logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session")
+def real_sentiment_client():
+    """Load real sentiment analysis model once per test session."""
+    logger.info("Loading real sentiment analysis model for tests...")
+
+    try:
+        client = SentimentClient()
+        client.load_model()
+
+        # Verify model is working
+        test_result = client.predict_sentiment("This is a test")
+        assert "sentiment" in test_result
+
+        logger.info(f"Sentiment model loaded successfully: {client.get_model_info()}")
+        return client
+
+    except Exception as e:
+        logger.error(f"Failed to load sentiment model for tests: {e}")
+        pytest.skip(f"Sentiment model not available for testing: {e}")
+
+
+@pytest.fixture(scope="session")
+def real_topic_client():
+    """Load real topic extraction model once per test session."""
+    logger.info("Loading real topic extraction model for tests...")
+
+    try:
+        client = TopicClient()
+        client.load_model()
+
+        # Verify model is working
+        test_result = client.extract_topics("This is a test")
+        assert isinstance(test_result, list)
+
+        logger.info(f"Topic model loaded successfully: {client.get_model_info()}")
+        return client
+
+    except Exception as e:
+        logger.error(f"Failed to load topic model for tests: {e}")
+        pytest.skip(f"Topic model not available for testing: {e}")
+
+
+@pytest.fixture
+def override_db_dependency(test_db_session):
+    """Override database dependency to use test database."""
+    from src.dependencies import get_db
+    from src.main import app
+
+    def get_test_db():
+        return test_db_session
+
+    app.dependency_overrides[get_db] = get_test_db
+
+    yield test_db_session
+
+    # Clean up dependency override
+    if get_db in app.dependency_overrides:
+        del app.dependency_overrides[get_db]
 
 
 @pytest.fixture()

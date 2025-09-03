@@ -1,8 +1,9 @@
+from src.dependencies import get_topic_client
+from src.main import app
+
+
 def test_extract_topics_endpoint(client_fixture, mock_topic_client):
     """Test topic extraction endpoint."""
-    from src.dependencies import get_topic_client
-    from src.main import app
-
     # Override the dependency directly
     app.dependency_overrides[get_topic_client] = lambda: mock_topic_client
 
@@ -21,8 +22,6 @@ def test_get_topics_endpoint(client_fixture):
 
 def test_health_topics_endpoint(client_fixture, mock_topic_client):
     """Test health endpoint."""
-    from src.dependencies import get_topic_client
-    from src.main import app
 
     app.dependency_overrides[get_topic_client] = lambda: mock_topic_client
 
