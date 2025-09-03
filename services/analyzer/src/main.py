@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.dependencies import get_topic_client
+from src.dependencies import get_sentiment_client, get_topic_client
 from src.logger import setup_logging
 from src.routers.v1 import v1_router
 
@@ -18,8 +18,12 @@ async def lifespan(app: FastAPI):
     logger.info("Loading ML models...")
     topic_client = get_topic_client()
     topic_client.load_model()
+
+    sentiment_client = get_sentiment_client()
+    sentiment_client.load_model()
     logger.info("ML models loaded successfully")
 
+    # yield so app can run forever
     yield
 
     # Shutdown (cleanup if needed)
@@ -29,6 +33,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(v1_router, prefix="/v1")
+
+
+# can conditionally include routers depending on env vars
+
+# if os.getenv("ENABLE_EXPERIMENTAL_ROUTER", "false").lower() == "true":
+#     app.include_router(experimental_router, prefix="/experimental")
 
 
 @app.get("/")

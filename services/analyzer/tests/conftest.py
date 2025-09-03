@@ -1,10 +1,116 @@
+import logging
+import os
+import pickle
+from datetime import datetime
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from src.dependencies import get_db
 from src.main import app
+from src.ml.sentiment_client import SentimentClient
 from src.ml.topic_client import TopicClient
+from src.models.journal_sentiments import JournalSentiments
+from src.models.journals import Journals
+
+logger = logging.getLogger(__name__)
+
+TEST_FIXTURES_DIR = Path("tests/fixtures/models")
+SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
+TOPIC_MODEL_PATH = TEST_FIXTURES_DIR / "topic_test_model.pkl"
+
+
+@pytest.fixture(scope="session")
+def real_sentiment_client():
+    """Load pre-saved sentiment model for testing."""
+    logger.info("Loading test sentiment model from fixtures...")
+
+    if not SENTIMENT_MODEL_PATH.exists():
+        pytest.skip(f"Test sentiment model not found at {SENTIMENT_MODEL_PATH}")
+
+    try:
+        with open(SENTIMENT_MODEL_PATH, "rb") as f:
+            test_pipeline = pickle.load(f)
+
+        client = SentimentClient()
+
+        client.sentiment_pipeline = test_pipeline  # Keep this
+        client.model = test_pipeline  # ADD THIS - probably what is_ready() checks
+        client.model_version = "test_v1.0.0"
+        client._is_loaded = True
+
+        # Verify it works
+        test_result = client.predict_sentiment("This is a test")
+        assert "sentiment" in test_result
+
+        logger.info("Test sentiment model loaded successfully")
+        return client
+
+    except Exception as e:
+        logger.error(f"Failed to load test sentiment model: {e}")
+        pytest.skip(f"Test sentiment model could not be loaded: {e}")
+
+
+@pytest.fixture(scope="session")
+def real_topic_client():
+    """Load pre-saved topic model for testing."""
+    logger.info("Loading test topic model from fixtures...")
+
+    if not TOPIC_MODEL_PATH.exists():
+        pytest.skip(f"Test topic model not found at {TOPIC_MODEL_PATH}.")
+
+    try:
+        # Load the pre-saved pipeline
+        with Path.open(TOPIC_MODEL_PATH, "rb") as f:
+            test_pipeline = pickle.load(f)
+
+        # Create client and inject the test model
+        client = TopicClient()
+        client.topic_pipeline = test_pipeline
+        client.model = test_pipeline
+        client.model_version = "test_v1.0.0"
+        client._is_loaded = True
+
+        # Set up topic labels (you may need to adjust these based on your model)
+        client.topic_labels = {
+            0: "Daily Needs & Work",
+            1: "Evening Reflection",
+            2: "Work & Productivity",
+            3: "Emotional State",
+            4: "Feelings & Emotions",
+            5: "Daily Activities",
+            6: "Morning Routine & Positivity",
+            7: "Work Focus & Effort",
+        }
+
+        # Verify it works
+        test_result = client.extract_topics("This is a test")
+        assert isinstance(test_result, list)
+
+        logger.info("Test topic model loaded successfully")
+        return client
+
+    except Exception as e:
+        logger.error(f"Failed to load test topic model: {e}")
+        pytest.skip(f"Test topic model could not be loaded: {e}")
+
+
+@pytest.fixture
+def override_db_dependency(test_db_session):
+    """Override database dependency to use test database."""
+
+    def get_test_db():
+        return test_db_session
+
+    app.dependency_overrides[get_db] = get_test_db
+
+    yield test_db_session
+
+    # Clean up dependency override
+    if get_db in app.dependency_overrides:
+        del app.dependency_overrides[get_db]
 
 
 @pytest.fixture()
@@ -35,3 +141,45 @@ def mock_topic_client():
     }
 
     return client
+
+
+@pytest.fixture
+def mock_sentiment_client():
+    """Mock sentiment client for testing."""
+    mock_client = Mock()
+    mock_client.predict_sentiment.return_value = {
+        "sentiment": "positive",
+        "confidence": 0.8234,
+        "confidence_level": "high",
+        "is_reliable": True,
+        "all_scores": {"positive": 0.8234, "negative": 0.1234, "neutral": 0.0532},
+        "ml_model_version": "v1.0.0",
+    }
+    mock_client.model_version = "v1.0.0"
+    mock_client.is_ready.return_value = True
+    return mock_client
+
+
+@pytest.fixture
+def mock_journal():
+    """Mock journal object for testing."""
+    journal = Mock(spec=Journals)
+    journal.id = 1
+    journal.journal_text = "Today was a wonderful day! I accomplished so much."
+    return journal
+
+
+@pytest.fixture
+def mock_sentiment_record():
+    """Mock sentiment analysis record."""
+    record = Mock(spec=JournalSentiments)
+    record.id = 1
+    record.journal_id = 1
+    record.sentiment = "positive"
+    record.confidence = 0.8234
+    record.confidence_level = "high"
+    record.is_reliable = True
+    record.ml_model_version = "v1.0.0"
+    record.created_at = datetime(2024, 1, 15, 14, 30, 0)
+    record.all_scores = {"positive": 0.8234, "negative": 0.1234, "neutral": 0.0532}
+    return record

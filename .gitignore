@@ -47,5 +47,6 @@ services/backend/lotus
 __pycache__/
 *.pyo
 *.pkl
+!**/tests/fixtures/models/*.pkl
 **.coverage
 docker/mlflow/**

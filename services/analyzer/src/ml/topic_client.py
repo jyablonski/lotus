@@ -41,7 +41,7 @@ class TopicClient:
 
         try:
             logger.info(
-                f"Loading model {self.model_name}:{model_version} from {self.mlflow_uri}"
+                f"Loading model {self.model_name}:{model_version} - {self.mlflow_uri}"
             )
             mlflow.set_tracking_uri(self.mlflow_uri)
 

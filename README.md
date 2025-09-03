@@ -30,7 +30,7 @@ graph LR
     C -->|gRPC Response| B
     B -->|HTTP Response| A
 
-    C -->|HTTP Request| E[Python Analyzer Service]
+    C -->|HTTP Request| E[Python ML Service]
     E -->|Load Models| F[MLflow Server]
     E --> D
     F --> D
@@ -39,7 +39,7 @@ graph LR
         B[gRPC Gateway]
         C[gRPC Backend Service]
         D[Postgres Database]
-        E[Python Analyzer Service<br/>FastAPI + TopicClient]
+        E[Python ML Service<br/>FastAPI + ML Clients]
         F[MLflow Server<br/>Model Registry]
     end
 
@@ -48,7 +48,7 @@ graph LR
     end
 
     subgraph ML Pipeline
-        E -.->|Topic Classification| G[Journal Topics Table]
+        E -.->|Content Analysis| G[Analysis Results Tables]
         G --> D
     end
 

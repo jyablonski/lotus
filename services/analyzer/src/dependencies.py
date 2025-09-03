@@ -5,6 +5,7 @@ from functools import lru_cache
 from sqlalchemy.orm import Session
 
 from src.database import SessionLocal
+from src.ml.sentiment_client import SentimentClient
 from src.ml.topic_client import TopicClient
 
 logger = logging.getLogger(__name__)
@@ -43,3 +44,32 @@ def get_topic_client() -> TopicClient:
     """
     logger.info("Creating TopicClient instance")
     return TopicClient()
+
+
+@lru_cache
+def get_sentiment_client() -> SentimentClient:
+    """Dependency to get the singleton SentimentClient instance.
+
+    Formatting this way enables clean FastAPI dependency injection
+
+    Example:
+
+    @router.post("/journals/{journal_id}/sentiment")
+    def analyze_sentiment(
+        journal_id: int,
+        sentiment_client: SentimentClient = Depends(get_sentiment_client),
+    ):
+        # Your endpoint logic here
+        result = sentiment_client.predict_sentiment(entry_text)
+        return result
+
+    @router.post("/journals/sentiment/batch")
+    def analyze_sentiment_batch(
+        entries: List[str],
+        sentiment_client: SentimentClient = Depends(get_sentiment_client),
+    ):
+        results = sentiment_client.predict_sentiment_batch(entries)
+        return results
+    """
+    logger.info("Creating SentimentClient instance")
+    return SentimentClient()

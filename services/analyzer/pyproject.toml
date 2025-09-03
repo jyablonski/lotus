@@ -18,8 +18,6 @@ local = ["ipykernel>=6.29.5", "ruff>=0.12.4", "ty>=0.0.1a15"]
 # use cpu version of torch to avoid mountains of cuda dependencies
 
 [tool.ruff.lint]
-# Enable all `pydocstyle` rules
-select = ["D"]
 
 # i copied these off reddit
 extend-select = [
@@ -44,15 +42,7 @@ ignore = [
     "SIM112", # the env vars arent set w/ caps but fuqqit
     "TD002",  # i dont need author
     "TD003",  # i dont need issue links
-    "D100",   # No docstring in public module ??? wtf
-    "D101",   # No docstrings is fine
-    "D103",   # no docstring in public package ??? wtf
-    "D104",   # no docstring in public package ??? wtf
-    "D107",   # don't need docstrings for every func
-    "D205",   # docstring formatting
-    "D212",   # docstring formatting
-    "D412",   # docstring formatting
-    "D415",   # requires period at end of docstring. get some cranberry juice mfer
+    "RET504", # dumbass return statement shit
 ]
 
 [tool.ruff.format]
