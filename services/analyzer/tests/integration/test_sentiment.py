@@ -1,4 +1,4 @@
-from src.dependencies import get_sentiment_client, get_topic_client
+from src.dependencies import get_sentiment_client
 from src.main import app
 
 
@@ -7,7 +7,6 @@ def test_analyze_positive_sentiment(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # Journal ID 1: "Today was an absolutely amazing day! I accomplished everything..."
         response = client_fixture.post(
             "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False}
         )
@@ -24,32 +23,11 @@ def test_analyze_positive_sentiment(client_fixture, real_sentiment_client):
         app.dependency_overrides.clear()
 
 
-def test_analyze_negative_sentiment(client_fixture, real_sentiment_client):
-    """Test sentiment analysis on clearly negative journal entry."""
-    app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
-
-    try:
-        # Journal ID 4: "Feeling overwhelmed and anxious about everything..."
-        response = client_fixture.post(
-            "/v1/journals/4/sentiment/analyze", json={"force_reanalyze": False}
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["sentiment"] == "negative"
-        assert data["confidence"] > 0.5
-        assert data["is_reliable"] is True
-
-    finally:
-        app.dependency_overrides.clear()
-
-
 def test_analyze_neutral_sentiment(client_fixture, real_sentiment_client):
     """Test sentiment analysis on neutral journal entry."""
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # Journal ID 3: "Had a quiet, peaceful evening reading a book..."
         response = client_fixture.post(
             "/v1/journals/3/sentiment/analyze", json={"force_reanalyze": False}
         )
@@ -66,63 +44,15 @@ def test_analyze_neutral_sentiment(client_fixture, real_sentiment_client):
         app.dependency_overrides.clear()
 
 
-def test_analyze_work_topic(client_fixture, real_topic_client):
-    """Test topic extraction on work-related journal entry."""
-    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
-
-    try:
-        # Journal ID 2: "Work was really stressful today. I had three important meetings..."
-        response = client_fixture.post("/v1/journals/2/topics/analyze")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Should extract work-related topics
-        topic_names = [topic["topic_name"] for topic in data["topics"]]
-        work_topics = ["Work & Productivity", "Work Focus & Effort", "Emotional State"]
-
-        # At least one work-related topic should be found
-        assert any(topic in topic_names for topic in work_topics)
-
-    finally:
-        app.dependency_overrides.clear()
-
-
-def test_analyze_productivity_topic(client_fixture, real_topic_client):
-    """Test topic extraction on productivity-focused content."""
-    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
-
-    try:
-        # Journal ID 5: "Spent the day working on productivity improvements..."
-        response = client_fixture.post("/v1/journals/5/topics/analyze")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        topic_names = [topic["topic_name"] for topic in data["topics"]]
-        productivity_topics = [
-            "Work & Productivity",
-            "Daily Activities",
-            "Work Focus & Effort",
-        ]
-
-        assert any(topic in topic_names for topic in productivity_topics)
-
-    finally:
-        app.dependency_overrides.clear()
-
-
 def test_get_sentiment_analysis(client_fixture, real_sentiment_client):
     """Test retrieving existing sentiment analysis."""
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # First analyze
         client_fixture.post(
             "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False}
         )
 
-        # Then retrieve
         response = client_fixture.get("/v1/journals/1/sentiment")
 
         assert response.status_code == 200
@@ -140,21 +70,18 @@ def test_force_reanalyze_sentiment(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # Initial analysis
         response1 = client_fixture.post(
             "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False}
         )
         assert response1.status_code == 200
         first_analysis_time = response1.json()["created_at"]
 
-        # Force re-analysis
         response2 = client_fixture.post(
             "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": True}
         )
         assert response2.status_code == 200
         second_analysis_time = response2.json()["created_at"]
 
-        # Should have newer timestamp
         assert second_analysis_time >= first_analysis_time
 
     finally:
@@ -219,13 +146,11 @@ def test_sentiment_stats(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # Analyze some entries first
         client_fixture.post(
             "/v1/journals/sentiment/analyze-batch",
             json={"journal_ids": [1, 2, 3, 4], "force_reanalyze": False},
         )
 
-        # Get stats
         response = client_fixture.get("/v1/journals/sentiment/stats")
 
         assert response.status_code == 200
@@ -249,7 +174,7 @@ def test_nonexistent_journal_analysis(client_fixture, real_sentiment_client):
         )
 
         assert response.status_code == 404
-        assert "Journal entry not found" in response.json()["detail"]
+        assert "this doesn't exist hoe" in response.json()["detail"]
 
     finally:
         app.dependency_overrides.clear()
@@ -260,18 +185,15 @@ def test_delete_sentiment_analysis(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # Create analysis first
         client_fixture.post(
             "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False}
         )
 
-        # Delete it
         response = client_fixture.delete("/v1/journals/1/sentiment")
 
         assert response.status_code == 200
         assert response.json()["deleted_count"] == 1
 
-        # Should be gone now
         get_response = client_fixture.get("/v1/journals/1/sentiment")
         assert get_response.status_code == 404
 

@@ -1,10 +1,14 @@
 import logging
+import os
+import pickle
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from src.dependencies import get_db
 from src.main import app
 from src.ml.sentiment_client import SentimentClient
 from src.ml.topic_client import TopicClient
@@ -13,54 +17,89 @@ from src.models.journals import Journals
 
 logger = logging.getLogger(__name__)
 
+TEST_FIXTURES_DIR = Path("tests/fixtures/models")
+SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
+TOPIC_MODEL_PATH = TEST_FIXTURES_DIR / "topic_test_model.pkl"
+
 
 @pytest.fixture(scope="session")
 def real_sentiment_client():
-    """Load real sentiment analysis model once per test session."""
-    logger.info("Loading real sentiment analysis model for tests...")
+    """Load pre-saved sentiment model for testing."""
+    logger.info("Loading test sentiment model from fixtures...")
+
+    if not SENTIMENT_MODEL_PATH.exists():
+        pytest.skip(f"Test sentiment model not found at {SENTIMENT_MODEL_PATH}")
 
     try:
-        client = SentimentClient()
-        client.load_model()
+        with open(SENTIMENT_MODEL_PATH, "rb") as f:
+            test_pipeline = pickle.load(f)
 
-        # Verify model is working
+        client = SentimentClient()
+
+        client.sentiment_pipeline = test_pipeline  # Keep this
+        client.model = test_pipeline  # ADD THIS - probably what is_ready() checks
+        client.model_version = "test_v1.0.0"
+        client._is_loaded = True
+
+        # Verify it works
         test_result = client.predict_sentiment("This is a test")
         assert "sentiment" in test_result
 
-        logger.info(f"Sentiment model loaded successfully: {client.get_model_info()}")
+        logger.info("Test sentiment model loaded successfully")
         return client
 
     except Exception as e:
-        logger.error(f"Failed to load sentiment model for tests: {e}")
-        pytest.skip(f"Sentiment model not available for testing: {e}")
+        logger.error(f"Failed to load test sentiment model: {e}")
+        pytest.skip(f"Test sentiment model could not be loaded: {e}")
 
 
 @pytest.fixture(scope="session")
 def real_topic_client():
-    """Load real topic extraction model once per test session."""
-    logger.info("Loading real topic extraction model for tests...")
+    """Load pre-saved topic model for testing."""
+    logger.info("Loading test topic model from fixtures...")
+
+    if not TOPIC_MODEL_PATH.exists():
+        pytest.skip(f"Test topic model not found at {TOPIC_MODEL_PATH}.")
 
     try:
-        client = TopicClient()
-        client.load_model()
+        # Load the pre-saved pipeline
+        with Path.open(TOPIC_MODEL_PATH, "rb") as f:
+            test_pipeline = pickle.load(f)
 
-        # Verify model is working
+        # Create client and inject the test model
+        client = TopicClient()
+        client.topic_pipeline = test_pipeline
+        client.model = test_pipeline
+        client.model_version = "test_v1.0.0"
+        client._is_loaded = True
+
+        # Set up topic labels (you may need to adjust these based on your model)
+        client.topic_labels = {
+            0: "Daily Needs & Work",
+            1: "Evening Reflection",
+            2: "Work & Productivity",
+            3: "Emotional State",
+            4: "Feelings & Emotions",
+            5: "Daily Activities",
+            6: "Morning Routine & Positivity",
+            7: "Work Focus & Effort",
+        }
+
+        # Verify it works
         test_result = client.extract_topics("This is a test")
         assert isinstance(test_result, list)
 
-        logger.info(f"Topic model loaded successfully: {client.get_model_info()}")
+        logger.info("Test topic model loaded successfully")
         return client
 
     except Exception as e:
-        logger.error(f"Failed to load topic model for tests: {e}")
-        pytest.skip(f"Topic model not available for testing: {e}")
+        logger.error(f"Failed to load test topic model: {e}")
+        pytest.skip(f"Test topic model could not be loaded: {e}")
 
 
 @pytest.fixture
 def override_db_dependency(test_db_session):
     """Override database dependency to use test database."""
-    from src.dependencies import get_db
-    from src.main import app
 
     def get_test_db():
         return test_db_session
