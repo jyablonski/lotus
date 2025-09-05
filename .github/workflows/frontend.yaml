@@ -29,6 +29,10 @@ jobs:
         working-directory: services/frontend
         run: npm install
 
+      - name: Run tests
+        working-directory: services/frontend
+        run: npm run test:ci
+
       - name: Build project
         working-directory: services/frontend
         run: npm run build

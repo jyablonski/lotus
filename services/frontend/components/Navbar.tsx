@@ -3,29 +3,52 @@ import Image from "next/image";
 import React from "react";
 import { auth } from "@/auth";
 import { Login } from "@/components/auth/LoginButton";
+import { NavLink } from "@/components/NavLink";
 import UserAvatar from "@/components/UserAvatar";
 
 const Navbar = async () => {
   const session = await auth();
 
   return (
-    <header className="navbar-header">
-      <nav className="navbar-container">
-        <Link href="/" className="navbar-logo">
-          <Image src="/lotus.png" alt="Logo" width={40} height={40} />
-          <span className="navbar-logo-text">Lotus</span>
-        </Link>
+    <header className="bg-white border-b border-gray-200 shadow-sm">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
 
-        <div className="navbar-items">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+            <Image src="/lotus.png" alt="Lotus Logo" width={40} height={40} />
+            <span className="text-xl font-bold text-gray-900">Lotus</span>
+          </Link>
+
+          {/* Navigation Links (logged in users) */}
           {session && session.user ? (
-            <>
+            <div className="flex items-center space-x-8">
 
+              {/* Main Navigation */}
+              <div className="hidden md:flex items-center space-x-6">
+                <NavLink href="/">Home</NavLink>
+                <NavLink href="/journal/home">Journal</NavLink>
+                <NavLink href="/journal/calendar">Calendar</NavLink>
+              </div>
+
+              {/* User Avatar */}
               <UserAvatar />
-            </>
+            </div>
           ) : (
             <Login />
           )}
         </div>
+
+        {/* Mobile Navigation (logged in users) */}
+        {session && session.user && (
+          <div className="md:hidden border-t border-gray-200 pt-4 pb-3">
+            <div className="flex space-x-6">
+              <NavLink href="/">Home</NavLink>
+              <NavLink href="/journal/home">Journal</NavLink>
+              <NavLink href="/journal/calendar">Calendar</NavLink>
+            </div>
+          </div>
+        )}
       </nav>
     </header>
   );

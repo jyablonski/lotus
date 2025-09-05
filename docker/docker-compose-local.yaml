@@ -13,6 +13,33 @@ services:
       - postgres_data:/var/lib/postgresql/data  # <-- Need this for data persistence
       - ${PWD}/docker/db:/docker-entrypoint-initdb.d
 
+  frontend:
+    build:
+      context: ${PWD}/services/frontend
+      dockerfile: Dockerfile
+      args:
+        - GITHUB_ID=${GITHUB_ID}
+        - GITHUB_SECRET=${GITHUB_SECRET}
+        - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+        - NEXTAUTH_URL=http://localhost:3000
+        - BACKEND_URL=http://backend:8080
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for live updates
+      - ${PWD}/services/frontend:/app
+    environment:
+      - NEXTAUTH_URL=http://localhost:3000
+      - BACKEND_URL=http://backend:8080
+      - AUTH_SECRET=sWgDE0TuAX4YLONhxRtR1flbHF/AEVcV0rF6Y9m9FVY=
+      - AUTH_GITHUB_ID=Ov23liCd6cRRiBULnU6M
+      - AUTH_GITHUB_SECRET=0dea7cae21e4ffd13620842d9ee0dc44989dfae2
+      - AUTH_TRUST_HOST=true
+    depends_on:
+      - backend
+      - postgres
+
   backend:
     build:
       context: ${PWD}/services/backend
@@ -53,7 +80,7 @@ services:
 
   mlflow:
     build:
-      context: ${PWD}/docker/mlflow
+      context: ${PWD}/services/experiments
       dockerfile: Dockerfile
     container_name: mlflow
     ports:
