@@ -55,7 +55,7 @@ export function SelectedDateEntries({ selectedDate, entries }: SelectedDateEntri
                                 <p className="text-gray-500 mb-4">No entries for today yet</p>
                                 <Link href="/journal/create">
                                     <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                        Create Today's Entry
+                                        Create Todays Entry
                                     </button>
                                 </Link>
                             </>
