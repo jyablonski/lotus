@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { moodToInt } from '@/utils/moodMapping';
+import { createJournalEntry } from '@/lib/api/journals';
 
 export function useCreateJournal() {
     const [entry, setEntry] = useState('');
-    const [mood, setMood] = useState('neutral'); // Start with neutral as default
+    const [mood, setMood] = useState('neutral');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -38,29 +38,12 @@ export function useCreateJournal() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:8080/v1/journals', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    journal_text: entry,
-                    user_mood: moodToInt(mood).toString(), // Convert to int then string for API
-                }),
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Server error: ${response.status} ${errorText}`);
-            }
-
+            await createJournalEntry({ userId, entry, mood });
             setSuccess(true);
 
             setTimeout(() => {
                 router.push('/journal/home');
             }, 2000);
-
         } catch (error) {
             console.error('Failed to submit journal entry:', error);
             setError('Something went wrong. Please try again.');

@@ -22,24 +22,26 @@ export default function JournalHomePage() {
     if (loading) return <LoadingSpinner />;
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <JournalHeader totalEntries={journals.length} />
+        <div className="page-container">
+            <div className="content-container">
+                <JournalHeader totalEntries={journals.length} />
 
-            <JournalFilters
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                selectedMood={selectedMood}
-                setSelectedMood={setSelectedMood}
-                uniqueMoods={uniqueMoods}
-                totalEntries={journals.length}
-                filteredCount={filteredJournals.length}
-            />
+                <JournalFilters
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    selectedMood={selectedMood}
+                    setSelectedMood={setSelectedMood}
+                    uniqueMoods={uniqueMoods}
+                    totalEntries={journals.length}
+                    filteredCount={filteredJournals.length}
+                />
 
-            {filteredJournals.length === 0 ? (
-                <JournalEmptyState hasEntries={journals.length > 0} />
-            ) : (
-                <JournalList entries={filteredJournals} />
-            )}
+                {filteredJournals.length === 0 ? (
+                    <JournalEmptyState hasEntries={journals.length > 0} />
+                ) : (
+                    <JournalList entries={filteredJournals} />
+                )}
+            </div>
         </div>
     );
 }

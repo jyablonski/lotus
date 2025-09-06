@@ -29,6 +29,8 @@ services:
     volumes:
       # Mount source code for live updates
       - ${PWD}/services/frontend:/app
+      - /app/node_modules
+      - /app/.next  # This forces Next.js to regenerate
     environment:
       - NEXTAUTH_URL=http://localhost:3000
       - BACKEND_URL=http://backend:8080

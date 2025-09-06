@@ -1,20 +1,25 @@
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { Edit3 } from 'lucide-react';
 
-export function CreateJournalHeader() {
+interface JournalHeaderProps {
+    totalEntries: number;
+}
+
+export function JournalHeader({ totalEntries }: JournalHeaderProps) {
     return (
-        <div className="mb-8">
-            <Link
-                href="/journal/home"
-                className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
-            >
-                <ArrowLeft size={20} className="mr-2" />
-                Back to Journal
+        <div className="flex justify-between items-center mb-8">
+            <div>
+                <h1 className="heading-1">My Journal</h1>
+                <p className="text-muted-dark mt-2">
+                    {totalEntries} {totalEntries === 1 ? 'entry' : 'entries'} total
+                </p>
+            </div>
+            <Link href="/journal/create">
+                <button className="btn-primary flex items-center space-x-2">
+                    <Edit3 size={16} />
+                    <span>New Entry</span>
+                </button>
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Create New Entry</h1>
-            <p className="text-gray-600 mt-2">
-                Share your thoughts, feelings, and experiences
-            </p>
         </div>
     );
 }

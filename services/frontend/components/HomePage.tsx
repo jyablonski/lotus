@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { LoggedInDashboard } from './dashboard/LoggedInDashboard';
-import { LandingPage } from './landing/LandingPage';
+import LandingPage from './landing/LandingPage'; // Changed from { LandingPage }
 
 export default function HomePage() {
     const { data: session, status } = useSession();
