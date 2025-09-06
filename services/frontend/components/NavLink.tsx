@@ -1,7 +1,4 @@
-'use client';
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
 
 interface NavLinkProps {
     href: string;
@@ -9,23 +6,17 @@ interface NavLinkProps {
     className?: string;
 }
 
-export function NavLink({ href, children, className = "" }: NavLinkProps) {
-    const pathname = usePathname();
-    const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
-
+export const NavLink = ({ href, children, className = "" }: NavLinkProps) => {
     return (
         <Link
             href={href}
             className={`
-        font-medium transition-colors
-        ${isActive
-                    ? 'text-blue-600 font-semibold'
-                    : 'text-gray-700 hover:text-gray-900'
-                }
-        ${className}
-      `}
+                px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200
+                text-gray-200 hover:text-white hover:bg-[#1e2532]
+                ${className}
+            `}
         >
             {children}
         </Link>
     );
-}
+};

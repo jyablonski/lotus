@@ -5,18 +5,50 @@ interface CardProps {
 }
 
 export const Card = ({ children, className = "", hover = true }: CardProps) => (
-    <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${hover ? 'hover:shadow-md transition-shadow duration-200' : ''} ${className}`}>
+    <div
+        className={`
+            bg-[#1a1f2e] 
+            rounded-lg 
+            border 
+            border-slate-600 
+            shadow-sm 
+            ${hover ? 'hover:shadow-lg hover:border-slate-500 transition-all duration-200' : ''} 
+            ${className}
+        `}
+        style={{
+            backgroundColor: 'var(--card)',
+            borderColor: 'var(--border)',
+            color: 'var(--card-foreground)'
+        }}
+    >
         {children}
     </div>
 );
 
-export const CardHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <div className={`px-6 py-4 border-b border-gray-100 ${className}`}>
+export const CardHeader = ({
+    children,
+    className = ""
+}: {
+    children: React.ReactNode;
+    className?: string
+}) => (
+    <div
+        className={`px-6 py-4 border-b ${className}`}
+        style={{
+            borderBottomColor: 'var(--border)'
+        }}
+    >
         {children}
     </div>
 );
 
-export const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+export const CardContent = ({
+    children,
+    className = ""
+}: {
+    children: React.ReactNode;
+    className?: string
+}) => (
     <div className={`px-6 py-4 ${className}`}>
         {children}
     </div>

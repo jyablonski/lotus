@@ -10,14 +10,34 @@ const Navbar = async () => {
   const session = await auth();
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm">
+    <header
+      className="border-b shadow-sm backdrop-blur-sm"
+      style={{
+        backgroundColor: 'var(--card)',
+        borderBottomColor: 'var(--border)'
+      }}
+    >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-            <Image src="/lotus.png" alt="Lotus Logo" width={40} height={40} />
-            <span className="text-xl font-bold text-gray-900">Lotus</span>
+          <Link
+            href="/"
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
+            <Image
+              src="/lotus.png"
+              alt="Lotus Logo"
+              width={40}
+              height={40}
+              className="drop-shadow-sm"
+            />
+            <span
+              className="text-xl font-bold"
+              style={{ color: 'var(--primary)' }}
+            >
+              Lotus
+            </span>
           </Link>
 
           {/* Navigation Links (logged in users) */}
@@ -41,7 +61,9 @@ const Navbar = async () => {
 
         {/* Mobile Navigation (logged in users) */}
         {session && session.user && (
-          <div className="md:hidden border-t border-gray-200 pt-4 pb-3">
+          <div
+            className="md:hidden border-t border-[#334155] pt-4 pb-3"
+          >
             <div className="flex space-x-6">
               <NavLink href="/">Home</NavLink>
               <NavLink href="/journal/home">Journal</NavLink>
