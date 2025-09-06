@@ -63,83 +63,88 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #1E1E1E; /* Set the default background to dark charcoal */
-  --foreground: oklch(0.984 0.003 247.858); /* Lighter default foreground */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  /* Updated for journal app with calming colors */
+  --background: #fbfbfb; /* Light surface for better readability */
+  --foreground: #1a1a1a; /* Dark text for contrast */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #5c7c5c; /* Sage green */
+  --primary-foreground: #ffffff;
+  --secondary: #f8f9fa; /* Light gray */
+  --secondary-foreground: #1a1a1a;
+  --muted: #f1f3f4;
+  --muted-foreground: #6b7280;
+  --accent: #d69e2e; /* Warm amber */
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: #e4e4e7;
+  --input: #f4f4f5;
+  --ring: #5c7c5c;
+  --chart-1: #5c7c5c;
+  --chart-2: #d69e2e;
+  --chart-3: #10b981;
+  --chart-4: #3b82f6;
+  --chart-5: #8b5cf6;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #5c7c5c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f8f9fa;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-ring: #5c7c5c;
+  --sidebar-border: #e4e4e7;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695); /* Keep the dark theme background */
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Dark mode with warm, comfortable colors */
+  --background: #18181b; /* Dark but not pure black */
+  --foreground: #fafafa;
+  --card: #27272a;
+  --card-foreground: #fafafa;
+  --popover: #27272a;
+  --popover-foreground: #fafafa;
+  --primary: #7a9a7a; /* Lighter sage for dark mode */
+  --primary-foreground: #18181b;
+  --secondary: #3f3f46;
+  --secondary-foreground: #fafafa;
+  --muted: #3f3f46;
+  --muted-foreground: #a1a1aa;
+  --accent: #f6ad55; /* Warmer accent for dark mode */
+  --accent-foreground: #18181b;
+  --destructive: #f87171;
+  --border: #475569;
+  --input: #1e2532;
+  --ring: #7a9a7a;
+  --chart-1: #7a9a7a;
+  --chart-2: #fbbf24;
+  --chart-3: #34d399;
+  --chart-4: #60a5fa;
+  --chart-5: #a78bfa;
+  --sidebar: #151922;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #7a9a7a;
+  --sidebar-primary-foreground: #0a0e13;
+  --sidebar-accent: #1e2532;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #475569;
+  --sidebar-ring: #7a9a7a;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground;
+    background-color: #0f1218;
+    color: #e2e8f0;
   }
 }
 
-/* Navbar styles */
+/* Updated navbar styles for journal theme */
 .navbar-header {
   @apply px-6 py-4 shadow-md font-sans;
-  background-color: #2C2C2C; /* Set a specific background color for the navbar */
-  color: var(--foreground); /* Use the default foreground color for text */
+  background-color: var(--card);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
 }
 
 .navbar-container {
@@ -151,7 +156,8 @@
 }
 
 .navbar-logo-text {
-  @apply text-xl font-semibold text-gray-700;
+  @apply text-xl font-semibold;
+  color: var(--primary);
 }
 
 .navbar-items {
@@ -159,13 +165,30 @@
 }
 
 .navbar-link {
-  @apply text-gray-600 hover:text-black transition;
+  @apply transition;
+  color: var(--muted-foreground);
+}
+
+.navbar-link:hover {
+  color: var(--foreground);
 }
 
 .navbar-link-button {
-  @apply px-4 py-2 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition;
+  @apply px-4 py-2 rounded-full transition;
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.navbar-link-button:hover {
+  opacity: 0.9;
 }
 
 .navbar-profile-button {
-  @apply flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition text-gray-700;
+  @apply flex items-center gap-2 px-3 py-1 rounded-full transition;
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.navbar-profile-button:hover {
+  background-color: var(--muted);
 }

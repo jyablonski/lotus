@@ -1,65 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from "next-auth/react";
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { JournalHeader } from '@/components/journal/JournalHeader';
+import { JournalFilters } from '@/components/journal/JournalFilters';
+import { JournalEmptyState } from '@/components/journal/JournalEmptyState';
+import { JournalList } from '@/components/journal/JournalList';
+import { useJournalData } from '@/hooks/useJournalData';
+import { useJournalFilters } from '@/hooks/useJournalFilters';
 
-import { JournalEntryCard } from '@/components/JournalEntryCard';
+export default function JournalHomePage() {
+    const { journals, loading } = useJournalData();
+    const {
+        searchTerm,
+        setSearchTerm,
+        selectedMood,
+        setSelectedMood,
+        filteredJournals,
+        uniqueMoods
+    } = useJournalFilters(journals);
 
-
-type JournalEntry = {
-    journalId: string;
-    userId: string;
-    journalText: string;
-    userMood: string;
-    createdAt: string; // ISO 8601 (RFC3339) timestamp
-};
-
-export default function JournalPage() {
-    const { data: session } = useSession();
-    const [journals, setJournals] = useState<JournalEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const userId = session?.user?.id;
-        if (!userId) return; // Wait for session to be ready or no userId
-
-
-        async function fetchJournals() {
-            console.log('Fetching journals for user:', userId);
-            try {
-                const res = await fetch(`http://localhost:8080/v1/journals?user_id=${userId}`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-                const data: { journals: JournalEntry[] } = await res.json();
-                const sorted = data.journals.sort(
-                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
-                setJournals(sorted);
-            } catch (e) {
-                console.error('Error fetching journals:', e);
-                setJournals([]);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchJournals();
-    }, [session]); // <- rerun when session updates
-
-    if (loading) return <p>Loading journals...</p>;
+    if (loading) return <LoadingSpinner />;
 
     return (
-        <div className="p-6 max-w-3xl mx-auto">
-            <h1 className="text-2xl font-semibold mb-6 text-center">My Journal Entries</h1>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <JournalHeader totalEntries={journals.length} />
 
-            {journals.length === 0 ? (
-                <p>No journal entries found.</p>
+            <JournalFilters
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                selectedMood={selectedMood}
+                setSelectedMood={setSelectedMood}
+                uniqueMoods={uniqueMoods}
+                totalEntries={journals.length}
+                filteredCount={filteredJournals.length}
+            />
+
+            {filteredJournals.length === 0 ? (
+                <JournalEmptyState hasEntries={journals.length > 0} />
             ) : (
-                <ul className="space-y-4">
-                    {journals.map((entry) => (
-                        <JournalEntryCard key={entry.journalId} entry={entry} />
-                    ))}
-                </ul>
+                <JournalList entries={filteredJournals} />
             )}
         </div>
     );
