@@ -10,13 +10,7 @@ const Navbar = async () => {
   const session = await auth();
 
   return (
-    <header
-      className="border-b shadow-sm backdrop-blur-sm"
-      style={{
-        backgroundColor: 'var(--card)',
-        borderBottomColor: 'var(--border)'
-      }}
-    >
+    <header className="border-b border-dark-600 shadow-lg backdrop-blur-sm bg-dark-800/90">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
@@ -32,10 +26,7 @@ const Navbar = async () => {
               height={40}
               className="drop-shadow-sm"
             />
-            <span
-              className="text-xl font-bold"
-              style={{ color: 'var(--primary)' }}
-            >
+            <span className="text-xl font-bold text-gradient">
               Lotus
             </span>
           </Link>
@@ -61,9 +52,7 @@ const Navbar = async () => {
 
         {/* Mobile Navigation (logged in users) */}
         {session && session.user && (
-          <div
-            className="md:hidden border-t border-[#334155] pt-4 pb-3"
-          >
+          <div className="md:hidden border-t border-dark-700 pt-4 pb-3">
             <div className="flex space-x-6">
               <NavLink href="/">Home</NavLink>
               <NavLink href="/journal/home">Journal</NavLink>

@@ -1,5 +1,12 @@
 import { render, screen } from '@testing-library/react'
-import { LandingPage } from '@/components/landing/LandingPage'
+import LandingPage from '@/components/landing/LandingPage' // Note: default import now
+
+// Mock Next.js Link component
+jest.mock('next/link', () => {
+    return ({ children, href }: { children: React.ReactNode; href: string }) => {
+        return <a href={href}>{children}</a>
+    }
+})
 
 describe('LandingPage', () => {
     test('renders main heading', () => {
@@ -12,16 +19,10 @@ describe('LandingPage', () => {
     test('renders feature cards', () => {
         render(<LandingPage />)
 
-        expect(screen.getByText((content, element) => {
-            return element?.textContent === 'Intelligent Analysis'
-        })).toBeInTheDocument()
-
-        expect(screen.getByText((content, element) => {
-            return element?.textContent === 'Secure & Private'
-        })).toBeInTheDocument()
-
-        expect(screen.getByText((content, element) => {
-            return element?.textContent === 'Seamless Experience'
-        })).toBeInTheDocument()
+        expect(screen.getByText('Simple Writing')).toBeInTheDocument()
+        expect(screen.getByText('Daily Tracking')).toBeInTheDocument()
+        expect(screen.getByText('Mood Insights')).toBeInTheDocument()
+        expect(screen.getByText('Private & Secure')).toBeInTheDocument()
     })
+
 })

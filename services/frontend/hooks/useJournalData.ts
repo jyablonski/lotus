@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-
-type JournalEntry = {
-    journalId: string;
-    userId: string;
-    journalText: string;
-    userMood: string;
-    createdAt: string;
-};
+import { fetchJournalsByUserId, type JournalEntry } from '@/lib/api/journals';
 
 export function useJournalData() {
     const { data: session } = useSession();
@@ -18,26 +11,20 @@ export function useJournalData() {
         const userId = session?.user?.id;
         if (!userId) return;
 
-        async function fetchJournals() {
+        async function loadJournals() {
             console.log('Fetching journals for user:', userId);
             try {
-                const res = await fetch(`http://localhost:8080/v1/journals?user_id=${userId}`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-                const data: { journals: JournalEntry[] } = await res.json();
-                const sorted = data.journals.sort(
-                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
-                setJournals(sorted);
-            } catch (e) {
-                console.error('Error fetching journals:', e);
+                const sortedJournals = await fetchJournalsByUserId(userId);
+                setJournals(sortedJournals);
+            } catch (error) {
+                console.error('Error fetching journals:', error);
                 setJournals([]);
             } finally {
                 setLoading(false);
             }
         }
 
-        fetchJournals();
+        loadJournals();
     }, [session]);
 
     return { journals, loading };

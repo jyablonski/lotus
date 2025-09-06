@@ -10,7 +10,7 @@ import { useProfileData } from '@/hooks/useProfileData';
 interface ProfilePageClientProps {
     name: string;
     email: string;
-    image: string | null; // Add this line
+    image: string | null;
     signupDate: string;
 }
 
@@ -32,38 +32,40 @@ export function ProfilePageClient({ name, email, image, signupDate }: ProfilePag
     if (loading) return <LoadingSpinner />;
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="page-container">
+            <div className="content-container space-y-8">
 
-            {/* Profile Header */}
-            <ProfileHeader
-                name={name}
-                email={email}
-                image={image} // Pass image to header
-                signupDate={signupDate}
-                firstEntryDate={firstEntryDate}
-            />
-
-            {/* Rest of your component remains the same */}
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Journal Statistics</h2>
-                <ProfileStats
-                    totalEntries={totalEntries}
-                    thisMonth={thisMonth}
-                    thisWeek={thisWeek}
-                    currentStreak={currentStreak}
-                    longestStreak={longestStreak}
-                    totalWords={totalWords}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <ProfileInsights
-                    averageMood={averageMood}
-                    mostActiveDay={mostActiveDay}
-                    favoriteModCategory={favoriteModCategory}
+                {/* Profile Header */}
+                <ProfileHeader
+                    name={name}
+                    email={email}
+                    image={image}
+                    signupDate={signupDate}
+                    firstEntryDate={firstEntryDate}
                 />
 
-                <ProfileActions />
+                {/* Statistics Section */}
+                <div>
+                    <h2 className="heading-2 mb-6">Your Journal Statistics</h2>
+                    <ProfileStats
+                        totalEntries={totalEntries}
+                        thisMonth={thisMonth}
+                        thisWeek={thisWeek}
+                        currentStreak={currentStreak}
+                        longestStreak={longestStreak}
+                        totalWords={totalWords}
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <ProfileInsights
+                        averageMood={averageMood}
+                        mostActiveDay={mostActiveDay}
+                        favoriteModCategory={favoriteModCategory}
+                    />
+
+                    <ProfileActions />
+                </div>
             </div>
         </div>
     );

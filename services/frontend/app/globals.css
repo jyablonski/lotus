@@ -1,194 +1,301 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+/* Tailwind v4 Custom Theme Configuration */
+@theme {
+  --color-lotus-50: #faf7ff;
+  --color-lotus-100: #f3edff;
+  --color-lotus-200: #e9dbff;
+  --color-lotus-300: #d6bbff;
+  --color-lotus-400: #bc8eff;
+  --color-lotus-500: #a855f7;
+  --color-lotus-600: #9333ea;
+  --color-lotus-700: #7c2d12;
+  --color-lotus-800: #581c87;
+  --color-lotus-900: #4c1d95;
+  --color-lotus-950: #2e1065;
+  
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Dark theme colors */
+  --color-dark-50: #f8fafc;
+  --color-dark-100: #f1f5f9;
+  --color-dark-200: #e2e8f0;
+  --color-dark-300: #cbd5e1;
+  --color-dark-400: #94a3b8;
+  --color-dark-500: #64748b;
+  --color-dark-600: #475569;
+  --color-dark-700: #334155;
+  --color-dark-800: #1e293b;
+  --color-dark-900: #0f172a;
+  --color-dark-950: #020617;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@layer utilities {
-  .heading {
-    @apply uppercase bg-black px-6 py-3 font-extrabold text-white sm:text-[54px] sm:leading-[64px] text-[36px] text-center;
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Component layer for reusable classes */
+@layer components {
+  /* Button variants - Dark theme */
+  .btn-primary {
+    @apply text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    background: linear-gradient(135deg, #a855f7 0%, #f43f5e 100%);
+    box-shadow: 0 10px 25px -3px rgba(168, 85, 247, 0.3), 0 4px 6px -2px rgba(168, 85, 247, 0.1);
   }
-
-  /* navbar */
-  .avatar {
-    @apply p-0 focus-visible:ring-0 bg-none rounded-full drop-shadow-md;
+  
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.4), 0 10px 10px -5px rgba(168, 85, 247, 0.2);
   }
-
-  .dropdown-menu {
-    @apply w-56 border-[5px] border-black bg-white p-5 rounded-2xl;
+  
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    border: 2px solid theme(colors.lotus.400);
+    color: theme(colors.lotus.400);
+    background: rgba(168, 85, 247, 0.1);
   }
-
-  .login {
-    @apply border-[5px] py-4 border-black bg-white text-black relative font-extrabold font-medium hover:shadow-none transition-all duration-500;
+  
+  .btn-secondary:hover {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: theme(colors.lotus.300);
+    color: theme(colors.lotus.300);
   }
-}
-
-:root {
-  --radius: 0.625rem;
-  /* Updated for journal app with calming colors */
-  --background: #fbfbfb; /* Light surface for better readability */
-  --foreground: #1a1a1a; /* Dark text for contrast */
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #5c7c5c; /* Sage green */
-  --primary-foreground: #ffffff;
-  --secondary: #f8f9fa; /* Light gray */
-  --secondary-foreground: #1a1a1a;
-  --muted: #f1f3f4;
-  --muted-foreground: #6b7280;
-  --accent: #d69e2e; /* Warm amber */
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --border: #e4e4e7;
-  --input: #f4f4f5;
-  --ring: #5c7c5c;
-  --chart-1: #5c7c5c;
-  --chart-2: #d69e2e;
-  --chart-3: #10b981;
-  --chart-4: #3b82f6;
-  --chart-5: #8b5cf6;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #5c7c5c;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f8f9fa;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-ring: #5c7c5c;
-  --sidebar-border: #e4e4e7;
-}
-
-.dark {
-  /* Dark mode with warm, comfortable colors */
-  --background: #18181b; /* Dark but not pure black */
-  --foreground: #fafafa;
-  --card: #27272a;
-  --card-foreground: #fafafa;
-  --popover: #27272a;
-  --popover-foreground: #fafafa;
-  --primary: #7a9a7a; /* Lighter sage for dark mode */
-  --primary-foreground: #18181b;
-  --secondary: #3f3f46;
-  --secondary-foreground: #fafafa;
-  --muted: #3f3f46;
-  --muted-foreground: #a1a1aa;
-  --accent: #f6ad55; /* Warmer accent for dark mode */
-  --accent-foreground: #18181b;
-  --destructive: #f87171;
-  --border: #475569;
-  --input: #1e2532;
-  --ring: #7a9a7a;
-  --chart-1: #7a9a7a;
-  --chart-2: #fbbf24;
-  --chart-3: #34d399;
-  --chart-4: #60a5fa;
-  --chart-5: #a78bfa;
-  --sidebar: #151922;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #7a9a7a;
-  --sidebar-primary-foreground: #0a0e13;
-  --sidebar-accent: #1e2532;
-  --sidebar-accent-foreground: #f1f5f9;
-  --sidebar-border: #475569;
-  --sidebar-ring: #7a9a7a;
-}
-
-@layer base {
-  body {
-    background-color: #0f1218;
-    color: #e2e8f0;
+  
+  .btn-ghost {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    color: theme(colors.lotus.400);
   }
-}
-
-/* Updated navbar styles for journal theme */
-.navbar-header {
-  @apply px-6 py-4 shadow-md font-sans;
-  background-color: var(--card);
-  color: var(--foreground);
-  border-bottom: 1px solid var(--border);
-}
-
-.navbar-container {
-  @apply flex justify-between items-center max-w-6xl mx-auto;
-}
-
-.navbar-logo {
-  @apply flex items-center gap-2;
-}
-
-.navbar-logo-text {
-  @apply text-xl font-semibold;
-  color: var(--primary);
-}
-
-.navbar-items {
-  @apply flex items-center gap-6;
-}
-
-.navbar-link {
-  @apply transition;
-  color: var(--muted-foreground);
-}
-
-.navbar-link:hover {
-  color: var(--foreground);
-}
-
-.navbar-link-button {
-  @apply px-4 py-2 rounded-full transition;
-  background-color: var(--accent);
-  color: var(--accent-foreground);
-}
-
-.navbar-link-button:hover {
-  opacity: 0.9;
-}
-
-.navbar-profile-button {
-  @apply flex items-center gap-2 px-3 py-1 rounded-full transition;
-  background-color: var(--secondary);
-  color: var(--secondary-foreground);
-}
-
-.navbar-profile-button:hover {
-  background-color: var(--muted);
+  
+  .btn-ghost:hover {
+    background: rgba(168, 85, 247, 0.1);
+    color: theme(colors.lotus.300);
+  }
+  
+  /* Card variants - Dark theme */
+  .card {
+    @apply rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    backdrop-filter: blur(10px);
+  }
+  
+  .card-hover {
+    @apply rounded-2xl shadow-lg transition-all duration-300;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    backdrop-filter: blur(10px);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(168, 85, 247, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  
+  .card-lotus {
+    @apply rounded-2xl transition-all duration-300;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 25px -3px rgba(168, 85, 247, 0.2), 0 4px 6px -2px rgba(168, 85, 247, 0.1);
+  }
+  
+  .card-lotus:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.3), 0 10px 10px -5px rgba(168, 85, 247, 0.2);
+  }
+  
+  /* Input styles - Dark theme */
+  .input-primary {
+    @apply w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.100);
+  }
+  
+  .input-primary:focus {
+    border-color: theme(colors.lotus.500);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    background: rgba(30, 41, 59, 0.9);
+  }
+  
+  /* Text styles - Dark theme */
+  .text-gradient {
+    background: linear-gradient(135deg, theme(colors.lotus.400) 0%, theme(colors.rose.400) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  
+  .heading-1 {
+    @apply text-4xl md:text-5xl font-bold leading-tight;
+    color: theme(colors.dark.50);
+  }
+  
+  .heading-2 {
+    @apply text-3xl md:text-4xl font-bold leading-tight;
+    color: theme(colors.dark.50);
+  }
+  
+  .heading-3 {
+    @apply text-2xl md:text-3xl font-bold leading-tight;
+    color: theme(colors.dark.50);
+  }
+  
+  /* Dark theme text colors */
+  .text-muted-dark {
+    color: theme(colors.dark.400);
+  }
+  
+  .text-secondary-dark {
+    color: theme(colors.dark.300);
+  }
+  
+  .text-primary-dark {
+    color: theme(colors.dark.100);
+  }
+  
+  /* Background patterns - Dark theme */
+  .bg-lotus-gradient {
+    background: linear-gradient(135deg, theme(colors.lotus.500) 0%, theme(colors.rose.500) 100%);
+  }
+  
+  .bg-lotus-light {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(244, 63, 94, 0.2) 100%);
+  }
+  
+  .bg-lotus-subtle {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(244, 63, 94, 0.1) 100%);
+  }
+  
+  /* Page layouts - Dark theme */
+  .page-container {
+    @apply min-h-screen;
+    background: radial-gradient(ellipse at top, theme(colors.dark.800) 0%, theme(colors.dark.900) 100%);
+  }
+  
+  .content-container {
+    @apply max-w-6xl mx-auto px-4 py-8;
+  }
+  
+  /* Form elements - Dark theme */
+  .form-group {
+    @apply mb-6;
+  }
+  
+  .label {
+    @apply block text-sm font-medium mb-2;
+    color: theme(colors.dark.200);
+  }
+  
+  .textarea-primary {
+    @apply w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 resize-none;
+    min-height: 120px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.100);
+  }
+  
+  .textarea-primary:focus {
+    border-color: theme(colors.lotus.500);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    background: rgba(30, 41, 59, 0.9);
+  }
+  
+  /* Status badges - Dark theme */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .badge-success {
+    background: rgba(34, 197, 94, 0.2);
+    color: rgb(74, 222, 128);
+  }
+  
+  .badge-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: rgb(251, 191, 36);
+  }
+  
+  .badge-error {
+    background: rgba(239, 68, 68, 0.2);
+    color: rgb(248, 113, 113);
+  }
+  
+  .badge-lotus {
+    background: rgba(168, 85, 247, 0.2);
+    color: theme(colors.lotus.300);
+  }
+  
+  /* Navigation styles - Dark theme */
+  .nav-link {
+    @apply px-4 py-2 rounded-lg transition-all duration-200;
+    color: theme(colors.dark.300);
+  }
+  
+  .nav-link:hover {
+    background: rgba(168, 85, 247, 0.1);
+    color: theme(colors.dark.100);
+  }
+  
+  .nav-link-active {
+    @apply px-4 py-2 rounded-lg transition-all duration-200;
+    background: theme(colors.lotus.500);
+    color: white;
+  }
+  
+  /* Loading states - Dark theme */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2;
+    border-color: rgba(100, 116, 139, 0.3);
+    border-top-color: theme(colors.lotus.500);
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Journal entry styles - Softer dark theme */
+  .journal-entry {
+    @apply rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200;
+    background: rgba(45, 36, 54, 0.5);
+    border: 1px solid rgba(124, 111, 138, 0.2);
+  }
+  
+  .journal-entry:hover {
+    background: rgba(45, 36, 54, 0.7);
+    border-color: rgba(168, 85, 247, 0.3);
+  }
+  
+  /* Mood indicators */
+  .mood-indicator {
+    @apply w-3 h-3 rounded-full;
+  }
+  
+  .mood-positive {
+    @apply bg-green-400;
+  }
+  
+  .mood-neutral {
+    @apply bg-yellow-400;
+  }
+  
+  .mood-negative {
+    @apply bg-red-400;
+  }
 }
