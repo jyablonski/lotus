@@ -32,7 +32,11 @@ jobs:
      
       - name: Run Backend Tests
         working-directory: services/backend
-        run: go test ./... -v
+        run: |
+          go test ./... -v -coverprofile=coverage.out -covermode=atomic
+          go tool cover -func=coverage.out | sort -k3 -nr
+          echo "=== Coverage Summary ==="
+          go tool cover -func=coverage.out | tail -n 1
 
       - name: Stop Postgres
         run: make stop-postgres
