@@ -5,3 +5,6 @@ RETURNING *;
 
 -- name: GetJournalsByUserId :many
 SELECT * FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC;
+
+-- name: GetJournalById :one
+SELECT * FROM source.journals WHERE id = $1;

@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS journals
     modified_at timestamp default now() not null
 );
 
+CREATE INDEX idx_journals_user_id_created_at ON source.journals(user_id, created_at DESC);
+
 INSERT INTO journals (user_id, journal_text, mood_score, created_at, modified_at)
 VALUES 
   ('36ca3d17-0071-4526-a124-342fb025723e', 

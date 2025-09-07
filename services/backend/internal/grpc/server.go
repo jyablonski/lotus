@@ -44,7 +44,7 @@ func LoggingInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
-func StartGRPCServer(queries *db.Queries, logger *slog.Logger) error {
+func StartGRPCServer(queries *db.Queries, logger *slog.Logger, analyzerBaseURL string) error {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func StartGRPCServer(queries *db.Queries, logger *slog.Logger) error {
 
 	// Register gRPC server with the logging interceptor
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(LoggingInterceptor(logger)), // <- Add this line
+		grpc.UnaryInterceptor(LoggingInterceptor(logger)),
 	)
 
 	// Register services with logger injected
@@ -60,11 +60,8 @@ func StartGRPCServer(queries *db.Queries, logger *slog.Logger) error {
 		DB:     queries,
 		Logger: logger,
 	})
-	pb_journal.RegisterJournalServiceServer(grpcServer, &JournalServer{
-		DB:     queries,
-		Logger: logger,
-	})
+	pb_journal.RegisterJournalServiceServer(grpcServer, JournalService(queries, logger, analyzerBaseURL))
 
-	logger.Info("Starting gRPC server on :50051")
+	logger.Info("Starting gRPC server", "address", ":50051", "analyzer_url", analyzerBaseURL)
 	return grpcServer.Serve(lis)
 }

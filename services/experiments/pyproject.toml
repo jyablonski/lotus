@@ -9,6 +9,8 @@ dependencies = [
     "pandas>=2.3.2",
     "psycopg2-binary>=2.9.10",
     "scikit-learn>=1.7.1",
+    "torch>=2.8.0",
+    "transformers>=4.56.1",
 ]
 
 [dependency-groups]

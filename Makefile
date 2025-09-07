@@ -1,6 +1,6 @@
 .PHONY: up
 up:
-	@docker compose -f docker/docker-compose-local.yaml up
+	@docker compose -f docker/docker-compose-local.yaml up -d
 
 .PHONY: down
 down:
