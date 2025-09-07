@@ -56,6 +56,15 @@ func main() {
 		logger.Error("DB_CONN environment variable is required")
 	}
 
+	// Get analyzer service URL from environment
+	analyzerBaseURL := os.Getenv("ANALYZER_BASE_URL")
+	if analyzerBaseURL == "" {
+		analyzerBaseURL = "http://localhost:8083" // default fallback
+		logger.Info("Using default analyzer URL", "url", analyzerBaseURL)
+	} else {
+		logger.Info("Using analyzer URL from environment", "url", analyzerBaseURL)
+	}
+
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err)
@@ -69,9 +78,9 @@ func main() {
 		httpSrv.StartHTTPServer(queries, logger)
 	}()
 
-	// Start gRPC server on :50052
+	// Start gRPC server on :50052 with analyzer URL
 	go func() {
-		if err := grpcSrv.StartGRPCServer(queries, logger); err != nil {
+		if err := grpcSrv.StartGRPCServer(queries, logger, analyzerBaseURL); err != nil {
 			logger.Error("Failed to start gRPC server", "error", err)
 		}
 	}()

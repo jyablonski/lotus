@@ -1,4 +1,21 @@
 repos:
+  # go hooks for sqlc and protobuf
+  - repo: local
+    hooks:
+      - id: sqlc-generate
+        name: sqlc generate
+        entry: bash -c 'cd services/backend && sqlc generate'
+        language: system
+        files: services/backend/internal/sql/.*\.sql$
+        pass_filenames: false
+
+      - id: buf-generate
+        name: buf generate
+        entry: bash -c 'cd services/backend && buf generate'
+        language: system
+        files: services/backend/proto/.*\.proto$
+        pass_filenames: false
+
   # General purpose linters and formatting
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

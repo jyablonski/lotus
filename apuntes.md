@@ -186,10 +186,15 @@ curl -X POST http://localhost:8083/v1/journals/4/topics \
 -v
 
 
-curl -X POST http://localhost:8083/v1/journals/1/sentiment/analyze \
+curl POST http://localhost:8083/v1/journals/1/sentiment/analyze \
 -H "Content-Type: application/json" \
+-d '{}' \
 -v
 
+curl -X PUT http://localhost:8083/v1/journals/1/sentiment \
+-H "Content-Type: application/json" \
+-d '{}' \
+-v
 
   /journals/{journal_id}/analyze
 ```

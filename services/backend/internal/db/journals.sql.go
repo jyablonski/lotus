@@ -38,6 +38,24 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (S
 	return i, err
 }
 
+const getJournalById = `-- name: GetJournalById :one
+SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals WHERE id = $1
+`
+
+func (q *Queries) GetJournalById(ctx context.Context, id int32) (SourceJournal, error) {
+	row := q.db.QueryRowContext(ctx, getJournalById, id)
+	var i SourceJournal
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.JournalText,
+		&i.MoodScore,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
 const getJournalsByUserId = `-- name: GetJournalsByUserId :many
 SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC
 `

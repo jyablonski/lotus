@@ -20,6 +20,8 @@ service JournalService {
       get: "/v1/journals"
     };
   }
+
+  rpc TriggerJournalAnalysis(TriggerAnalysisRequest) returns (TriggerAnalysisResponse);
 }
 
 message CreateJournalRequest {
@@ -46,4 +48,13 @@ message JournalEntry {
 
 message GetJournalsResponse {
   repeated JournalEntry journals = 1;
+}
+
+message TriggerAnalysisRequest {
+    string journal_id = 1;
+}
+
+message TriggerAnalysisResponse {
+    bool success = 1;
+    string message = 2;
 }

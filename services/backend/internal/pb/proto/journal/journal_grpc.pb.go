@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	JournalService_CreateJournal_FullMethodName = "/internal.JournalService/CreateJournal"
-	JournalService_GetJournals_FullMethodName   = "/internal.JournalService/GetJournals"
+	JournalService_CreateJournal_FullMethodName          = "/internal.JournalService/CreateJournal"
+	JournalService_GetJournals_FullMethodName            = "/internal.JournalService/GetJournals"
+	JournalService_TriggerJournalAnalysis_FullMethodName = "/internal.JournalService/TriggerJournalAnalysis"
 )
 
 // JournalServiceClient is the client API for JournalService service.
@@ -30,6 +31,7 @@ type JournalServiceClient interface {
 	CreateJournal(ctx context.Context, in *CreateJournalRequest, opts ...grpc.CallOption) (*CreateJournalResponse, error)
 	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
 	GetJournals(ctx context.Context, in *GetJournalsRequest, opts ...grpc.CallOption) (*GetJournalsResponse, error)
+	TriggerJournalAnalysis(ctx context.Context, in *TriggerAnalysisRequest, opts ...grpc.CallOption) (*TriggerAnalysisResponse, error)
 }
 
 type journalServiceClient struct {
@@ -60,6 +62,16 @@ func (c *journalServiceClient) GetJournals(ctx context.Context, in *GetJournalsR
 	return out, nil
 }
 
+func (c *journalServiceClient) TriggerJournalAnalysis(ctx context.Context, in *TriggerAnalysisRequest, opts ...grpc.CallOption) (*TriggerAnalysisResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TriggerAnalysisResponse)
+	err := c.cc.Invoke(ctx, JournalService_TriggerJournalAnalysis_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // JournalServiceServer is the server API for JournalService service.
 // All implementations should embed UnimplementedJournalServiceServer
 // for forward compatibility.
@@ -67,6 +79,7 @@ type JournalServiceServer interface {
 	CreateJournal(context.Context, *CreateJournalRequest) (*CreateJournalResponse, error)
 	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
 	GetJournals(context.Context, *GetJournalsRequest) (*GetJournalsResponse, error)
+	TriggerJournalAnalysis(context.Context, *TriggerAnalysisRequest) (*TriggerAnalysisResponse, error)
 }
 
 // UnimplementedJournalServiceServer should be embedded to have
@@ -81,6 +94,9 @@ func (UnimplementedJournalServiceServer) CreateJournal(context.Context, *CreateJ
 }
 func (UnimplementedJournalServiceServer) GetJournals(context.Context, *GetJournalsRequest) (*GetJournalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetJournals not implemented")
+}
+func (UnimplementedJournalServiceServer) TriggerJournalAnalysis(context.Context, *TriggerAnalysisRequest) (*TriggerAnalysisResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerJournalAnalysis not implemented")
 }
 func (UnimplementedJournalServiceServer) testEmbeddedByValue() {}
 
@@ -138,6 +154,24 @@ func _JournalService_GetJournals_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _JournalService_TriggerJournalAnalysis_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerAnalysisRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JournalServiceServer).TriggerJournalAnalysis(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: JournalService_TriggerJournalAnalysis_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JournalServiceServer).TriggerJournalAnalysis(ctx, req.(*TriggerAnalysisRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // JournalService_ServiceDesc is the grpc.ServiceDesc for JournalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var JournalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetJournals",
 			Handler:    _JournalService_GetJournals_Handler,
+		},
+		{
+			MethodName: "TriggerJournalAnalysis",
+			Handler:    _JournalService_TriggerJournalAnalysis_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

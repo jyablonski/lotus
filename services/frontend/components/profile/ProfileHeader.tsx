@@ -1,4 +1,3 @@
-// components/profile/ProfileHeader.tsx
 import Image from 'next/image';
 import { User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -6,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 interface ProfileHeaderProps {
     name: string;
     email: string;
-    image: string | null; // Add this line
+    image: string | null;
     signupDate: string;
     firstEntryDate: Date | null;
 }

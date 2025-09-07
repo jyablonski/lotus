@@ -10,7 +10,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # <-- Need this for data persistence
+      - postgres_data:/var/lib/postgresql/data
       - ${PWD}/docker/db:/docker-entrypoint-initdb.d
 
   frontend:
@@ -58,6 +58,7 @@ services:
       - postgres
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - ANALYZER_BASE_URL=http://analyzer:8083
     working_dir: /app  # Ensure air runs in the correct dir
     command: ["air", "-c", ".air.toml"]
 
@@ -74,7 +75,7 @@ services:
       - ${PWD}/services/analyzer/config.yaml:/home/appuser/config.yaml
     environment:
       - ENV_TYPE=docker_dev
-      - MLFLOW_CONN_URI=http://mlflow:5000  # Add this line - use container name
+      - MLFLOW_CONN_URI=http://mlflow:5000
       - ENABLE_V1_ROUTER=true
     depends_on:
       - postgres
@@ -89,7 +90,7 @@ services:
       - "5000:5000"
     environment:
       - MLFLOW_BACKEND_STORE_URI=postgresql://postgres:postgres@postgres:5432/postgres
-      - MLFLOW_ARTIFACTS_DESTINATION=/mlflow/artifacts  # Use environment variable
+      - MLFLOW_ARTIFACTS_DESTINATION=/mlflow/artifacts
     volumes:
       - ${PWD}/docker/mlflow/artifacts:/mlflow/artifacts
     depends_on:

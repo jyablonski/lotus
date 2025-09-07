@@ -36,8 +36,8 @@ def real_sentiment_client():
 
         client = SentimentClient()
 
-        client.sentiment_pipeline = test_pipeline  # Keep this
-        client.model = test_pipeline  # ADD THIS - probably what is_ready() checks
+        client.sentiment_pipeline = test_pipeline
+        client.model = test_pipeline
         client.model_version = "test_v1.0.0"
         client._is_loaded = True
 

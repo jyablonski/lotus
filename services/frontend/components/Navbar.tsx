@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import React from "react";
 import { auth } from "@/auth";
 import { Login } from "@/components/auth/LoginButton";
@@ -19,13 +18,6 @@ const Navbar = async () => {
             href="/"
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
-            <Image
-              src="/lotus.png"
-              alt="Lotus Logo"
-              width={40}
-              height={40}
-              className="drop-shadow-sm"
-            />
             <span className="text-xl font-bold text-gradient">
               Lotus
             </span>
