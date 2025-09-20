@@ -1,19 +1,19 @@
 import logging
-import os
 import pickle
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from src.clients.ml_sentiment_client import SentimentClient
+from src.clients.ml_topic_client import TopicClient
 from src.dependencies import get_db
 from src.main import app
-from src.ml.sentiment_client import SentimentClient
-from src.ml.topic_client import TopicClient
 from src.models.journal_sentiments import JournalSentiments
 from src.models.journals import Journals
+from src.schemas.openai_topics import TopicAnalysis
 
 logger = logging.getLogger(__name__)
 
@@ -183,3 +183,36 @@ def mock_sentiment_record():
     record.created_at = datetime(2024, 1, 15, 14, 30, 0)
     record.all_scores = {"positive": 0.8234, "negative": 0.1234, "neutral": 0.0532}
     return record
+
+
+@pytest.fixture
+def mock_openai_topic_client():
+    """Mock OpenAI topic client with realistic responses."""
+
+    async def mock_analyze_topics(request):
+        # Return realistic mock data based on request
+        if "work" in request.text.lower() or "meeting" in request.text.lower():
+            return TopicAnalysis(
+                topics=["work", "stress", "meetings", "productivity", "deadlines"][
+                    : request.max_topics
+                ],
+                confidence_scores=[0.95, 0.88, 0.82, 0.75, 0.70][: request.max_topics],
+            )
+        if "date" in request.text.lower() or "girlfriend" in request.text.lower():
+            return TopicAnalysis(
+                topics=["love", "relationship", "happiness", "date", "romance"][
+                    : request.max_topics
+                ],
+                confidence_scores=[0.92, 0.89, 0.85, 0.80, 0.75][: request.max_topics],
+            )
+        # Generic response
+        return TopicAnalysis(
+            topics=["general", "life", "thoughts", "feelings", "day"][
+                : request.max_topics
+            ],
+            confidence_scores=[0.70, 0.65, 0.60, 0.55, 0.50][: request.max_topics],
+        )
+
+    mock_client = AsyncMock()
+    mock_client.analyze_topics = mock_analyze_topics
+    return mock_client

@@ -33,8 +33,8 @@ jobs:
           prune-cache: false
           working-directory: services/analyzer
 
-      - name: Start Postgres
-        run: make start-postgres
+      - name: Start Services
+        run: make ci-analyzer-up
      
       - name: Run Analyzer Tests
         working-directory: services/analyzer
@@ -42,5 +42,5 @@ jobs:
           ENV_TYPE: dev
         run: uv run pytest
 
-      - name: Stop Postgres
-        run: make stop-postgres
+      - name: Stop Services
+        run: make ci-analyzer-down

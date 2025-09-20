@@ -2,6 +2,7 @@ import logging
 from collections.abc import Generator
 from functools import lru_cache
 
+import mlflow
 from sqlalchemy.orm import Session
 
 from src.clients.ml_sentiment_client import SentimentClient
@@ -91,4 +92,5 @@ def get_openai_topic_client() -> OpenAITopicClient:
     ):
     """
     logger.info("Creating OpenAI TopicClient instance")
+    mlflow.openai.autolog()
     return OpenAITopicClient()
