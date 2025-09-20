@@ -52,13 +52,13 @@ def sql_connection(
         f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}",
         connect_args={"options": f"-csearch_path={schema}"},
         # defining schema to connect to
-        echo=True,
+        echo=False,
     )
     logging.info(f"SQL Engine created for {schema}")
     return engine
 
 
-env = load_yaml_with_env("config.yaml")[os.environ.get("ENV_TYPE")]
+env = load_yaml_with_env("config.yaml")[os.environ.get("ENV_TYPE", "dev")]
 
 engine = sql_connection(
     user=env["user"],

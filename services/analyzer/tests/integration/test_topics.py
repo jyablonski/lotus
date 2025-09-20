@@ -1,4 +1,3 @@
-import pytest
 from src.dependencies import get_topic_client
 from src.main import app
 

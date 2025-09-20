@@ -3,10 +3,10 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from src.clients.ml_topic_client import TopicClient
 from src.crud.journal_topics import create_or_update_topics, get_topics_by_journal_id
 from src.crud.journals import get_journal_by_id
 from src.dependencies import get_db, get_topic_client
-from src.ml.topic_client import TopicClient
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

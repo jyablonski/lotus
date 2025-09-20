@@ -27,7 +27,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Mount source code for live updates
       - ${PWD}/services/frontend:/app
       - /app/node_modules
       - /app/.next  # This forces Next.js to regenerate
@@ -59,7 +58,7 @@ services:
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
       - ANALYZER_BASE_URL=http://analyzer:8083
-    working_dir: /app  # Ensure air runs in the correct dir
+    working_dir: /app
     command: ["air", "-c", ".air.toml"]
 
   analyzer:
@@ -77,6 +76,8 @@ services:
       - ENV_TYPE=docker_dev
       - MLFLOW_CONN_URI=http://mlflow:5000
       - ENABLE_V1_ROUTER=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GIT_PYTHON_REFRESH=quiet
     depends_on:
       - postgres
       - mlflow

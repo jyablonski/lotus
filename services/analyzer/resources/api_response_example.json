@@ -1,0 +1,48 @@
+{
+    "id": "chatcmpl-CHuTixvni6nI0JMrI1HBtwbaya2FZ",
+    "choices": [
+        {
+            "finish_reason": "tool_calls",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+                "content": null,
+                "refusal": null,
+                "role": "assistant",
+                "annotations": [],
+                "audio": null,
+                "function_call": null,
+                "tool_calls": [
+                    {
+                        "id": "call_fE1tnsMMI3fwcasVNlftU1xw",
+                        "function": {
+                            "arguments": "{\"topics\":[\"happiness\",\"date\",\"girlfriend\",\"love\",\"relationship\",\"outing\",\"mood\"],\"confidence_scores\":[0.95,0.92,0.90,0.88,0.85,0.80,0.75]}",
+                            "name": "DynamicTopicAnalysis"
+                        },
+                        "type": "function"
+                    }
+                ]
+            }
+        }
+    ],
+    "created": 1758384714,
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "service_tier": "default",
+    "system_fingerprint": null,
+    "usage": {
+        "completion_tokens": 1287,
+        "prompt_tokens": 257,
+        "total_tokens": 1544,
+        "completion_tokens_details": {
+            "accepted_prediction_tokens": 0,
+            "audio_tokens": 0,
+            "reasoning_tokens": 1216,
+            "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0
+        }
+    }
+}
