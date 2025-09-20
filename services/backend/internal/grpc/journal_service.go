@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -154,6 +155,8 @@ func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int,
 	// Determine HTTP method based on analysis type
 	var method string
 	if analysisType == "sentiment" {
+		// adjust URL for sentiment endpoint
+		url = strings.TrimSuffix(url, "/openai/sentiment") + "/sentiment"
 		method = "PUT" // sentiment uses PUT
 	} else if analysisType == "topics" {
 		method = "POST" // topics uses POST
