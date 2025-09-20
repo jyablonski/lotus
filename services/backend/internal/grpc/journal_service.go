@@ -149,7 +149,7 @@ func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int,
 	}
 
 	// Build URL
-	url := fmt.Sprintf("%s/v1/journals/%d/%s", s.AnalyzerBaseURL, journalID, analysisType)
+	url := fmt.Sprintf("%s/v1/journals/%d/openai/%s", s.AnalyzerBaseURL, journalID, analysisType)
 
 	// Determine HTTP method based on analysis type
 	var method string
