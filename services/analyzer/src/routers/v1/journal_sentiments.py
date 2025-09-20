@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from src.clients.ml_sentiment_client import SentimentClient
 from src.crud.journal_sentiments import (
     create_or_update_sentiment,
     delete_sentiment,
@@ -13,7 +14,6 @@ from src.crud.journal_sentiments import (
     get_sentiments_by_journal_ids,
 )
 from src.dependencies import get_db, get_sentiment_client
-from src.ml.sentiment_client import SentimentClient
 from src.models.journals import Journals
 from src.schemas.sentiments import (
     BulkSentimentAnalysisRequest,

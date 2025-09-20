@@ -4,9 +4,10 @@ from functools import lru_cache
 
 from sqlalchemy.orm import Session
 
+from src.clients.ml_sentiment_client import SentimentClient
+from src.clients.ml_topic_client import TopicClient
+from src.clients.openai_topic_client import OpenAITopicClient
 from src.database import SessionLocal
-from src.ml.sentiment_client import SentimentClient
-from src.ml.topic_client import TopicClient
 
 logger = logging.getLogger(__name__)
 
@@ -73,3 +74,21 @@ def get_sentiment_client() -> SentimentClient:
     """
     logger.info("Creating SentimentClient instance")
     return SentimentClient()
+
+
+@lru_cache
+def get_openai_topic_client() -> OpenAITopicClient:
+    """Dependency to get the singleton OpenAI TopicClient instance.
+
+    Formatting this way enables clean FastAPI dependency injection
+
+    Example:
+
+    @router.post("/journals/{journal_id}/topics")
+    def extract_topics(
+        journal_id: int,
+        topic_client: OpenAITopicClient = Depends(get_openai_topic_client),
+    ):
+    """
+    logger.info("Creating OpenAI TopicClient instance")
+    return OpenAITopicClient()

@@ -185,6 +185,11 @@ curl -X POST http://localhost:8083/v1/journals/4/topics \
 -H "Content-Type: application/json" \
 -v
 
+curl -X GET http://localhost:8083/v1/journals/19/topics \
+-H "Content-Type: application/json" \
+-v
+
+
 
 curl POST http://localhost:8083/v1/journals/1/sentiment/analyze \
 -H "Content-Type: application/json" \

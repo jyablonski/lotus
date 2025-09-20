@@ -6,8 +6,11 @@ readme = "README.md"
 requires-python = ">=3.13, <3.14"
 dependencies = [
     "fastapi[standard]>=0.116.1",
+    "instructor>=1.11.3",
     "mlflow>=3.3.2",
+    "openai>=1.108.1",
     "psycopg2-binary>=2.9.10",
+    "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.41",
 ]
 
