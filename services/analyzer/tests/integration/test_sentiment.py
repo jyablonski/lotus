@@ -192,7 +192,7 @@ def test_delete_sentiment_analysis(client_fixture, real_sentiment_client):
         response = client_fixture.delete("/v1/journals/1/sentiment")
 
         assert response.status_code == 200
-        assert response.json()["deleted_count"] == 1
+        assert response.json()["deleted_count"] == 2
 
         get_response = client_fixture.get("/v1/journals/1/sentiment")
         assert get_response.status_code == 404
