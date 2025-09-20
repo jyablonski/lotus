@@ -19,6 +19,7 @@ jobs:
         with:
           sparse-checkout: |
               services/analyzer/**
+              services/experiments/**
               docker/**
               Makefile
           sparse-checkout-cone-mode: false
