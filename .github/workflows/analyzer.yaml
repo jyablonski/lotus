@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'services/analyzer/**'
+      - 'services/experiments/**'
+      - 'docker/**'
 
 env:
   UV_VERSION: '0.8.13'
@@ -23,7 +25,20 @@ jobs:
               docker/**
               Makefile
           sparse-checkout-cone-mode: false
-          # needed to checkout only a single file
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: image=moby/buildkit:latest
+      - name: Build and cache MLFlow image
+        run: |
+          docker buildx build \
+            --cache-from=type=gha,scope=mlflow \
+            --cache-to=type=gha,mode=max,scope=mlflow \
+            --load \
+            --tag experiments:latest \
+            --file services/experiments/Dockerfile \
+            services/experiments
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -35,13 +50,15 @@ jobs:
           working-directory: services/analyzer
 
       - name: Start Services
-        run: make ci-analyzer-up
-     
-      - name: Run Analyzer Tests
+        run: make ci-analyzer-up-cached
+
+      - name: Run analyzer tests
         working-directory: services/analyzer
         env:
           ENV_TYPE: dev
+          MLFLOW_CONN_URI: http://localhost:5000
         run: uv run pytest
 
       - name: Stop Services
+        if: always()
         run: make ci-analyzer-down

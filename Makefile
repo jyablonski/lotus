@@ -23,6 +23,10 @@ stop-postgres:
 ci-analyzer-up:
 	@docker compose -f docker/docker-compose-local.yaml up -d postgres mlflow
 
+ci-analyzer-up-cached:
+	@echo "Starting services with pre-built cached images..."
+	@docker compose -f docker/docker-compose-local.yaml up -d postgres mlflow --no-build
+
 .PHONY: ci-analyzer-down
 ci-analyzer-down:
 	@docker compose -f docker/docker-compose-local.yaml down postgres mlflow
