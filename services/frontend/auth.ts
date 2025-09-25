@@ -1,4 +1,3 @@
-// auth.ts
 import NextAuth, { type User } from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { NextAuthConfig } from "next-auth";
@@ -46,11 +45,11 @@ async function fetchBackendUser(email: string) {
 
 export const authConfig: NextAuthConfig = {
   providers: [
-    GitHub({ clientId: process.env.GITHUB_ID, clientSecret: process.env.GITHUB_SECRET }),
+    GitHub({ clientId: process.env.AUTH_GITHUB_ID, clientSecret: process.env.AUTH_GITHUB_SECRET }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-      // Check if the user exists in your backend
+      // check if the user exists in the backend
       const existingUser = await fetchBackendUser(user.email!);
       console.log("Existing User:", existingUser); // Log the result
 
@@ -66,10 +65,10 @@ export const authConfig: NextAuthConfig = {
         }
 
         (user as User).backendId = newUserResult.userId;
-        (user as User).createdAt = newUserResult.createdAt; // Store createdAt
+        (user as User).createdAt = newUserResult.createdAt;
       } else {
         (user as User).backendId = existingUser.userId;
-        (user as User).createdAt = existingUser.createdAt; // Store createdAt
+        (user as User).createdAt = existingUser.createdAt;
       }
 
       return true;
@@ -79,7 +78,7 @@ export const authConfig: NextAuthConfig = {
         token.backendId = user.backendId;
       }
       if (user?.createdAt) {
-        token.createdAt = user.createdAt; // Optionally persist to JWT
+        token.createdAt = user.createdAt;
       }
       return token;
     },
@@ -88,9 +87,9 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.backendId as string;
       }
       if (token?.createdAt) {
-        session.user.createdAt = token.createdAt as string; // Retrieve from JWT
+        session.user.createdAt = token.createdAt as string;
       } else if (user?.createdAt) {
-        session.user.createdAt = (user as User).createdAt; // Fallback if not in JWT (shouldn't happen if persisted)
+        session.user.createdAt = (user as User).createdAt;
       }
       return session;
     },

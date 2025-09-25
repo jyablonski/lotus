@@ -33,9 +33,9 @@ services:
     environment:
       - NEXTAUTH_URL=http://localhost:3000
       - BACKEND_URL=http://backend:8080
-      - AUTH_SECRET=sWgDE0TuAX4YLONhxRtR1flbHF/AEVcV0rF6Y9m9FVY=
-      - AUTH_GITHUB_ID=Ov23liCd6cRRiBULnU6M
-      - AUTH_GITHUB_SECRET=0dea7cae21e4ffd13620842d9ee0dc44989dfae2
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_GITHUB_ID=${AUTH_GITHUB_ID}
+      - AUTH_GITHUB_SECRET=${AUTH_GITHUB_SECRET}
       - AUTH_TRUST_HOST=true
     depends_on:
       - backend
