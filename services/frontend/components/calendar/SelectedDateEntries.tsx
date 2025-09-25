@@ -62,7 +62,7 @@ export function SelectedDateEntries({ selectedDate, entries }: SelectedDateEntri
                         ) : isPastDate ? (
                             <div>
                                 <p className="text-gray-500 mb-2">No entries for this date</p>
-                                <p className="text-xs text-gray-400">Past entries cannot be added</p>
+                                <p className="text-xs text-gray-400">Past entries cannot be created</p>
                             </div>
                         ) : (
                             <div>

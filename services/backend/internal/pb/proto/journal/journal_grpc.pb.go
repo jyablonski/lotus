@@ -29,7 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type JournalServiceClient interface {
 	CreateJournal(ctx context.Context, in *CreateJournalRequest, opts ...grpc.CallOption) (*CreateJournalResponse, error)
-	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE&limit=10&offset=20
 	GetJournals(ctx context.Context, in *GetJournalsRequest, opts ...grpc.CallOption) (*GetJournalsResponse, error)
 	TriggerJournalAnalysis(ctx context.Context, in *TriggerAnalysisRequest, opts ...grpc.CallOption) (*TriggerAnalysisResponse, error)
 }
@@ -77,7 +77,7 @@ func (c *journalServiceClient) TriggerJournalAnalysis(ctx context.Context, in *T
 // for forward compatibility.
 type JournalServiceServer interface {
 	CreateJournal(context.Context, *CreateJournalRequest) (*CreateJournalResponse, error)
-	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE&limit=10&offset=20
 	GetJournals(context.Context, *GetJournalsRequest) (*GetJournalsResponse, error)
 	TriggerJournalAnalysis(context.Context, *TriggerAnalysisRequest) (*TriggerAnalysisResponse, error)
 }

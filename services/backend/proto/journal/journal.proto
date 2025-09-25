@@ -14,7 +14,7 @@ service JournalService {
     };
   }
 
-  // GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+  // GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE&limit=10&offset=20
   rpc GetJournals(GetJournalsRequest) returns (GetJournalsResponse) {
     option (google.api.http) = {
       get: "/v1/journals"
@@ -36,6 +36,8 @@ message CreateJournalResponse {
 
 message GetJournalsRequest {
   string user_id = 1;
+  int32 limit = 2;   // optional - defaults to 50 if not provided
+  int32 offset = 3;  // optional - defaults to 0 if not provided
 }
 
 message JournalEntry {
@@ -48,6 +50,8 @@ message JournalEntry {
 
 message GetJournalsResponse {
   repeated JournalEntry journals = 1;
+  int64 total_count = 2;  // total number of journals for this user
+  bool has_more = 3;      // true if there are more results beyond this page
 }
 
 message TriggerAnalysisRequest {

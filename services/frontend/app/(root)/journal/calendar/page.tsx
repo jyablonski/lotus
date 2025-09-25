@@ -15,10 +15,13 @@ export default function CalendarPage() {
         currentMonth,
         navigateMonth,
         goToToday,
-        loading
+        loading,
+        error,
+        totalEntries
     } = useCalendarData();
 
     if (loading) return <LoadingSpinner />;
+    if (error) return <div className="text-red-500">Error loading calendar: {error}</div>;
 
     return (
         <div className="page-container">
@@ -27,6 +30,7 @@ export default function CalendarPage() {
                     currentMonth={currentMonth}
                     onNavigateMonth={navigateMonth}
                     onGoToToday={goToToday}
+                    totalEntries={totalEntries}
                 />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

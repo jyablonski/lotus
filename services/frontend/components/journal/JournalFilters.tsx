@@ -1,4 +1,3 @@
-// components/journal/JournalFilters.tsx
 import { Search, Filter } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 
@@ -13,9 +12,10 @@ interface JournalFiltersProps {
     setSearchTerm: (term: string) => void;
     selectedMood: string;
     setSelectedMood: (mood: string) => void;
-    uniqueMoods: MoodOption[]; // Updated type
+    uniqueMoods: MoodOption[];
     totalEntries: number;
     filteredCount: number;
+    onClearFilters?: () => void; // Optional custom clear function
 }
 
 export function JournalFilters({
@@ -25,13 +25,20 @@ export function JournalFilters({
     setSelectedMood,
     uniqueMoods,
     totalEntries,
-    filteredCount
+    filteredCount,
+    onClearFilters
 }: JournalFiltersProps) {
     const hasActiveFilters = searchTerm || selectedMood !== 'all';
 
-    const clearFilters = () => {
-        setSearchTerm('');
-        setSelectedMood('all');
+    const handleClearFilters = () => {
+        if (onClearFilters) {
+            // Use custom clear function if provided (for pagination integration)
+            onClearFilters();
+        } else {
+            // Default behavior
+            setSearchTerm('');
+            setSelectedMood('all');
+        }
     };
 
     return (
@@ -85,7 +92,7 @@ export function JournalFilters({
                             </span>
                         )}
                         <button
-                            onClick={clearFilters}
+                            onClick={handleClearFilters}
                             className="text-blue-600 hover:text-blue-800 ml-2"
                         >
                             Clear filters

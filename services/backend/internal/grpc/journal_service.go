@@ -83,8 +83,33 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	// fetch journals from the database using the user_id (UUID)
-	journals, err := s.DB.GetJournalsByUserId(ctx, userID)
+	// set default pagination values
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 50 // reasonable default
+	}
+	// optionally set max limit to prevent abuse
+	if limit > 100 {
+		limit = 100
+	}
+
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	// fetch total count and paginated journals (separate calls)
+	totalCount, err := s.DB.GetJournalCountByUserId(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get journal count: %w", err)
+	}
+
+	// Use the generated params struct
+	journals, err := s.DB.GetJournalsByUserIdPaginated(ctx, db.GetJournalsByUserIdPaginatedParams{
+		UserID: userID,
+		Limit:  limit,
+		Offset: offset,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch journals: %w", err)
 	}
@@ -101,9 +126,14 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 		})
 	}
 
-	// return the list of journal entries
+	// calculate if there are more results
+	hasMore := int64(len(journalEntries)) == int64(limit) && (int64(offset)+int64(len(journalEntries))) < totalCount
+
+	// return the paginated response
 	return &pb.GetJournalsResponse{
-		Journals: journalEntries,
+		Journals:   journalEntries,
+		TotalCount: totalCount,
+		HasMore:    hasMore,
 	}, nil
 }
 

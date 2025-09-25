@@ -13,11 +13,11 @@ build:
 
 .PHONY: start-postgres
 start-postgres:
-	@docker compose -f docker/docker-compose-postgres.yaml up -d
+	@docker compose -f docker/docker-compose-local.yaml up -d postgres
 
 .PHONY: stop-postgres
 stop-postgres:
-	@docker compose -f docker/docker-compose-postgres.yaml down
+	@docker compose -f docker/docker-compose-local.yaml down postgres
 
 .PHONY: ci-analyzer-up
 ci-analyzer-up:
