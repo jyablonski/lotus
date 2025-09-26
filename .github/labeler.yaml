@@ -1,0 +1,19 @@
+backend:
+  - changed-files:
+      - any-glob-to-any-file: "services/backend/**"
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: "services/frontend/**"
+
+analyzer:
+  - changed-files:
+      - any-glob-to-any-file: "services/analyzer/**"
+
+experiments:
+  - changed-files:
+      - any-glob-to-any-file: "services/experiments/**"
+
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file: "infra/**"
