@@ -1,16 +1,19 @@
 backend:
-  - services/backend/**
+  - changed-files:
+      - any-glob-to-any-file: "services/backend/**"
 
 frontend:
-  - services/frontend/**
+  - changed-files:
+      - any-glob-to-any-file: "services/frontend/**"
 
 analyzer:
-  - services/analyzer/**
+  - changed-files:
+      - any-glob-to-any-file: "services/analyzer/**"
 
 experiments:
-  - services/experiments/**
+  - changed-files:
+      - any-glob-to-any-file: "services/experiments/**"
 
 infrastructure:
-  - docker/**
-  - Makefile
-  - infrastructure/**
+  - changed-files:
+      - any-glob-to-any-file: "infra/**"
