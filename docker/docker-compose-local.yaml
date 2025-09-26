@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:16-alpine
     container_name: postgres
@@ -27,9 +26,10 @@ services:
     ports:
       - "3000:3000"
     volumes:
+      # volume linking for hot-reloading
       - ${PWD}/services/frontend:/app
       - /app/node_modules
-      - /app/.next  # This forces Next.js to regenerate
+      - /app/.next # This forces Next.js to regenerate
     environment:
       - NEXTAUTH_URL=http://localhost:3000
       - BACKEND_URL=http://backend:8080
@@ -59,6 +59,7 @@ services:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
       - ANALYZER_BASE_URL=http://analyzer:8083
     working_dir: /app
+    # air is what enables hot-reloading for go
     command: ["air", "-c", ".air.toml"]
 
   analyzer:
@@ -70,6 +71,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
+      # volume linking for hot-reloading
       - ${PWD}/services/analyzer/src:/home/appuser/src
       - ${PWD}/services/analyzer/config.yaml:/home/appuser/config.yaml
     environment:
@@ -93,6 +95,7 @@ services:
       - MLFLOW_BACKEND_STORE_URI=postgresql://postgres:postgres@postgres:5432/postgres
       - MLFLOW_ARTIFACTS_DESTINATION=/mlflow/artifacts
     volumes:
+      # volume linking for persistence
       - ${PWD}/docker/mlflow/artifacts:/mlflow/artifacts
     depends_on:
       - postgres
