@@ -1,5 +1,3 @@
-import { moodToInt } from '@/utils/moodMapping';
-
 export type JournalEntry = {
     journalId: string;
     userId: string;
@@ -9,43 +7,91 @@ export type JournalEntry = {
 };
 
 export interface CreateJournalParams {
-    userId: string;
     entry: string;
     mood: string;
 }
 
-export async function createJournalEntry({ userId, entry, mood }: CreateJournalParams) {
-    const response = await fetch('http://localhost:8080/v1/journals', {
+export interface PaginationParams {
+    limit?: number;
+    offset?: number;
+}
+
+export interface JournalsResponse {
+    journals: JournalEntry[];
+    totalCount: number;
+    hasMore: boolean;
+}
+
+// Updated function - now calls Next.js API instead of Go backend directly
+export async function fetchJournalsByUserId({
+    limit = 10,
+    offset = 0
+}: PaginationParams): Promise<JournalsResponse> {
+    const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+    });
+
+    // Now calls Next.js API route instead of Go backend directly
+    const response = await fetch(`/api/journals?${params}`);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} ${errorText}`);
+    }
+
+    const data: {
+        journals: JournalEntry[];
+        totalCount: string;
+        hasMore: boolean;
+    } = await response.json();
+
+    return {
+        journals: data.journals,
+        totalCount: parseInt(data.totalCount),
+        hasMore: data.hasMore,
+    };
+}
+
+// Updated function - now calls Next.js API
+export async function createJournalEntry({ entry, mood }: CreateJournalParams) {
+    const response = await fetch('/api/journals', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            user_id: userId,
             journal_text: entry,
-            user_mood: moodToInt(mood).toString(),
+            user_mood: mood,
         }),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Server error: ${response.status} ${errorText}`);
+        throw new Error(`API error: ${response.status} ${errorText}`);
     }
 
     return response.json();
 }
 
-export async function fetchJournalsByUserId(userId: string): Promise<JournalEntry[]> {
-    const response = await fetch(`http://localhost:8080/v1/journals?user_id=${userId}`);
+// Helper function for load more functionality
+export async function fetchMoreJournals({
+    currentJournals,
+    limit = 10
+}: {
+    currentJournals: JournalEntry[];
+    limit?: number;
+}): Promise<JournalsResponse> {
+    return fetchJournalsByUserId({
+        limit,
+        offset: currentJournals.length,
+    });
+}
 
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data: { journals: JournalEntry[] } = await response.json();
-
-    // Sort by creation date (newest first)
-    return data.journals.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+// Legacy function for backwards compatibility (if needed)
+export async function fetchAllJournalsByUserId(): Promise<JournalEntry[]> {
+    const response = await fetchJournalsByUserId({
+        limit: 1000 // Large number to get "all" results
+    });
+    return response.journals;
 }

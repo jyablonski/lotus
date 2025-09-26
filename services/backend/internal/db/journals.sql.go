@@ -56,12 +56,66 @@ func (q *Queries) GetJournalById(ctx context.Context, id int32) (SourceJournal, 
 	return i, err
 }
 
+const getJournalCountByUserId = `-- name: GetJournalCountByUserId :one
+SELECT COUNT(*) FROM source.journals WHERE user_id = $1
+`
+
+func (q *Queries) GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getJournalCountByUserId, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getJournalsByUserId = `-- name: GetJournalsByUserId :many
 SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error) {
 	rows, err := q.db.QueryContext(ctx, getJournalsByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SourceJournal
+	for rows.Next() {
+		var i SourceJournal
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.JournalText,
+			&i.MoodScore,
+			&i.CreatedAt,
+			&i.ModifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getJournalsByUserIdPaginated = `-- name: GetJournalsByUserIdPaginated :many
+SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals 
+WHERE user_id = $1 
+ORDER BY created_at DESC 
+LIMIT $2 OFFSET $3
+`
+
+type GetJournalsByUserIdPaginatedParams struct {
+	UserID uuid.UUID
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetJournalsByUserIdPaginated(ctx context.Context, arg GetJournalsByUserIdPaginatedParams) ([]SourceJournal, error) {
+	rows, err := q.db.QueryContext(ctx, getJournalsByUserIdPaginated, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

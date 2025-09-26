@@ -4,9 +4,15 @@ interface CalendarHeaderProps {
     currentMonth: Date;
     onNavigateMonth: (direction: 'prev' | 'next') => void;
     onGoToToday: () => void;
+    totalEntries?: number;
 }
 
-export function CalendarHeader({ currentMonth, onNavigateMonth, onGoToToday }: CalendarHeaderProps) {
+export function CalendarHeader({
+    currentMonth,
+    onNavigateMonth,
+    onGoToToday,
+    totalEntries
+}: CalendarHeaderProps) {
     const monthYear = currentMonth.toLocaleDateString('en-US', {
         month: 'long',
         year: 'numeric'
@@ -16,7 +22,12 @@ export function CalendarHeader({ currentMonth, onNavigateMonth, onGoToToday }: C
         <div className="flex items-center justify-between mb-6">
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Journal Calendar</h1>
-                <p className="text-gray-600 mt-1">View your entries by date</p>
+                <p className="text-gray-600 mt-1">
+                    {totalEntries !== undefined
+                        ? `View your ${totalEntries} ${totalEntries === 1 ? 'entry' : 'entries'} by date`
+                        : 'View your entries by date'
+                    }
+                </p>
             </div>
 
             <div className="flex items-center space-x-4">

@@ -204,7 +204,7 @@ func TestGetJournals(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// create request to get journals for the user
+	// create request to get journals for the user (no pagination params = default behavior)
 	req := &pb.GetJournalsRequest{
 		UserId: userID,
 	}
@@ -218,6 +218,174 @@ func TestGetJournals(t *testing.T) {
 	assert.Len(t, resp.Journals, 1, "There should be 1 journal entry")
 	assert.Equal(t, "Test journal entry", resp.Journals[0].JournalText, "Journal text should match")
 	assert.Equal(t, "5", resp.Journals[0].UserMood, "Mood score should match")
+
+	// Test new pagination fields
+	assert.Equal(t, int64(1), resp.TotalCount, "Total count should be 1")
+	assert.False(t, resp.HasMore, "HasMore should be false with only 1 result")
+}
+
+// New test for pagination functionality
+func TestGetJournalsPagination(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	mockServer := setupMockAnalyzerServer()
+	defer mockServer.Close()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	server := JournalService(queries, logger, mockServer.URL)
+
+	userID := uuid.New()
+
+	// Create 5 test journals
+	for i := 0; i < 5; i++ {
+		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
+			UserID:      userID,
+			JournalText: "Test journal entry " + strconv.Itoa(i+1),
+			MoodScore:   sql.NullInt32{Int32: int32(i + 1), Valid: true},
+		})
+		require.NoError(t, err)
+		// Small delay to ensure different created_at timestamps
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Test first page (limit 2)
+	req := &pb.GetJournalsRequest{
+		UserId: userID.String(),
+		Limit:  2,
+		Offset: 0,
+	}
+
+	resp, err := server.GetJournals(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Len(t, resp.Journals, 2, "Should return 2 journals")
+	assert.Equal(t, int64(5), resp.TotalCount, "Total count should be 5")
+	assert.True(t, resp.HasMore, "Should have more results")
+
+	// Test second page (limit 2, offset 2)
+	req = &pb.GetJournalsRequest{
+		UserId: userID.String(),
+		Limit:  2,
+		Offset: 2,
+	}
+
+	resp, err = server.GetJournals(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Len(t, resp.Journals, 2, "Should return 2 journals")
+	assert.Equal(t, int64(5), resp.TotalCount, "Total count should be 5")
+	assert.True(t, resp.HasMore, "Should have more results")
+
+	// Test last page (limit 2, offset 4)
+	req = &pb.GetJournalsRequest{
+		UserId: userID.String(),
+		Limit:  2,
+		Offset: 4,
+	}
+
+	resp, err = server.GetJournals(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Len(t, resp.Journals, 1, "Should return 1 journal (last one)")
+	assert.Equal(t, int64(5), resp.TotalCount, "Total count should be 5")
+	assert.False(t, resp.HasMore, "Should not have more results")
+}
+
+// Test pagination defaults
+func TestGetJournalsPaginationDefaults(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	mockServer := setupMockAnalyzerServer()
+	defer mockServer.Close()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	server := JournalService(queries, logger, mockServer.URL)
+
+	userID := uuid.New()
+
+	// Create 2 test journals
+	for i := 0; i < 2; i++ {
+		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
+			UserID:      userID,
+			JournalText: "Test journal entry " + strconv.Itoa(i+1),
+			MoodScore:   sql.NullInt32{Int32: int32(i + 1), Valid: true},
+		})
+		require.NoError(t, err)
+	}
+
+	// Test with no pagination params (should use defaults)
+	req := &pb.GetJournalsRequest{
+		UserId: userID.String(),
+		// Limit and Offset not specified, should use defaults
+	}
+
+	resp, err := server.GetJournals(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Len(t, resp.Journals, 2, "Should return all journals (within default limit)")
+	assert.Equal(t, int64(2), resp.TotalCount, "Total count should be 2")
+	assert.False(t, resp.HasMore, "Should not have more results")
+
+	// Test with negative values (should use defaults)
+	req = &pb.GetJournalsRequest{
+		UserId: userID.String(),
+		Limit:  -5,  // Should default to 50
+		Offset: -10, // Should default to 0
+	}
+
+	resp, err = server.GetJournals(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Len(t, resp.Journals, 2, "Should return all journals")
+	assert.Equal(t, int64(2), resp.TotalCount, "Total count should be 2")
+	assert.False(t, resp.HasMore, "Should not have more results")
+}
+
+// Test pagination limit enforcement
+func TestGetJournalsPaginationLimitEnforcement(t *testing.T) {
+	dbConn, queries := setupTestDB(t)
+	defer dbConn.Close()
+
+	mockServer := setupMockAnalyzerServer()
+	defer mockServer.Close()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	server := JournalService(queries, logger, mockServer.URL)
+
+	userID := uuid.New()
+
+	// Create 1 test journal
+	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
+		UserID:      userID,
+		JournalText: "Test journal entry",
+		MoodScore:   sql.NullInt32{Int32: 5, Valid: true},
+	})
+	require.NoError(t, err)
+
+	// Test with limit > 100 (should be capped at 100)
+	req := &pb.GetJournalsRequest{
+		UserId: userID.String(),
+		Limit:  200, // Should be capped at 100
+		Offset: 0,
+	}
+
+	resp, err := server.GetJournals(context.Background(), req)
+	require.NoError(t, err)
+
+	// Should still work, just with the limit enforced
+	assert.Len(t, resp.Journals, 1, "Should return 1 journal")
+	assert.Equal(t, int64(1), resp.TotalCount, "Total count should be 1")
 }
 
 func TestTriggerJournalAnalysis(t *testing.T) {

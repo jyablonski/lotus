@@ -1,6 +1,6 @@
 # Lotus
 
-Practice Repo to host a full stack Journal Application with ML-powered topic classification and sentiment analysis.
+Practice Repo to host a full stack Journal Application with ML & LLM-powered topic classification and sentiment analysis.
 
 ## Running the App
 

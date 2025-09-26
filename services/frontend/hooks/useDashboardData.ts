@@ -9,7 +9,14 @@ import {
 } from '@/lib/utils/dashboard';
 
 export function useDashboardData() {
-    const { journals, loading } = useJournalData();
+    // Load ALL journals for dashboard calculations
+    // Dashboard needs complete data for accurate stats
+    // this could be optimized with dedicated data pipelines & endpoints
+    // to serve the pre-aggregated stats later on
+    const { journals, loading, error } = useJournalData({
+        initialLimit: 1000, // Large number to get all entries
+        autoLoad: true
+    });
 
     const dashboardStats = useMemo(() => {
         if (!journals.length) {
@@ -40,6 +47,7 @@ export function useDashboardData() {
     return {
         ...dashboardStats,
         loading,
+        error,
         totalEntries: journals.length
     };
 }

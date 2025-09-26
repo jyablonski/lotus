@@ -1,31 +1,127 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { fetchJournalsByUserId, type JournalEntry } from '@/lib/api/journals';
+import {
+  fetchJournalsByUserId,
+  fetchMoreJournals,
+  type JournalEntry,
+  type PaginationParams,
+} from "@/lib/api/journals";
 
-export function useJournalData() {
-    const { data: session } = useSession();
-    const [journals, setJournals] = useState<JournalEntry[]>([]);
-    const [loading, setLoading] = useState(true);
+interface UseJournalDataOptions {
+  initialLimit?: number;
+  autoLoad?: boolean;
+}
 
-    useEffect(() => {
-        const userId = session?.user?.id;
-        if (!userId) return;
+interface UseJournalDataReturn {
+  journals: JournalEntry[];
+  loading: boolean;
+  loadingMore: boolean;
+  error: string | null;
+  totalCount: number;
+  hasMore: boolean;
+  loadMore: () => Promise<void>;
+  refresh: () => Promise<void>;
+  loadInitial: (params?: Partial<PaginationParams>) => Promise<void>;
+}
 
-        async function loadJournals() {
-            console.log('Fetching journals for user:', userId);
-            try {
-                const sortedJournals = await fetchJournalsByUserId(userId);
-                setJournals(sortedJournals);
-            } catch (error) {
-                console.error('Error fetching journals:', error);
-                setJournals([]);
-            } finally {
-                setLoading(false);
-            }
-        }
+export function useJournalData(
+  options: UseJournalDataOptions = {}
+): UseJournalDataReturn {
+  const { initialLimit = 10, autoLoad = true } = options;
+  const { data: session } = useSession();
 
-        loadJournals();
-    }, [session]);
+  const [journals, setJournals] = useState<JournalEntry[]>([]);
+  const [loading, setLoading] = useState(autoLoad);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-    return { journals, loading };
+  const loadInitial = useCallback(
+    async (params?: Partial<PaginationParams>) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        console.log("Fetching initial journals");
+        const response = await fetchJournalsByUserId({
+          limit: initialLimit,
+          offset: 0,
+          ...params,
+        });
+
+        setJournals(response.journals);
+        setTotalCount(response.totalCount);
+        setHasMore(response.hasMore);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to fetch journals";
+        console.error("Error fetching journals:", errorMessage);
+        setError(errorMessage);
+        setJournals([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [initialLimit]
+  );
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    setError(null);
+
+    try {
+      console.log("Loading more journals, current count:", journals.length);
+      const response = await fetchMoreJournals({
+        currentJournals: journals,
+        limit: initialLimit,
+      });
+
+      setJournals((prev) => [...prev, ...response.journals]);
+      setHasMore(response.hasMore);
+      setTotalCount(response.totalCount);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load more journals";
+      console.error("Error loading more journals:", errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [journals, loadingMore, hasMore, initialLimit]);
+
+  const refresh = useCallback(async () => {
+    await loadInitial();
+  }, [loadInitial]);
+
+  // Auto-load initial data when session is available
+  useEffect(() => {
+    if (autoLoad && session?.user?.id) {
+      loadInitial();
+    }
+  }, [session?.user?.id, autoLoad, loadInitial]);
+
+  return {
+    journals,
+    loading,
+    loadingMore,
+    error,
+    totalCount,
+    hasMore,
+    loadMore,
+    refresh,
+    loadInitial,
+  };
+}
+
+// Alternative hook for simpler use cases (backwards compatible)
+export function useJournalDataSimple() {
+  const { journals, loading, error } = useJournalData({
+    initialLimit: 1000, // Load "all" entries
+    autoLoad: true,
+  });
+
+  return { journals, loading, error };
 }

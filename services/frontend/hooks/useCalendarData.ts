@@ -1,52 +1,128 @@
-import { useMemo, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useJournalData } from './useJournalData';
-import { groupJournalsByDate, generateCalendarDays} from '@/lib/utils/calendar';
+import type { JournalEntry } from '@/lib/api/journals';
+
+export interface CalendarDay {
+    date: Date;
+    dateString: string;
+    entries: JournalEntry[];
+    isCurrentMonth: boolean;
+    isToday: boolean;
+    isSelected: boolean;
+    entryCount: number;
+    avgMood: number;
+}
 
 export function useCalendarData() {
-    const { journals, loading } = useJournalData();
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
 
-    const calendarData = useMemo(() => {
-        const entriesByDate = groupJournalsByDate(journals);
-        const calendarDays = generateCalendarDays(currentMonth, entriesByDate, selectedDate);
+    // Load ALL journals for calendar display
+    // Calendar needs complete data to show entries for all dates
+    const { journals, loading, error } = useJournalData({
+        initialLimit: 1000, // Large number to get all entries
+        autoLoad: true
+    });
 
-        // Get entries for selected date
-        const selectedDateString = selectedDate.toISOString().split('T')[0];
-        const selectedDateEntries = entriesByDate[selectedDateString] || [];
+    // Group journals by date for efficient lookup
+    const journalsByDate = useMemo(() => {
+        const grouped = new Map<string, JournalEntry[]>();
 
-        return {
-            calendarDays,
-            entriesByDate,
-            selectedDateEntries
-        };
-    }, [journals, selectedDate, currentMonth]);
+        journals.forEach(journal => {
+            const date = new Date(journal.createdAt);
+            const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
 
+            if (!grouped.has(dateKey)) {
+                grouped.set(dateKey, []);
+            }
+            grouped.get(dateKey)!.push(journal);
+        });
+
+        return grouped;
+    }, [journals]);
+
+    // Generate calendar days for the current month
+    const calendarDays = useMemo(() => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+
+        // Get first day of month and calculate starting date (include previous month days)
+        const firstDayOfMonth = new Date(year, month, 1);
+        const startDate = new Date(firstDayOfMonth);
+        startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay()); // Start from Sunday
+
+        // Generate 42 days (6 weeks) to fill calendar grid
+        const days: CalendarDay[] = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < 42; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+
+            const dateKey = date.toISOString().split('T')[0];
+            const dayEntries = journalsByDate.get(dateKey) || [];
+
+            // Calculate average mood for the day
+            const avgMood = dayEntries.length > 0
+                ? dayEntries.reduce((sum, entry) => sum + parseInt(entry.userMood), 0) / dayEntries.length
+                : 0;
+
+            const isSelected = selectedDate ?
+                date.toDateString() === selectedDate.toDateString() : false;
+
+            days.push({
+                date: new Date(date),
+                dateString: dateKey, // YYYY-MM-DD format
+                entries: dayEntries,
+                isCurrentMonth: date.getMonth() === month,
+                isToday: date.toDateString() === today.toDateString(),
+                isSelected,
+                entryCount: dayEntries.length,
+                avgMood: Math.round(avgMood * 10) / 10 // Round to 1 decimal
+            });
+        }
+
+        return days;
+    }, [currentMonth, journalsByDate, selectedDate]);
+
+    // Get entries for the selected date
+    const selectedDateEntries = useMemo(() => {
+        if (!selectedDate) return [];
+
+        const dateKey = selectedDate.toISOString().split('T')[0];
+        return journalsByDate.get(dateKey) || [];
+    }, [selectedDate, journalsByDate]);
+
+    // Navigation functions
     const navigateMonth = (direction: 'prev' | 'next') => {
         setCurrentMonth(prev => {
-            const newDate = new Date(prev);
+            const newMonth = new Date(prev);
             if (direction === 'prev') {
-                newDate.setMonth(newDate.getMonth() - 1);
+                newMonth.setMonth(newMonth.getMonth() - 1);
             } else {
-                newDate.setMonth(newDate.getMonth() + 1);
+                newMonth.setMonth(newMonth.getMonth() + 1);
             }
-            return newDate;
+            return newMonth;
         });
     };
 
     const goToToday = () => {
         const today = new Date();
-        setCurrentMonth(today);
+        setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
         setSelectedDate(today);
     };
 
     return {
-        ...calendarData,
+        calendarDays,
         selectedDate,
         setSelectedDate,
+        selectedDateEntries,
         currentMonth,
         navigateMonth,
         goToToday,
-        loading
+        loading,
+        error,
+        totalEntries: journals.length
     };
 }

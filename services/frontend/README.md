@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
+This directory contains the frontend code for the Lotus application, built with Next.js 14, React, and TypeScript. It provides a secure, paginated journal interface with calendar views and mood tracking.
 
-First, run the development server:
+## How It Works
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Architecture**: Next.js App Router with API proxy pattern
+- **Client components** handle user interactions (forms, pagination, calendar)
+- **Server components** render static content and initial page loads  
+- **API routes** (`/api/*`) proxy requests to the Go backend, handling authentication server-side
+- **Authentication** via Next Auth v5 with GitHub OAuth
+
+**Security**: Frontend never directly calls the Go backend
+```
+Browser → /api/journals → Next.js Auth → Go Backend (hidden)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Data Flow**: 
+1. User interactions trigger client-side API calls to `/api/*`
+2. Next.js validates session and forwards to Go backend  
+3. Responses flow back through the proxy to update UI state
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Directory Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+├── api/                    # Next.js API routes (proxy to Go backend)
+├── journal/               # Journal pages (/journal, /journal/create)
+├── calendar/              # Calendar view page
+└── globals.css           # Global styles
 
-## Learn More
+components/
+├── ui/                    # Reusable UI components (buttons, cards, spinners)
+├── journal/              # Journal-specific components (forms, lists, entries)
+└── calendar/             # Calendar-specific components (grid, header)
 
-To learn more about Next.js, take a look at the following resources:
+hooks/
+├── useJournalData.ts     # Data fetching with pagination
+├── useCreateJournal.ts   # Form state management
+└── useCalendarData.ts    # Calendar state and date logic
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+lib/
+├── api/                  # API client functions (now proxy-aware)
+└── utils/               # Helper functions (mood mapping, date formatting)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Client vs Server Components
 
-## Deploy on Vercel
+**Server Components** (default, no `'use client'`):
+- Static content rendering
+- Journal stats/insights (pre-calculated data)
+- Navigation headers
+- SEO-optimized pages
+- Initial data fetching
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Client Components** (`'use client'` required):
+- Journal entry creation forms (useState, event handlers)
+- Paginated journal lists (interactive pagination controls)
+- Calendar interface (date selection, month navigation)
+- Search and filtering (real-time input handling)
+- Modals and overlays
+- Any component requiring browser APIs or interactivity
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Rule**: Use server components for display, client components for interaction.
