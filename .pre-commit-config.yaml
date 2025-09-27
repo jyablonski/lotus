@@ -4,16 +4,16 @@ repos:
     hooks:
       - id: sqlc-generate
         name: sqlc generate
-        entry: bash -c 'cd services/backend && sqlc generate'
+        entry: scripts/sqlc-generate.sh
         language: system
-        files: services/backend/internal/sql/.*\.sql$
+        files: ^services/backend/internal/sql/.*\.sql$
         pass_filenames: false
 
       - id: buf-generate
         name: buf generate
-        entry: bash -c 'cd services/backend && buf generate'
+        entry: scripts/buf-generate.sh
         language: system
-        files: services/backend/proto/.*\.proto$
+        files: ^services/backend/proto/.*\.proto$
         pass_filenames: false
 
   # General purpose linters and formatting
