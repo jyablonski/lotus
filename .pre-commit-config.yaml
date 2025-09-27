@@ -6,14 +6,14 @@ repos:
         name: sqlc generate
         entry: scripts/sqlc-generate.sh
         language: system
-        files: ^services/backend/internal/sql/.*\.sql$
+        files: ^services/backend/internal/sql/
         pass_filenames: false
 
       - id: buf-generate
         name: buf generate
         entry: scripts/buf-generate.sh
         language: system
-        files: ^services/backend/proto/.*\.proto$
+        files: ^services/backend/proto/
         pass_filenames: false
 
   # General purpose linters and formatting
