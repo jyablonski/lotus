@@ -50,3 +50,4 @@ __pycache__/
 !**/tests/fixtures/models/*.pkl
 **.coverage
 docker/mlflow/**
+**.log``
