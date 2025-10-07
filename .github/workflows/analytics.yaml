@@ -1,0 +1,24 @@
+name: Analytics CI / CD Pipeline
+
+on:
+  pull_request:
+    paths:
+      - "services/analytics/**"
+
+env:
+  UV_VERSION: "0.8.24"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  analytics-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            services/analytics/**
+            docker/**
+            Makefile
+          sparse-checkout-cone-mode: false
