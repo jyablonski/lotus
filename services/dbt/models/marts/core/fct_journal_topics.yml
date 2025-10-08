@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: fct_journal_topics
+    description: |
+      Fact table for ML-generated topics assigned to journal
+      entries
+    columns:
+      - name: topic_id
+        description: Primary key for topic assignments
+        data_tests:
+          - unique
+          - not_null
+
+      - name: journal_id
+        description: Foreign key to fct_journal_entries
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_journal_entries')
+                field: journal_id
+
+      - name: topic_name
+        description: Name of the identified topic
+
+      - name: topic_confidence
+        description: Confidence score for the topic assignment
+
+      - name: topic_model_version
+        description: Version of the ML model used

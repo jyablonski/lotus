@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_journal_details
+    description: Staging table for journal entry details and analysis
+    columns:
+      - name: journal_id
+        description: Primary key and foreign key to journals
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_journals')
+              field: journal_id
+
+      - name: created_at
+        description: Timestamp when the journal detail record was created
+        data_tests:
+          - not_null
+
+      - name: modified_at
+        description: Timestamp when the journal detail record was last modified
+        data_tests:
+          - not_null

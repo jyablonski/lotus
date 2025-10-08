@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: application_db
+    schema: source
+    description: Application database containing user and core business data
+    tables:
+      - name: journal_sentiments
+        description: ML-generated sentiment analysis for journal entries
+        columns:
+          - name: id
+            description: Unique identifier for each sentiment analysis
+
+          - name: journal_id
+            description: Foreign key reference to the journals table
+
+          - name: sentiment
+            description: |
+              Classified sentiment (positive, negative, neutral, uncertain)
+
+          - name: confidence
+            description: Confidence score for the sentiment classification
+
+          - name: confidence_level
+            description: Confidence level category (high, medium, low)
+
+          - name: is_reliable
+            description: |
+              Boolean flag indicating if the sentiment analysis is reliable
+
+          - name: ml_model_version
+            description: Version of the ML model used for sentiment analysis
+
+          - name: created_at
+            description: Timestamp when the sentiment analysis was performed
+
+          - name: all_scores
+            description: JSON object containing all individual sentiment scores

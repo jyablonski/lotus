@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: fct_journal_entries
+    description: |
+      Fact table for journal entries with sentiment analysis and details
+    columns:
+      - name: journal_id
+        description: Primary key for journal entries
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_id
+        description: Foreign key to dim_users
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_id
+
+      - name: journal_text
+        description: The text content of the journal entry
+        data_tests:
+          - not_null
+
+      - name: sentiment
+        description: Classified sentiment from ML analysis
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["positive", "negative", "neutral", "uncertain"]
+
+      - name: journal_created_at
+        description: Timestamp when the journal entry was created
+        data_tests:
+          - not_null

@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: application_db
+    schema: source
+    description: |
+      Application database containing user and core business data
+    tables:
+      - name: journal_details
+        description: Detailed analysis and metadata for journal entries
+        columns:
+          - name: journal_id
+            description: |
+              Foreign key reference to the journals table (primary key)
+
+          - name: sentiment_score
+            description: Numeric sentiment score for the journal entry
+
+          - name: mood_label
+            description: Text label describing the mood
+
+          - name: keywords
+            description: Array of keywords extracted from the journal entry
+
+          - name: created_at
+            description: Timestamp when the journal detail record was created
+
+          - name: modified_at
+            description: |
+              Timestamp when the journal detail record was last modified

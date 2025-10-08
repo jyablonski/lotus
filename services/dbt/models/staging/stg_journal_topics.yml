@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: stg_journal_topics
+    description: Staging table for ML-generated journal topics
+    columns:
+      - name: topic_id
+        description: Primary key for topic assignments
+        data_tests:
+          - unique
+          - not_null
+
+      - name: journal_id
+        description: Foreign key to journals
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_journals')
+              field: journal_id
+
+      - name: topic_name
+        description: Name of the identified topic
+        data_tests:
+          - not_null
+
+      - name: ml_model_version
+        description: Version of the ML model used
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Timestamp when the topic was assigned
+        data_tests:
+          - not_null

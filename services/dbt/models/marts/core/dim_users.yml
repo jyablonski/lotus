@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: dim_users
+    description: Dimension table for users
+    columns:
+      - name: user_id
+        description: Primary key for users
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_email
+        description: User email address
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_role
+        description: User role in the system
+        data_tests:
+          - not_null

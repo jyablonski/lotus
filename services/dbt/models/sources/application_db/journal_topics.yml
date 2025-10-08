@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: application_db
+    schema: source
+    description: Application database containing user and core business data
+    tables:
+      - name: journal_topics
+        description: |
+          ML-generated topics for journal entries with confidence scores
+        columns:
+          - name: id
+            description: Unique identifier for each topic assignment
+
+          - name: journal_id
+            description: Foreign key reference to the journals table
+
+          - name: topic_name
+            description: Name of the identified topic
+
+          - name: confidence
+            description: Confidence score for the topic assignment
+
+          - name: ml_model_version
+            description: Version of the ML model used for topic detection
+
+          - name: created_at
+            description: Timestamp when the topic was assigned

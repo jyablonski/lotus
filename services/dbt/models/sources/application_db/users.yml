@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: application_db
+    schema: source
+    description: Application database containing user and core business data
+    tables:
+      - name: users
+        description: |
+          User accounts table with authentication and profile information
+        columns:
+          - name: id
+            description: Unique identifier for each user (UUID primary key)
+
+          - name: email
+            description: User email address (unique)
+
+          - name: password
+            description: Hashed user password
+
+          - name: salt
+            description: Password salt for encryption
+
+          - name: oauth_provider
+            description: OAuth provider name if using third-party authentication
+
+          - name: role
+            description: User role in the system
+
+          - name: created_at
+            description: Timestamp when the user account was created
+
+          - name: modified_at
+            description: Timestamp when the user account was last modified
+
+          - name: timezone
+            description: User's timezone preference

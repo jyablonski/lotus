@@ -15,6 +15,13 @@ clean-targets:
   - "dbt_packages"
 
 models:
+  +on_schema_change: "sync_all_columns"
+
   analytics:
-    example:
-      +materialized: table
+    staging:
+      +schema: staging
+      +on_schema_change: sync_all_columns
+
+    marts:
+      core:
+        +schema: core

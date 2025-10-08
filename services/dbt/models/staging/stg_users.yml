@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_users
+    description: Staging table for user accounts
+    columns:
+      - name: user_id
+        description: Primary key for users
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_email
+        description: User email address
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_role
+        description: User role in the system
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Timestamp when the user account was created
+        data_tests:
+          - not_null
+
+      - name: modified_at
+        description: Timestamp when the user account was last modified
+        data_tests:
+          - not_null
