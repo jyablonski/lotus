@@ -35,10 +35,14 @@ jobs:
       - name: Start Services
         run: make start-postgres
 
-      - name: Run dbt tests
+      - name: Install dbt Dependencies
+        working-directory: services/dbt
+        run: uv run dbt deps --profiles-dir ./profiles
+
+      - name: Run dbt Tests
         working-directory: services/dbt
         run: uv run dbt build --profiles-dir ./profiles
 
-      - name: Stop Services
+      - name: Shutdown Services
         if: always()
         run: make stop-postgres
