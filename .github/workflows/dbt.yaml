@@ -37,7 +37,7 @@ jobs:
 
       - name: Run dbt tests
         working-directory: services/dbt
-        run: uv run dbt build
+        run: uv run dbt build --profiles-dir ./profiles
 
       - name: Stop Services
         if: always()
