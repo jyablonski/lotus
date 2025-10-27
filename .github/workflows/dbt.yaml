@@ -37,7 +37,7 @@ jobs:
 
       - name: Run dbt tests
         working-directory: services/dbt
-        run: dbt build
+        run: uv run dbt build
 
       - name: Stop Services
         if: always()
