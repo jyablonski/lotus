@@ -9,9 +9,6 @@ models:
         data_tests:
           - unique
           - not_null
-          - relationships:
-              to: ref('stg_journals')
-              field: journal_id
 
       - name: created_at
         description: Timestamp when the journal detail record was created

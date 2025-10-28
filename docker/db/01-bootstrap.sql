@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users
 
 insert into users (id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone)
 values
-  ('36ca3d17-0071-4526-a124-342fb025723e', 'jyablonski9@gmail.com', null, null, 'github', 'Consumer', now(), now(), 'UTC'),
+  ('a91b114d-b3de-4fe6-b162-039c9850c06b', 'jyablonski9@gmail.com', null, null, 'github', 'Consumer', now(), now(), 'UTC'),
   ('a7f3e8b2-4d91-4c3a-9f2e-1b8c5d6e7f8a', 'alice.smith@example.com', null, null, 'google', 'Consumer', now() - interval '30 days', now() - interval '30 days', 'America/New_York'),
   ('b8e4f9c3-5e02-4d4b-a03f-2c9d6e7f8a9b', 'bob.jones@example.com', 'hashed_password_123', 'salt_123', null, 'Consumer', now() - interval '60 days', now() - interval '60 days', 'America/Los_Angeles'),
   ('c9f5a0d4-6f13-4e5c-b14f-3d0e7f8a9b0c', 'carol.white@example.com', null, null, 'github', 'Premium', now() - interval '90 days', now() - interval '90 days', 'Europe/London'),

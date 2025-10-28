@@ -2,10 +2,9 @@
 
 ## Go
 
-
 ### SQLc
 
-``` sh
+```sh
 sqlc generate -f backend/internal/sqlc.yaml
 ```
 
@@ -42,15 +41,13 @@ Partial Page Rendering (PPR) - Nextjs builds a static shell and dynamically stre
 
 ### Implementation
 
-
-
 ## Proto
 
 Protocol Buffers (protobuf) are a language-agnostic way to serialize structured data. They also provide auto-generated code for reading and writing data, so you can focus on your implementation of what the service does like write to Postgres etc.
 
 In gRPC, `.proto` files define the structure of your data and services—they act as a contract between the client and server. You define request and response messages, including the fields and their types.
 
-``` proto
+```proto
 message User {
   int32 id = 1;
   string name = 2;
@@ -60,7 +57,7 @@ message User {
 
 You then compile that proto file into language-specific stubs to handle all of the boilerplate code. They handle all the low-level networking, serialization, and deserialization for you. You can use `protoc` for this, but `buf` seems to be a better alternative
 
-``` sh
+```sh
 protoc --go_out=./backend --go-grpc_out=./backend ./backend/internal/user.proto
 
 grpcurl -plaintext -proto ./backend/proto/user/user.proto \
@@ -94,14 +91,13 @@ With `buf`, you setup `buf.yaml` and `buf.gen.yaml` files
 - `buf.yaml` defines config options like linting, how protobuf files are organized, and other dependencies etc
 - A `buf.lock` file locks those dependencies and versions similar to a `package-lock.json` or `go.sum` file
 
-``` sh
+```sh
 buf dep update
 
 buf generate
 ```
 
 ## TypeScript
-
 
 ```
 import { Login } from "@/components/auth/login-button";
@@ -114,10 +110,10 @@ import { Logout } from "@/components/auth/logout-button";
 
 There are **two types of exports** in a module:
 
-| Type | Syntax to Export | Syntax to Import | Example |
-|-----|-------------------|------------------|---------|
-| **Default Export** | `export default ComponentName;` | `import ComponentName from "path";` | `import Navbar from "./Navbar";` |
-| **Named Export** | `export { ComponentName };` or `export function ComponentName() {}` | `import { ComponentName } from "path";` | `import { Login } from "./login-button";` |
+| Type               | Syntax to Export                                                    | Syntax to Import                        | Example                                   |
+| ------------------ | ------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------- |
+| **Default Export** | `export default ComponentName;`                                     | `import ComponentName from "path";`     | `import Navbar from "./Navbar";`          |
+| **Named Export**   | `export { ComponentName };` or `export function ComponentName() {}` | `import { ComponentName } from "path";` | `import { Login } from "./login-button";` |
 
 ---
 
@@ -125,4 +121,6 @@ In JSX, all components (and HTML tags) must be properly closed.
 
 - That's why you write `<Logout />` and not `<Logout>` alone.
 
+## Ongoing bugs
 
+1. frontend bug when making journal entries - i made an entry at monday oct 27 5:02 pm pt nd it shows up as it was created on tuesday oct 28, and tells me to create my first journal entry on the 27th

@@ -22,7 +22,10 @@ journal_details as (
 ),
 
 sentiments as (
-    select * from {{ ref('stg_journal_sentiments') }}
+    select
+        *,
+        row_number() over (partition by journal_id order by created_at desc) as rn
+    from {{ ref('stg_journal_sentiments') }}
 
     {% if is_incremental() %}
     where journal_id in (select journal_id from journals)
@@ -51,6 +54,7 @@ joined as (
         on journals.journal_id = journal_details.journal_id
     left join sentiments
         on journals.journal_id = sentiments.journal_id
+        and sentiments.rn = 1
 )
 
 select * from joined

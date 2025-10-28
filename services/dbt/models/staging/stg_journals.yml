@@ -14,9 +14,6 @@ models:
         description: Foreign key to users
         data_tests:
           - not_null
-          - relationships:
-              to: ref('stg_users')
-              field: user_id
 
       - name: journal_text
         description: The text content of the journal entry

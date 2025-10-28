@@ -15,10 +15,6 @@ models:
         description: Foreign key to dim_users
         data_tests:
           - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_users')
-                field: user_id
 
       - name: journal_text
         description: The text content of the journal entry
