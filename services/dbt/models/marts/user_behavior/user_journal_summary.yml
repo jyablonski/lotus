@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: user_journal_summary
+    description: Aggregated journal metrics and behavior patterns per user
+    columns:
+      - name: user_id
+        description: Primary key - unique identifier for each user
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_id
+
+      - name: total_journals
+        description: Total number of journal entries created by the user
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: active_days
+        description: Number of distinct days the user has journaled
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= total_journals"
+              config:
+                where: "total_journals > 0"
+
+      - name: avg_mood_score
+        description: Average mood score across all journal entries
+
+      - name: mood_score_stddev
+        description: Standard deviation of mood scores (volatility measure)
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              config:
+                where: "mood_score_stddev is not null"
+
+      - name: positive_entries
+        description: Count of journal entries with positive sentiment
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: negative_entries
+        description: Count of journal entries with negative sentiment
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: neutral_entries
+        description: Count of journal entries with neutral sentiment
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: avg_sentiment_score
+        description: Average sentiment score across all journal entries
+
+      - name: first_journal_at
+        description: Timestamp of the user's first journal entry
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "<= last_journal_at"
+              config:
+                where: "first_journal_at is not null and last_journal_at is not null"
+
+      - name: last_journal_at
+        description: Timestamp of the user's most recent journal entry
+
+      - name: last_modified_at
+        description: Timestamp of the most recently modified journal entry
+
+      - name: positive_percentage
+        description: Percentage of journal entries with positive sentiment
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "between 0 and 100"
+              config:
+                where: "positive_percentage is not null"
+
+      - name: days_since_first_journal
+        description: Number of days between first and last journal entry
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              config:
+                where: "days_since_first_journal is not null"
+
+      - name: journals_per_active_day
+        description: Average number of journals written per active day
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 1"
+              config:
+                where: "journals_per_active_day is not null"

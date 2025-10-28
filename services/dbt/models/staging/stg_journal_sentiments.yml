@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: stg_journal_sentiments
+    description: Staging table for ML-generated sentiment analysis
+    columns:
+      - name: sentiment_id
+        description: Primary key for sentiment analyses
+        data_tests:
+          - unique
+          - not_null
+
+      - name: journal_id
+        description: Foreign key to journals
+        data_tests:
+          - not_null
+
+      - name: sentiment
+        description: Classified sentiment
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["positive", "negative", "neutral", "uncertain"]
+
+      - name: confidence_level
+        description: Confidence level category
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["high", "medium", "low"]
+
+      - name: ml_model_version
+        description: Version of the ML model used
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Timestamp when the sentiment analysis was performed
+        data_tests:
+          - not_null

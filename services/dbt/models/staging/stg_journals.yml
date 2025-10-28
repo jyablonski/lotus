@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: stg_journals
+    description: Staging table for journal entries
+    columns:
+      - name: journal_id
+        description: Primary key for journal entries
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_id
+        description: Foreign key to users
+        data_tests:
+          - not_null
+
+      - name: journal_text
+        description: The text content of the journal entry
+        data_tests:
+          - not_null``
+
+      - name: created_at
+        description: Timestamp when the journal entry was created
+
+      - name: modified_at
+        description: Timestamp when the journal entry was last modified
