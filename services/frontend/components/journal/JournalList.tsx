@@ -1,23 +1,16 @@
-import { JournalEntryCard } from './JournalEntryCard';
-
-type JournalEntry = {
-    journalId: string;
-    userId: string;
-    journalText: string;
-    userMood: string;
-    createdAt: string;
-};
+import { JournalEntry } from "@/types/journal";
+import { JournalEntryCard } from "./JournalEntryCard";
 
 interface JournalListProps {
-    entries: JournalEntry[];
+  entries: JournalEntry[];
 }
 
 export function JournalList({ entries }: JournalListProps) {
-    return (
-        <div className="space-y-6">
-            {entries.map((entry) => (
-                <JournalEntryCard key={entry.journalId} entry={entry} />
-            ))}
-        </div>
-    );
+  return (
+    <div className="space-y-6">
+      {entries.map((entry) => (
+        <JournalEntryCard key={entry.journalId} entry={entry} />
+      ))}
+    </div>
+  );
 }

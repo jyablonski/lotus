@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -32,75 +32,32 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    // Define the backend response type (what Go returns)
+    interface BackendJournal {
+      journalId: string;
+      userId: string;
+      journalText: string;
+      userMood: string; // Backend returns as string
+      createdAt: string;
+    }
+
+    // Transform the data: convert userMood from string to number
+    const transformedData = {
+      ...data,
+      journals:
+        (data.journals as BackendJournal[])?.map((journal) => ({
+          ...journal,
+          userMood: parseInt(journal.userMood), // Convert string to number
+        })) || [],
+    };
+
+    return NextResponse.json(transformedData);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
       { error: "Failed to fetch journals" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-
-    // Server-side mood conversion and validation
-    let moodScore: string;
-    if (typeof body.user_mood === "string" && isNaN(Number(body.user_mood))) {
-      // Convert mood words to numbers
-      const moodMap: Record<string, number> = {
-        terrible: 1,
-        bad: 2,
-        poor: 3,
-        neutral: 5,
-        good: 7,
-        great: 8,
-        excellent: 9,
-        amazing: 10,
-      };
-      moodScore = (moodMap[body.user_mood.toLowerCase()] || 5).toString();
-    } else {
-      moodScore = body.user_mood.toString();
-    }
-
-    // Validate mood is in valid range
-    const moodNum = parseInt(moodScore);
-    if (moodNum < 1 || moodNum > 10) {
-      return NextResponse.json(
-        { error: "Invalid mood score" },
-        { status: 400 }
-      );
-    }
-
-    const response = await fetch(`${BACKEND_URL}/v1/journals`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: session.user.id,
-        journal_text: body.journal_text,
-        user_mood: moodScore,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Backend responded with ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to create journal" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

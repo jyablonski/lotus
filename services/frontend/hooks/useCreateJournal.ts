@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createJournalEntry } from "@/lib/api/journals";
+import { moodToInt } from "@/utils/moodMapping"; // ← Add this import
 
 export function useCreateJournal() {
   const [entry, setEntry] = useState("");
@@ -26,13 +27,15 @@ export function useCreateJournal() {
       return;
     }
 
-    // Remove userId validation - API route handles auth
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Remove userId from the call - API route gets it from session
-      await createJournalEntry({ entry, mood });
+      // ✅ Convert mood string to integer before sending
+      await createJournalEntry({
+        entry,
+        mood: moodToInt(mood), // ← Changed this line
+      });
       setSuccess(true);
 
       setTimeout(() => {

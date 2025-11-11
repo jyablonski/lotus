@@ -1,11 +1,11 @@
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 RUN go install github.com/air-verse/air@latest
 
 # ---- Final image ----
-# need to use golang:1.24 instead of slimmer image for glibc
+# need to use golang:1.25 instead of slimmer image for glibc
 # because of the air binary
-FROM golang:1.24-alpine
+FROM golang:1.25-alpine
 
 COPY --from=builder /go/bin/air /usr/local/bin/air
 
