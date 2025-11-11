@@ -52,6 +52,7 @@ message GetUserResponse {
   string user_id = 1;
   string email = 2;
   string role = 3;
-  string created_at = 4;
-  string updated_at = 5;
+  string timezone = 4;
+  string created_at = 5;
+  string updated_at = 6;
 }

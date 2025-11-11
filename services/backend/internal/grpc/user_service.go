@@ -104,6 +104,7 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 		UserId:    u.ID.String(),
 		Email:     u.Email,
 		Role:      u.Role,
+		Timezone:  u.Timezone,
 		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: u.ModifiedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil

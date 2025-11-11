@@ -1,97 +1,89 @@
-export type JournalEntry = {
-    journalId: string;
-    userId: string;
-    journalText: string;
-    userMood: string;
-    createdAt: string;
-};
+import { JournalEntry } from "@/types/journal";
+
+export type { JournalEntry };
 
 export interface CreateJournalParams {
-    entry: string;
-    mood: string;
+  entry: string;
+  mood: number; // ← Changed from string to number
 }
 
 export interface PaginationParams {
-    limit?: number;
-    offset?: number;
+  limit?: number;
+  offset?: number;
 }
 
 export interface JournalsResponse {
-    journals: JournalEntry[];
-    totalCount: number;
-    hasMore: boolean;
+  journals: JournalEntry[];
+  totalCount: number;
+  hasMore: boolean;
 }
 
-// Updated function - now calls Next.js API instead of Go backend directly
 export async function fetchJournalsByUserId({
-    limit = 10,
-    offset = 0
+  limit = 10,
+  offset = 0,
 }: PaginationParams): Promise<JournalsResponse> {
-    const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-    });
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+  });
 
-    // Now calls Next.js API route instead of Go backend directly
-    const response = await fetch(`/api/journals?${params}`);
+  const response = await fetch(`/api/journals?${params}`);
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API error: ${response.status} ${errorText}`);
-    }
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API error: ${response.status} ${errorText}`);
+  }
 
-    const data: {
-        journals: JournalEntry[];
-        totalCount: string;
-        hasMore: boolean;
-    } = await response.json();
+  const data = await response.json();
 
-    return {
-        journals: data.journals,
-        totalCount: parseInt(data.totalCount),
-        hasMore: data.hasMore,
-    };
+  // Debug logging
+  console.log("Raw API response:", data);
+  console.log("First journal userMood:", data.journals[0]?.userMood);
+  console.log("Type of userMood:", typeof data.journals[0]?.userMood);
+
+  return {
+    journals: data.journals,
+    totalCount: parseInt(data.totalCount),
+    hasMore: data.hasMore,
+  };
 }
 
-// Updated function - now calls Next.js API
 export async function createJournalEntry({ entry, mood }: CreateJournalParams) {
-    const response = await fetch('/api/journals', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            journal_text: entry,
-            user_mood: mood,
-        }),
-    });
+  const response = await fetch("/api/journals", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      journal_text: entry,
+      mood_score: mood, // ← Changed from user_mood to mood_score to match DB column
+    }),
+  });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API error: ${response.status} ${errorText}`);
-    }
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API error: ${response.status} ${errorText}`);
+  }
 
-    return response.json();
+  return response.json();
 }
 
-// Helper function for load more functionality
 export async function fetchMoreJournals({
-    currentJournals,
-    limit = 10
+  currentJournals,
+  limit = 10,
 }: {
-    currentJournals: JournalEntry[];
-    limit?: number;
+  currentJournals: JournalEntry[];
+  limit?: number;
 }): Promise<JournalsResponse> {
-    return fetchJournalsByUserId({
-        limit,
-        offset: currentJournals.length,
-    });
+  return fetchJournalsByUserId({
+    limit,
+    offset: currentJournals.length,
+  });
 }
 
-// Legacy function for backwards compatibility (if needed)
 export async function fetchAllJournalsByUserId(): Promise<JournalEntry[]> {
-    const response = await fetchJournalsByUserId({
-        limit: 1000 // Large number to get "all" results
-    });
-    return response.journals;
+  const response = await fetchJournalsByUserId({
+    limit: 1000,
+  });
+  return response.journals;
 }

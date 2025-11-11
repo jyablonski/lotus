@@ -28,6 +28,17 @@ values
   ('c9f5a0d4-6f13-4e5c-b14f-3d0e7f8a9b0c', 'carol.white@example.com', null, null, 'github', 'Premium', now() - interval '90 days', now() - interval '90 days', 'Europe/London'),
   ('d0a6b1e5-7024-4f6d-c25e-4e1f8a9b0c1d', 'david.brown@example.com', 'hashed_password_456', 'salt_456', null, 'Admin', now() - interval '120 days', now() - interval '120 days', 'UTC');
 
+/*
+ * Mood Mapping Reference:
+ * excited: 8 🤩
+ * happy: 7 😊
+ * content: 6 😌
+ * neutral: 5 😐
+ * tired: 4 😴
+ * sad: 3 😢
+ * anxious: 2 😰
+ * angry: 1 😠
+ */
 DROP TABLE IF EXISTS journals;
 CREATE TABLE IF NOT EXISTS journals
 (
