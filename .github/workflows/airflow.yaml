@@ -1,0 +1,28 @@
+name: Airflow CI / CD Pipeline
+
+on:
+  pull_request:
+    paths:
+      - "services/airflow/**"
+
+env:
+  ASRTO_CLI_VERSION: "v1.36.0"
+
+jobs:
+  airflow-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            services/airflow/
+
+      - name: Install Astro CLI
+        run: curl -sSL install.astronomer.io | sudo bash -s -- ${{ env.ASRTO_CLI_VERSION }}
+
+      # this sets up the environment and also runs the tests
+      - name: Run Tests
+        working-directory: services/airflow
+        run: astro dev pytest --args "-v --color=yes"
