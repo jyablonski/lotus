@@ -60,3 +60,12 @@ graph LR
 - **Python Analyzer Service** - FastAPI server that connects to MLFlow to serve ML models for journal topic classification and sentiment analysis
 - **PostgreSQL Database** - Primary database for journal entries and user data
 - **MLFlow Server** - Model registry and experiment tracking for ML workflows
+
+### Data Architecture
+
+**Services:**
+
+- **dbt** - Data transformation and modeling tool to structure and prepare data for analysis and reporting
+- **Dagster** - Orchestration tool to manage and schedule data workflows and pipelines
+  - Preferred over Airflow for modern features and better integration with dbt
+- **Airflow** - Legacy orchestration tool for managing data workflows
