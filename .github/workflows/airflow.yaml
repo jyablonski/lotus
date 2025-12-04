@@ -23,4 +23,5 @@ jobs:
         run: curl -sSL install.astronomer.io | sudo bash -s -- ${{ env.ASRTO_CLI_VERSION }}
 
       - name: Run Tests
+        working-directory: services/airflow
         run: astro dev pytest
