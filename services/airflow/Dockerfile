@@ -1,0 +1,10 @@
+FROM astrocrpublic.azurecr.io/runtime:3.1-5
+
+# --- UI & VISUALS ---
+ENV AIRFLOW__WEBSERVER__NAVBAR_COLOR="#3a6395ff" \
+    AIRFLOW__WEBSERVER__INSTANCE_NAME="Jacobs Airflow Project"
+
+# --- BEHAVIOR ---
+ENV AIRFLOW__CORE__LOAD_EXAMPLES=False \
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False \
+    AIRFLOW__WEBSERVER__DAG_DEFAULT_VIEW="graph"
