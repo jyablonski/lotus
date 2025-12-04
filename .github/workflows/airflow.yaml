@@ -25,4 +25,4 @@ jobs:
       # this sets up the environment and also runs the tests
       - name: Run Tests
         working-directory: services/airflow
-        run: astro dev pytest
+        run: astro dev pytest --args "-v --color=yes"
