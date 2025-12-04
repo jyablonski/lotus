@@ -17,3 +17,7 @@ experiments:
 infrastructure:
   - changed-files:
       - any-glob-to-any-file: "infra/**"
+
+airlfow:
+  - changed-files:
+      - any-glob-to-any-file: "services/airflow/**"
