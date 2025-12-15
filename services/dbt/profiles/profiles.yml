@@ -2,7 +2,7 @@ analytics:
   outputs:
     dev:
       dbname: postgres
-      host: localhost
+      host: postgres
       pass: postgres
       port: 5432
       schema: public

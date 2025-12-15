@@ -1,12 +1,13 @@
 [project]
 name = "dagster_project"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.13,<3.14"
 version = "0.1.0"
 dependencies = [
     "boto3>=1.42.2",
-    "dagster==1.12.3",
+    "dagster==1.12.6",
     "dagster-dbt>=0.28.3",
-    "dagster-webserver>=1.12.3",
+    "dagster-postgres==0.28.6",
+    "dagster-webserver>=1.12.6",
     "dbt-postgres>=1.9.1",
     "feast>=0.57.0",
     "polars>=1.35.2",
@@ -14,6 +15,13 @@ dependencies = [
 
 [dependency-groups]
 dev = ["dagster-webserver", "dagster-dg-cli", "ipykernel>=7.1.0"]
+webserver = [
+    "dagster==1.12.6",
+    "dagster-graphql==1.12.6",
+    "dagster-webserver==1.12.6",
+    "dagster-postgres==0.28.6",
+    "dagster-docker==0.28.6",
+]
 
 [build-system]
 requires = ["hatchling"]

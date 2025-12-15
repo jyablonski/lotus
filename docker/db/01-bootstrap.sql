@@ -1,3 +1,4 @@
+CREATE DATABASE dagster;
 CREATE SCHEMA source;
 CREATE SCHEMA core;
 CREATE SCHEMA staging;

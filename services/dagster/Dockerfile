@@ -21,16 +21,14 @@ FROM base AS builder
 
 WORKDIR /app
 
-# Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-COPY pyproject.toml uv.lock ./
+COPY services/dagster/pyproject.toml services/dagster/uv.lock ./
 
 RUN uv sync --frozen --no-install-project --no-dev
 
-COPY src/ ./src
+COPY services/dagster/src/ ./src
 
-# Sync again - this installs 'dagster_project' into the .venv
 RUN uv sync --frozen --no-dev
 
 # -------------------------------
@@ -40,7 +38,11 @@ FROM base AS runtime
 
 WORKDIR /app
 
-RUN useradd --create-home appuser
+RUN useradd --create-home appuser \
+    && mkdir -p /tmp/io_manager_storage/compute_logs \
+    && mkdir -p /tmp/io_manager_storage/artifacts \
+    && chown -R appuser:appuser /tmp/io_manager_storage
+
 USER appuser
 
 # Copy the environment from builder
@@ -48,19 +50,19 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 
 # --- HANDLE DBT FOLDER ---
-# Your python code looks for dbt at "../../../../dbt" relative to src/dagster_project/defs/project.py
-# If project.py is at: /app/src/dagster_project/defs/project.py
+# Your python code looks for dbt at "../../../../dbt" relative to src/dagster_project/dbt_config.py
+# If dbt_config.py is at: /app/src/dagster_project/dbt_config.py
 # Up 4 levels is: /app/
 # So we need to copy your dbt folder to /app/dbt
-# NOTE: This requires your build context to include the dbt folder (see instructions below)
-COPY --chown=appuser:appuser dbt /app/dbt
-COPY --chown=appuser:appuser services/dbt/profiles.yml /app/dbt/profiles.yml
+# NOTE: Build context is project root, so we copy services/dbt
+COPY --chown=appuser:appuser services/dbt /app/dbt
 
 # Set Environment Variables
 # 1. Point dbt to the correct profile dir inside the container
 ENV DBT_PROFILES_DIR="/app/dbt"
 # 2. Tell Dagster where the code is (optional but good practice)
-ENV DAGSTER_CURRENT_IMAGE="dagster_project_image"
+ENV DAGSTER_CURRENT_IMAGE="dagster_grpc_server_image"
+# NOTE: No DAGSTER_HOME needed - run containers get instance config serialized from daemon
 
 EXPOSE 4000
 

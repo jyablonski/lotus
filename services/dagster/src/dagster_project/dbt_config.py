@@ -2,8 +2,14 @@ import os
 from pathlib import Path
 from dagster_dbt import DbtProject
 
-RELATIVE_PATH_TO_DBT = "../../../../dbt"
-DBT_PROJECT_DIR = Path(__file__).joinpath(RELATIVE_PATH_TO_DBT).resolve()
+# Calculate path to dbt project
+# From /app/src/dagster_project/dbt_config.py:
+# Path(__file__) = /app/src/dagster_project/dbt_config.py
+# Path(__file__).parent = /app/src/dagster_project/
+# Path(__file__).parent.parent = /app/src/
+# Path(__file__).parent.parent.parent = /app/
+# So /app/dbt
+DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt"
 
 # 1. Define the specific path to your profiles directory
 DBT_PROFILES_DIR = DBT_PROJECT_DIR / "profiles"

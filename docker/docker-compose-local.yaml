@@ -11,6 +11,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ${PWD}/docker/db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
 
   frontend:
     build:
@@ -99,6 +106,116 @@ services:
       --artifacts-destination /mlflow/artifacts
       --host 0.0.0.0
       --port 5000
+    networks:
+      - default
+
+  # this runs the dagster grpc server
+  # the webserver and daemon connect to this to discover what assets, jobs, schedules, and sensors exist in your code
+  dagster_grpc_server:
+    build:
+      context: ${PWD}
+      dockerfile: ./services/dagster/Dockerfile
+    container_name: dagster_grpc_server
+    image: dagster_grpc_server_image
+    restart: always
+    expose:
+      - "4000"
+    volumes:
+      # volume linking for hot-reloading
+      - ${PWD}/services/dagster/src:/app/src
+      - ${PWD}/services/dbt:/app/dbt
+      # Preserve the venv (don't overwrite with host files)
+      - dagster_venv:/app/.venv
+    environment:
+      - DAGSTER_POSTGRES_USER=postgres
+      - DAGSTER_POSTGRES_PASSWORD=postgres
+      - DAGSTER_POSTGRES_HOST=postgres
+      - DAGSTER_POSTGRES_DB=postgres
+      - DAGSTER_CURRENT_IMAGE=dagster_grpc_server_image
+      - DBT_PROFILES_DIR=/app/dbt/profiles
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "dagster", "api", "grpc-health-check", "-p", "4000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # this runs the dagster webserver, which is responsible for hosting the UI
+  # it reads from the gRPC server to display your code structure and run history
+  # it also submits runs to the queue, which the daemon picks up and runs
+  dagster_webserver:
+    build:
+      context: ${PWD}/services/dagster
+      dockerfile: Dockerfile.webserver
+    entrypoint:
+      - dagster-webserver
+      - -h
+      - "0.0.0.0"
+      - -p
+      - "3000"
+      - -w
+      - workspace.yaml
+    container_name: dagster_webserver
+    expose:
+      - "3000"
+    ports:
+      - "3001:3000"
+    environment:
+      - DAGSTER_POSTGRES_USER=postgres
+      - DAGSTER_POSTGRES_PASSWORD=postgres
+      - DAGSTER_POSTGRES_HOST=postgres
+      - DAGSTER_POSTGRES_DB=postgres
+    volumes:
+      # Make docker client accessible so we can terminate containers from the webserver
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dagster_io_storage:/tmp/io_manager_storage
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster_grpc_server:
+        condition: service_healthy
+
+  # This service runs the dagster-daemon process, which is responsible for taking runs
+  # off of the queue and launching them, as well as creating runs from schedules or sensors.
+  dagster_daemon:
+    build:
+      context: ${PWD}/services/dagster
+      dockerfile: Dockerfile.webserver
+    entrypoint:
+      - dagster-daemon
+      - run
+    container_name: dagster_daemon
+    restart: on-failure
+    environment:
+      - DAGSTER_POSTGRES_USER=postgres
+      - DAGSTER_POSTGRES_PASSWORD=postgres
+      - DAGSTER_POSTGRES_HOST=postgres
+      - DAGSTER_POSTGRES_DB=postgres
+    volumes:
+      # Make docker client accessible so we can launch containers using host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dagster_io_storage:/tmp/io_manager_storage
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster_grpc_server:
+        condition: service_started
+
+networks:
+  default:
+    name: zcj_default
+    driver: bridge
 
 volumes:
   postgres_data:
+  dagster_io_storage:
+  dagster_venv:

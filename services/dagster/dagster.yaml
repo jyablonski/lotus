@@ -1,0 +1,47 @@
+# Unified storage config - simpler and recommended approach
+# This configures run_storage, event_log_storage, and schedule_storage all at once
+storage:
+  postgres:
+    postgres_db:
+      username:
+        env: DAGSTER_POSTGRES_USER
+      password:
+        env: DAGSTER_POSTGRES_PASSWORD
+      hostname:
+        env: DAGSTER_POSTGRES_HOST
+      db_name: dagster
+      port: 5432
+
+# Compute logs (stdout/stderr) - must be in shared volume for run containers
+compute_logs:
+  module: dagster.core.storage.local_compute_log_manager
+  class: LocalComputeLogManager
+  config:
+    base_dir: /tmp/io_manager_storage/compute_logs
+
+# Local artifact storage - must be in shared volume for run containers
+local_artifact_storage:
+  module: dagster.core.storage.root
+  class: LocalArtifactStorage
+  config:
+    base_dir: /tmp/io_manager_storage/artifacts
+
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+
+run_launcher:
+  module: dagster_docker
+  class: DockerRunLauncher
+  config:
+    image: dagster_grpc_server_image
+    network: zcj_default
+    env_vars:
+      - DAGSTER_POSTGRES_USER
+      - DAGSTER_POSTGRES_PASSWORD
+      - DAGSTER_POSTGRES_HOST
+      - DAGSTER_POSTGRES_DB
+      - DBT_PROFILES_DIR=/app/dbt
+    container_kwargs:
+      volumes:
+        - dagster_io_storage:/tmp/io_manager_storage

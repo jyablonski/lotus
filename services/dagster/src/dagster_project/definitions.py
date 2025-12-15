@@ -1,3 +1,4 @@
+import os
 from dagster import Definitions, load_assets_from_modules
 from dagster_dbt import DbtCliResource
 
@@ -18,11 +19,11 @@ defs = Definitions(
             profiles_dir=DBT_PROFILES_DIR,
         ),
         "postgres": PostgresResource(
-            host="localhost",
-            port=5432,
-            user="postgres",
-            password="postgres",
-            database="postgres",
+            host=os.getenv("DAGSTER_POSTGRES_HOST", "postgres"),
+            port=int(os.getenv("DAGSTER_POSTGRES_PORT", "5432")),
+            user=os.getenv("DAGSTER_POSTGRES_USER", "postgres"),
+            password=os.getenv("DAGSTER_POSTGRES_PASSWORD", "postgres"),
+            database=os.getenv("DAGSTER_POSTGRES_DB", "postgres"),
             schema_="source",
         ),
     },

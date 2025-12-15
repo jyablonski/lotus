@@ -17,6 +17,7 @@ When finished, run `make down`.
 - Backend gRPC: http://localhost:50051
 - Analyzer Service: http://localhost:8083
 - MLFlow UI: http://localhost:5000
+- Dagster: http://localhost:3001
 - PostgreSQL: http://localhost:5432
 
 ## Architecture

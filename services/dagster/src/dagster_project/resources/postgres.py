@@ -4,7 +4,7 @@ import psycopg2
 
 
 class PostgresResource(ConfigurableResource):
-    host: str = "localhost"
+    host: str = "postgres"
     port: int = 5432
     user: str = "postgres"
     password: str = "postgres"
