@@ -10,3 +10,16 @@ analytics:
       type: postgres
       user: postgres
   target: dev
+
+local:
+  outputs:
+    dev:
+      dbname: localhost
+      host: localhost
+      pass: postgres
+      port: 5432
+      schema: public
+      threads: 8
+      type: postgres
+      user: postgres
+  target: dev

@@ -37,11 +37,11 @@ jobs:
 
       - name: Install dbt Dependencies
         working-directory: services/dbt
-        run: uv run dbt deps --profiles-dir ./profiles
+        run: uv run dbt deps --profiles-dir ./profiles --profile local
 
       - name: Run dbt Tests
         working-directory: services/dbt
-        run: uv run dbt build --profiles-dir ./profiles
+        run: uv run dbt build --profiles-dir ./profiles --profile local
 
       - name: Shutdown Services
         if: always()
