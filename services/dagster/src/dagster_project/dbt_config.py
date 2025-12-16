@@ -25,4 +25,24 @@ dbt_project = DbtProject(
 )
 
 # Now this will work because it sees the env var
+# prepare_if_dev() generates manifest in dev, but in production the manifest
+# should be packaged via 'dagster-dbt project prepare-and-package'
 dbt_project.prepare_if_dev()
+
+
+def get_manifest_path():
+    """Get the manifest path if it exists, None otherwise.
+
+    This allows lazy access to the manifest, which is useful for:
+    - Tests: Can skip dbt assets if manifest doesn't exist
+    - Production: Manifest should be packaged, but this handles missing gracefully
+    """
+    try:
+        manifest_path = dbt_project.manifest_path
+        if manifest_path.exists():
+            return manifest_path
+        return None
+    except Exception:
+        # If manifest_path property raises an error (e.g., DagsterDbtManifestNotFoundError)
+        # or if the path doesn't exist, return None
+        return None
