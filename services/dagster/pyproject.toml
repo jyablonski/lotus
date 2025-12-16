@@ -14,7 +14,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["dagster-webserver", "dagster-dg-cli", "ipykernel>=7.1.0"]
+dev = [
+    "dagster-webserver",
+    "dagster-dg-cli",
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+]
+local = ["ruff>=0.14.9", "ipykernel>=7.1.0"]
 webserver = [
     "dagster==1.12.6",
     "dagster-graphql==1.12.6",
@@ -36,3 +43,15 @@ directory_type = "project"
 [tool.dg.project]
 root_module = "dagster_project"
 registry_modules = ["dagster_project.components.*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = ["-v", "--strict-markers", "--tb=short"]
+markers = [
+    "unit: Unit tests that don't require external dependencies",
+    "integration: Integration tests that require external services (e.g., database)",
+    "slow: Tests that take a long time to run",
+]
