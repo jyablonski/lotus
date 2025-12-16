@@ -22,9 +22,9 @@ COPY pyproject.toml uv.lock ./
 
 RUN pip install uv==0.8.13 && \
     if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
-        uv sync --frozen; \
+    uv sync --frozen --no-install-project; \
     else \
-        uv sync --frozen --no-dev; \
+    uv sync --frozen --no-dev --no-install-project; \
     fi
 
 

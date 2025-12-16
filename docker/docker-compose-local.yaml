@@ -116,7 +116,7 @@ services:
       context: ${PWD}
       dockerfile: ./services/dagster/Dockerfile
     container_name: dagster_grpc_server
-    image: dagster_grpc_server_image
+    image: dagster_server_image
     restart: always
     expose:
       - "4000"
@@ -131,7 +131,7 @@ services:
       - DAGSTER_POSTGRES_PASSWORD=postgres
       - DAGSTER_POSTGRES_HOST=postgres
       - DAGSTER_POSTGRES_DB=postgres
-      - DAGSTER_CURRENT_IMAGE=dagster_grpc_server_image
+      - DAGSTER_CURRENT_IMAGE=dagster_server_image
       - DBT_PROFILES_DIR=/app/dbt/profiles
     networks:
       - default

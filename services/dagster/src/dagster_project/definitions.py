@@ -3,7 +3,7 @@ from dagster import Definitions, load_assets_from_modules
 from dagster_dbt import DbtCliResource
 
 from dagster_project import assets
-from dagster_project.jobs import sync_users_job, sync_users_schedule
+from dagster_project.jobs import hello_world_job, sync_users_job, sync_users_schedule
 from dagster_project.resources import PostgresResource
 from dagster_project.dbt_config import dbt_project, DBT_PROFILES_DIR
 
@@ -30,7 +30,7 @@ if dbt_project is not None:
 
 defs = Definitions(
     assets=all_assets,
-    jobs=[sync_users_job],
+    jobs=[sync_users_job, hello_world_job],
     schedules=[sync_users_schedule],
     resources=resources,
 )

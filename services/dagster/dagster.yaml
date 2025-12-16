@@ -34,8 +34,8 @@ run_launcher:
   module: dagster_docker
   class: DockerRunLauncher
   config:
-    image: dagster_grpc_server_image
-    network: zcj_default
+    image: dagster_server_image
+    network: lotus_default
     env_vars:
       - DAGSTER_POSTGRES_USER
       - DAGSTER_POSTGRES_PASSWORD

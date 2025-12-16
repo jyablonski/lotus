@@ -27,10 +27,6 @@ COPY services/dagster/pyproject.toml services/dagster/uv.lock ./
 
 RUN uv sync --frozen --no-install-project --no-dev
 
-COPY services/dagster/src/ ./src
-
-RUN uv sync --frozen --no-dev
-
 # -------------------------------
 # Stage: Runtime
 # -------------------------------
@@ -47,7 +43,6 @@ USER appuser
 
 # Copy the environment from builder
 COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
 
 # --- HANDLE DBT FOLDER ---
 # Your python code looks for dbt at "../../../../dbt" relative to src/dagster_project/dbt_config.py
@@ -61,8 +56,13 @@ COPY --chown=appuser:appuser services/dbt /app/dbt
 # 1. Point dbt to the correct profile dir inside the container
 ENV DBT_PROFILES_DIR="/app/dbt"
 # 2. Tell Dagster where the code is (optional but good practice)
-ENV DAGSTER_CURRENT_IMAGE="dagster_grpc_server_image"
+ENV DAGSTER_CURRENT_IMAGE="dagster_server_image"
+# 3. Add src to Python path so dagster_project can be imported (needed when using --no-install-project)
+ENV PYTHONPATH="/app/src:$PYTHONPATH"
 # NOTE: No DAGSTER_HOME needed - run containers get instance config serialized from daemon
+
+# Copy source code at the end
+COPY --chown=appuser:appuser services/dagster/src /app/src
 
 EXPOSE 4000
 
