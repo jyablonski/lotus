@@ -1,5 +1,7 @@
 """Pytest configuration and shared fixtures for Dagster tests."""
 
+import os
+
 import pytest
 from unittest.mock import MagicMock
 from dagster import build_op_context
@@ -48,8 +50,6 @@ def postgres_resource():
     To start the postgres service:
         docker-compose -f docker/docker-compose-local.yaml up -d postgres
     """
-    import os
-
     # Allow override via env vars, but default to Docker Compose postgres settings
     return PostgresResource(
         host=os.getenv("TEST_POSTGRES_HOST", "localhost"),

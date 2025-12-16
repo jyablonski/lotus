@@ -1,8 +1,9 @@
 """Unit tests for API assets."""
 
 import pytest
+import requests
 from unittest.mock import patch, MagicMock
-from dagster import build_op_context
+from dagster import build_op_context, ResourceDefinition
 
 from dagster_project.assets.api_assets import api_users, users_in_postgres
 
@@ -38,8 +39,6 @@ class TestApiUsers:
 
     def test_api_users_http_error(self):
         """Test handling of HTTP errors."""
-        import requests
-
         with patch("dagster_project.assets.api_assets.requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")
@@ -74,8 +73,6 @@ class TestUsersInPostgres:
 
         # Execute the asset with resources provided via context
         # Wrap the mock in a ResourceDefinition so Dagster accepts it
-        from dagster import ResourceDefinition
-
         def resource_fn(_context):
             return mock_postgres_resource
 
@@ -111,7 +108,6 @@ class TestUsersInPostgres:
 
     def test_users_in_postgres_empty_list(self, mock_postgres_resource, asset_context):
         """Test handling of empty user list."""
-        from dagster import ResourceDefinition
 
         def resource_fn(_context):
             return mock_postgres_resource
