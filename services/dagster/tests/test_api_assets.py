@@ -73,7 +73,14 @@ class TestUsersInPostgres:
         ]
 
         # Execute the asset with resources provided via context
-        context = build_op_context(resources={"postgres": mock_postgres_resource})
+        # Wrap the mock in a ResourceDefinition so Dagster accepts it
+        from dagster import ResourceDefinition
+
+        def resource_fn(_context):
+            return mock_postgres_resource
+
+        postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
+        context = build_op_context(resources={"postgres": postgres_resource_def})
         users_in_postgres(context, mock_users)
 
         # Verify database interactions
@@ -104,7 +111,13 @@ class TestUsersInPostgres:
 
     def test_users_in_postgres_empty_list(self, mock_postgres_resource, asset_context):
         """Test handling of empty user list."""
-        context = build_op_context(resources={"postgres": mock_postgres_resource})
+        from dagster import ResourceDefinition
+
+        def resource_fn(_context):
+            return mock_postgres_resource
+
+        postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
+        context = build_op_context(resources={"postgres": postgres_resource_def})
         users_in_postgres(context, [])
 
         mock_postgres_resource.get_connection.assert_called_once()

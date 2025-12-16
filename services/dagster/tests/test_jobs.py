@@ -15,8 +15,8 @@ class TestSyncUsersJob:
         assert sync_users_job.name == "sync_users_job"
         # Resolve the job to access its selection
         resolved_job = defs.get_job_def("sync_users_job")
-        # Access selection via the resolved job's selection property
-        selection = resolved_job.selection
+        # Access selection via the resolved job's op_selection property
+        selection = resolved_job.op_selection
         resolved_assets = selection.resolve(defs.get_all_asset_defs())
         assert len(resolved_assets) == 2
         asset_keys = [asset.key.to_user_string() for asset in resolved_assets]
