@@ -13,10 +13,9 @@ class TestSyncUsersJob:
         from dagster_project.definitions import defs
 
         assert sync_users_job.name == "sync_users_job"
-        # Resolve the job to access its selection
-        resolved_job = defs.get_job_def("sync_users_job")
-        # Access selection via the resolved job's op_selection property
-        selection = resolved_job.op_selection
+        # For asset jobs, access the selection from the unresolved job definition
+        # The selection is available before resolution
+        selection = sync_users_job.selection
         resolved_assets = selection.resolve(defs.get_all_asset_defs())
         assert len(resolved_assets) == 2
         asset_keys = [asset.key.to_user_string() for asset in resolved_assets]
