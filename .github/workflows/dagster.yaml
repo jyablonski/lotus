@@ -19,6 +19,7 @@ jobs:
         with:
           sparse-checkout: |
             services/dagster/**
+            services/dbt/**
             docker/**
             Makefile
           sparse-checkout-cone-mode: false
