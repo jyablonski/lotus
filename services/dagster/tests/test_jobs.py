@@ -10,16 +10,18 @@ class TestSyncUsersJob:
 
     def test_job_definition(self):
         """Test that the job is properly defined."""
+        from dagster_project.definitions import defs
+
         assert sync_users_job.name == "sync_users_job"
-        assert len(sync_users_job.asset_selection) == 2
-        assert "api_users" in [
-            asset.key.to_user_string()
-            for asset in sync_users_job.asset_selection.resolve([])
-        ]
-        assert "users_in_postgres" in [
-            asset.key.to_user_string()
-            for asset in sync_users_job.asset_selection.resolve([])
-        ]
+        # Resolve the job to access its selection
+        resolved_job = defs.get_job_def("sync_users_job")
+        # Access selection via the resolved job's selection property
+        selection = resolved_job.selection
+        resolved_assets = selection.resolve(defs.get_all_asset_defs())
+        assert len(resolved_assets) == 2
+        asset_keys = [asset.key.to_user_string() for asset in resolved_assets]
+        assert "api_users" in asset_keys
+        assert "users_in_postgres" in asset_keys
 
     def test_schedule_definition(self):
         """Test that the schedule is properly defined."""

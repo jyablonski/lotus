@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import patch, MagicMock
-from dagster import build_asset_context
+from dagster import build_op_context
 
 from dagster_project.assets.api_assets import api_users, users_in_postgres
 
@@ -28,7 +28,7 @@ class TestApiUsers:
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
 
-            context = build_asset_context()
+            context = build_op_context()
             result = api_users(context)
 
             assert result == mock_users
@@ -45,7 +45,7 @@ class TestApiUsers:
             mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")
             mock_get.return_value = mock_response
 
-            context = build_asset_context()
+            context = build_op_context()
 
             with pytest.raises(requests.HTTPError):
                 api_users(context)
@@ -72,8 +72,9 @@ class TestUsersInPostgres:
             },
         ]
 
-        # Execute the asset
-        users_in_postgres(asset_context, mock_users, mock_postgres_resource)
+        # Execute the asset with resources provided via context
+        context = build_op_context(resources={"postgres": mock_postgres_resource})
+        users_in_postgres(context, mock_users)
 
         # Verify database interactions
         mock_postgres_resource.get_connection.assert_called_once()
@@ -103,7 +104,8 @@ class TestUsersInPostgres:
 
     def test_users_in_postgres_empty_list(self, mock_postgres_resource, asset_context):
         """Test handling of empty user list."""
-        users_in_postgres(asset_context, [], mock_postgres_resource)
+        context = build_op_context(resources={"postgres": mock_postgres_resource})
+        users_in_postgres(context, [])
 
         mock_postgres_resource.get_connection.assert_called_once()
         mock_conn = (

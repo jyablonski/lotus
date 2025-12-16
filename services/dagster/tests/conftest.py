@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import MagicMock
-from dagster import build_asset_context
+from dagster import build_op_context
 from dagster_dbt import DbtCliResource
 
 from dagster_project.resources import PostgresResource
@@ -29,7 +29,7 @@ def mock_dbt_resource():
 @pytest.fixture
 def asset_context():
     """Create a test asset execution context."""
-    return build_asset_context()
+    return build_op_context()
 
 
 @pytest.fixture

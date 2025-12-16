@@ -36,6 +36,8 @@ class TestMaterialization:
 
     def test_materialize_with_mocked_postgres(self):
         """Test materializing users_in_postgres with mocked database."""
+        from contextlib import contextmanager
+
         mock_users = [
             {
                 "id": 1,
@@ -52,14 +54,20 @@ class TestMaterialization:
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
 
-            # Mock PostgresResource
-            mock_postgres = MagicMock(spec=PostgresResource)
+            # Create a real PostgresResource instance and replace get_connection with a mock
+            mock_postgres = PostgresResource()
             mock_conn = MagicMock()
             mock_cursor = MagicMock()
-            mock_postgres.get_connection.return_value.__enter__.return_value = mock_conn
-            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
 
-            # Materialize both assets
+            # Create a proper context manager mock
+            @contextmanager
+            def mock_get_connection():
+                yield mock_conn
+
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+            mock_postgres.get_connection = mock_get_connection
+
+            # Materialize both assets - ConfigurableResource instances can be passed directly
             result = materialize(
                 [api_users, users_in_postgres],
                 resources={"postgres": mock_postgres},
