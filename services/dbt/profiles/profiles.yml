@@ -14,7 +14,7 @@ analytics:
 local:
   outputs:
     dev:
-      dbname: localhost
+      dbname: postgres
       host: localhost
       pass: postgres
       port: 5432
