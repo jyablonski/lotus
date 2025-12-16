@@ -3,14 +3,13 @@ from pathlib import Path
 from dagster_dbt import DbtProject
 
 # Calculate path to dbt project
-# From services/dagster/src/dagster_project/dbt_config.py:
-# Path(__file__) = services/dagster/src/dagster_project/dbt_config.py
-# Path(__file__).parent = services/dagster/src/dagster_project/
-# Path(__file__).parent.parent = services/dagster/src/
-# Path(__file__).parent.parent.parent = services/dagster/
-# Path(__file__).parent.parent.parent.parent = services/
-# So services/dbt
-DBT_PROJECT_DIR = Path(__file__).parent.parent.parent.parent / "dbt"
+# From /app/src/dagster_project/dbt_config.py:
+# Path(__file__) = /app/src/dagster_project/dbt_config.py
+# Path(__file__).parent = /app/src/dagster_project/
+# Path(__file__).parent.parent = /app/src/
+# Path(__file__).parent.parent.parent = /app/
+# So /app/dbt
+DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt"
 
 # 1. Define the specific path to your profiles directory
 DBT_PROFILES_DIR = DBT_PROJECT_DIR / "profiles"
@@ -24,25 +23,4 @@ dbt_project = DbtProject(
     packaged_project_dir=Path(__file__).parent / "dbt_project",
 )
 
-# Now this will work because it sees the env var
-# prepare_if_dev() generates manifest in dev, but in production the manifest
-# should be packaged via 'dagster-dbt project prepare-and-package'
 dbt_project.prepare_if_dev()
-
-
-def get_manifest_path():
-    """Get the manifest path if it exists, None otherwise.
-
-    This allows lazy access to the manifest, which is useful for:
-    - Tests: Can skip dbt assets if manifest doesn't exist
-    - Production: Manifest should be packaged, but this handles missing gracefully
-    """
-    try:
-        manifest_path = dbt_project.manifest_path
-        if manifest_path.exists():
-            return manifest_path
-        return None
-    except Exception:
-        # If manifest_path property raises an error (e.g., DagsterDbtManifestNotFoundError)
-        # or if the path doesn't exist, return None
-        return None
