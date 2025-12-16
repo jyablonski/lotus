@@ -212,7 +212,7 @@ services:
 
 networks:
   default:
-    name: zcj_default
+    name: lotus_default
     driver: bridge
 
 volumes:
