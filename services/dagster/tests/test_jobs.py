@@ -1,7 +1,7 @@
 """Tests for Dagster jobs."""
 
 import pytest
-from dagster_project.definitions import defs
+from dagster_project.definitions import all_assets
 from dagster_project.jobs.sync_users_job import sync_users_job, sync_users_schedule
 
 
@@ -15,10 +15,9 @@ class TestSyncUsersJob:
         # For asset jobs, access the selection from the unresolved job definition
         # The selection is available before resolution
         selection = sync_users_job.selection
-        # Get all asset definitions from the repository
-        repo_def = defs.get_repository_def()
-        all_asset_defs = repo_def.get_all_asset_defs()
-        resolved_assets = selection.resolve(all_asset_defs)
+        # Use the assets directly from definitions.py
+        # all_assets is a list of asset definitions that can be used to resolve the selection
+        resolved_assets = selection.resolve(all_assets)
         assert len(resolved_assets) == 2
         asset_keys = [asset.key.to_user_string() for asset in resolved_assets]
         assert "api_users" in asset_keys
