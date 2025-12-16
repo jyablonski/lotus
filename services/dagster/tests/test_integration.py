@@ -31,7 +31,7 @@ class TestIntegration:
         """Test users_in_postgres asset with real Docker Postgres database.
 
         Uses the postgres service from docker-compose-local.yaml.
-        Test data is automatically cleaned up after the test.
+        No cleanup is performed - test data persists after the test.
         """
         # Create test users
         test_users = [

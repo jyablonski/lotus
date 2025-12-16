@@ -63,9 +63,9 @@ def postgres_resource():
 
 @pytest.fixture
 def postgres_resource_with_cleanup(postgres_resource):
-    """PostgresResource fixture that ensures test schema exists and cleans up after tests.
+    """PostgresResource fixture that ensures test schema exists.
 
-    Creates the test schema if it doesn't exist and drops test tables after each test.
+    Creates the test schema if it doesn't exist. No cleanup is performed.
     """
     # Ensure test schema exists
     schema_name = postgres_resource.schema_
@@ -74,21 +74,4 @@ def postgres_resource_with_cleanup(postgres_resource):
             cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
             conn.commit()
 
-    yield postgres_resource
-
-    # Cleanup: drop test tables (but keep schema)
-    with postgres_resource.get_connection() as conn:
-        with conn.cursor() as cur:
-            # Drop all tables in test schema
-            cur.execute(f"""
-                DO $$
-                DECLARE
-                    r RECORD;
-                BEGIN
-                    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '{schema_name}')
-                    LOOP
-                        EXECUTE 'DROP TABLE IF EXISTS {schema_name}.' || quote_ident(r.tablename) || ' CASCADE';
-                    END LOOP;
-                END $$;
-            """)
-            conn.commit()
+    return postgres_resource
