@@ -19,7 +19,8 @@ class TestSyncUsersJob:
         # all_assets is a list of asset definitions that can be used to resolve the selection
         resolved_assets = selection.resolve(all_assets)
         assert len(resolved_assets) == 2
-        asset_keys = [asset.key.to_user_string() for asset in resolved_assets]
+        # resolved_assets contains AssetKey objects, not asset definitions
+        asset_keys = [asset.to_user_string() for asset in resolved_assets]
         assert "api_users" in asset_keys
         assert "users_in_postgres" in asset_keys
 
