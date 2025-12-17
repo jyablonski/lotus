@@ -124,8 +124,6 @@ services:
       # volume linking for hot-reloading
       - ${PWD}/services/dagster/src:/app/src
       - ${PWD}/services/dbt:/app/dbt
-      # Preserve the venv (don't overwrite with host files)
-      - dagster_venv:/app/.venv
     environment:
       - DAGSTER_POSTGRES_USER=postgres
       - DAGSTER_POSTGRES_PASSWORD=postgres
@@ -218,4 +216,3 @@ networks:
 volumes:
   postgres_data:
   dagster_io_storage:
-  dagster_venv:

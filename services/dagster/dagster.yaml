@@ -30,18 +30,25 @@ run_coordinator:
   module: dagster.core.run_coordinator
   class: QueuedRunCoordinator
 
+# For local dev: run in-process (uses volume-mounted code)
+# For production: uncomment DockerRunLauncher below
 run_launcher:
-  module: dagster_docker
-  class: DockerRunLauncher
-  config:
-    image: dagster_server_image
-    network: lotus_default
-    env_vars:
-      - DAGSTER_POSTGRES_USER
-      - DAGSTER_POSTGRES_PASSWORD
-      - DAGSTER_POSTGRES_HOST
-      - DAGSTER_POSTGRES_DB
-      - DBT_PROFILES_DIR=/app/dbt
-    container_kwargs:
-      volumes:
-        - dagster_io_storage:/tmp/io_manager_storage
+  module: dagster.core.launcher
+  class: DefaultRunLauncher
+# TODO: this uses the docker run launcher, which is the recommended approach but it
+# doesn't work with volume linking for hot-reloading during dev, fucking retarded LMAO
+# run_launcher:
+#   module: dagster_docker
+#   class: DockerRunLauncher
+#   config:
+#     image: dagster_server_image
+#     network: lotus_default
+#     env_vars:
+#       - DAGSTER_POSTGRES_USER
+#       - DAGSTER_POSTGRES_PASSWORD
+#       - DAGSTER_POSTGRES_HOST
+#       - DAGSTER_POSTGRES_DB
+#       - DBT_PROFILES_DIR=/app/dbt
+#     container_kwargs:
+#       volumes:
+#         - dagster_io_storage:/tmp/io_manager_storage

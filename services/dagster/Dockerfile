@@ -57,7 +57,7 @@ COPY --chown=appuser:appuser services/dbt /app/dbt
 ENV DBT_PROFILES_DIR="/app/dbt"
 # 2. Tell Dagster where the code is (optional but good practice)
 ENV DAGSTER_CURRENT_IMAGE="dagster_server_image"
-# 3. Add src to Python path so dagster_project can be imported (needed when using --no-install-project)
+# 3. Add src to Python path so dagster_project can be imported
 ENV PYTHONPATH="/app/src:$PYTHONPATH"
 # NOTE: No DAGSTER_HOME needed - run containers get instance config serialized from daemon
 
@@ -70,4 +70,4 @@ EXPOSE 4000
 # -h 0.0.0.0: Listen on all interfaces (required for Docker)
 # -p 4000: The port we exposed
 # -m dagster_project.definitions: The python module to load
-CMD ["dagster", "api", "grpc", "-h", "0.0.0.0", "-p", "4000", "-m", "dagster_project.definitions"]
+CMD ["dagster", "code-server", "start", "-h", "0.0.0.0", "-p", "4000", "-m", "dagster_project.definitions"]

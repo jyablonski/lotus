@@ -1,13 +1,31 @@
 import os
-from dagster import Definitions, load_assets_from_modules
+from dagster import (
+    Definitions,
+    load_assets_from_modules,
+    JobDefinition,
+    ScheduleDefinition,
+)
 from dagster_dbt import DbtCliResource
+from dagster._core.definitions.unresolved_asset_job_definition import (
+    UnresolvedAssetJobDefinition,
+)
 
-from dagster_project import assets
-from dagster_project.jobs import hello_world_job, sync_users_job, sync_users_schedule
+from dagster_project import assets, jobs
 from dagster_project.resources import PostgresResource
 from dagster_project.dbt_config import dbt_project, DBT_PROFILES_DIR
 
 all_assets = load_assets_from_modules([assets])
+
+# Grab all jobs and schedules from the jobs module
+all_jobs = [
+    obj
+    for obj in vars(jobs).values()
+    if isinstance(obj, (JobDefinition, UnresolvedAssetJobDefinition))
+]
+all_schedules = [
+    obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)
+]
+
 
 # Build resources dict conditionally based on dbt_project availability
 resources = {
@@ -30,7 +48,7 @@ if dbt_project is not None:
 
 defs = Definitions(
     assets=all_assets,
-    jobs=[sync_users_job, hello_world_job],
-    schedules=[sync_users_schedule],
+    jobs=all_jobs,
+    schedules=all_schedules,
     resources=resources,
 )
