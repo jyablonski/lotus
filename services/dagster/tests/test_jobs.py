@@ -18,15 +18,16 @@ EXPECTED_JOBS = {
     "hello_world_job": {
         "assets": ["hello_world_asset"],
     },
-    "hello_world_job_v3": {
-        "assets": ["hello_world_asset"],
-    },
 }
 
 EXPECTED_SCHEDULES = {
     "sync_users_schedule": {
         "job": "sync_users_job",
         "cron": "0 12 * * *",
+    },
+    "daily_sales_schedule": {
+        "job": "daily_sales_job",
+        "cron": "0 1,13 * * *",
     },
 }
 
