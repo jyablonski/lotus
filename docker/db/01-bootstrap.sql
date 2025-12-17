@@ -1,7 +1,7 @@
 CREATE DATABASE dagster;
 CREATE SCHEMA source;
-CREATE SCHEMA core;
-CREATE SCHEMA staging;
+CREATE SCHEMA silver;
+CREATE SCHEMA gold;
 SET search_path TO source;
 
 -- this has to come after setting the schema search path ;-)

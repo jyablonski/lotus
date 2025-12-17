@@ -1,3 +1,5 @@
+import os
+
 from dagster import ConfigurableResource
 from contextlib import contextmanager
 import psycopg2
@@ -25,3 +27,14 @@ class PostgresResource(ConfigurableResource):
             yield conn
         finally:
             conn.close()
+
+
+# connection only happens once an asset or op calls `get_connection` on the resource
+postgres_conn = PostgresResource(
+    host=os.getenv("DAGSTER_POSTGRES_HOST", "postgres"),
+    port=int(os.getenv("DAGSTER_POSTGRES_PORT", "5432")),
+    user=os.getenv("DAGSTER_POSTGRES_USER", "postgres"),
+    password=os.getenv("DAGSTER_POSTGRES_PASSWORD", "postgres"),
+    database=os.getenv("DAGSTER_POSTGRES_DB", "postgres"),
+    schema_="source",
+)

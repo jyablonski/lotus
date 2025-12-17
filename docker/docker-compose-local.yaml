@@ -131,6 +131,7 @@ services:
       - DAGSTER_POSTGRES_DB=postgres
       - DAGSTER_CURRENT_IMAGE=dagster_server_image
       - DBT_PROFILES_DIR=/app/dbt/profiles
+      - API_KEY=fdwer424324aserdsfbbbb
     networks:
       - default
     healthcheck:

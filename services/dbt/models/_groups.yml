@@ -1,0 +1,20 @@
+groups:
+  - name: bronze
+    owner:
+      email: jyablonski9@gmail.com
+
+  - name: analytics
+    owner:
+      email: jyablonski9@gmail.com
+
+  - name: core
+    owner:
+      email: jyablonski9@gmail.com
+
+  - name: product
+    owner:
+      email: jyablonski9@gmail.com
+
+  - name: staging
+    owner:
+      email: jyablonski9@gmail.com

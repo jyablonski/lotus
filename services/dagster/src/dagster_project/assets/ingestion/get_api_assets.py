@@ -4,7 +4,7 @@ from dagster import asset, AssetExecutionContext
 from dagster_project.resources import PostgresResource
 
 
-@asset
+@asset(group_name="ingestion")
 def api_users(context: AssetExecutionContext) -> list[dict]:
     """Fetch users from JSONPlaceholder API."""
     response = requests.get("https://jsonplaceholder.typicode.com/users")
@@ -14,14 +14,14 @@ def api_users(context: AssetExecutionContext) -> list[dict]:
     return users
 
 
-@asset
+@asset(group_name="ingestion")
 def users_in_postgres(
     context: AssetExecutionContext,
     api_users: list[dict],
-    postgres: PostgresResource,
+    postgres_conn: PostgresResource,
 ) -> None:
     """Store users in Postgres."""
-    with postgres.get_connection() as conn:
+    with postgres_conn.get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS example_api_users (
