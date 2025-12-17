@@ -1,0 +1,15 @@
+# pasting this here for dagster
+# This file is used by Dagster Docker container
+# For local development, use profiles/profiles.yml
+analytics:
+  outputs:
+    dev:
+      dbname: postgres
+      host: postgres # Use postgres service name in Docker
+      pass: postgres
+      port: 5432
+      schema: public
+      threads: 8
+      type: postgres
+      user: postgres
+  target: dev

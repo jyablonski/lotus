@@ -17,7 +17,13 @@ experiments:
 infrastructure:
   - changed-files:
       - any-glob-to-any-file: "infra/**"
+      - any-glob-to-any-file: "docker/**"
+      - any-glob-to-any-file: ".github/**"
 
-airlfow:
+airflow:
   - changed-files:
       - any-glob-to-any-file: "services/airflow/**"
+
+dagster:
+  - changed-files:
+      - any-glob-to-any-file: "services/dagster/**"
