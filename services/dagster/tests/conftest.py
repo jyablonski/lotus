@@ -8,6 +8,16 @@ from dagster_dbt import DbtCliResource
 import pytest
 
 from dagster_project.resources import PostgresResource
+from dagster_project.resources.example_api import ApiClientResource
+
+
+@pytest.fixture
+def mock_api_client_resource():
+    """Mock ApiClientResource for unit tests."""
+    mock_resource = MagicMock(spec=ApiClientResource)
+    mock_session = MagicMock()
+    mock_resource.get_client.return_value = mock_session
+    return mock_resource
 
 
 @pytest.fixture
