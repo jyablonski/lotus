@@ -1,7 +1,7 @@
+from contextlib import contextmanager
 import os
 
 from dagster import ConfigurableResource
-from contextlib import contextmanager
 import psycopg2
 
 

@@ -3,7 +3,6 @@ from dagster_dbt import DbtCliResource, dbt_assets
 
 from dagster_project.dbt_config import dbt_project
 
-
 # Only define dbt_analytics if dbt_project is available
 # this is only for testing purposes so shit doesnt break
 if dbt_project is not None:

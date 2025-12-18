@@ -1,5 +1,5 @@
+from dagster import AssetExecutionContext, asset
 import polars as pl
-from dagster import asset, AssetExecutionContext
 
 from dagster_project.resources import PostgresResource
 
@@ -10,11 +10,10 @@ def unload_journals_to_s3(
     postgres_conn: PostgresResource,
 ) -> pl.DataFrame:
     """Pull data from postgres.core.fct_journal_entries into a Polars dataframe."""
-    with postgres_conn.get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM gold.user_journal_summary")
-            columns = [desc[0] for desc in cur.description]
-            rows = cur.fetchall()
+    with postgres_conn.get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT * FROM gold.user_journal_summary")
+        columns = [desc[0] for desc in cur.description]
+        rows = cur.fetchall()
 
     df = pl.DataFrame(rows, schema=columns)
 

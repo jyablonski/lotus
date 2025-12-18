@@ -1,7 +1,8 @@
-import polars as pl
-import random
 from datetime import date
-from dagster import asset, AssetExecutionContext
+import random
+
+from dagster import AssetExecutionContext, asset
+import polars as pl
 
 
 @asset(group_name="ingestion")

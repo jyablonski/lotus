@@ -1,4 +1,4 @@
-from .postgres import postgres_conn, PostgresResource
-from .example_api import api_client, ApiClientResource
+from .example_api import ApiClientResource, api_client
+from .postgres import PostgresResource, postgres_conn
 
-__all__ = ["postgres_conn", "api_client", "PostgresResource", "ApiClientResource"]
+__all__ = ["ApiClientResource", "PostgresResource", "api_client", "postgres_conn"]

@@ -1,4 +1,4 @@
-from dagster import define_asset_job, AssetSelection, ScheduleDefinition
+from dagster import AssetSelection, ScheduleDefinition, define_asset_job
 
 # upstream is another way of defining dependencies in a job between assets.
 # in this case, sales_summary depends on the sales_data asset first

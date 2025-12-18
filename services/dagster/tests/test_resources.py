@@ -1,7 +1,9 @@
 """Tests for Dagster resources."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from dagster_project.resources import PostgresResource
 
 

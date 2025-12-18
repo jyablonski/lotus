@@ -1,6 +1,7 @@
 import os
-import requests
+
 from dagster import ConfigurableResource
+import requests
 
 
 class ApiClientResource(ConfigurableResource):

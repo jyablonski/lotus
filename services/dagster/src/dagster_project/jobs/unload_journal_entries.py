@@ -1,4 +1,4 @@
-from dagster import define_asset_job, AssetSelection
+from dagster import AssetSelection, define_asset_job
 
 unload_journal_entries_job = define_asset_job(
     name="unload_journal_entries_job",

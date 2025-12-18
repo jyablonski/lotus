@@ -1,8 +1,8 @@
 """Tests for Dagster jobs and schedules."""
 
 import pytest
-from dagster_project.definitions import all_jobs, all_schedules
 
+from dagster_project.definitions import all_jobs, all_schedules
 
 # =============================================================================
 # Global registry - update these when adding new jobs/schedules

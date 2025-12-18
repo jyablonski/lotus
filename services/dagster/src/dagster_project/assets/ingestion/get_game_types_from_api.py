@@ -1,7 +1,7 @@
-from dagster import asset, AssetExecutionContext
-from dagster_project.resources import ApiClientResource
-
+from dagster import AssetExecutionContext, asset
 import requests
+
+from dagster_project.resources import ApiClientResource
 
 
 @asset(group_name="ingestion")

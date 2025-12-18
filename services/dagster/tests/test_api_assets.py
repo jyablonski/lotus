@@ -1,9 +1,10 @@
 """Unit tests for API assets."""
 
+from unittest.mock import MagicMock, patch
+
+from dagster import ResourceDefinition, build_op_context
 import pytest
 import requests
-from unittest.mock import patch, MagicMock
-from dagster import build_op_context, ResourceDefinition
 
 from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_postgres
 
@@ -23,9 +24,7 @@ class TestApiUsers:
             }
         ]
 
-        with patch(
-            "dagster_project.assets.ingestion.get_api_assets.requests.get"
-        ) as mock_get:
+        with patch("dagster_project.assets.ingestion.get_api_assets.requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users
             mock_response.raise_for_status.return_value = None
@@ -35,15 +34,11 @@ class TestApiUsers:
             result = api_users(context)
 
             assert result == mock_users
-            mock_get.assert_called_once_with(
-                "https://jsonplaceholder.typicode.com/users"
-            )
+            mock_get.assert_called_once_with("https://jsonplaceholder.typicode.com/users")
 
     def test_api_users_http_error(self):
         """Test handling of HTTP errors."""
-        with patch(
-            "dagster_project.assets.ingestion.get_api_assets.requests.get"
-        ) as mock_get:
+        with patch("dagster_project.assets.ingestion.get_api_assets.requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")
             mock_get.return_value = mock_response
@@ -90,24 +85,18 @@ class TestUsersInPostgres:
 
         # Check that CREATE TABLE was called
         create_table_calls = [
-            call
-            for call in mock_cursor.execute.call_args_list
-            if "CREATE TABLE" in str(call)
+            call for call in mock_cursor.execute.call_args_list if "CREATE TABLE" in str(call)
         ]
         assert len(create_table_calls) > 0
 
         # Check that INSERT statements were called for each user
         insert_calls = [
-            call
-            for call in mock_cursor.execute.call_args_list
-            if "INSERT INTO" in str(call)
+            call for call in mock_cursor.execute.call_args_list if "INSERT INTO" in str(call)
         ]
         assert len(insert_calls) == len(mock_users)
 
         # Verify commit was called
-        mock_conn = (
-            mock_postgres_resource.get_connection.return_value.__enter__.return_value
-        )
+        mock_conn = mock_postgres_resource.get_connection.return_value.__enter__.return_value
         mock_conn.commit.assert_called_once()
 
     def test_users_in_postgres_empty_list(self, mock_postgres_resource, asset_context):
@@ -121,7 +110,5 @@ class TestUsersInPostgres:
         users_in_postgres(context, [])
 
         mock_postgres_resource.get_connection.assert_called_once()
-        mock_conn = (
-            mock_postgres_resource.get_connection.return_value.__enter__.return_value
-        )
+        mock_conn = mock_postgres_resource.get_connection.return_value.__enter__.return_value
         mock_conn.commit.assert_called_once()

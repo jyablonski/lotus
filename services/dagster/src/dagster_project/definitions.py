@@ -1,19 +1,22 @@
 from dagster import (
     ConfigurableResource,
     Definitions,
-    load_assets_from_package_module,
     JobDefinition,
     ResourceDefinition,
     ScheduleDefinition,
+    load_assets_from_package_module,
 )
-from dagster_dbt import DbtCliResource
 from dagster._core.definitions.unresolved_asset_job_definition import (
     UnresolvedAssetJobDefinition,
 )
+from dagster_dbt import DbtCliResource
 
-from dagster_project import assets, jobs
-from dagster_project import resources as resources_module
-from dagster_project.dbt_config import dbt_project, DBT_PROFILES_DIR
+from dagster_project import (
+    assets,
+    jobs,
+    resources as resources_module,
+)
+from dagster_project.dbt_config import DBT_PROFILES_DIR, dbt_project
 
 
 def load_resources() -> dict:
@@ -32,9 +35,7 @@ all_jobs = [
     for obj in vars(jobs).values()
     if isinstance(obj, (JobDefinition, UnresolvedAssetJobDefinition))
 ]
-all_schedules = [
-    obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)
-]
+all_schedules = [obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)]
 
 all_resources = load_resources()
 

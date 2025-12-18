@@ -1,4 +1,4 @@
-from dagster import define_asset_job, AssetSelection, ScheduleDefinition
+from dagster import AssetSelection, ScheduleDefinition, define_asset_job
 
 sync_users_job = define_asset_job(
     name="sync_users_job",

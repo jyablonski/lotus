@@ -1,4 +1,4 @@
-from dagster import asset, AssetExecutionContext
+from dagster import AssetExecutionContext, asset
 
 
 @asset(group_name="ingestion")

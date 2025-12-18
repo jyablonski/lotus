@@ -1,4 +1,4 @@
-from dagster import define_asset_job, AssetSelection
+from dagster import AssetSelection, define_asset_job
 
 get_game_types_job = define_asset_job(
     name="get_game_types_job",
