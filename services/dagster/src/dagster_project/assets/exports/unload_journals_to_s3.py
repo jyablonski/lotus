@@ -15,7 +15,7 @@ def unload_journals_to_s3(
         columns = [desc[0] for desc in cur.description]
         rows = cur.fetchall()
 
-    df = pl.DataFrame(rows, schema=columns)
+    df = pl.DataFrame(rows, schema=columns, orient="row")
 
     # Print first 10 rows
     context.log.info(f"Total rows: {len(df)}")
