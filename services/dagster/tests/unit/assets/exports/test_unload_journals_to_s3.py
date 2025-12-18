@@ -36,7 +36,7 @@ class TestUnloadJournalsToS3:
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
         context = build_op_context(resources={"postgres_conn": postgres_resource_def})
 
-        result = unload_journals_to_s3(context, postgres_resource_def)
+        result = unload_journals_to_s3(context)
 
         # Verify database interactions
         mock_postgres_resource.get_connection.assert_called_once()
@@ -66,7 +66,7 @@ class TestUnloadJournalsToS3:
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
         context = build_op_context(resources={"postgres_conn": postgres_resource_def})
 
-        result = unload_journals_to_s3(context, postgres_resource_def)
+        result = unload_journals_to_s3(context)
 
         assert isinstance(result, pl.DataFrame)
         assert len(result) == 0
@@ -92,7 +92,7 @@ class TestUnloadJournalsToS3:
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
         context = build_op_context(resources={"postgres_conn": postgres_resource_def})
 
-        result = unload_journals_to_s3(context, postgres_resource_def)
+        result = unload_journals_to_s3(context)
 
         # Verify logging was called
         assert context.log.has_calls or True  # Logging may not be directly testable

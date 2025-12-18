@@ -32,7 +32,7 @@ class TestGetGameTypesFromApi:
 
         context = build_op_context(resources={"api_client": mock_api_client})
 
-        result = get_game_types_from_api(context, mock_api_client)
+        result = get_game_types_from_api(context)
 
         assert result == mock_data
         mock_session.get.assert_called_once_with("https://api.jyablonski.dev/v1/league/game_types")
@@ -51,7 +51,7 @@ class TestGetGameTypesFromApi:
         context = build_op_context(resources={"api_client": mock_api_client})
 
         with pytest.raises(requests.HTTPError):
-            get_game_types_from_api(context, mock_api_client)
+            get_game_types_from_api(context)
 
     def test_get_game_types_from_api_json_decode_error(self):
         """Test handling of JSON decode errors."""
@@ -71,7 +71,7 @@ class TestGetGameTypesFromApi:
         context = build_op_context(resources={"api_client": mock_api_client})
 
         with pytest.raises(requests.exceptions.JSONDecodeError):
-            get_game_types_from_api(context, mock_api_client)
+            get_game_types_from_api(context)
 
         # Verify error logging was attempted
         assert True  # Asset attempted to log error before raising
