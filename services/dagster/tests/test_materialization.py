@@ -72,7 +72,7 @@ class TestMaterialization:
                 # Materialize both assets - ConfigurableResource instances can be passed directly
                 result = materialize(
                     [api_users, users_in_postgres],
-                    resources={"postgres": mock_postgres},
+                    resources={"postgres_conn": mock_postgres},
                 )
 
                 assert result.success

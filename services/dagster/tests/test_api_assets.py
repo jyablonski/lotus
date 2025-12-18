@@ -81,7 +81,7 @@ class TestUsersInPostgres:
             return mock_postgres_resource
 
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres": postgres_resource_def})
+        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
         users_in_postgres(context, mock_users)
 
         # Verify database interactions
@@ -117,7 +117,7 @@ class TestUsersInPostgres:
             return mock_postgres_resource
 
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres": postgres_resource_def})
+        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
         users_in_postgres(context, [])
 
         mock_postgres_resource.get_connection.assert_called_once()
