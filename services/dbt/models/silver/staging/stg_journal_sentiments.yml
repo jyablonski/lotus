@@ -20,14 +20,16 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ["positive", "negative", "neutral", "uncertain"]
+              arguments:
+                values: ["positive", "negative", "neutral", "uncertain"]
 
       - name: confidence_level
         description: Confidence level category
         data_tests:
           - not_null
           - accepted_values:
-              values: ["high", "medium", "low"]
+              arguments:
+                values: ["high", "medium", "low"]
 
       - name: ml_model_version
         description: Version of the ML model used

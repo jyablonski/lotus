@@ -1,13 +1,23 @@
 """Pytest configuration and shared fixtures for Dagster tests."""
 
 import os
-
-import pytest
 from unittest.mock import MagicMock
+
 from dagster import build_op_context
 from dagster_dbt import DbtCliResource
+import pytest
 
 from dagster_project.resources import PostgresResource
+from dagster_project.resources.example_api import ApiClientResource
+
+
+@pytest.fixture
+def mock_api_client_resource():
+    """Mock ApiClientResource for unit tests."""
+    mock_resource = MagicMock(spec=ApiClientResource)
+    mock_session = MagicMock()
+    mock_resource.get_client.return_value = mock_session
+    return mock_resource
 
 
 @pytest.fixture
@@ -69,9 +79,8 @@ def postgres_resource_with_cleanup(postgres_resource):
     """
     # Ensure test schema exists
     schema_name = postgres_resource.schema_
-    with postgres_resource.get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
-            conn.commit()
+    with postgres_resource.get_connection() as conn, conn.cursor() as cur:
+        cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+        conn.commit()
 
     return postgres_resource

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 from dagster_dbt import DbtProject
 
 # Calculate path to dbt project

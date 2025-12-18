@@ -15,8 +15,9 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_journals')
-              field: journal_id
+              arguments:
+                to: ref('stg_journals')
+                field: journal_id
 
       - name: topic_name
         description: Name of the identified topic

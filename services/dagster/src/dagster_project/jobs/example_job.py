@@ -1,4 +1,4 @@
-from dagster import define_asset_job, AssetSelection
+from dagster import AssetSelection, define_asset_job
 
 hello_world_job = define_asset_job(
     name="hello_world_example_job",

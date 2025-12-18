@@ -1,10 +1,11 @@
-import polars as pl
-import random
 from datetime import date
-from dagster import asset, AssetExecutionContext
+import random
+
+from dagster import AssetExecutionContext, asset
+import polars as pl
 
 
-@asset
+@asset(group_name="ingestion")
 def sales_data(context: AssetExecutionContext) -> pl.DataFrame:
     """Generate a DataFrame with 10 rows of sales data."""
     df = pl.DataFrame(
@@ -19,7 +20,7 @@ def sales_data(context: AssetExecutionContext) -> pl.DataFrame:
 
 
 # Dagster infers the dependency from the function parameter name.
-@asset
+@asset(group_name="ingestion")
 def sales_summary(context: AssetExecutionContext, sales_data: pl.DataFrame) -> int:
     """Sum the total_sales field."""
     total = sales_data["total_sales"].sum()

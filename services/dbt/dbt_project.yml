@@ -18,10 +18,19 @@ models:
   +on_schema_change: "sync_all_columns"
 
   analytics:
-    staging:
-      +schema: staging
-      +on_schema_change: sync_all_columns
-
-    marts:
+    silver:
+      staging:
+        +group: staging
+        +schema: silver
       core:
-        +schema: core
+        +group: core
+        +schema: silver
+
+    gold:
+      +schema: gold
+      analytics:
+        +group: analytics
+
+sources:
+  analytics:
+    +group: sources

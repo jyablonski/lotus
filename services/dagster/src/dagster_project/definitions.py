@@ -1,20 +1,33 @@
-import os
 from dagster import (
+    ConfigurableResource,
     Definitions,
-    load_assets_from_modules,
     JobDefinition,
+    ResourceDefinition,
     ScheduleDefinition,
+    load_assets_from_package_module,
 )
-from dagster_dbt import DbtCliResource
 from dagster._core.definitions.unresolved_asset_job_definition import (
     UnresolvedAssetJobDefinition,
 )
+from dagster_dbt import DbtCliResource
 
-from dagster_project import assets, jobs
-from dagster_project.resources import PostgresResource
-from dagster_project.dbt_config import dbt_project, DBT_PROFILES_DIR
+from dagster_project import (
+    assets,
+    jobs,
+    resources as resources_module,
+)
+from dagster_project.dbt_config import DBT_PROFILES_DIR, dbt_project
 
-all_assets = load_assets_from_modules([assets])
+
+def load_resources() -> dict:
+    """Auto-discover all ConfigurableResource instances from resources module."""
+    resource_dict = {}
+    for name, obj in vars(resources_module).items():
+        if isinstance(obj, (ConfigurableResource, ResourceDefinition)):
+            # Use snake_case name as key
+            resource_dict[name.lower()] = obj
+    return resource_dict
+
 
 # Grab all jobs and schedules from the jobs module
 all_jobs = [
@@ -22,33 +35,21 @@ all_jobs = [
     for obj in vars(jobs).values()
     if isinstance(obj, (JobDefinition, UnresolvedAssetJobDefinition))
 ]
-all_schedules = [
-    obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)
-]
+all_schedules = [obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)]
 
+all_resources = load_resources()
 
-# Build resources dict conditionally based on dbt_project availability
-resources = {
-    "postgres": PostgresResource(
-        host=os.getenv("DAGSTER_POSTGRES_HOST", "postgres"),
-        port=int(os.getenv("DAGSTER_POSTGRES_PORT", "5432")),
-        user=os.getenv("DAGSTER_POSTGRES_USER", "postgres"),
-        password=os.getenv("DAGSTER_POSTGRES_PASSWORD", "postgres"),
-        database=os.getenv("DAGSTER_POSTGRES_DB", "postgres"),
-        schema_="source",
-    ),
-}
 
 # Only add dbt resource if dbt_project is available
 if dbt_project is not None:
-    resources["dbt"] = DbtCliResource(
+    all_resources["dbt"] = DbtCliResource(
         project_dir=dbt_project,
         profiles_dir=DBT_PROFILES_DIR,
     )
 
 defs = Definitions(
-    assets=all_assets,
+    assets=load_assets_from_package_module(assets),
     jobs=all_jobs,
     schedules=all_schedules,
-    resources=resources,
+    resources=all_resources,
 )

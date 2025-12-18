@@ -6,9 +6,10 @@ Start it with: docker-compose -f ../../docker/docker-compose-local.yaml up -d po
 Run with: pytest -m integration
 """
 
-import pytest
 from dagster import build_asset_context
-from dagster_project.assets.api_assets import api_users, users_in_postgres
+import pytest
+
+from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_postgres
 
 
 @pytest.mark.integration
@@ -50,11 +51,10 @@ class TestIntegration:
 
         # Verify data was stored
         # Note: search_path is set in PostgresResource, so table is in the test schema
-        with postgres_resource_with_cleanup.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM example_api_users WHERE id = %s", (999,))
-                result = cur.fetchone()
-                assert result is not None
-                assert result[1] == "Integration Test User"
-                assert result[2] == "integration@test.com"
-                assert result[3] == "integration_test"
+        with postgres_resource_with_cleanup.get_connection() as conn, conn.cursor() as cur:
+            cur.execute("SELECT * FROM example_api_users WHERE id = %s", (999,))
+            result = cur.fetchone()
+            assert result is not None
+            assert result[1] == "Integration Test User"
+            assert result[2] == "integration@test.com"
+            assert result[3] == "integration_test"

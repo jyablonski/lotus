@@ -211,3 +211,31 @@ dagster_project/
 ```
 
 The integration gives you automatic asset creation from dbt models, lineage tracking, and ability to run `dbt build` within Dagster pipelines natively.
+
+## potentailly easier resource / job / schedule cleanup
+
+```py
+import pkgutil
+import importlib
+from dagster import Definitions, load_assets_from_package_module
+
+from dagster_project import assets, jobs, schedules
+
+def collect_from_package(package, attr_type):
+    """Collect all objects of a given type from a package."""
+    items = []
+    for _, name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+        module = importlib.import_module(name)
+        for attr in dir(module):
+            obj = getattr(module, attr)
+            if isinstance(obj, attr_type):
+                items.append(obj)
+    return items
+
+defs = Definitions(
+    assets=load_assets_from_package_module(assets),
+    jobs=collect_from_package(jobs, JobDefinition),
+    schedules=collect_from_package(schedules, ScheduleDefinition),
+)
+
+```
