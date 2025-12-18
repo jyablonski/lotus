@@ -11,7 +11,6 @@ from dagster_project.definitions import all_jobs, all_schedules
 EXPECTED_JOBS = [
     "get_game_types_job",
     "daily_sales_job",
-    "dbt_pipeline_job",
     "sync_users_job",
     "hello_world_example_job",
     "unload_journal_entries_job",
