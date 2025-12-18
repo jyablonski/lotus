@@ -12,7 +12,7 @@ def unload_journals_to_s3(
     """Pull data from postgres.core.fct_journal_entries into a Polars dataframe."""
     with postgres_conn.get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM core.fct_journal_entries")
+            cur.execute("SELECT * FROM gold.user_journal_summary")
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
 
