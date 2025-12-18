@@ -92,8 +92,11 @@ class TestUnloadJournalsToS3:
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
         context = build_op_context(resources={"postgres_conn": postgres_resource_def})
 
+        # Mock the log methods to verify they're called
+        context.log.info = MagicMock()
+
         result = unload_journals_to_s3(context)
 
-        # Verify logging was called
-        assert context.log.has_calls or True  # Logging may not be directly testable
+        # Verify logging was called (asset logs twice: total rows and first 10 rows)
+        assert context.log.info.call_count == 2
         assert isinstance(result, pl.DataFrame)
