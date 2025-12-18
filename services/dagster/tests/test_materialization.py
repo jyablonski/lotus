@@ -23,7 +23,9 @@ class TestMaterialization:
             }
         ]
 
-        with patch("dagster_project.assets.api_assets.requests.get") as mock_get:
+        with patch(
+            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+        ) as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users
             mock_response.raise_for_status.return_value = None
@@ -46,7 +48,9 @@ class TestMaterialization:
         ]
 
         # Mock the API call
-        with patch("dagster_project.assets.api_assets.requests.get") as mock_get:
+        with patch(
+            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+        ) as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users
             mock_response.raise_for_status.return_value = None

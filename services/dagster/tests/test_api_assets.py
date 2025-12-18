@@ -23,7 +23,9 @@ class TestApiUsers:
             }
         ]
 
-        with patch("dagster_project.assets.api_assets.requests.get") as mock_get:
+        with patch(
+            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+        ) as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users
             mock_response.raise_for_status.return_value = None
@@ -39,7 +41,9 @@ class TestApiUsers:
 
     def test_api_users_http_error(self):
         """Test handling of HTTP errors."""
-        with patch("dagster_project.assets.api_assets.requests.get") as mock_get:
+        with patch(
+            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+        ) as mock_get:
             mock_response = MagicMock()
             mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")
             mock_get.return_value = mock_response
