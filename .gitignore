@@ -52,3 +52,5 @@ __pycache__/
 docker/mlflow/**
 **.log``
 **tmp/
+.vscode/
+lotus.code-workspace
