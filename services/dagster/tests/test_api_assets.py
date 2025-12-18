@@ -5,7 +5,7 @@ import requests
 from unittest.mock import patch, MagicMock
 from dagster import build_op_context, ResourceDefinition
 
-from dagster_project.assets.api_assets import api_users, users_in_postgres
+from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_postgres
 
 
 @pytest.mark.unit
