@@ -4,6 +4,7 @@ from dagster import (
     JobDefinition,
     ResourceDefinition,
     ScheduleDefinition,
+    load_asset_checks_from_package_module,
     load_assets_from_package_module,
 )
 from dagster._core.definitions.unresolved_asset_job_definition import (
@@ -49,6 +50,7 @@ if dbt_project is not None:
 
 defs = Definitions(
     assets=load_assets_from_package_module(assets),
+    asset_checks=load_asset_checks_from_package_module(assets),
     jobs=all_jobs,
     schedules=all_schedules,
     resources=all_resources,
