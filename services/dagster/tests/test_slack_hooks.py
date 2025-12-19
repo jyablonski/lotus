@@ -54,8 +54,8 @@ class TestSlackNotificationHooks:
         # Build hook context with resources
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
 
-        # Execute the hook
-        success_hook.hook_fn(context)
+        # Execute the hook (hook_fn requires context and event_list)
+        success_hook.hook_fn(context, [])
 
         # Verify Slack message was sent
         mock_slack_resource.send_message.assert_called_once_with(
@@ -76,7 +76,7 @@ class TestSlackNotificationHooks:
         success_hook = next(hook for hook in hooks if "success" in hook.name)
 
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
-        success_hook.hook_fn(context)
+        success_hook.hook_fn(context, [])
 
         mock_slack_resource.send_message.assert_called_once_with(
             message="Custom success message!",
@@ -95,7 +95,7 @@ class TestSlackNotificationHooks:
         success_hook = next(hook for hook in hooks if "success" in hook.name)
 
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
-        success_hook.hook_fn(context)
+        success_hook.hook_fn(context, [])
 
         mock_slack_resource.send_message.assert_called_once_with(
             message="✅ test_asset completed successfully!",
@@ -113,7 +113,7 @@ class TestSlackNotificationHooks:
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
 
         # Should not raise exception
-        success_hook.hook_fn(context)
+        success_hook.hook_fn(context, [])
 
         context.log.error.assert_called_once()
         assert "Failed to send Slack success notification" in str(context.log.error.call_args)
@@ -128,7 +128,7 @@ class TestSlackNotificationHooks:
 
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
         # No exception attributes set by default
-        failure_hook.hook_fn(context)
+        failure_hook.hook_fn(context, [])
 
         mock_slack_resource.send_message.assert_called_once_with(
             message="❌ test_asset failed!",
@@ -148,7 +148,7 @@ class TestSlackNotificationHooks:
             resources={"slack_resource": mock_slack_resource},
             op_exception=ValueError("Test error"),
         )
-        failure_hook.hook_fn(context)
+        failure_hook.hook_fn(context, [])
 
         call_args = mock_slack_resource.send_message.call_args
         assert call_args[1]["message"].startswith("❌ test_asset failed!")
@@ -165,7 +165,7 @@ class TestSlackNotificationHooks:
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
         # Set step_exception as attribute (build_hook_context doesn't support it directly)
         context.step_exception = RuntimeError("Step error")
-        failure_hook.hook_fn(context)
+        failure_hook.hook_fn(context, [])
 
         call_args = mock_slack_resource.send_message.call_args
         assert call_args[1]["message"].startswith("❌ test_asset failed!")
@@ -183,7 +183,7 @@ class TestSlackNotificationHooks:
         failure_hook = next(hook for hook in hooks if "failure" in hook.name)
 
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
-        failure_hook.hook_fn(context)
+        failure_hook.hook_fn(context, [])
 
         mock_slack_resource.send_message.assert_called_once_with(
             message="Custom failure message!",
@@ -201,7 +201,7 @@ class TestSlackNotificationHooks:
         context = build_hook_context(resources={"slack_resource": mock_slack_resource})
 
         # Should not raise exception
-        failure_hook.hook_fn(context)
+        failure_hook.hook_fn(context, [])
 
         context.log.error.assert_called_once()
         assert "Failed to send Slack failure notification" in str(context.log.error.call_args)
