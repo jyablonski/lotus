@@ -15,7 +15,7 @@ class TestSalesData:
 
     def test_sales_data_success(self):
         """Test successful generation of sales data DataFrame."""
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_data(context)
 
@@ -24,11 +24,13 @@ class TestSalesData:
         assert "id" in result.columns
         assert "total_sales" in result.columns
         assert "date" in result.columns
-        assert all(result["date"] == date.today())
+        # Check that date matches the partition date
+        partition_date = date(2025, 12, 18)
+        assert all(result["date"] == partition_date)
 
     def test_sales_data_has_correct_structure(self):
         """Test that sales_data generates correct DataFrame structure."""
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_data(context)
 
@@ -61,7 +63,7 @@ class TestSalesSummary:
             }
         )
 
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_summary(context, test_df)
 
@@ -79,7 +81,7 @@ class TestSalesSummary:
             }
         )
 
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_summary(context, test_df)
 
@@ -96,7 +98,7 @@ class TestSalesSummary:
             }
         )
 
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_summary(context, test_df)
 
