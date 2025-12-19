@@ -280,15 +280,26 @@ class TestSlackResource:
         with pytest.raises(ValueError, match="Either webhook_url or bot_token must be configured"):
             resource.send_message("Test message")
 
-    def test_send_message_webhook_takes_precedence(self):
+    @patch("dagster_project.resources.slack.requests.post")
+    def test_send_message_webhook_takes_precedence(self, mock_post):
         """Test that webhook_url takes precedence over bot_token when both are set."""
+        mock_response = MagicMock()
+        mock_response.text = "ok"
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
         resource = SlackResource(
             webhook_url="https://hooks.slack.com/test",
             bot_token="xoxb-test-token",
         )
 
         # Should use webhook, not bot token
-        with patch.object(resource, "_send_via_webhook") as mock_webhook:
-            mock_webhook.return_value = {"ok": True}
-            resource.send_message("Test message")
-            mock_webhook.assert_called_once()
+        result = resource.send_message("Test message", channel="#test-channel")
+
+        # Verify webhook URL was called, not bot token API
+        mock_post.assert_called_once_with(
+            "https://hooks.slack.com/test",
+            json={"text": "Test message", "channel": "#test-channel"},
+            timeout=10,
+        )
+        assert result == {"ok": True, "text": "ok"}

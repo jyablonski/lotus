@@ -18,7 +18,7 @@ EXPECTED_JOBS = [
 
 EXPECTED_SCHEDULES = [
     "sync_users_schedule",
-    "daily_sales_schedule",
+    "daily_sales_job_schedule",
 ]
 
 
