@@ -132,6 +132,8 @@ services:
       - DAGSTER_CURRENT_IMAGE=dagster_server_image
       - DBT_PROFILES_DIR=/app/dbt/profiles
       - API_KEY=fdwer424324aserdsfbbbb
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL}
     networks:
       - default
     healthcheck:
@@ -197,6 +199,8 @@ services:
       - DAGSTER_POSTGRES_PASSWORD=postgres
       - DAGSTER_POSTGRES_HOST=postgres
       - DAGSTER_POSTGRES_DB=postgres
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL}
     volumes:
       # Make docker client accessible so we can launch containers using host docker
       - /var/run/docker.sock:/var/run/docker.sock

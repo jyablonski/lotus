@@ -15,31 +15,37 @@ class TestSalesData:
 
     def test_sales_data_success(self):
         """Test successful generation of sales data DataFrame."""
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_data(context)
 
         assert isinstance(result, pl.DataFrame)
-        assert len(result) == 10
+        # Asset generates 5-100 random rows
+        assert len(result) >= 5
+        assert len(result) <= 100
         assert "id" in result.columns
         assert "total_sales" in result.columns
         assert "date" in result.columns
-        assert all(result["date"] == date.today())
+        # Check that date matches the partition date
+        partition_date = date(2025, 12, 18)
+        assert all(result["date"] == partition_date)
 
     def test_sales_data_has_correct_structure(self):
         """Test that sales_data generates correct DataFrame structure."""
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_data(context)
 
         # Verify column types
-        assert result["id"].dtype == pl.Int64
+        # IDs are UUID strings, not integers
+        assert result["id"].dtype == pl.Utf8
         assert result["total_sales"].dtype == pl.Int64
         assert result["date"].dtype == pl.Date
 
-        # Verify id range
-        assert result["id"].min() == 1
-        assert result["id"].max() == 10
+        # Verify IDs are non-null UUID strings
+        assert result["id"].null_count() == 0
+        # UUIDs are 36 characters long (with hyphens)
+        assert all(result["id"].str.len_chars() == 36)
 
         # Verify sales values are within expected range
         assert result["total_sales"].min() >= 10
@@ -61,7 +67,7 @@ class TestSalesSummary:
             }
         )
 
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_summary(context, test_df)
 
@@ -79,7 +85,7 @@ class TestSalesSummary:
             }
         )
 
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_summary(context, test_df)
 
@@ -96,7 +102,7 @@ class TestSalesSummary:
             }
         )
 
-        context = build_op_context()
+        context = build_op_context(partition_key="2025-12-18")
 
         result = sales_summary(context, test_df)
 

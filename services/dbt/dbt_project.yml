@@ -21,15 +21,18 @@ models:
     silver:
       staging:
         +group: staging
+        +tags: ["staging"]
         +schema: silver
       core:
         +group: core
+        +tags: ["core"]
         +schema: silver
 
     gold:
       +schema: gold
       analytics:
         +group: analytics
+        +tags: ["analytics"]
 
 sources:
   analytics:
