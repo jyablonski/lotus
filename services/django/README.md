@@ -1,84 +1,92 @@
 # Lotus Django Admin
 
-Internal-only Django admin interface for managing Lotus data.
+Django App to serve as a schema migration tool as well as an Admin web interface for managing various things related to the project.
 
-## Setup
+After running the app, access the admin interface at: http://localhost:8000/admin/
 
-### 1. Install Dependencies
+## Directory Structure
 
-### 3. Handle Migrations
-
-Since the database tables already exist from `docker/db/01-bootstrap.sql`, you need to:
-
-1. Create migrations for Django's built-in apps (admin, auth, sessions, etc.):
-
-   ```bash
-   python manage.py makemigrations
-   ```
-
-2. Mark migrations as applied (fake) since tables already exist:
-
-   ```bash
-   python manage.py migrate --fake-initial
-   ```
-
-   Or use the convenience command:
-
-   ```bash
-   python manage.py fake_migrations
-   ```
-
-**Note:** The core app models are unmanaged (`managed = False`), so `makemigrations core` will show "No changes detected" - this is expected. Django won't create migrations for unmanaged models.
-
-### 4. Create Admin User
-
-To access the admin interface, you need to create a Django admin user linked to a Lotus user with Admin role.
-
-First, ensure you have a user in the `users` table with `role = 'Admin'`. Then create the Django admin user:
-
-```bash
-python manage.py create_admin_user --email your-admin@example.com --password your-password
 ```
-
-### 5. Run Development Server
-
-```bash
-python manage.py runserver
+services/django/
+├── core/                   # Main application
+│   ├── admin.py            # Admin interface configuration
+│   ├── backends.py         # Custom authentication backend (Lotus users)
+│   ├── middleware.py       # Admin-only access middleware
+│   ├── models.py           # Database models (managed=False for existing tables)
+│   ├── urls.py             # URL routing
+│   └── management/
+│       └── commands/       # Custom management commands
+│           ├── create_admin_user.py
+│           └── fake_migrations.py
+├── lotus_admin/            # Django project configuration
+│   ├── settings.py         # Project settings
+│   ├── urls.py             # Root URL configuration
+│   └── wsgi.py             # WSGI application
+├── tests/                  # Test suite
+│   ├── conftest.py         # Pytest fixtures and test database setup
+│   ├── test_admin.py       # Admin interface tests
+│   ├── test_backends.py    # Authentication backend tests
+│   ├── test_middleware.py  # Middleware tests
+│   └── test_models.py      # Model tests
+├── manage.py               # Django CLI
+├── pyproject.toml          # Dependencies and pytest config
+└── Dockerfile              # Container build
 ```
-
-Access the admin interface at: http://localhost:8000/admin/
 
 ## Admin Access Control
 
-The admin interface is restricted to users with the `Admin` role in the `users` table. The middleware checks:
+The `AdminOnlyMiddleware` restricts access to users with the `Admin` role:
 
-1. User is authenticated
-2. User exists in the `users` table
-3. User has `role = 'Admin'`
+1. User must be authenticated
+2. User must exist in the `users` table (by email match)
+3. User must have `role = 'Admin'`
 
-## Project Structure
+## Testing
 
-- `lotus_admin/` - Django project settings and configuration
-- `core/` - Main app with models and admin interface
-  - `models.py` - Database models (unmanaged, matching existing schema)
-  - `admin.py` - Admin interface configuration
-  - `middleware.py` - Admin-only access middleware
-  - `backends.py` - Custom authentication backend
-  - `management/commands/` - Custom management commands
+### Running Tests
 
-## Models
+```bash
+# Run all tests with coverage
+uv run pytest
+```
 
-All models are set to `managed = False` since the tables already exist:
+### Test Considerations for `managed=False` Models
 
-- `User` - Users table
-- `Journal` - Journal entries
-- `JournalDetail` - Journal analysis details
-- `JournalTopic` - ML topics for journals
-- `JournalSentiment` - Sentiment analysis for journals
+The core models use `managed=False` because their tables are created externally (via `docker/db/01-bootstrap.sql`). This creates testing challenges:
+
+**Problem:** Django won't create tables for unmanaged models in the test database.
+
+**Solution:** The `conftest.py` fixture `setup_test_database` handles this by:
+
+1. Creating the `source` schema and `uuid-ossp` extension
+2. Using Django's `SchemaEditor` to manually create tables for all unmanaged models
+3. Sorting models by FK dependencies to ensure parent tables are created first
+
+```python
+# From conftest.py - creates tables for unmanaged models
+with connection.schema_editor() as schema_editor:
+    for model in unmanaged_models:
+        schema_editor.create_model(model)
+```
+
+**Migration Considerations:** The `0002_create_admin_user` migration queries the `users` table. It includes a `table_exists()` check to skip gracefully during tests when the table doesn't exist yet.
+
+### Test Fixtures
+
+| Fixture               | Description                                                               |
+| --------------------- | ------------------------------------------------------------------------- |
+| `setup_test_database` | Creates schema and tables for unmanaged models (session-scoped, auto-use) |
+| `admin_user`          | Creates Django user + LotusUser with Admin role                           |
+| `admin_client`        | Authenticated test client with admin user                                 |
+
+## Database Configuration
+
+- **Engine:** PostgreSQL
+- **Schema:** `source` (set via `search_path` in settings)
+- **Tables:** Most exist externally; `feature_flags` is Django-managed
 
 ## Notes
 
-- The database uses PostgreSQL with the `source` schema
-- Models are unmanaged - Django won't create/modify tables
-- Use `--fake-initial` for migrations since tables exist
-- Admin authentication uses the existing `users` table
+- Use `--fake-initial` for migrations since most tables already exist
+- The `FeatureFlag` model is the only fully managed model
+- Admin authentication bridges Django's auth system with the Lotus `users` table

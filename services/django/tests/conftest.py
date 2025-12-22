@@ -29,31 +29,19 @@ def setup_test_database(django_db_setup, django_db_blocker):
     """Create tables for unmanaged models during test setup."""
     unmanaged_models = get_unmanaged_models()
 
-    print("\n" + "=" * 60)
-    print("Setting up test database - creating unmanaged model tables")
-    print(f"Found {len(unmanaged_models)} unmanaged models:")
-    for model in unmanaged_models:
-        print(f"  - {model.__name__} (table: {model._meta.db_table})")
-    print("=" * 60)
-
     with django_db_blocker.unblock():
         # Create schema and extensions
         with connection.cursor() as cursor:
             cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
             cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-            print("Created 'source' schema and uuid-ossp extension")
 
         # Use schema editor to create tables for unmanaged models
         with connection.schema_editor() as schema_editor:
             for model in unmanaged_models:
-                table_name = model._meta.db_table
                 try:
                     schema_editor.create_model(model)
-                    print(f"✓ Created table: {table_name}")
-                except Exception as e:
-                    print(f"✗ Failed to create table {table_name}: {e}")
-
-        print("=" * 60 + "\n")
+                except Exception:
+                    pass  # Table might already exist
 
 
 @pytest.fixture
