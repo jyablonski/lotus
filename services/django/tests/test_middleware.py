@@ -61,7 +61,7 @@ class TestAdminOnlyMiddleware:
         request = factory.get("/admin/core/featureflag/")
         request.user = django_user
         # Add mock session since middleware calls logout() which requires session
-        request.session = {}
+        request.session = type("MockSession", (), {"flush": lambda self: None})()
 
         middleware = AdminOnlyMiddleware(get_response)
         response = middleware(request)

@@ -25,6 +25,7 @@ addopts = [
     "--cov=core",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--color=yes",
 ]
 markers = [
     "unit: Unit tests that don't require external dependencies",
