@@ -33,6 +33,36 @@ services/django/
 └── Dockerfile              # Container build
 ```
 
+## Quick Start
+
+```bash
+# Start all services (from repo root)
+make up
+
+# Teardown
+make down
+```
+
+The `entrypoint.sh` script manages Django's startup:
+
+1. Checks for missing migrations (fails if model changes aren't committed)
+2. Runs existing migrations
+3. Starts the Django server
+
+### Creating Migrations
+
+If you modify models, create migrations locally before committing:
+
+1. Make model changes in `core/models.py`
+2. Generate migration files:
+   ```bash
+   cd services/django
+   uv run python manage.py makemigrations
+   ```
+3. Commit the new migration file from `core/migrations/`
+
+The entrypoint will reject startup if migrations are missing.
+
 ## Admin Access Control
 
 The `AdminOnlyMiddleware` restricts access to users with the `Admin` role:

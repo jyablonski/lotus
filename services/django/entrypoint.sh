@@ -9,13 +9,16 @@ done
 
 echo "Database is ready!"
 
-# Create migrations for Django's built-in apps (if needed)
-echo "Creating migrations..."
-python manage.py makemigrations --noinput || echo "No new migrations to create"
+# Check for missing migrations (developers should create these before committing)
+echo "Checking for missing migrations..."
+if ! python manage.py makemigrations --check --dry-run > /dev/null 2>&1; then
+    echo "ERROR: Missing migrations detected!"
+    echo "Run 'python manage.py makemigrations' locally and commit the migration files."
+    exit 1
+fi
+echo "All migrations are up to date."
 
 # Run migrations
-# - Django's built-in apps (admin, auth, sessions, etc.): Tables will be created normally
-# - Core app: Models are unmanaged (managed=False), so migrations just mark as applied without creating tables
 echo "Running migrations..."
 python manage.py migrate
 
