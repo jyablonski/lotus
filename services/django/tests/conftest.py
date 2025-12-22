@@ -6,14 +6,16 @@ from django.db import connection
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 
 
-@pytest.fixture(scope="session")
-def django_db_setup(django_db_setup, django_db_blocker):
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_database(django_db_createdb, django_db_blocker):
     with django_db_blocker.unblock():
         with connection.cursor() as cursor:
             cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
             cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+            cursor.execute("SET search_path TO source, public")
+            cursor.execute("DROP TABLE IF EXISTS source.users CASCADE")
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS source.users (
+                CREATE TABLE source.users (
                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                     email VARCHAR NOT NULL UNIQUE,
                     password VARCHAR,
