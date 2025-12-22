@@ -57,6 +57,8 @@ graph LR
         D[Postgres Database]
         E[Analyzer Service<br/>FastAPI + ML/LLM Clients]
         F[MLflow Server<br/>Model Registry]
+        H[Django<br/>Admin Interface]
+        I[Dagster<br/>Data Orchestration]
     end
 
     subgraph Frontend
@@ -72,7 +74,7 @@ graph LR
 
 - **Next.js Frontend** - User-facing web application for journal entry management
 - **Go Core Backend Service** - gRPC server with HTTP gateway for CRUD operations and core application logic throughout the app
-- **Python Analyzer Service** - FastAPI server that connects to MLFlow and LLM APIs to perform journal topic classification and sentiment analysis & provide enriched insights to users
+- **Python Analyzer Service** - FastAPI server connecting to MLflow and LLM APIs to asynchronously enrich journal entries with topic classification and sentiment analysis after user actions.
 - **Django Admin** - Database schema migration tool and internal admin interface for managing feature flags and application data
 - **PostgreSQL Database** - Primary database for journal entries and user data
 - **MLFlow Server** - Model registry and experiment tracking for ML workflows
