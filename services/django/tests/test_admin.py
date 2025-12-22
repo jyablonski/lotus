@@ -1,13 +1,13 @@
 import pytest
+from core.admin import admin_site
 from core.models import FeatureFlag
-from django.contrib.admin.sites import site
 from django.urls import reverse
 
 
 @pytest.mark.django_db
 class TestFeatureFlagAdmin:
     def test_feature_flag_registered_in_admin(self):
-        assert FeatureFlag in site._registry
+        assert FeatureFlag in admin_site._registry
 
     def test_admin_list_view(self, admin_client):
         FeatureFlag.objects.create(flag_name="test_feature", enabled=True)

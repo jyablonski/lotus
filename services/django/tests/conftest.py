@@ -60,13 +60,24 @@ def setup_test_database(django_db_setup, django_db_blocker):
 def admin_user(db):
     from django.contrib.auth.models import User
 
-    return User.objects.create_user(
+    # Use get_or_create since migration 0002 may have already created admin user
+    user, created = User.objects.get_or_create(
         username="admin",
-        email="admin@test.com",
-        password="testpass123",
-        is_staff=True,
-        is_superuser=True,
+        defaults={
+            "email": "admin@test.com",
+            "is_staff": True,
+            "is_superuser": True,
+        },
     )
+    if created:
+        user.set_password("testpass123")
+        user.save()
+    elif not user.is_staff:
+        # Ensure existing user has proper permissions for tests
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+    return user
 
 
 @pytest.fixture

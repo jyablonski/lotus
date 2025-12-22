@@ -34,8 +34,9 @@ class TestAdminOnlyMiddleware:
             return HttpResponse("OK")
 
         factory = RequestFactory()
-        request = factory.get("/admin/")
-        request.user = User()
+        # Use a specific admin path that isn't in the skip list
+        request = factory.get("/admin/core/featureflag/")
+        request.user = AnonymousUser()  # noqa: F821
 
         middleware = AdminOnlyMiddleware(get_response)
         response = middleware(request)
@@ -44,24 +45,24 @@ class TestAdminOnlyMiddleware:
         assert "/admin/login/" in response.url
 
     def test_middleware_denies_access_when_user_not_found(self):
-        # When LotusUser doesn't exist (which will happen in tests since managed=False),
-        # middleware should deny access
-        def get_response(req):
+        # When LotusUser doesn't exist, middleware should deny access
+        def get_response(_req):
             from django.http import HttpResponse
 
             return HttpResponse("OK")
 
         django_user = User.objects.create_user(
-            username="user@test.com",
-            email="user@test.com",
+            username="nonadmin@test.com",
+            email="nonadmin@test.com",
         )
 
         factory = RequestFactory()
-        request = factory.get("/admin/")
+        # Use a specific admin path that isn't in the skip list
+        request = factory.get("/admin/core/featureflag/")
         request.user = django_user
 
         middleware = AdminOnlyMiddleware(get_response)
         response = middleware(request)
 
-        # Should deny access since LotusUser lookup will fail (table doesn't exist in test DB)
+        # Should deny access since LotusUser with matching email doesn't exist
         assert response.status_code == 403
