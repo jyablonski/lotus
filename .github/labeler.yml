@@ -27,3 +27,7 @@ airflow:
 dagster:
   - changed-files:
       - any-glob-to-any-file: "services/dagster/**"
+
+django:
+  - changed-files:
+      - any-glob-to-any-file: "services/django/**"

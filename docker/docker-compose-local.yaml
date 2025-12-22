@@ -85,6 +85,31 @@ services:
       - postgres
       - mlflow
 
+  django_admin:
+    build:
+      context: ${PWD}/services/django
+      dockerfile: Dockerfile
+    container_name: django_admin
+    ports:
+      - "8000:8000"
+    volumes:
+      # volume linking for hot-reloading
+      - ${PWD}/services/django:/app
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-change-me-in-production}
+      - DJANGO_DEBUG=True
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+
   mlflow:
     build:
       context: ${PWD}/services/experiments
