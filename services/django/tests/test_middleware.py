@@ -1,6 +1,6 @@
 import pytest
 from core.middleware import AdminOnlyMiddleware
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.test import RequestFactory
 
 
@@ -36,7 +36,7 @@ class TestAdminOnlyMiddleware:
         factory = RequestFactory()
         # Use a specific admin path that isn't in the skip list
         request = factory.get("/admin/core/featureflag/")
-        request.user = AnonymousUser()  # noqa: F821
+        request.user = AnonymousUser()
 
         middleware = AdminOnlyMiddleware(get_response)
         response = middleware(request)
@@ -60,6 +60,8 @@ class TestAdminOnlyMiddleware:
         # Use a specific admin path that isn't in the skip list
         request = factory.get("/admin/core/featureflag/")
         request.user = django_user
+        # Add mock session since middleware calls logout() which requires session
+        request.session = {}
 
         middleware = AdminOnlyMiddleware(get_response)
         response = middleware(request)

@@ -58,26 +58,37 @@ def setup_test_database(django_db_setup, django_db_blocker):
 
 @pytest.fixture
 def admin_user(db):
-    from django.contrib.auth.models import User
+    from core.models import User as LotusUser
+    from django.contrib.auth.models import User as DjangoUser
 
-    # Use get_or_create since migration 0002 may have already created admin user
-    user, created = User.objects.get_or_create(
+    admin_email = "admin@test.com"
+
+    # Create Django User for authentication
+    django_user, created = DjangoUser.objects.get_or_create(
         username="admin",
         defaults={
-            "email": "admin@test.com",
+            "email": admin_email,
             "is_staff": True,
             "is_superuser": True,
         },
     )
     if created:
-        user.set_password("testpass123")
-        user.save()
-    elif not user.is_staff:
-        # Ensure existing user has proper permissions for tests
-        user.is_staff = True
-        user.is_superuser = True
-        user.save()
-    return user
+        django_user.set_password("testpass123")
+        django_user.save()
+    else:
+        # Ensure existing user has proper permissions and email for tests
+        django_user.email = admin_email
+        django_user.is_staff = True
+        django_user.is_superuser = True
+        django_user.save()
+
+    # Create matching LotusUser with Admin role (required by middleware)
+    LotusUser.objects.get_or_create(
+        email=admin_email,
+        defaults={"role": "Admin", "timezone": "UTC"},
+    )
+
+    return django_user
 
 
 @pytest.fixture
