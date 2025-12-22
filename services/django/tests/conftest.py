@@ -12,6 +12,21 @@ def django_db_setup(django_db_setup, django_db_blocker):
         with connection.cursor() as cursor:
             cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
             cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS source.users (
+                    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                    email VARCHAR NOT NULL UNIQUE,
+                    password VARCHAR,
+                    salt VARCHAR,
+                    oauth_provider VARCHAR,
+                    role VARCHAR DEFAULT 'Consumer' NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+                    modified_at TIMESTAMP DEFAULT NOW() NOT NULL,
+                    timezone VARCHAR DEFAULT 'UTC' NOT NULL
+                )
+            """)
+            # TODO: fix this to change core migrations to managed=True soon
+            # and you can remove this fixture
             connection.commit()
 
 
