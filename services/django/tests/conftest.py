@@ -7,10 +7,21 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 
 
 def get_unmanaged_models():
-    """Return all models with managed=False."""
+    """Return all models with managed=False, sorted by dependencies."""
     from django.apps import apps
 
-    return [m for m in apps.get_models() if not m._meta.managed]
+    unmanaged = [m for m in apps.get_models() if not m._meta.managed]
+
+    # Sort models so parent tables are created before children (FKs)
+    def get_dependencies(model):
+        """Count number of FK dependencies to other unmanaged models."""
+        count = 0
+        for field in model._meta.get_fields():
+            if hasattr(field, "related_model") and field.related_model in unmanaged:
+                count += 1
+        return count
+
+    return sorted(unmanaged, key=get_dependencies)
 
 
 @pytest.fixture(scope="session", autouse=True)
