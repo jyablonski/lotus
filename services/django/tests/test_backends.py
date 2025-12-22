@@ -76,3 +76,16 @@ class TestLotusUserBackend:
         user = backend.get_user(99999)
 
         assert user is None
+
+    def test_authenticate_user_no_password_no_oauth(self):
+        """User with no password and no OAuth should return None."""
+        LotusUser.objects.create(
+            email="incomplete@example.com",
+            password=None,
+            oauth_provider=None,
+        )
+
+        backend = LotusUserBackend()
+        user = backend.authenticate(None, username="incomplete@example.com")
+
+        assert user is None

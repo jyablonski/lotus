@@ -68,3 +68,37 @@ class TestAdminOnlyMiddleware:
 
         # Should deny access since LotusUser with matching email doesn't exist
         assert response.status_code == 403
+
+    def test_middleware_allows_unauthenticated_login_page(self):
+        """Unauthenticated user should be allowed to access login page."""
+
+        def get_response(req):
+            from django.http import HttpResponse
+
+            return HttpResponse("OK")
+
+        factory = RequestFactory()
+        request = factory.get("/admin/login/")
+        request.user = AnonymousUser()
+
+        middleware = AdminOnlyMiddleware(get_response)
+        response = middleware(request)
+
+        assert response.status_code == 200
+
+    def test_middleware_passes_through_non_admin_paths(self):
+        """Non-admin paths should pass through without checks."""
+
+        def get_response(req):
+            from django.http import HttpResponse
+
+            return HttpResponse("OK")
+
+        factory = RequestFactory()
+        request = factory.get("/api/health/")
+        request.user = AnonymousUser()
+
+        middleware = AdminOnlyMiddleware(get_response)
+        response = middleware(request)
+
+        assert response.status_code == 200
