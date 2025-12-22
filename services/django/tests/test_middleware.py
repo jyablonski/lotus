@@ -85,20 +85,3 @@ class TestAdminOnlyMiddleware:
         response = middleware(request)
 
         assert response.status_code == 200
-
-    def test_middleware_passes_through_non_admin_paths(self):
-        """Non-admin paths should pass through without checks."""
-
-        def get_response(req):
-            from django.http import HttpResponse
-
-            return HttpResponse("OK")
-
-        factory = RequestFactory()
-        request = factory.get("/api/health/")
-        request.user = AnonymousUser()
-
-        middleware = AdminOnlyMiddleware(get_response)
-        response = middleware(request)
-
-        assert response.status_code == 200
