@@ -3,11 +3,11 @@ name: Experiments CI / CD Pipeline
 on:
   pull_request:
     paths:
-      - 'services/experiments/**'
+      - "services/experiments/**"
 
 env:
-  UV_VERSION: '0.8.13'
-  PYTHON_VERSION: '3.13'
+  UV_VERSION: "0.8.13"
+  PYTHON_VERSION: "3.13"
 
 jobs:
   experiments-pipeline:
@@ -18,9 +18,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-              services/experiments/**
-              docker/**
-              Makefile
+            services/experiments/**
+            docker/**
+            Makefile
           sparse-checkout-cone-mode: false
           # needed to checkout only a single file
 

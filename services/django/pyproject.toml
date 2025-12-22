@@ -1,0 +1,34 @@
+[project]
+name = "django-app"
+version = "0.1.0"
+description = "Django admin interface for Lotus"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.0,<6.0",
+    "psycopg2-binary>=2.9.0",
+    "python-dotenv>=1.0.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0.0", "pytest-django>=4.8.0", "pytest-cov>=4.1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--cov=core",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+markers = [
+    "unit: Unit tests that don't require external dependencies",
+    "integration: Integration tests that require external services (e.g., database)",
+    "django_db: Django database tests",
+]
+DJANGO_SETTINGS_MODULE = "lotus_admin.settings"

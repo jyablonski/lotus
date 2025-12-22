@@ -3,7 +3,7 @@ name: Frontend CI / CD Pipeline
 on:
   pull_request:
     paths:
-      - 'services/frontend/**'
+      - "services/frontend/**"
 
 jobs:
   frontend-pipeline:
@@ -14,9 +14,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-              services/frontend/**
-              docker/**
-              Makefile
+            services/frontend/**
+            docker/**
+            Makefile
           sparse-checkout-cone-mode: false
           # needed to checkout only a single file
 
@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: services/frontend/package-lock.json
 
       - name: Install dependencies

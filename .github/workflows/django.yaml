@@ -1,26 +1,25 @@
-name: Analyzer CI / CD Pipeline
+name: Dagster CI / CD Pipeline
 
 on:
   pull_request:
     paths:
-      - "services/analyzer/**"
-      - "services/experiments/**"
+      - "services/dagster/**"
 
 env:
-  UV_VERSION: "0.8.13"
+  UV_VERSION: "0.9.5"
   PYTHON_VERSION: "3.13"
 
 jobs:
-  analyzer-pipeline:
+  dagster-pipeline:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: |
-            services/analyzer/**
-            services/experiments/**
+            services/dagster/**
+            services/dbt/**
             docker/**
             Makefile
           sparse-checkout-cone-mode: false
@@ -32,18 +31,19 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION}}
           enable-cache: true
           prune-cache: false
-          working-directory: services/analyzer
+          working-directory: services/dagster
 
       - name: Start Services
-        run: make ci-analyzer-up
+        run: make start-postgres
 
-      - name: Run analyzer tests
-        working-directory: services/analyzer
-        env:
-          ENV_TYPE: dev
-          MLFLOW_CONN_URI: http://localhost:5000
+      - name: Wait for Postgres
+        run: |
+          timeout 30 bash -c 'until docker exec postgres pg_isready -U postgres; do sleep 1; done'
+
+      - name: Run Tests
+        working-directory: services/dagster
         run: uv run pytest
 
-      - name: Stop Services
+      - name: Shutdown Services
         if: always()
-        run: make ci-analyzer-down
+        run: make stop-postgres
