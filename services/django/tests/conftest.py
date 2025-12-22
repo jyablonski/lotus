@@ -4,18 +4,34 @@ import pytest
 from django.db import connection
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
-# Disable AdminOnlyMiddleware in tests
-# TODO: Fix this once core models can be managed=True
-os.environ.setdefault("DJANGO_TEST", "1")
+
+
+def get_unmanaged_models():
+    """Return all models with managed=False."""
+    from django.apps import apps
+
+    return [m for m in apps.get_models() if not m._meta.managed]
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database(django_db_setup, django_db_blocker):
+    """Create tables for unmanaged models during test setup."""
+    unmanaged_models = get_unmanaged_models()
+
     with django_db_blocker.unblock():
+        # Create schema and extensions
         with connection.cursor() as cursor:
             cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
             cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-            connection.commit()
+
+        # Use schema editor to create tables for unmanaged models
+        with connection.schema_editor() as schema_editor:
+            for model in unmanaged_models:
+                try:
+                    schema_editor.create_model(model)
+                except Exception:
+                    # Table might already exist from a previous test run
+                    pass
 
 
 @pytest.fixture

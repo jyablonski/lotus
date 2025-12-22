@@ -38,12 +38,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.AdminOnlyMiddleware",  # Custom middleware for admin-only access
 ]
-
-# Only add AdminOnlyMiddleware if not in test mode
-# Tests can't use it because core models have managed=False and tables don't exist in test DB
-if not os.environ.get("DJANGO_TEST", ""):
-    MIDDLEWARE.append("core.middleware.AdminOnlyMiddleware")
 
 ROOT_URLCONF = "lotus_admin.urls"
 
