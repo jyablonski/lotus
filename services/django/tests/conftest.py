@@ -6,13 +6,13 @@ from django.db import connection
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_schema(django_db_createdb, django_db_blocker):
+@pytest.fixture(scope="session")
+def django_db_setup(django_db_setup, django_db_blocker):
     with django_db_blocker.unblock():
         with connection.cursor() as cursor:
             cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
             cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-            cursor.execute("SET search_path TO source, public")
+            connection.commit()
 
 
 @pytest.fixture
