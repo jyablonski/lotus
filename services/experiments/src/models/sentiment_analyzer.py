@@ -1,8 +1,9 @@
+import re
+from typing import Any
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
-import re
-from typing import Any
 
 
 class JournalSentimentAnalyzer:
@@ -103,8 +104,7 @@ class JournalSentimentAnalyzer:
             "confidence": confidence,
             "confidence_level": confidence_level,
             "all_scores": {
-                self.sentiment_labels[i]: float(prob)
-                for i, prob in enumerate(probabilities)
+                self.sentiment_labels[i]: float(prob) for i, prob in enumerate(probabilities)
             },
         }
 
@@ -112,9 +112,7 @@ class JournalSentimentAnalyzer:
         """Predict sentiment for multiple entries"""
         return [self.predict_sentiment(text) for text in texts]
 
-    def analyze_sentiment_trends(
-        self, entries_with_dates: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def analyze_sentiment_trends(self, entries_with_dates: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Analyze sentiment trends over time
 
@@ -133,9 +131,7 @@ class JournalSentimentAnalyzer:
             sentiment_counts[sentiment_result["sentiment"]] += 1
             total_confidence += sentiment_result["confidence"]
 
-        avg_confidence = (
-            total_confidence / len(entries_with_dates) if entries_with_dates else 0
-        )
+        avg_confidence = total_confidence / len(entries_with_dates) if entries_with_dates else 0
 
         return {
             "individual_results": results,
@@ -155,9 +151,7 @@ class JournalSentimentAnalyzer:
         return {
             "model_version": self.model_version,
             "status": "trained",
-            "vocabulary_size": len(tfidf.vocabulary_)
-            if hasattr(tfidf, "vocabulary_")
-            else 0,
+            "vocabulary_size": len(tfidf.vocabulary_) if hasattr(tfidf, "vocabulary_") else 0,
             "sentiment_labels": list(self.sentiment_labels.values()),
             "confidence_thresholds": self.confidence_thresholds,
         }

@@ -1,9 +1,9 @@
 import mlflow
 import mlflow.pytorch
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
 # step 1: load training data or generate dummy data
@@ -16,7 +16,7 @@ def load_data():
 # Or generate synthetic data
 def generate_dummy_data(n_samples=1000):
     data = []
-    for i in range(n_samples):
+    for _i in range(n_samples):
         # Create sample data
         data.append({...})
     return pd.DataFrame(data)
@@ -41,9 +41,7 @@ def prepare_features(df):
 
 # step 3: split up training and test data
 def split_data(X, y):
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     return X_train, X_val, y_train, y_val
 
 
@@ -83,7 +81,7 @@ def main():
     df = load_data()
 
     # 3. Prepare features
-    X, y, encoder, scaler = prepare_features(df)
+    X, y, _encoder, _scaler = prepare_features(df)
 
     # 4. Split data
     X_train, X_val, y_train, y_val = split_data(X, y)

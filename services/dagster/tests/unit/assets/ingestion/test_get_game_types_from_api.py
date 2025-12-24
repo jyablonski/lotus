@@ -6,7 +6,9 @@ from dagster import build_op_context
 import pytest
 import requests
 
-from dagster_project.assets.ingestion.get_game_types_from_api import get_game_types_from_api
+from dagster_project.assets.ingestion.get_game_types_from_api import (
+    get_game_types_from_api,
+)
 
 
 @pytest.mark.unit
@@ -35,7 +37,9 @@ class TestGetGameTypesFromApi:
         result = get_game_types_from_api(context)
 
         assert result == mock_data
-        mock_session.get.assert_called_once_with("https://api.jyablonski.dev/v1/league/game_types")
+        mock_session.get.assert_called_once_with(
+            "https://api.jyablonski.dev/v1/league/game_types"
+        )
         mock_response.raise_for_status.assert_called_once()
 
     def test_get_game_types_from_api_http_error(self):

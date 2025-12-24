@@ -1,7 +1,7 @@
-import pytest
 from core.middleware import AdminOnlyMiddleware
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import RequestFactory
+import pytest
 
 
 # NOTE: The core models (User, Journal, etc.) have managed=False, which means Django

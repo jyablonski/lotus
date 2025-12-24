@@ -1,8 +1,7 @@
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 from src.dependencies import get_openai_topic_client
 from src.main import app
-from src.schemas.openai_topics import TopicAnalysis
 
 
 def test_extract_work_topics(client_fixture, mock_openai_topic_client):

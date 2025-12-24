@@ -124,7 +124,6 @@ def delete_journal_sentiment(
     """Delete sentiment analysis for a journal entry"""
 
     try:
-
         deleted_count = delete_sentiment(
             db=db, journal_id=journal_id, model_version=model_version
         )
@@ -190,7 +189,8 @@ def analyze_journals_sentiment_batch(
             continue
 
     logger.info(
-        f"Successfully analyzed {len(results)} out of {len(request.journal_ids)} journals"
+        f"Successfully analyzed {len(results)} out of "
+        f"{len(request.journal_ids)} journals"
     )
     return results
 

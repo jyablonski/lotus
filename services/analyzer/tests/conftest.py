@@ -31,7 +31,7 @@ def real_sentiment_client():
         pytest.skip(f"Test sentiment model not found at {SENTIMENT_MODEL_PATH}")
 
     try:
-        with open(SENTIMENT_MODEL_PATH, "rb") as f:
+        with SENTIMENT_MODEL_PATH.open("rb") as f:
             test_pipeline = pickle.load(f)
 
         client = SentimentClient()

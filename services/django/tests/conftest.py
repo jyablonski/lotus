@@ -1,7 +1,8 @@
+import contextlib
 import os
 
-import pytest
 from django.db import connection
+import pytest
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 
@@ -38,10 +39,8 @@ def setup_test_database(django_db_setup, django_db_blocker):
         # Use schema editor to create tables for unmanaged models
         with connection.schema_editor() as schema_editor:
             for model in unmanaged_models:
-                try:
-                    schema_editor.create_model(model)
-                except Exception:
-                    pass  # Table might already exist
+                with contextlib.suppress(Exception):
+                    schema_editor.create_model(model)  # Table might already exist
 
 
 @pytest.fixture

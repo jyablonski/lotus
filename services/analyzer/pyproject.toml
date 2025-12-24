@@ -48,9 +48,7 @@ ignore = [
     "RET504", # dumbass return statement shit
 ]
 
-[tool.ruff.format]
-docstring-code-format = true
-docstring-code-line-length = 80
+# Ruff formatting config is inherited from root pyproject.toml
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = [

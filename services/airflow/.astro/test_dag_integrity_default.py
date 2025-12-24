@@ -4,11 +4,10 @@ from contextlib import contextmanager
 import logging
 import os
 
-import pytest
-
-from airflow.models import DagBag, Variable, Connection
 from airflow.hooks.base import BaseHook
+from airflow.models import Connection, DagBag, Variable
 from airflow.utils.db import initdb
+import pytest
 
 # init airflow database
 initdb()
@@ -34,9 +33,7 @@ def os_getenv_monkeypatch(key: str, *args, **kwargs):
     if args:
         default = args[0]  # os.getenv should get at most 1 arg after the key
     if kwargs:
-        default = kwargs.get(
-            "default", None
-        )  # and sometimes kwarg if people are using the sig
+        default = kwargs.get("default")  # and sometimes kwarg if people are using the sig
 
     env_value = os.environ.get(key, None)
 
@@ -69,9 +66,7 @@ _no_default = object()  # allow falsey defaults
 
 
 def variable_get_monkeypatch(key: str, default_var=_no_default, deserialize_json=False):
-    print(
-        f"Attempted to get Variable value during parse, returning a mocked value for {key}"
-    )
+    print(f"Attempted to get Variable value during parse, returning a mocked value for {key}")
 
     if default_var is not _no_default:
         return default_var
@@ -130,7 +125,7 @@ def get_import_errors():
 def test_file_imports(rel_path, rv):
     """Test for import errors on a file"""
     if os.path.exists(".astro/dag_integrity_exceptions.txt"):
-        with open(".astro/dag_integrity_exceptions.txt", "r") as f:
+        with open(".astro/dag_integrity_exceptions.txt") as f:
             exceptions = f.readlines()
     print(f"Exceptions: {exceptions}")
     if (rv != "No import errors") and rel_path not in exceptions:

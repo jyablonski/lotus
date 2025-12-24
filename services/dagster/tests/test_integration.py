@@ -51,7 +51,10 @@ class TestIntegration:
 
         # Verify data was stored
         # Note: search_path is set in PostgresResource, so table is in the test schema
-        with postgres_resource_with_cleanup.get_connection() as conn, conn.cursor() as cur:
+        with (
+            postgres_resource_with_cleanup.get_connection() as conn,
+            conn.cursor() as cur,
+        ):
             cur.execute("SELECT * FROM example_api_users WHERE id = %s", (999,))
             result = cur.fetchone()
             assert result is not None

@@ -270,14 +270,18 @@ class TestSlackResource:
         """Test sending message via bot token raises error when channel is missing."""
         resource = SlackResource(bot_token="xoxb-test-token")
 
-        with pytest.raises(ValueError, match="channel is required when using bot_token"):
+        with pytest.raises(
+            ValueError, match="channel is required when using bot_token"
+        ):
             resource.send_message("Test message")
 
     def test_send_message_no_config(self):
         """Test sending message raises error when neither webhook_url nor bot_token is configured."""
         resource = SlackResource()
 
-        with pytest.raises(ValueError, match="Either webhook_url or bot_token must be configured"):
+        with pytest.raises(
+            ValueError, match="Either webhook_url or bot_token must be configured"
+        ):
             resource.send_message("Test message")
 
     @patch("dagster_project.resources.slack.requests.post")

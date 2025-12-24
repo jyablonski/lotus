@@ -5,17 +5,17 @@ This demonstrates building an ML-based recommendation system with dummy data.
 Uses: pandas, scikit-learn, torch, and mlflow for experiment tracking
 """
 
-import numpy as np
-import pandas as pd
-import torch
-import torch.nn as nn
-from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_score, recall_score, f1_score
+import pickle
+
 import mlflow
 import mlflow.pytorch
-from typing import List, Tuple
-import pickle
+import numpy as np
+import pandas as pd
+from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
+import torch
+import torch.nn as nn
 
 # Set random seed for reproducibility
 np.random.seed(42)
@@ -26,7 +26,7 @@ class ArticleRecommenderNN(nn.Module):
     """PyTorch Neural Network for Article Recommendations"""
 
     def __init__(self, input_size, hidden_size, output_size):
-        super(ArticleRecommenderNN, self).__init__()
+        super().__init__()
         self.network = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
@@ -110,9 +110,7 @@ class ArticleRecommender:
 
             # Generate recommendations based on user preferences
             # This simulates the "forced" output based on logical rules
-            recommended = self._generate_logical_recommendations(
-                articles_read, favorite_topics
-            )
+            recommended = self._generate_logical_recommendations(articles_read, favorite_topics)
 
             data.append(
                 {
@@ -130,10 +128,10 @@ class ArticleRecommender:
 
     def _generate_logical_recommendations(
         self,
-        articles_read: List[str],
-        favorite_topics: List[str],
+        articles_read: list[str],
+        favorite_topics: list[str],
         n_recommendations: int = 5,
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate logical recommendations based on rules"""
 
         # Get topics from articles read
@@ -163,9 +161,7 @@ class ArticleRecommender:
         # Fill with random articles if needed
         if len(recommended) < n_recommendations:
             remaining = [
-                a
-                for a in self.all_articles
-                if a not in articles_read and a not in recommended
+                a for a in self.all_articles if a not in articles_read and a not in recommended
             ]
             recommended.extend(
                 np.random.choice(
@@ -177,7 +173,7 @@ class ArticleRecommender:
 
         return recommended[:n_recommendations]
 
-    def prepare_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    def prepare_features(self, df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """Convert raw data into feature matrix and labels"""
 
         print("Preparing features...")
@@ -264,12 +260,8 @@ class ArticleRecommender:
                         precision = precision_score(
                             y_val, val_preds, average="samples", zero_division=0
                         )
-                        recall = recall_score(
-                            y_val, val_preds, average="samples", zero_division=0
-                        )
-                        f1 = f1_score(
-                            y_val, val_preds, average="samples", zero_division=0
-                        )
+                        recall = recall_score(y_val, val_preds, average="samples", zero_division=0)
+                        f1 = f1_score(y_val, val_preds, average="samples", zero_division=0)
 
                         print(
                             f"Epoch {epoch + 1}/{epochs} - "
@@ -292,10 +284,10 @@ class ArticleRecommender:
     def predict(
         self,
         user_id: str,
-        article_ids_read: List[str],
+        article_ids_read: list[str],
         time_on_site: int,
         top_k: int = 5,
-    ) -> List[str]:
+    ) -> list[str]:
         """Make predictions for a single user request"""
 
         # Get user's favorite topics
@@ -321,11 +313,11 @@ class ArticleRecommender:
             predictions = self.model.predict_proba(X)[0]
 
         # Get top K articles (excluding already read)
-        article_scores = list(zip(self.mlb_recommended.classes_, predictions))
+        article_scores = list(zip(self.mlb_recommended.classes_, predictions, strict=False))
         article_scores.sort(key=lambda x: x[1], reverse=True)
 
         recommendations = []
-        for article, score in article_scores:
+        for article, _score in article_scores:
             if article not in article_ids_read and len(recommendations) < top_k:
                 recommendations.append(article)
 
@@ -385,9 +377,7 @@ def main():
     X, y = recommender.prepare_features(df)
 
     # Split data
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Train model
     recommender.train_pytorch_model(
@@ -410,13 +400,9 @@ def main():
     print(f"  User ID: {example_user}")
     print(f"  Articles Read: {example_articles}")
     print(f"  Time on Site: {example_time}s")
-    print(
-        f"  User Favorite Topics: {recommender.user_favorite_topics.get(example_user, 'N/A')}"
-    )
+    print(f"  User Favorite Topics: {recommender.user_favorite_topics.get(example_user, 'N/A')}")
 
-    recommendations = recommender.predict(
-        example_user, example_articles, example_time, top_k=5
-    )
+    recommendations = recommender.predict(example_user, example_articles, example_time, top_k=5)
 
     print(f"\nRecommended Articles: {recommendations}")
 

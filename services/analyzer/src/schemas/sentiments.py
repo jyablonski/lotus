@@ -18,7 +18,9 @@ class SentimentResponse(BaseModel):
     id: int
     journal_id: int
     sentiment: str = Field(
-        description="Sentiment classification: positive, negative, neutral, or uncertain"
+        description=(
+            "Sentiment classification: positive, negative, neutral, or uncertain"
+        )
     )
     confidence: float = Field(description="Model confidence score (0.0 to 1.0)")
     confidence_level: str = Field(

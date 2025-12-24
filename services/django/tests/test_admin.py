@@ -1,7 +1,7 @@
-import pytest
 from core.admin import admin_site
 from core.models import FeatureFlag
 from django.urls import reverse
+import pytest
 
 
 @pytest.mark.django_db

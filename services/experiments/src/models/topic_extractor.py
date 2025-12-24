@@ -2,10 +2,9 @@ from typing import Any
 
 import mlflow
 import mlflow.sklearn
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
-
 
 # basic as fuck topic extractor implementation
 # assume DS are spending entire sprints dedicated to this work & implementing more robust models

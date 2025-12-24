@@ -2,9 +2,9 @@
 
 from unittest.mock import MagicMock
 
+import pytest
 from dagster import build_op_context
 from dagster_dbt import DbtCliResource
-import pytest
 
 
 @pytest.mark.unit
@@ -17,7 +17,9 @@ class TestDbtAnalytics:
         from dagster_project.assets.transformations import dbt_assets
 
         # The asset should either be defined or None based on dbt_project
-        assert dbt_assets.dbt_analytics is None or hasattr(dbt_assets.dbt_analytics, "__call__")
+        assert dbt_assets.dbt_analytics is None or hasattr(
+            dbt_assets.dbt_analytics, "__call__"
+        )
 
     def test_dbt_analytics_when_available(self):
         """Test dbt_analytics when dbt_project is available."""
@@ -33,7 +35,7 @@ class TestDbtAnalytics:
             context = build_op_context(resources={"dbt": mock_dbt_resource})
 
             # Execute the asset
-            results = list(dbt_assets.dbt_analytics(context, mock_dbt_resource))
+            list(dbt_assets.dbt_analytics(context, mock_dbt_resource))
 
             mock_dbt_resource.cli.assert_called_once_with(["build"], context=context)
         else:

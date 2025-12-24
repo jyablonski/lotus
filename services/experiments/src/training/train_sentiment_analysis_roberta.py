@@ -1,14 +1,15 @@
 import pickle
+from typing import Any
+
 import mlflow
-import mlflow.transformers
 from mlflow.models.signature import infer_signature
-from sklearn.metrics import classification_report, accuracy_score
-from sklearn.model_selection import train_test_split
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
-import torch
+import mlflow.transformers
 import numpy as np
-from typing import List, Dict, Any
 import pandas as pd
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
 
 class ImprovedJournalSentimentAnalyzer:
@@ -44,7 +45,7 @@ class ImprovedJournalSentimentAnalyzer:
             "POSITIVE": "positive",
         }
 
-    def predict_sentiment(self, text: str) -> Dict[str, Any]:
+    def predict_sentiment(self, text: str) -> dict[str, Any]:
         """Predict sentiment for a single text"""
         result = self.sentiment_pipeline(text)[0]
 
@@ -57,15 +58,13 @@ class ImprovedJournalSentimentAnalyzer:
             "raw_output": result,
         }
 
-    def predict_batch(self, texts: List[str]) -> List[Dict[str, Any]]:
+    def predict_batch(self, texts: list[str]) -> list[dict[str, Any]]:
         """Predict sentiment for multiple texts efficiently"""
         results = self.sentiment_pipeline(texts)
 
         predictions = []
         for result in results:
-            mapped_label = self.label_mapping.get(
-                result["label"], result["label"].lower()
-            )
+            mapped_label = self.label_mapping.get(result["label"], result["label"].lower())
             predictions.append(
                 {
                     "sentiment": mapped_label,
@@ -76,7 +75,7 @@ class ImprovedJournalSentimentAnalyzer:
 
         return predictions
 
-    def analyze_sentiment_trends(self, entries: List[Dict[str, str]]) -> Dict[str, Any]:
+    def analyze_sentiment_trends(self, entries: list[dict[str, str]]) -> dict[str, Any]:
         """Analyze sentiment trends over time"""
         texts = [entry["text"] for entry in entries]
         predictions = self.predict_batch(texts)
@@ -99,11 +98,7 @@ class ImprovedJournalSentimentAnalyzer:
             "average_confidence": np.mean(confidences),
             "confidence_by_sentiment": {
                 sentiment: np.mean(
-                    [
-                        pred["confidence"]
-                        for pred in predictions
-                        if pred["sentiment"] == sentiment
-                    ]
+                    [pred["confidence"] for pred in predictions if pred["sentiment"] == sentiment]
                 )
                 for sentiment in set(sentiments)
             },
@@ -127,7 +122,7 @@ class EnsembleSentimentAnalyzer:
             ),
         }
 
-    def predict_sentiment(self, text: str) -> Dict[str, Any]:
+    def predict_sentiment(self, text: str) -> dict[str, Any]:
         """Ensemble prediction from multiple models"""
         predictions = {}
 
@@ -242,9 +237,7 @@ def train_and_register_improved():
             )  # At least 30% or enough for stratification
             test_size = min(test_size, 0.5)  # But not more than 50%
 
-            use_stratify = (
-                min_class_size >= 2 and (total_samples * test_size) >= num_classes
-            )
+            use_stratify = min_class_size >= 2 and (total_samples * test_size) >= num_classes
 
             if use_stratify:
                 train_data, test_data = train_test_split(
@@ -254,7 +247,7 @@ def train_and_register_improved():
                     stratify=[item["sentiment"] for item in training_data],
                 )
             else:
-                print(f"Warning: Using random split due to class distribution.")
+                print("Warning: Using random split due to class distribution.")
                 train_data, test_data = train_test_split(
                     training_data,
                     test_size=test_size,
@@ -301,15 +294,13 @@ def train_and_register_improved():
         print("\nChallenging Test Cases:")
         for i, test_text in enumerate(challenging_cases, 1):
             result = analyzer.predict_sentiment(test_text)
-            print(
-                f"{i}. '{test_text}' -> {result['sentiment']} ({result['confidence']:.3f})"
-            )
+            print(f"{i}. '{test_text}' -> {result['sentiment']} ({result['confidence']:.3f})")
 
         # Create input example and signature for MLflow
         sample_input = [challenging_cases[0]]
         sample_prediction = analyzer.predict_sentiment(challenging_cases[0])
         signature = infer_signature(sample_input, [sample_prediction])
-        print(f"Testing 1")
+        print("Testing 1")
 
         # Log as pickle model instead of transformers (simpler approach)
         mlflow.sklearn.log_model(
@@ -320,16 +311,16 @@ def train_and_register_improved():
             pip_requirements=["transformers", "torch", "numpy", "pandas"],
         )
 
-        print(f"Testing 123")
+        print("Testing 123")
         # Save the analyzer
         with open("improved_sentiment_analyzer.pkl", "wb") as f:
             pickle.dump(analyzer, f)
 
-        print(f"Testing 456")
+        print("Testing 456")
         mlflow.log_artifact("improved_sentiment_analyzer.pkl")
-        print(f"Testing 789")
+        print("Testing 789")
 
-        print(f"\nImproved sentiment model registered successfully!")
+        print("\nImproved sentiment model registered successfully!")
 
         return analyzer
 

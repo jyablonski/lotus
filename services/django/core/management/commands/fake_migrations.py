@@ -16,8 +16,6 @@ class Command(BaseCommand):
         # Fake initial migrations
         try:
             call_command("migrate", "--fake-initial", verbosity=1)
-            self.stdout.write(
-                self.style.SUCCESS("Successfully marked migrations as applied")
-            )
+            self.stdout.write(self.style.SUCCESS("Successfully marked migrations as applied"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error: {e}"))

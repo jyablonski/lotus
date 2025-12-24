@@ -6,13 +6,17 @@ from dagster_project.assets.transformations.dbt_assets import dbt_analytics
 # Only create the job if dbt_analytics is available
 if dbt_analytics is not None:
     # Build staging models first (tagged with 'staging')
-    staging_selection = build_dbt_asset_selection([dbt_analytics], dbt_select="tag:staging")
+    staging_selection = build_dbt_asset_selection(
+        [dbt_analytics], dbt_select="tag:staging"
+    )
 
     # Build core models (depends on staging, tagged with 'core')
     core_selection = build_dbt_asset_selection([dbt_analytics], dbt_select="tag:core")
 
     # Build analytics models (depends on core, tagged with 'analytics')
-    analytics_selection = build_dbt_asset_selection([dbt_analytics], dbt_select="tag:analytics")
+    analytics_selection = build_dbt_asset_selection(
+        [dbt_analytics], dbt_select="tag:analytics"
+    )
 
     # Combine all selections - Dagster will respect dependencies and run in order
     # staging -> core -> analytics

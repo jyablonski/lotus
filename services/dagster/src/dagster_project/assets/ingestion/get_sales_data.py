@@ -47,7 +47,9 @@ def sales_data(context: AssetExecutionContext) -> pl.DataFrame:
     )
 
     # Add metadata for observability
-    context.add_output_metadata(create_basic_metadata(context, num_rows=num_rows, df=df))
+    context.add_output_metadata(
+        create_basic_metadata(context, num_rows=num_rows, df=df)
+    )
 
     return df
 
@@ -80,7 +82,9 @@ def sales_data_asset_check(
             issues.append(f"Found {null_ids} null ID(s)")
         context.log.error(f"Asset check failed: {'; '.join(issues)}")
     else:
-        context.log.info(f"Asset check passed: sales range [{min_sales}, {max_sales}], no null IDs")
+        context.log.info(
+            f"Asset check passed: sales range [{min_sales}, {max_sales}], no null IDs"
+        )
 
     return AssetCheckResult(passed=passed)
 

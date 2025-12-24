@@ -36,7 +36,9 @@ all_jobs = [
     for obj in vars(jobs).values()
     if isinstance(obj, (JobDefinition, UnresolvedAssetJobDefinition))
 ]
-all_schedules = [obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)]
+all_schedules = [
+    obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)
+]
 
 all_resources = load_resources()
 

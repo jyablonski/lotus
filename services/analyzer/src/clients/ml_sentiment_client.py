@@ -186,7 +186,7 @@ class SentimentClient:
                 "confidence": result["confidence"],
                 "confidence_level": result["confidence_level"],
                 "reason": f"Low confidence ({result['confidence']:.1%}) - best guess was {result['sentiment']}",  # noqa
-                "details": f"Confidence below threshold ({self.min_confidence_threshold:.1%})", # noqa
+                "details": f"Confidence below threshold ({self.min_confidence_threshold:.1%})",  # noqa
                 "ml_model_version": self.model_version,
                 "original_prediction": result["sentiment"],
             }

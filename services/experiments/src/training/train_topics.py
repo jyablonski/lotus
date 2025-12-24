@@ -1,8 +1,8 @@
 import pickle
 
 import mlflow
-import mlflow.sklearn
 from mlflow.models.signature import infer_signature
+import mlflow.sklearn
 
 from src.models.topic_extractor import AdaptiveJournalTopicExtractor
 

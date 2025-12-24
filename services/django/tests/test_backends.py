@@ -1,7 +1,7 @@
-import pytest
 from core.backends import LotusUserBackend
 from core.models import User as LotusUser
 from django.contrib.auth.models import User as DjangoUser
+import pytest
 
 
 @pytest.mark.django_db
@@ -30,9 +30,7 @@ class TestLotusUserBackend:
         )
 
         backend = LotusUserBackend()
-        user = backend.authenticate(
-            None, username="password@example.com", password="somepass"
-        )
+        user = backend.authenticate(None, username="password@example.com", password="somepass")
 
         assert user is not None
         assert user.username == "password@example.com"
