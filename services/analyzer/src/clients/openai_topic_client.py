@@ -19,9 +19,7 @@ class OpenAITopicClient:
         mlflow.set_tracking_uri(uri=settings.mlflow_tracking_uri)
 
         try:
-            experiment = mlflow.get_experiment_by_name(
-                name=settings.mlflow_experiment_name
-            )
+            experiment = mlflow.get_experiment_by_name(name=settings.mlflow_experiment_name)
             if experiment is None:
                 mlflow.create_experiment(name=settings.mlflow_experiment_name)
         except Exception:
@@ -48,9 +46,7 @@ class OpenAITopicClient:
                 }
             )
 
-            description = (
-                f"Confidence score for each of the {request.max_topics} topics"
-            )
+            description = f"Confidence score for each of the {request.max_topics} topics"
 
             class DynamicTopicAnalysis(TopicAnalysis):
                 topics: list[str] = Field(

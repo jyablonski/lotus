@@ -1,6 +1,6 @@
-import logging
 from collections.abc import Generator
 from functools import lru_cache
+import logging
 
 import mlflow
 from sqlalchemy.orm import Session

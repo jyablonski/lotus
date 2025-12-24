@@ -7,7 +7,8 @@ def test_extract_work_topics(client_fixture, real_topic_client):
     app.dependency_overrides[get_topic_client] = lambda: real_topic_client
 
     try:
-        # Journal ID 2: "Work was really stressful today. I had three important meetings..."
+        # Journal ID 2: "Work was really stressful today. I had three
+        # important meetings..."
         response = client_fixture.post("/v1/journals/2/topics")
 
         assert response.status_code == 204
@@ -35,7 +36,8 @@ def test_extract_positive_topics(client_fixture, real_topic_client):
     app.dependency_overrides[get_topic_client] = lambda: real_topic_client
 
     try:
-        # Journal ID 1: "Today was an absolutely amazing day! I accomplished everything..."
+        # Journal ID 1: "Today was an absolutely amazing day! I accomplished
+        # everything..."
         response = client_fixture.post("/v1/journals/1/topics")
 
         assert response.status_code == 204
@@ -159,7 +161,7 @@ def test_topic_extraction_creates_different_results(client_fixture, real_topic_c
             results[journal_id] = data["topics"]
 
         # Results should exist for all journals
-        for journal_id, topics in results.items():
+        for _journal_id, topics in results.items():
             assert isinstance(topics, list)
             # Should have at least some topics (could be empty if confidence is low)
             if topics:

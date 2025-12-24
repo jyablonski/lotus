@@ -34,8 +34,7 @@ class SentimentClient:
 
         try:
             logger.info(
-                f"Loading sentiment model {self.model_name}:{model_version} - "
-                f"{self.mlflow_uri}"
+                f"Loading sentiment model {self.model_name}:{model_version} - {self.mlflow_uri}"
             )
             mlflow.set_tracking_uri(self.mlflow_uri)
 
@@ -47,20 +46,14 @@ class SentimentClient:
             if model_version == "latest":
                 try:
                     # Get all versions and find the latest one
-                    all_versions = client.search_model_versions(
-                        f"name='{self.model_name}'"
-                    )
+                    all_versions = client.search_model_versions(f"name='{self.model_name}'")
                     if not all_versions:
-                        raise ValueError(
-                            f"No versions found for model {self.model_name}"
-                        )
+                        raise ValueError(f"No versions found for model {self.model_name}")
 
                     # Sort by version number (descending) to get the latest
                     latest_version = max(all_versions, key=lambda v: int(v.version))
                     self.model_version = latest_version.version
-                    logger.info(
-                        f"Found latest sentiment model version: {self.model_version}"
-                    )
+                    logger.info(f"Found latest sentiment model version: {self.model_version}")
 
                 except Exception as e:
                     # Fallback: use 'latest' as version identifier
@@ -116,9 +109,7 @@ class SentimentClient:
             Dict with sentiment, confidence, confidence_level, and model info
         """
         if not self.is_ready():
-            raise RuntimeError(
-                "SentimentClient model not loaded. Call load_model() first."
-            )
+            raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
         # Get prediction and probabilities
         prediction = self.model.predict([text])[0]
@@ -144,8 +135,7 @@ class SentimentClient:
             "confidence_level": confidence_level,
             "is_reliable": is_reliable,
             "all_scores": {
-                self.sentiment_labels[i]: float(prob)
-                for i, prob in enumerate(probabilities)
+                self.sentiment_labels[i]: float(prob) for i, prob in enumerate(probabilities)
             },
             "ml_model_version": self.model_version,
             "reason": "High confidence classification"
@@ -156,9 +146,7 @@ class SentimentClient:
     def predict_sentiment_batch(self, texts: list[str]) -> list[dict[str, Any]]:
         """Predict sentiment for multiple entries"""
         if not self.is_ready():
-            raise RuntimeError(
-                "SentimentClient model not loaded. Call load_model() first."
-            )
+            raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
         return [self.predict_sentiment(text) for text in texts]
 
@@ -173,9 +161,7 @@ class SentimentClient:
         Returns sentiment or 'uncertain' if confidence is too low
         """
         if not self.is_ready():
-            raise RuntimeError(
-                "SentimentClient model not loaded. Call load_model() first."
-            )
+            raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
         result = self.predict_sentiment(text)
 
@@ -185,8 +171,8 @@ class SentimentClient:
                 "sentiment": "uncertain",
                 "confidence": result["confidence"],
                 "confidence_level": result["confidence_level"],
-                "reason": f"Low confidence ({result['confidence']:.1%}) - best guess was {result['sentiment']}",  # noqa
-                "details": f"Confidence below threshold ({self.min_confidence_threshold:.1%})", # noqa
+                "reason": f"Low confidence ({result['confidence']:.1%}) - best guess was {result['sentiment']}",
+                "details": f"Confidence below threshold ({self.min_confidence_threshold:.1%})",
                 "ml_model_version": self.model_version,
                 "original_prediction": result["sentiment"],
             }
@@ -199,9 +185,7 @@ class SentimentClient:
             "ml_model_version": self.model_version,
         }
 
-    def analyze_sentiment_trends(
-        self, entries_with_dates: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def analyze_sentiment_trends(self, entries_with_dates: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Analyze sentiment trends over time
 
@@ -209,9 +193,7 @@ class SentimentClient:
             entries_with_dates: List of dicts with 'text' and 'date' keys
         """
         if not self.is_ready():
-            raise RuntimeError(
-                "SentimentClient model not loaded. Call load_model() first."
-            )
+            raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
         results = []
         sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0, "uncertain": 0}
@@ -231,21 +213,15 @@ class SentimentClient:
 
             total_confidence += sentiment_result["confidence"]
 
-        avg_confidence = (
-            total_confidence / len(entries_with_dates) if entries_with_dates else 0
-        )
+        avg_confidence = total_confidence / len(entries_with_dates) if entries_with_dates else 0
         reliability_rate = (
             reliable_predictions / len(entries_with_dates) if entries_with_dates else 0
         )
 
         # Determine dominant sentiment (excluding uncertain)
-        reliable_counts = {
-            k: v for k, v in sentiment_counts.items() if k != "uncertain"
-        }
+        reliable_counts = {k: v for k, v in sentiment_counts.items() if k != "uncertain"}
         dominant_sentiment = (
-            max(reliable_counts, key=reliable_counts.get)
-            if reliable_counts
-            else "uncertain"
+            max(reliable_counts, key=reliable_counts.get) if reliable_counts else "uncertain"
         )
 
         return {

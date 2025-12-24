@@ -1,8 +1,9 @@
 import pickle
+
 import mlflow
-import mlflow.sklearn
 from mlflow.models.signature import infer_signature
-from sklearn.metrics import classification_report, accuracy_score
+import mlflow.sklearn
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
 from src.models.sentiment_analyzer import JournalSentimentAnalyzer

@@ -1,5 +1,4 @@
 import pytest
-
 from src.models.topic_extractor import AdaptiveJournalTopicExtractor
 
 
@@ -40,7 +39,9 @@ class TestAdaptiveJournalTopicExtractor:
 
     def test_adaptive_topic_count_medium_entry(self, trained_model):
         """Test that medium entries get moderate topic count"""
-        medium_text = "Today was productive at work but I felt stressed about the deadline."  # 13 words
+        medium_text = (
+            "Today was productive at work but I felt stressed about the deadline."  # 13 words
+        )
         topics = trained_model.extract_topics_adaptive(medium_text)
 
         assert len(topics) <= 4  # Max 4 topics for medium entries
@@ -58,9 +59,7 @@ class TestAdaptiveJournalTopicExtractor:
 
     def test_topic_output_format(self, trained_model):
         """Test that topics have correct format"""
-        topics = trained_model.extract_topics_adaptive(
-            "Test journal entry about work stress"
-        )
+        topics = trained_model.extract_topics_adaptive("Test journal entry about work stress")
 
         for topic in topics:
             assert "topic_id" in topic
@@ -73,9 +72,7 @@ class TestAdaptiveJournalTopicExtractor:
 
     def test_topics_sorted_by_confidence(self, trained_model):
         """Test that topics are returned in descending confidence order"""
-        topics = trained_model.extract_topics_adaptive(
-            "Work stress and family gratitude"
-        )
+        topics = trained_model.extract_topics_adaptive("Work stress and family gratitude")
 
         if len(topics) > 1:
             confidences = [topic["confidence"] for topic in topics]
@@ -137,8 +134,9 @@ class TestTopicExtractorPerformance:
 
     def test_memory_usage_reasonable(self, sample_training_data):
         """Test that model doesn't consume excessive memory"""
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         memory_before = process.memory_info().rss / 1024 / 1024  # MB

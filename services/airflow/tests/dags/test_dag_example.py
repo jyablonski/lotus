@@ -1,10 +1,11 @@
 """Example DAGs test. This test ensures that all Dags have tags, retries set to two, and no import errors. This is an example pytest and may not be fit the context of your DAGs. Feel free to add and remove tests."""
 
-import os
-import logging
 from contextlib import contextmanager
-import pytest
+import logging
+import os
+
 from airflow.models import DagBag
+import pytest
 
 
 @contextmanager
@@ -59,9 +60,7 @@ def test_file_imports(rel_path, rv):
 APPROVED_TAGS = {}
 
 
-@pytest.mark.parametrize(
-    "dag_id,dag,fileloc", get_dags(), ids=[x[2] for x in get_dags()]
-)
+@pytest.mark.parametrize("dag_id,dag,fileloc", get_dags(), ids=[x[2] for x in get_dags()])
 def test_dag_tags(dag_id, dag, fileloc):
     """
     test if a DAG is tagged and if those TAGs are in the approved list

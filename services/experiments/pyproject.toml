@@ -30,6 +30,7 @@ addopts = [
     "--cov=src",
     "--cov-report=html",
     "--cov-report=term-missing",
+    "--color=yes",
 ]
 markers = [
     "unit: Unit tests for individual components",

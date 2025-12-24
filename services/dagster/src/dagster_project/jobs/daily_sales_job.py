@@ -1,4 +1,8 @@
-from dagster import AssetSelection, build_schedule_from_partitioned_job, define_asset_job
+from dagster import (
+    AssetSelection,
+    build_schedule_from_partitioned_job,
+    define_asset_job,
+)
 
 from dagster_project.assets.ingestion.get_sales_data import daily_partitions
 

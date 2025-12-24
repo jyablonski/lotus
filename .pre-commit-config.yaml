@@ -18,22 +18,16 @@ repos:
 
   # General purpose linters and formatting
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
 
-  # Black formatter for Python scripts (optional)
-  # - repo: https://github.com/psf/black
-  #   rev: 24.3.0
-  #   hooks:
-  #     - id: black
-
   # Shell script linting
   - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.10.0
+    rev: v0.11.0
     hooks:
       - id: shellcheck
 
@@ -52,7 +46,7 @@ repos:
 
   # JSON and YAML validation
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args:
@@ -62,7 +56,9 @@ repos:
           ]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.11
+    rev: v0.14.10
     hooks:
       - id: ruff-check
+        exclude: ^services/airflow/
       - id: ruff-format
+        exclude: ^services/airflow/

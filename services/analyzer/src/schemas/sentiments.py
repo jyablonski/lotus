@@ -18,18 +18,12 @@ class SentimentResponse(BaseModel):
     id: int
     journal_id: int
     sentiment: str = Field(
-        description="Sentiment classification: positive, negative, neutral, or uncertain"
+        description=("Sentiment classification: positive, negative, neutral, or uncertain")
     )
     confidence: float = Field(description="Model confidence score (0.0 to 1.0)")
-    confidence_level: str = Field(
-        description="Human-readable confidence: high, medium, or low"
-    )
-    is_reliable: bool = Field(
-        description="Whether the prediction meets reliability threshold"
-    )
-    ml_model_version: str = Field(
-        description="Version of the ML model used for analysis"
-    )
+    confidence_level: str = Field(description="Human-readable confidence: high, medium, or low")
+    is_reliable: bool = Field(description="Whether the prediction meets reliability threshold")
+    ml_model_version: str = Field(description="Version of the ML model used for analysis")
     created_at: datetime = Field(description="When the analysis was performed")
     all_scores: dict[str, float] | None = Field(
         default=None,
@@ -44,12 +38,8 @@ class SentimentTrendResponse(BaseModel):
     """Response for sentiment trends over time"""
 
     period: str = Field(description="Time period (YYYY-MM-DD format)")
-    sentiment_counts: dict[str, int] = Field(
-        description="Count of each sentiment in this period"
-    )
-    avg_confidence: float = Field(
-        description="Average confidence score for this period"
-    )
+    sentiment_counts: dict[str, int] = Field(description="Count of each sentiment in this period")
+    avg_confidence: float = Field(description="Average confidence score for this period")
     total_entries: int = Field(description="Total entries analyzed in this period")
     dominant_sentiment: str = Field(description="Most common sentiment in this period")
 
@@ -59,16 +49,10 @@ class SentimentStatsResponse(BaseModel):
 
     total_analyzed: int = Field(description="Total number of journal entries analyzed")
     reliable_count: int = Field(description="Number of reliable predictions")
-    reliability_rate: float = Field(
-        description="Percentage of reliable predictions (0.0 to 1.0)"
-    )
-    sentiment_distribution: dict[str, int] = Field(
-        description="Count of each sentiment type"
-    )
+    reliability_rate: float = Field(description="Percentage of reliable predictions (0.0 to 1.0)")
+    sentiment_distribution: dict[str, int] = Field(description="Count of each sentiment type")
     avg_confidence: float = Field(description="Average confidence across all analyses")
-    latest_model_version: str | None = Field(
-        description="Most recent model version used"
-    )
+    latest_model_version: str | None = Field(description="Most recent model version used")
 
 
 class BulkSentimentAnalysisRequest(BaseModel):

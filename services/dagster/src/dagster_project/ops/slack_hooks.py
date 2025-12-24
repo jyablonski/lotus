@@ -38,7 +38,9 @@ def create_slack_notification_hooks(
     failure_msg = failure_message
     slack_channel = channel
 
-    @success_hook(required_resource_keys={"slack_resource"}, name=f"{asset_name}_success_hook")
+    @success_hook(
+        required_resource_keys={"slack_resource"}, name=f"{asset_name}_success_hook"
+    )
     def success_hook_fn(context: HookContext):
         """Hook that sends Slack notification on asset success."""
         slack = context.resources.slack_resource
@@ -51,7 +53,9 @@ def create_slack_notification_hooks(
         except Exception as e:
             context.log.error(f"Failed to send Slack success notification: {e}")
 
-    @failure_hook(required_resource_keys={"slack_resource"}, name=f"{asset_name}_failure_hook")
+    @failure_hook(
+        required_resource_keys={"slack_resource"}, name=f"{asset_name}_failure_hook"
+    )
     def failure_hook_fn(context: HookContext):
         """Hook that sends Slack notification on asset failure."""
         slack = context.resources.slack_resource

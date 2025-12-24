@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 from typing import Any
 
-import yaml
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import yaml
 
 logger = logging.getLogger(__name__)
 

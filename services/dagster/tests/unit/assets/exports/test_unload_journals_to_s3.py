@@ -28,7 +28,9 @@ class TestUnloadJournalsToS3:
         mock_cursor.description = [(col,) for col in mock_columns]
         mock_cursor.fetchall.return_value = mock_rows
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_postgres_resource.get_connection.return_value.__enter__.return_value = mock_conn
+        mock_postgres_resource.get_connection.return_value.__enter__.return_value = (
+            mock_conn
+        )
 
         def resource_fn(_context):
             return mock_postgres_resource
@@ -40,7 +42,9 @@ class TestUnloadJournalsToS3:
 
         # Verify database interactions
         mock_postgres_resource.get_connection.assert_called_once()
-        mock_cursor.execute.assert_called_once_with("SELECT * FROM gold.user_journal_summary")
+        mock_cursor.execute.assert_called_once_with(
+            "SELECT * FROM gold.user_journal_summary"
+        )
         mock_cursor.fetchall.assert_called_once()
 
         # Verify result is a Polars DataFrame
@@ -58,7 +62,9 @@ class TestUnloadJournalsToS3:
         mock_cursor.description = [(col,) for col in mock_columns]
         mock_cursor.fetchall.return_value = mock_rows
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_postgres_resource.get_connection.return_value.__enter__.return_value = mock_conn
+        mock_postgres_resource.get_connection.return_value.__enter__.return_value = (
+            mock_conn
+        )
 
         def resource_fn(_context):
             return mock_postgres_resource
@@ -84,7 +90,9 @@ class TestUnloadJournalsToS3:
         mock_cursor.description = [(col,) for col in mock_columns]
         mock_cursor.fetchall.return_value = mock_rows
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_postgres_resource.get_connection.return_value.__enter__.return_value = mock_conn
+        mock_postgres_resource.get_connection.return_value.__enter__.return_value = (
+            mock_conn
+        )
 
         def resource_fn(_context):
             return mock_postgres_resource

@@ -78,7 +78,10 @@ class SlackResource(ConfigurableResource):
             raise ValueError("channel is required when using bot_token")
 
         url = "https://slack.com/api/chat.postMessage"
-        headers = {"Authorization": f"Bearer {self.bot_token}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {self.bot_token}",
+            "Content-Type": "application/json",
+        }
         payload = {"channel": channel, "text": message}
 
         response = requests.post(url, headers=headers, json=payload, timeout=10)

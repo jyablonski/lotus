@@ -7,7 +7,6 @@ from sqlalchemy import (
     Text,
     func,
 )
-
 from src.database import Base
 
 
@@ -21,9 +20,7 @@ class JournalDetails(Base):
     sentiment_score = Column(Float, nullable=True)
     mood_label = Column(Text, nullable=True)
     keywords = Column(ARRAY(Text), nullable=True)
-    created_at = Column(
-        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
-    )
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     modified_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,

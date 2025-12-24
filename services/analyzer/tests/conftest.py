@@ -1,12 +1,11 @@
-import logging
-import pickle
 from datetime import datetime
+import logging
 from pathlib import Path
+import pickle
 from unittest.mock import AsyncMock, Mock
 
-import pytest
 from fastapi.testclient import TestClient
-
+import pytest
 from src.clients.ml_sentiment_client import SentimentClient
 from src.clients.ml_topic_client import TopicClient
 from src.dependencies import get_db
@@ -31,7 +30,7 @@ def real_sentiment_client():
         pytest.skip(f"Test sentiment model not found at {SENTIMENT_MODEL_PATH}")
 
     try:
-        with open(SENTIMENT_MODEL_PATH, "rb") as f:
+        with SENTIMENT_MODEL_PATH.open("rb") as f:
             test_pipeline = pickle.load(f)
 
         client = SentimentClient()
@@ -113,11 +112,11 @@ def override_db_dependency(test_db_session):
         del app.dependency_overrides[get_db]
 
 
-@pytest.fixture()
+@pytest.fixture
 def client_fixture():
     client = TestClient(app)
 
-    yield client
+    return client
 
 
 @pytest.fixture
@@ -207,9 +206,7 @@ def mock_openai_topic_client():
             )
         # Generic response
         return TopicAnalysis(
-            topics=["general", "life", "thoughts", "feelings", "day"][
-                : request.max_topics
-            ],
+            topics=["general", "life", "thoughts", "feelings", "day"][: request.max_topics],
             confidence_scores=[0.70, 0.65, 0.60, 0.55, 0.50][: request.max_topics],
         )
 

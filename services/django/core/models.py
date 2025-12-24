@@ -46,9 +46,7 @@ class Journal(models.Model):
         managed = False
         ordering = ["-created_at"]
         indexes = [
-            models.Index(
-                fields=["user", "-created_at"], name="idx_journals_user_created"
-            ),
+            models.Index(fields=["user", "-created_at"], name="idx_journals_user_created"),
         ]
 
     def __str__(self):
@@ -79,9 +77,7 @@ class JournalTopic(models.Model):
     """Journal topic model matching the existing journal_topics table."""
 
     id = models.AutoField(primary_key=True)
-    journal = models.ForeignKey(
-        Journal, on_delete=models.CASCADE, db_column="journal_id"
-    )
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
     topic_name = models.CharField(max_length=100)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     ml_model_version = models.CharField(max_length=50)
@@ -116,9 +112,7 @@ class JournalSentiment(models.Model):
     ]
 
     id = models.AutoField(primary_key=True)
-    journal = models.ForeignKey(
-        Journal, on_delete=models.CASCADE, db_column="journal_id"
-    )
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
     sentiment = models.CharField(max_length=20, choices=SENTIMENT_CHOICES)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     confidence_level = models.CharField(max_length=10, choices=CONFIDENCE_LEVEL_CHOICES)
@@ -133,9 +127,7 @@ class JournalSentiment(models.Model):
         unique_together = [["journal", "ml_model_version"]]
 
     def __str__(self):
-        return (
-            f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
-        )
+        return f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
 
 
 class FeatureFlag(models.Model):

@@ -1,0 +1,84 @@
+# pyproject.toml only used for ruff formatting and linting across all python projects
+[tool.ruff]
+# Enable auto-fixing
+fix = true
+# Show fixes that would be applied
+show-fixes = true
+# Target Python version
+target-version = "py313"
+# Line length
+line-length = 100
+# Exclude directories
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".ruff_cache",
+]
+
+[tool.ruff.lint]
+# Enable import sorting and organization
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PIE", # flake8-pie
+    "PT",  # flake8-pytest-style
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults
+    "ARG001", # Unused function argument
+    "ARG002", # Unused method argument
+    "ARG003", # Unused class method argument
+    "ARG004", # Unused static method argument
+    "ARG005", # Unused lambda argument
+]
+
+[tool.ruff.lint.isort]
+# Import sorting configuration
+force-single-line = false
+force-sort-within-sections = true
+split-on-trailing-comma = true
+combine-as-imports = true
+order-by-type = true
+force-wrap-aliases = true
+
+[tool.ruff.format]
+# Formatting configuration - shared across all projects
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore specific rules in test files
+"*test*.py" = [
+    "ARG",  # Allow unused arguments in tests
+    "S101", # Allow assert statements in tests
+]
+"tests/**/*.py" = [
+    "ARG",  # Allow unused arguments in tests
+    "S101", # Allow assert statements in tests
+]
+# Django migrations and Meta classes use mutable attributes by design
+"**/migrations/*.py" = [
+    "RUF012", # Django migrations require mutable lists
+]
+"**/models.py" = [
+    "RUF012", # Django Meta classes require mutable attributes
+]

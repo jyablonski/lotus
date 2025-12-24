@@ -124,3 +124,38 @@ In JSX, all components (and HTML tags) must be properly closed.
 ## Ongoing bugs
 
 1. frontend bug when making journal entries - i made an entry at monday oct 27 5:02 pm pt nd it shows up as it was created on tuesday oct 28, and tells me to create my first journal entry on the 27th
+
+## uv Version alignment
+
+True Single Source of Truth Approach
+
+1. Create .tool-versions or UV_VERSION file at root:
+   0.9.18
+2. Dockerfiles — use ARG only (no default):
+   ARG UV_VERSIONRUN pip install uv==${UV_VERSION} && \ uv sync --frozen --no-dev --no-install-project
+3. docker-compose — read from file and pass as build arg:
+   services: analyzer: build: context: ${PWD}/services/analyzer args: UV_VERSION: ${UV_VERSION}
+   Then create a .env file (or source script) that reads from .tool-versions:
+
+- `.env or a scriptUV_VERSION=$(cat .tool-versions | grep -E '^[0-9]' | head -1)export UV_VERSION`
+
+4. CI workflows — read from file in a step:
+
+- name: Set UV version run: echo "UV_VERSION=$(cat .tool-versions | grep -E '^[0-9]' | head -1)" >> $GITHUB_ENV- name: Install uv uses: astral-sh/setup-uv@v6 with: version: ${{ env.UV_VERSION }}
+
+Or even better: Use a Script/Helper
+
+Create a script that reads the version and exports it, then source it everywhere:
+
+```sh
+scripts/get-uv-version.sh:
+#!/bin/bash
+# Reads UV version from .tool-versions file
+cat .tool-versions | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | head -1
+```
+
+Then:
+
+- docker-compose: Use a script to set the env var before running
+- CI: Use the script in a step
+- Makefile: Use the script to set the variable

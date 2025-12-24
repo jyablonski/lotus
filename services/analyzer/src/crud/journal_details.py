@@ -1,15 +1,12 @@
 import logging
 
 from sqlalchemy.orm import Session
-
 from src.models.journal_details import JournalDetails
 
 logger = logging.getLogger(__name__)
 
 
-def create_or_update_analysis(
-    db: Session, journal_id: int, analysis: dict
-) -> JournalDetails:
+def create_or_update_analysis(db: Session, journal_id: int, analysis: dict) -> JournalDetails:
     """Insert or update journal analysis for a given journal ID."""
     logger.info(f"Starting analysis create/update for journal_id={journal_id}")
 

@@ -1,6 +1,5 @@
 import uuid
 
-import pytest
 from core.models import (
     FeatureFlag,
     Journal,
@@ -9,6 +8,8 @@ from core.models import (
     JournalTopic,
     User,
 )
+import django.db
+import pytest
 
 
 @pytest.mark.django_db
@@ -95,7 +96,7 @@ class TestFeatureFlag:
 
     def test_feature_flag_unique_name(self):
         FeatureFlag.objects.create(flag_name="unique_feature", enabled=True)
-        with pytest.raises(Exception):
+        with pytest.raises(django.db.IntegrityError, match="unique constraint"):
             FeatureFlag.objects.create(flag_name="unique_feature", enabled=False)
 
     def test_feature_flag_str_representation_enabled(self):
