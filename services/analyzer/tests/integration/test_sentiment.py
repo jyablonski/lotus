@@ -14,9 +14,7 @@ def test_analyze_positive_sentiment(client_fixture, real_sentiment_client):
         assert response.status_code == 200
         data = response.json()
         assert data["sentiment"] == "positive"
-        assert (
-            data["confidence"] > 0.5
-        )  # Should be confident about clearly positive text
+        assert data["confidence"] > 0.5  # Should be confident about clearly positive text
         assert data["is_reliable"] is True
 
     finally:
@@ -49,9 +47,7 @@ def test_get_sentiment_analysis(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        client_fixture.post(
-            "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False}
-        )
+        client_fixture.post("/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False})
 
         response = client_fixture.get("/v1/journals/1/sentiment")
 
@@ -124,9 +120,7 @@ def test_sentiment_trends(client_fixture, real_sentiment_client):
         )
 
         # Get trends
-        response = client_fixture.get(
-            "/v1/journals/sentiment/trends?days_back=1&group_by=day"
-        )
+        response = client_fixture.get("/v1/journals/sentiment/trends?days_back=1&group_by=day")
 
         assert response.status_code == 200
         data = response.json()
@@ -185,9 +179,7 @@ def test_delete_sentiment_analysis(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        client_fixture.post(
-            "/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False}
-        )
+        client_fixture.post("/v1/journals/1/sentiment/analyze", json={"force_reanalyze": False})
 
         response = client_fixture.delete("/v1/journals/1/sentiment")
 

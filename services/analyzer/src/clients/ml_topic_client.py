@@ -40,9 +40,7 @@ class TopicClient:
             return
 
         try:
-            logger.info(
-                f"Loading model {self.model_name}:{model_version} - {self.mlflow_uri}"
-            )
+            logger.info(f"Loading model {self.model_name}:{model_version} - {self.mlflow_uri}")
             mlflow.set_tracking_uri(self.mlflow_uri)
 
             model_uri = f"models:/{self.model_name}/{model_version}"
@@ -54,13 +52,9 @@ class TopicClient:
                 # Use the modern approach to get the latest version
                 try:
                     # Get all versions and find the latest one
-                    all_versions = client.search_model_versions(
-                        f"name='{self.model_name}'"
-                    )
+                    all_versions = client.search_model_versions(f"name='{self.model_name}'")
                     if not all_versions:
-                        raise ValueError(
-                            f"No versions found for model {self.model_name}"
-                        )
+                        raise ValueError(f"No versions found for model {self.model_name}")
 
                     # Sort by version number (descending) to get the latest
                     latest_version = max(all_versions, key=lambda v: int(v.version))
@@ -184,10 +178,7 @@ class TopicClient:
         }
 
         if max_confidence < self.max_confidence_threshold:
-            details = (
-                f'Best match was "{self.topic_labels[top_topic_id]}" '
-                f"at {max_confidence:.1%}"
-            )
+            details = f'Best match was "{self.topic_labels[top_topic_id]}" at {max_confidence:.1%}'
             return {
                 **base_result,
                 "topic_name": "Other",

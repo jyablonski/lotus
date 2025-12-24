@@ -161,7 +161,7 @@ def test_topic_extraction_creates_different_results(client_fixture, real_topic_c
             results[journal_id] = data["topics"]
 
         # Results should exist for all journals
-        for journal_id, topics in results.items():
+        for _journal_id, topics in results.items():
             assert isinstance(topics, list)
             # Should have at least some topics (could be empty if confidence is low)
             if topics:

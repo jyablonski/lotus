@@ -9,7 +9,6 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy.sql import func
-
 from src.database import Base
 
 

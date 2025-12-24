@@ -27,9 +27,7 @@ def extract_journal_topics(
 
         # Check if topic client is ready
         if not topic_client.is_ready():
-            raise HTTPException(
-                status_code=503, detail="Topic extraction service unavailable"
-            )
+            raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
 
         # Extract topics from the journal content (includes model version)
         topics = topic_client.extract_topics(journal.journal_text)
@@ -44,7 +42,7 @@ def extract_journal_topics(
 
     except Exception as e:
         logger.error(f"Error extracting topics for journal {journal_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
 @router.get("/journals/{journal_id}/topics")
@@ -76,7 +74,7 @@ def get_journal_topics(
 
     except Exception as e:
         logger.error(f"Error getting topics for journal {journal_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
 @router.get("/health/topics")

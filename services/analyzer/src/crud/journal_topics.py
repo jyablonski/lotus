@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 from sqlalchemy.orm import Session
-
 from src.models.journal_topics import JournalTopics
 
 logger = logging.getLogger(__name__)
@@ -29,9 +28,7 @@ def create_or_update_topics(
             topic_records.append(topic_record)
 
         db.commit()
-        logger.info(
-            f"Created {len(topic_records)} topic records for journal {journal_id}"
-        )
+        logger.info(f"Created {len(topic_records)} topic records for journal {journal_id}")
         return topic_records
 
     except Exception as e:
@@ -47,8 +44,4 @@ def get_topics_by_journal_id(db: Session, journal_id: int) -> list[JournalTopics
 
 def get_topics_by_model_version(db: Session, model_version: str) -> list[JournalTopics]:
     """Get all topics created with a specific model version."""
-    return (
-        db.query(JournalTopics)
-        .filter(JournalTopics.ml_model_version == model_version)
-        .all()
-    )
+    return db.query(JournalTopics).filter(JournalTopics.ml_model_version == model_version).all()

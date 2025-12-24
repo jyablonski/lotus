@@ -28,9 +28,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post(
-    "/journals/{journal_id}/sentiment/analyze", response_model=SentimentResponse
-)
+@router.post("/journals/{journal_id}/sentiment/analyze", response_model=SentimentResponse)
 def analyze_journal_sentiment(
     journal_id: int,
     request: SentimentAnalysisRequest,
@@ -47,9 +45,7 @@ def analyze_journal_sentiment(
         analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
     except Exception as e:
         logger.error(f"Sentiment analysis failed for journal {journal_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Sentiment analysis failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Sentiment analysis failed: {e!s}") from None
 
     try:
         sentiment_record = create_or_update_sentiment(
@@ -61,9 +57,7 @@ def analyze_journal_sentiment(
         return sentiment_record
     except Exception as e:
         logger.error(f"Database operation failed for journal {journal_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Database operation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Database operation failed: {e!s}") from None
 
 
 @router.get("/journals/{journal_id}/sentiment", response_model=SentimentResponse)
@@ -92,9 +86,7 @@ def get_journal_sentiment(
         raise
     except Exception as e:
         logger.error(f"Failed to retrieve sentiment for journal {journal_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Database operation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Database operation failed: {e!s}") from None
 
 
 @router.put("/journals/{journal_id}/sentiment", response_model=SentimentResponse)
@@ -111,27 +103,19 @@ def update_journal_sentiment(
     return analyze_journal_sentiment(journal_id, request, sentiment_client, db)
 
 
-@router.delete(
-    "/journals/{journal_id}/sentiment", response_model=SentimentDeleteResponse
-)
+@router.delete("/journals/{journal_id}/sentiment", response_model=SentimentDeleteResponse)
 def delete_journal_sentiment(
     journal_id: int,
-    model_version: str | None = Query(
-        None, description="Specific model version to delete"
-    ),
+    model_version: str | None = Query(None, description="Specific model version to delete"),
     db: Session = Depends(get_db),
 ):
     """Delete sentiment analysis for a journal entry"""
 
     try:
-        deleted_count = delete_sentiment(
-            db=db, journal_id=journal_id, model_version=model_version
-        )
+        deleted_count = delete_sentiment(db=db, journal_id=journal_id, model_version=model_version)
 
         if deleted_count == 0:
-            raise HTTPException(
-                status_code=404, detail="No sentiment analysis found to delete"
-            )
+            raise HTTPException(status_code=404, detail="No sentiment analysis found to delete")
 
         return SentimentDeleteResponse(
             message=f"Deleted {deleted_count} sentiment analysis record(s)",
@@ -143,13 +127,11 @@ def delete_journal_sentiment(
     except Exception as e:
         logger.error(f"Failed to delete sentiment for journal {journal_id}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to delete sentiment analysis: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to delete sentiment analysis: {e!s}"
+        ) from None
 
 
-@router.post(
-    "/journals/sentiment/analyze-batch", response_model=list[SentimentResponse]
-)
+@router.post("/journals/sentiment/analyze-batch", response_model=list[SentimentResponse])
 def analyze_journals_sentiment_batch(
     request: BulkSentimentAnalysisRequest,
     sentiment_client: SentimentClient = Depends(get_sentiment_client),
@@ -188,10 +170,7 @@ def analyze_journals_sentiment_batch(
             # Continue with other journals, don't fail entire batch
             continue
 
-    logger.info(
-        f"Successfully analyzed {len(results)} out of "
-        f"{len(request.journal_ids)} journals"
-    )
+    logger.info(f"Successfully analyzed {len(results)} out of {len(request.journal_ids)} journals")
     return results
 
 
@@ -206,9 +185,7 @@ def get_sentiment_trends_endpoint(
     """Get sentiment trends over time"""
 
     if group_by not in ["day", "week", "month"]:
-        raise HTTPException(
-            status_code=400, detail="group_by must be 'day', 'week', or 'month'"
-        )
+        raise HTTPException(status_code=400, detail="group_by must be 'day', 'week', or 'month'")
 
     try:
         trends_data = get_sentiment_trends(
@@ -235,8 +212,8 @@ def get_sentiment_trends_endpoint(
     except Exception as e:
         logger.error(f"Failed to retrieve sentiment trends: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve sentiment trends: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to retrieve sentiment trends: {e!s}"
+        ) from None
 
 
 @router.get("/journals/sentiment/stats", response_model=SentimentStatsResponse)
@@ -251,9 +228,7 @@ def get_sentiment_stats_endpoint(
         stats = get_sentiment_stats(db=db, days_back=days_back, user_id=user_id)
 
         if stats["total_analyzed"] == 0:
-            raise HTTPException(
-                status_code=404, detail="No sentiment analysis data found"
-            )
+            raise HTTPException(status_code=404, detail="No sentiment analysis data found")
 
         return SentimentStatsResponse(**stats)
     except HTTPException:
@@ -261,15 +236,13 @@ def get_sentiment_stats_endpoint(
     except Exception as e:
         logger.error(f"Failed to retrieve sentiment statistics: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve sentiment statistics: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to retrieve sentiment statistics: {e!s}"
+        ) from None
 
 
 @router.get("/journals/sentiment/batch", response_model=list[SentimentResponse])
 def get_sentiments_batch_endpoint(
-    journal_ids: list[int] = Query(
-        ..., description="List of journal IDs to get sentiments for"
-    ),
+    journal_ids: list[int] = Query(..., description="List of journal IDs to get sentiments for"),
     reliable_only: bool = Query(False, description="Include only reliable predictions"),
     db: Session = Depends(get_db),
 ):
@@ -284,15 +257,13 @@ def get_sentiments_batch_endpoint(
     except Exception as e:
         logger.error(f"Failed to retrieve batch sentiments: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve batch sentiments: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to retrieve batch sentiments: {e!s}"
+        ) from None
 
 
 @router.get("/journals/sentiment/recent", response_model=list[SentimentResponse])
 def get_recent_sentiments_endpoint(
-    limit: int = Query(
-        10, description="Number of recent sentiments to retrieve", ge=1, le=100
-    ),
+    limit: int = Query(10, description="Number of recent sentiments to retrieve", ge=1, le=100),
     reliable_only: bool = Query(True, description="Include only reliable predictions"),
     user_id: int | None = Query(None, description="Filter by user ID"),
     db: Session = Depends(get_db),
@@ -308,5 +279,5 @@ def get_recent_sentiments_endpoint(
     except Exception as e:
         logger.error(f"Failed to retrieve recent sentiments: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve recent sentiments: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to retrieve recent sentiments: {e!s}"
+        ) from None

@@ -1,5 +1,5 @@
-import logging
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -53,5 +53,5 @@ async def health():
 
 
 @app.exception_handler(404)
-async def custom_404_handler(request: Request, exc):  # noqa
+async def custom_404_handler(request: Request, exc):
     return JSONResponse(status_code=404, content={"detail": "this doesn't exist hoe"})

@@ -1,10 +1,9 @@
-import logging
 from datetime import datetime, timedelta
+import logging
 from typing import Any
 
 from sqlalchemy import and_, desc, func
 from sqlalchemy.orm import Session
-
 from src.models.journal_sentiments import JournalSentiments
 
 logger = logging.getLogger(__name__)
@@ -42,14 +41,11 @@ def create_or_update_sentiment(
                 existing.all_scores = sentiment_data.get("all_scores")
                 existing.created_at = func.now()
                 sentiment_record = existing
-                logger.info(
-                    f"Updated sentiment for journal {journal_id}, model {model_version}"
-                )
+                logger.info(f"Updated sentiment for journal {journal_id}, model {model_version}")
             else:
                 # Return existing without updating
                 logger.info(
-                    f"Sentiment already exists for journal {journal_id}, "
-                    f"model {model_version}"
+                    f"Sentiment already exists for journal {journal_id}, model {model_version}"
                 )
                 return existing
         else:
@@ -64,9 +60,7 @@ def create_or_update_sentiment(
                 all_scores=sentiment_data.get("all_scores"),
             )
             db.add(sentiment_record)
-            logger.info(
-                f"Created new sentiment for journal {journal_id}, model {model_version}"
-            )
+            logger.info(f"Created new sentiment for journal {journal_id}, model {model_version}")
 
         db.commit()
         db.refresh(sentiment_record)
@@ -83,9 +77,7 @@ def get_sentiment_by_journal_id(
 ) -> JournalSentiments | None:
     """Get sentiment analysis for a specific journal entry."""
     try:
-        query = db.query(JournalSentiments).filter(
-            JournalSentiments.journal_id == journal_id
-        )
+        query = db.query(JournalSentiments).filter(JournalSentiments.journal_id == journal_id)
 
         if model_version:
             query = query.filter(JournalSentiments.ml_model_version == model_version)
@@ -110,9 +102,7 @@ def get_sentiments_by_journal_ids(
 ) -> list[JournalSentiments]:
     """Get sentiment analysis for multiple journal entries."""
     try:
-        query = db.query(JournalSentiments).filter(
-            JournalSentiments.journal_id.in_(journal_ids)
-        )
+        query = db.query(JournalSentiments).filter(JournalSentiments.journal_id.in_(journal_ids))
 
         if reliable_only:
             query = query.filter(JournalSentiments.is_reliable is True)
@@ -120,8 +110,7 @@ def get_sentiments_by_journal_ids(
         sentiments = query.order_by(desc(JournalSentiments.created_at)).all()
 
         logger.info(
-            f"Retrieved {len(sentiments)} sentiment records for "
-            f"{len(journal_ids)} journals"
+            f"Retrieved {len(sentiments)} sentiment records for {len(journal_ids)} journals"
         )
         return sentiments
 
@@ -144,9 +133,7 @@ def get_sentiment_trends(
         start_date = end_date - timedelta(days=days_back)
 
         # Build query
-        query = db.query(JournalSentiments).filter(
-            JournalSentiments.created_at >= start_date
-        )
+        query = db.query(JournalSentiments).filter(JournalSentiments.created_at >= start_date)
 
         if reliable_only:
             query = query.filter(JournalSentiments.is_reliable is True)
@@ -326,9 +313,7 @@ def get_recent_sentiments(
         # if user_id:
         #     query = query.join(Journal).filter(Journal.user_id == user_id)
 
-        sentiments = (
-            query.order_by(desc(JournalSentiments.created_at)).limit(limit).all()
-        )
+        sentiments = query.order_by(desc(JournalSentiments.created_at)).limit(limit).all()
 
         logger.info(f"Retrieved {len(sentiments)} recent sentiment records")
         return sentiments
@@ -372,14 +357,10 @@ def bulk_create_sentiments(
         raise
 
 
-def delete_sentiment(
-    db: Session, journal_id: int, model_version: str | None = None
-) -> int:
+def delete_sentiment(db: Session, journal_id: int, model_version: str | None = None) -> int:
     """Delete sentiment analysis for a journal entry."""
     try:
-        query = db.query(JournalSentiments).filter(
-            JournalSentiments.journal_id == journal_id
-        )
+        query = db.query(JournalSentiments).filter(JournalSentiments.journal_id == journal_id)
 
         if model_version:
             query = query.filter(JournalSentiments.ml_model_version == model_version)
@@ -387,9 +368,7 @@ def delete_sentiment(
         deleted_count = query.delete()
         db.commit()
 
-        logger.info(
-            f"Deleted {deleted_count} sentiment record(s) for journal {journal_id}"
-        )
+        logger.info(f"Deleted {deleted_count} sentiment record(s) for journal {journal_id}")
         return deleted_count
 
     except Exception as e:

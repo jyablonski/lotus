@@ -1,7 +1,6 @@
 from sqlalchemy import Column, DateTime, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-
 from src.database import Base
 
 
@@ -12,9 +11,7 @@ class Journals(Base):
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     journal_text = Column(Text, nullable=False)
     mood_score = Column(Integer)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     modified_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

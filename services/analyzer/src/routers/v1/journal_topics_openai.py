@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post(
-    "/journals/{journal_id}/openai/topics", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.post("/journals/{journal_id}/openai/topics", status_code=status.HTTP_204_NO_CONTENT)
 async def extract_journal_topics(
     journal_id: int,
     max_topics: int = 7,
@@ -43,19 +41,17 @@ async def extract_journal_topics(
                 "confidence": confidence,
                 "ml_model_version": settings.default_model,
             }
-            for topic, confidence in zip(analysis.topics, analysis.confidence_scores)
+            for topic, confidence in zip(analysis.topics, analysis.confidence_scores, strict=False)
         ]
 
         # Store topics in database
         create_or_update_topics(db=db, journal_id=journal_id, topics=topics)
 
-        logger.info(
-            f"Extracted {len(topics)} topics for journal {journal_id} using OpenAI"
-        )
+        logger.info(f"Extracted {len(topics)} topics for journal {journal_id} using OpenAI")
 
     except Exception as e:
         logger.error(f"Error extracting topics for journal {journal_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
 @router.get("/health/openai/topics")
@@ -74,4 +70,4 @@ def topic_service_health(
         raise HTTPException(
             status_code=503,
             detail={"status": "unhealthy", "service": "openai_topic_extraction"},
-        )
+        ) from None
