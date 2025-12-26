@@ -169,7 +169,7 @@ def real_topic_client():
         pytest.skip(f"Test topic model not found at {TOPIC_MODEL_PATH}.")
 
     try:
-        with Path.open(TOPIC_MODEL_PATH, "rb") as f:
+        with TOPIC_MODEL_PATH.open("rb") as f:
             test_pipeline = pickle.load(f)
 
         # Topic labels for the test model

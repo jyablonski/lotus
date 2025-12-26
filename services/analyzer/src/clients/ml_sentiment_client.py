@@ -1,14 +1,14 @@
 import logging
-import os
 from typing import Any
 
-import mlflow
 import pandas as pd
+
+from src.clients.base_mlflow_client import BaseMLflowClient
 
 logger = logging.getLogger(__name__)
 
 
-class SentimentClient:
+class SentimentClient(BaseMLflowClient):
     """
     Client for sentiment analysis using MLflow pyfunc models.
 
@@ -18,86 +18,11 @@ class SentimentClient:
 
     def __init__(
         self,
-        mlflow_uri: str = os.environ.get("MLFLOW_CONN_URI", "http://localhost:5000"),
+        mlflow_uri: str | None = None,
     ):
-        self.mlflow_uri = mlflow_uri
-        self.model = None
-        self.model_version = None
-        self.model_name = "journal_sentiment_analyzer"
-        self._is_loaded = False
-        self.model_run_id = None
-
+        super().__init__(model_name="journal_sentiment_analyzer", mlflow_uri=mlflow_uri)
         # Minimum confidence for reliable classification
         self.min_confidence_threshold = 0.4
-
-    def load_model(self, model_version: str = "latest"):
-        """Load the MLflow pyfunc model and capture version info."""
-        if self._is_loaded:
-            return
-
-        try:
-            logger.info(
-                f"Loading sentiment model {self.model_name}:{model_version} - {self.mlflow_uri}"
-            )
-            mlflow.set_tracking_uri(self.mlflow_uri)
-
-            model_uri = f"models:/{self.model_name}/{model_version}"
-            self.model = mlflow.pyfunc.load_model(model_uri)
-
-            # Get actual model version info
-            client = mlflow.MlflowClient()
-            if model_version == "latest":
-                try:
-                    all_versions = client.search_model_versions(f"name='{self.model_name}'")
-                    if not all_versions:
-                        raise ValueError(f"No versions found for model {self.model_name}")
-
-                    latest_version = max(all_versions, key=lambda v: int(v.version))
-                    self.model_version = latest_version.version
-                    logger.info(f"Found latest sentiment model version: {self.model_version}")
-
-                except Exception as e:
-                    logger.warning(f"Could not determine latest version via API: {e}")
-                    self.model_version = "latest"
-            else:
-                self.model_version = model_version
-
-            # Get additional model metadata
-            try:
-                model_version_details = client.get_model_version(
-                    self.model_name, self.model_version
-                )
-                self.model_run_id = model_version_details.run_id
-            except Exception as e:
-                logger.warning(f"Could not get model run ID: {e}")
-                self.model_run_id = "unknown"
-
-            self._is_loaded = True
-            logger.info(
-                f"Sentiment model loaded successfully - Version: {self.model_version}, "
-                f"Run ID: {self.model_run_id}"
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to load MLflow sentiment model: {e}")
-            raise
-
-    def get_model_info(self) -> dict[str, Any]:
-        """Get current model information."""
-        if not self.is_ready():
-            return {"status": "not_loaded"}
-
-        return {
-            "model_name": self.model_name,
-            "model_version": self.model_version,
-            "run_id": self.model_run_id,
-            "mlflow_uri": self.mlflow_uri,
-            "status": "loaded",
-        }
-
-    def is_ready(self) -> bool:
-        """Check if the model is loaded and ready to use."""
-        return self._is_loaded and self.model is not None
 
     def predict_sentiment(self, text: str) -> dict[str, Any]:
         """

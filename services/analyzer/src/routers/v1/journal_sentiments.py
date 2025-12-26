@@ -281,3 +281,15 @@ def get_recent_sentiments_endpoint(
         raise HTTPException(
             status_code=500, detail=f"Failed to retrieve recent sentiments: {e!s}"
         ) from None
+
+
+@router.get("/health/sentiment")
+def sentiment_service_health(sentiment_client: SentimentClient = Depends(get_sentiment_client)):
+    """Health check endpoint for the sentiment analysis service."""
+    if sentiment_client.is_ready():
+        model_info = sentiment_client.get_model_info()
+        return {"status": "healthy", "service": "sentiment_analysis", **model_info}
+    raise HTTPException(
+        status_code=503,
+        detail={"status": "unhealthy", "service": "sentiment_analysis"},
+    )
