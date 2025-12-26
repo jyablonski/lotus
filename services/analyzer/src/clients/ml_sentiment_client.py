@@ -3,11 +3,19 @@ import os
 from typing import Any
 
 import mlflow
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 
 class SentimentClient:
+    """
+    Client for sentiment analysis using MLflow pyfunc models.
+
+    The loaded model is a pyfunc wrapper that handles all preprocessing
+    and returns formatted sentiment predictions directly.
+    """
+
     def __init__(
         self,
         mlflow_uri: str = os.environ.get("MLFLOW_CONN_URI", "http://localhost:5000"),
@@ -17,18 +25,13 @@ class SentimentClient:
         self.model_version = None
         self.model_name = "journal_sentiment_analyzer"
         self._is_loaded = False
-
-        # Sentiment labels (matching the training model)
-        self.sentiment_labels = {0: "negative", 1: "neutral", 2: "positive"}
-
-        # Confidence thresholds for classification quality
-        self.confidence_thresholds = {"high": 0.7, "medium": 0.5, "low": 0.3}
+        self.model_run_id = None
 
         # Minimum confidence for reliable classification
         self.min_confidence_threshold = 0.4
 
     def load_model(self, model_version: str = "latest"):
-        """Load the MLflow model and capture version info."""
+        """Load the MLflow pyfunc model and capture version info."""
         if self._is_loaded:
             return
 
@@ -39,24 +42,21 @@ class SentimentClient:
             mlflow.set_tracking_uri(self.mlflow_uri)
 
             model_uri = f"models:/{self.model_name}/{model_version}"
-            self.model = mlflow.sklearn.load_model(model_uri)
+            self.model = mlflow.pyfunc.load_model(model_uri)
 
             # Get actual model version info
             client = mlflow.MlflowClient()
             if model_version == "latest":
                 try:
-                    # Get all versions and find the latest one
                     all_versions = client.search_model_versions(f"name='{self.model_name}'")
                     if not all_versions:
                         raise ValueError(f"No versions found for model {self.model_name}")
 
-                    # Sort by version number (descending) to get the latest
                     latest_version = max(all_versions, key=lambda v: int(v.version))
                     self.model_version = latest_version.version
                     logger.info(f"Found latest sentiment model version: {self.model_version}")
 
                 except Exception as e:
-                    # Fallback: use 'latest' as version identifier
                     logger.warning(f"Could not determine latest version via API: {e}")
                     self.model_version = "latest"
             else:
@@ -93,8 +93,6 @@ class SentimentClient:
             "run_id": self.model_run_id,
             "mlflow_uri": self.mlflow_uri,
             "status": "loaded",
-            "sentiment_labels": list(self.sentiment_labels.values()),
-            "confidence_thresholds": self.confidence_thresholds,
         }
 
     def is_ready(self) -> bool:
@@ -103,40 +101,34 @@ class SentimentClient:
 
     def predict_sentiment(self, text: str) -> dict[str, Any]:
         """
-        Predict sentiment of a single journal entry
+        Predict sentiment of a single journal entry.
+
+        The model handles all preprocessing and returns formatted results
+        with sentiment, confidence, confidence_level, and all_scores.
 
         Returns:
-            Dict with sentiment, confidence, confidence_level, and model info
+            Dict with sentiment prediction and metadata
         """
         if not self.is_ready():
             raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
-        # Get prediction and probabilities
-        prediction = self.model.predict([text])[0]
-        probabilities = self.model.predict_proba([text])[0]
+        # Create DataFrame input for pyfunc model
+        input_df = pd.DataFrame({"text": [text]})
 
-        sentiment = self.sentiment_labels[prediction]
-        confidence = float(max(probabilities))
+        # Model returns list of prediction dicts
+        results = self.model.predict(input_df)
+        result = results[0] if results else {}
 
-        # Determine confidence level
-        if confidence >= self.confidence_thresholds["high"]:
-            confidence_level = "high"
-        elif confidence >= self.confidence_thresholds["medium"]:
-            confidence_level = "medium"
-        else:
-            confidence_level = "low"
-
-        # Check if confidence is too low for reliable classification
+        # Add model version and reliability check
+        confidence = result.get("confidence", 0.0)
         is_reliable = confidence >= self.min_confidence_threshold
 
         return {
-            "sentiment": sentiment,
+            "sentiment": result.get("sentiment", "unknown"),
             "confidence": confidence,
-            "confidence_level": confidence_level,
+            "confidence_level": result.get("confidence_level", "low"),
             "is_reliable": is_reliable,
-            "all_scores": {
-                self.sentiment_labels[i]: float(prob) for i, prob in enumerate(probabilities)
-            },
+            "all_scores": result.get("all_scores", {}),
             "ml_model_version": self.model_version,
             "reason": "High confidence classification"
             if is_reliable
@@ -144,29 +136,48 @@ class SentimentClient:
         }
 
     def predict_sentiment_batch(self, texts: list[str]) -> list[dict[str, Any]]:
-        """Predict sentiment for multiple entries"""
+        """Predict sentiment for multiple entries."""
         if not self.is_ready():
             raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
-        return [self.predict_sentiment(text) for text in texts]
+        input_df = pd.DataFrame({"text": texts})
+        results = self.model.predict(input_df)
+
+        # Add model version and reliability check to each result
+        processed_results = []
+        for result in results:
+            confidence = result.get("confidence", 0.0)
+            is_reliable = confidence >= self.min_confidence_threshold
+
+            processed_results.append(
+                {
+                    "sentiment": result.get("sentiment", "unknown"),
+                    "confidence": confidence,
+                    "confidence_level": result.get("confidence_level", "low"),
+                    "is_reliable": is_reliable,
+                    "all_scores": result.get("all_scores", {}),
+                    "ml_model_version": self.model_version,
+                    "reason": "High confidence classification"
+                    if is_reliable
+                    else "Low confidence - consider as uncertain",
+                }
+            )
+
+        return processed_results
 
     def get_sentiment_simple(self, text: str) -> str:
-        """Get just the sentiment label (positive/negative/neutral)"""
+        """Get just the sentiment label (positive/negative/neutral)."""
         result = self.predict_sentiment(text)
         return result["sentiment"]
 
     def classify_with_confidence_check(self, text: str) -> dict[str, Any]:
         """
-        Classify text with confidence analysis
-        Returns sentiment or 'uncertain' if confidence is too low
+        Classify text with confidence analysis.
+        Returns sentiment or 'uncertain' if confidence is too low.
         """
-        if not self.is_ready():
-            raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
-
         result = self.predict_sentiment(text)
 
         if not result["is_reliable"]:
-            # Return uncertain classification for low confidence
             return {
                 "sentiment": "uncertain",
                 "confidence": result["confidence"],
@@ -187,7 +198,7 @@ class SentimentClient:
 
     def analyze_sentiment_trends(self, entries_with_dates: list[dict[str, Any]]) -> dict[str, Any]:
         """
-        Analyze sentiment trends over time
+        Analyze sentiment trends over time.
 
         Args:
             entries_with_dates: List of dicts with 'text' and 'date' keys
@@ -195,23 +206,27 @@ class SentimentClient:
         if not self.is_ready():
             raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
+        # Batch predict all sentiments
+        texts = [entry["text"] for entry in entries_with_dates]
+        predictions = self.predict_sentiment_batch(texts)
+
+        # Combine predictions with dates
         results = []
         sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0, "uncertain": 0}
         total_confidence = 0
         reliable_predictions = 0
 
-        for entry in entries_with_dates:
-            sentiment_result = self.predict_sentiment(entry["text"])
-            sentiment_result["date"] = entry["date"]
-            results.append(sentiment_result)
+        for i, prediction in enumerate(predictions):
+            prediction["date"] = entries_with_dates[i]["date"]
+            results.append(prediction)
 
-            if sentiment_result["is_reliable"]:
-                sentiment_counts[sentiment_result["sentiment"]] += 1
+            if prediction["is_reliable"]:
+                sentiment_counts[prediction["sentiment"]] += 1
                 reliable_predictions += 1
             else:
                 sentiment_counts["uncertain"] += 1
 
-            total_confidence += sentiment_result["confidence"]
+            total_confidence += prediction["confidence"]
 
         avg_confidence = total_confidence / len(entries_with_dates) if entries_with_dates else 0
         reliability_rate = (
@@ -221,7 +236,9 @@ class SentimentClient:
         # Determine dominant sentiment (excluding uncertain)
         reliable_counts = {k: v for k, v in sentiment_counts.items() if k != "uncertain"}
         dominant_sentiment = (
-            max(reliable_counts, key=reliable_counts.get) if reliable_counts else "uncertain"
+            max(reliable_counts, key=reliable_counts.get)
+            if any(reliable_counts.values())
+            else "uncertain"
         )
 
         return {

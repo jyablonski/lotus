@@ -5,6 +5,7 @@ import pickle
 from unittest.mock import AsyncMock, Mock
 
 from fastapi.testclient import TestClient
+import pandas as pd
 import pytest
 from src.clients.ml_sentiment_client import SentimentClient
 from src.clients.ml_topic_client import TopicClient
@@ -21,6 +22,113 @@ SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
 TOPIC_MODEL_PATH = TEST_FIXTURES_DIR / "topic_test_model.pkl"
 
 
+class MockPyfuncSentimentModel:
+    """
+    Mock pyfunc model that wraps a sklearn pipeline
+    and provides the same interface as the production pyfunc wrapper.
+    """
+
+    def __init__(self, sklearn_pipeline):
+        self.pipeline = sklearn_pipeline
+        self.sentiment_labels = {0: "negative", 1: "neutral", 2: "positive"}
+        self.confidence_thresholds = {"high": 0.7, "medium": 0.5, "low": 0.3}
+
+    def predict(self, model_input: pd.DataFrame) -> list[dict]:
+        """Mimic the pyfunc wrapper's predict method."""
+        if "text" not in model_input.columns:
+            raise ValueError("model_input must contain 'text' column")
+
+        texts = model_input["text"].tolist()
+        results = []
+
+        for text in texts:
+            # Preprocess
+            processed_text = text.lower().strip()
+
+            # Get prediction and probabilities from sklearn pipeline
+            prediction = self.pipeline.predict([processed_text])[0]
+            probabilities = self.pipeline.predict_proba([processed_text])[0]
+
+            sentiment = self.sentiment_labels[prediction]
+            confidence = float(max(probabilities))
+
+            # Determine confidence level
+            if confidence >= self.confidence_thresholds["high"]:
+                confidence_level = "high"
+            elif confidence >= self.confidence_thresholds["medium"]:
+                confidence_level = "medium"
+            else:
+                confidence_level = "low"
+
+            results.append(
+                {
+                    "sentiment": sentiment,
+                    "confidence": round(confidence, 4),
+                    "confidence_level": confidence_level,
+                    "all_scores": {
+                        self.sentiment_labels[i]: round(float(prob), 4)
+                        for i, prob in enumerate(probabilities)
+                    },
+                }
+            )
+
+        return results
+
+
+class MockPyfuncTopicModel:
+    """
+    Mock pyfunc model that wraps a sklearn pipeline
+    and provides the same interface as the production pyfunc wrapper.
+    """
+
+    def __init__(self, sklearn_pipeline, topic_labels: dict):
+        self.pipeline = sklearn_pipeline
+        self.topic_labels = topic_labels
+
+    def predict(self, model_input: pd.DataFrame) -> list[dict]:
+        """Mimic the pyfunc wrapper's predict method."""
+        if "text" not in model_input.columns:
+            raise ValueError("model_input must contain 'text' column")
+
+        texts = model_input["text"].tolist()
+        results = []
+
+        for text in texts:
+            word_count = len(text.split())
+
+            # Adaptive thresholds (matching the production wrapper)
+            if word_count < 20:
+                min_confidence = 0.25
+                max_topics = 2
+            elif word_count < 50:
+                min_confidence = 0.20
+                max_topics = 4
+            else:
+                min_confidence = 0.15
+                max_topics = 6
+
+            # Get topic probabilities from sklearn pipeline
+            topic_probs = self.pipeline.transform([text])[0]
+
+            # Filter and format topics
+            topics = []
+            for i, confidence in enumerate(topic_probs):
+                if confidence > min_confidence:
+                    topics.append(
+                        {
+                            "topic_id": i,
+                            "topic_name": self.topic_labels.get(i, f"topic_{i}"),
+                            "confidence": round(float(confidence), 4),
+                        }
+                    )
+
+            # Sort by confidence and limit
+            topics.sort(key=lambda x: x["confidence"], reverse=True)
+            results.append({"topics": topics[:max_topics]})
+
+        return results
+
+
 @pytest.fixture(scope="session")
 def real_sentiment_client():
     """Load pre-saved sentiment model for testing."""
@@ -33,11 +141,11 @@ def real_sentiment_client():
         with SENTIMENT_MODEL_PATH.open("rb") as f:
             test_pipeline = pickle.load(f)
 
+        # Create client and inject mock pyfunc model
         client = SentimentClient()
-
-        client.sentiment_pipeline = test_pipeline
-        client.model = test_pipeline
+        client.model = MockPyfuncSentimentModel(test_pipeline)
         client.model_version = "test_v1.0.0"
+        client.model_run_id = "test_run_id"
         client._is_loaded = True
 
         # Verify it works
@@ -61,19 +169,11 @@ def real_topic_client():
         pytest.skip(f"Test topic model not found at {TOPIC_MODEL_PATH}.")
 
     try:
-        # Load the pre-saved pipeline
         with Path.open(TOPIC_MODEL_PATH, "rb") as f:
             test_pipeline = pickle.load(f)
 
-        # Create client and inject the test model
-        client = TopicClient()
-        client.topic_pipeline = test_pipeline
-        client.model = test_pipeline
-        client.model_version = "test_v1.0.0"
-        client._is_loaded = True
-
-        # Set up topic labels (you may need to adjust these based on your model)
-        client.topic_labels = {
+        # Topic labels for the test model
+        topic_labels = {
             0: "Daily Needs & Work",
             1: "Evening Reflection",
             2: "Work & Productivity",
@@ -83,6 +183,13 @@ def real_topic_client():
             6: "Morning Routine & Positivity",
             7: "Work Focus & Effort",
         }
+
+        # Create client and inject mock pyfunc model
+        client = TopicClient()
+        client.model = MockPyfuncTopicModel(test_pipeline, topic_labels)
+        client.model_version = "test_v1.0.0"
+        client.model_run_id = "test_run_id"
+        client._is_loaded = True
 
         # Verify it works
         test_result = client.extract_topics("This is a test")
@@ -128,6 +235,7 @@ def mock_topic_client():
 
     client.extract_topics.return_value = [
         {
+            "topic_id": 2,
             "topic_name": "Work & Productivity",
             "confidence": 0.85,
             "ml_model_version": "test_v1",
