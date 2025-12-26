@@ -16,12 +16,21 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Loading ML models...")
-    topic_client = get_topic_client()
-    topic_client.load_model()
+    try:
+        topic_client = get_topic_client()
+        topic_client.load_model()
+        logger.info("Topic model loaded successfully")
 
-    sentiment_client = get_sentiment_client()
-    sentiment_client.load_model()
-    logger.info("ML models loaded successfully")
+        sentiment_client = get_sentiment_client()
+        sentiment_client.load_model()
+        logger.info("Sentiment model loaded successfully")
+        logger.info("All ML models loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to load ML models: {e}")
+        logger.error("Application will start but ML endpoints may fail")
+        # Re-raise to prevent app from starting if models are critical
+        # Comment out the next line if you want the app to start anyway
+        raise
 
     # yield so app can run forever
     yield

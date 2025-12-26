@@ -1,5 +1,5 @@
 import pytest
-from src.models.topic_extractor import AdaptiveJournalTopicExtractor
+from src.models.topic_extractor import AdaptiveJournalTopicExtractor, TopicExtractorWithFeatures
 
 
 class TestAdaptiveJournalTopicExtractor:
@@ -27,6 +27,13 @@ class TestAdaptiveJournalTopicExtractor:
 
         with pytest.raises(ValueError, match="Model not trained yet"):
             model.extract_topics_adaptive("test text")
+
+    def test_extract_all_topics_requires_trained_model(self):
+        """Test that extract_all_topics fails on untrained model"""
+        model = AdaptiveJournalTopicExtractor()
+
+        with pytest.raises(ValueError, match="Model not trained yet"):
+            model.extract_all_topics("test text")
 
     def test_adaptive_topic_count_short_entry(self, trained_model):
         """Test that short entries get fewer topics"""
@@ -78,6 +85,26 @@ class TestAdaptiveJournalTopicExtractor:
             confidences = [topic["confidence"] for topic in topics]
             assert confidences == sorted(confidences, reverse=True)
 
+    def test_extract_all_topics_returns_all(self, trained_model):
+        """Test that extract_all_topics returns all topics"""
+        topics = trained_model.extract_all_topics("Test journal entry")
+
+        # Should return exactly n_topics
+        assert len(topics) == trained_model.n_topics
+
+        # All topics should have valid format
+        for topic in topics:
+            assert "topic_id" in topic
+            assert "topic_name" in topic
+            assert "confidence" in topic
+
+    def test_extract_all_topics_sorted_by_confidence(self, trained_model):
+        """Test that extract_all_topics returns topics sorted by confidence"""
+        topics = trained_model.extract_all_topics("Test journal entry")
+
+        confidences = [topic["confidence"] for topic in topics]
+        assert confidences == sorted(confidences, reverse=True)
+
     def test_reproducible_results_with_same_seed(self, sample_training_data):
         """Test that same random seed produces same results"""
         text = "Today was a stressful day at work"
@@ -115,6 +142,55 @@ class TestAdaptiveJournalTopicExtractor:
             assert len(label) > 0
             assert topic_id >= 0
             assert topic_id < trained_model.n_topics
+
+
+class TestTopicExtractorWithFeatures:
+    """Tests for the extended TopicExtractorWithFeatures class"""
+
+    def test_model_initialization(self):
+        """Test model initializes with correct parameters"""
+        model = TopicExtractorWithFeatures(n_topics=5, model_version="1.0.0")
+        assert model.n_topics == 5
+        assert model.model_version == "1.0.0"
+        assert model.pipeline is None
+        assert model.topic_labels == {}
+
+    def test_build_pipeline_text_only(self):
+        """Test building pipeline with text column only"""
+        model = TopicExtractorWithFeatures(n_topics=3)
+        pipeline = model.build_pipeline(text_column="text")
+
+        assert pipeline is not None
+        assert "preprocessor" in pipeline.named_steps
+        assert "lda" in pipeline.named_steps
+
+    def test_build_pipeline_with_numeric_columns(self):
+        """Test building pipeline with text and numeric columns"""
+        model = TopicExtractorWithFeatures(n_topics=3)
+        pipeline = model.build_pipeline(
+            text_column="text",
+            numeric_columns=["value1", "value2"],
+        )
+
+        assert pipeline is not None
+        preprocessor = pipeline.named_steps["preprocessor"]
+        transformer_names = [name for name, _, _ in preprocessor.transformers]
+        assert "text" in transformer_names
+        assert "numeric" in transformer_names
+
+    def test_build_pipeline_with_categorical_columns(self):
+        """Test building pipeline with text and categorical columns"""
+        model = TopicExtractorWithFeatures(n_topics=3)
+        pipeline = model.build_pipeline(
+            text_column="text",
+            categorical_columns=["category"],
+        )
+
+        assert pipeline is not None
+        preprocessor = pipeline.named_steps["preprocessor"]
+        transformer_names = [name for name, _, _ in preprocessor.transformers]
+        assert "text" in transformer_names
+        assert "categorical" in transformer_names
 
 
 # Performance and integration tests
