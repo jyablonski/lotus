@@ -1,25 +1,36 @@
+"""
+Topic Extractor Model
+Extracts topics from journal entries using LDA (Latent Dirichlet Allocation).
+Uses sklearn Pipeline with TF-IDF vectorizer and LDA.
+"""
+
 from typing import Any
 
 import mlflow
 import mlflow.sklearn
+from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
 
-# basic as fuck topic extractor implementation
-# assume DS are spending entire sprints dedicated to this work & implementing more robust models
-
 
 class AdaptiveJournalTopicExtractor:
-    def __init__(self, n_topics=10, model_version="1.0.0"):
+    """
+    Topic extractor that adapts the number of extracted topics based on text length.
+    Uses TF-IDF + LDA pipeline for topic modeling.
+    """
+
+    def __init__(self, n_topics: int = 10, model_version: str = "1.0.0"):
         self.n_topics = n_topics
         self.model_version = model_version
         self.topic_pipeline = None
         self.topic_labels = {}  # Map topic indices to human-readable names
 
     def train(self, texts: list[str]):
-        """Train the topic extraction model"""
+        """Train the topic extraction model."""
         # Create pipeline optimized for journal entries
+        # Note: For text-only input, we use Pipeline directly.
+        # ColumnTransformer would be used if we had mixed feature types.
         self.topic_pipeline = Pipeline(
             [
                 (
@@ -52,7 +63,7 @@ class AdaptiveJournalTopicExtractor:
         return self
 
     def _generate_topic_labels(self):
-        """Generate human-readable labels for topics based on top words"""
+        """Generate human-readable labels for topics based on top words."""
         if not self.topic_pipeline:
             return
 
@@ -147,7 +158,7 @@ class AdaptiveJournalTopicExtractor:
             self.topic_labels[topic_idx] = best_theme
 
     def extract_topics_adaptive(self, text: str) -> list[dict[str, Any]]:
-        """Extract topics with adaptive count based on text characteristics"""
+        """Extract topics with adaptive count based on text characteristics."""
         if not self.topic_pipeline:
             raise ValueError("Model not trained yet")
 
@@ -184,9 +195,148 @@ class AdaptiveJournalTopicExtractor:
         topics.sort(key=lambda x: x["confidence"], reverse=True)
         return topics[:max_topics]
 
+    def extract_all_topics(self, text: str) -> list[dict[str, Any]]:
+        """Extract all topics without filtering (for analysis purposes)."""
+        if not self.topic_pipeline:
+            raise ValueError("Model not trained yet")
+
+        topic_probs = self.topic_pipeline.transform([text])[0]
+
+        topics = []
+        for i, confidence in enumerate(topic_probs):
+            topics.append(
+                {
+                    "topic_id": i,
+                    "topic_name": self.topic_labels.get(i, f"topic_{i}"),
+                    "confidence": float(confidence),
+                }
+            )
+
+        topics.sort(key=lambda x: x["confidence"], reverse=True)
+        return topics
+
+
+class TopicExtractorWithFeatures:
+    """
+    Extended topic extractor that handles mixed feature types.
+    Uses ColumnTransformer for preprocessing different column types.
+    """
+
+    def __init__(self, n_topics: int = 10, model_version: str = "1.0.0"):
+        self.n_topics = n_topics
+        self.model_version = model_version
+        self.pipeline = None
+        self.topic_labels = {}
+
+    def build_pipeline(
+        self,
+        text_column: str = "text",
+        numeric_columns: list[str] | None = None,
+        categorical_columns: list[str] | None = None,
+    ) -> Pipeline:
+        """
+        Build a pipeline that handles text and optional numeric/categorical features.
+
+        Args:
+            text_column: Name of the text column
+            numeric_columns: List of numeric column names
+            categorical_columns: List of categorical column names
+
+        Returns:
+            Configured sklearn Pipeline
+        """
+        from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+        transformers = [
+            (
+                "text",
+                TfidfVectorizer(
+                    max_features=200,
+                    stop_words="english",
+                    ngram_range=(1, 2),
+                    min_df=2,
+                    max_df=0.95,
+                ),
+                text_column,
+            ),
+        ]
+
+        if numeric_columns:
+            transformers.append(("numeric", StandardScaler(), numeric_columns))
+
+        if categorical_columns:
+            transformers.append(
+                ("categorical", OneHotEncoder(handle_unknown="ignore"), categorical_columns)
+            )
+
+        preprocessor = ColumnTransformer(
+            transformers=transformers,
+            remainder="drop",
+        )
+
+        self.pipeline = Pipeline(
+            [
+                ("preprocessor", preprocessor),
+                (
+                    "lda",
+                    LatentDirichletAllocation(
+                        n_components=self.n_topics,
+                        random_state=42,
+                        max_iter=20,
+                        learning_method="batch",
+                    ),
+                ),
+            ]
+        )
+
+        return self.pipeline
+
+    def train(self, df, text_column: str = "text"):
+        """Train the model on a DataFrame."""
+        if self.pipeline is None:
+            self.build_pipeline(text_column=text_column)
+
+        self.pipeline.fit(df)
+        self._generate_topic_labels()
+
+    def _generate_topic_labels(self):
+        """Generate topic labels from the trained model."""
+        # Access the text transformer from the ColumnTransformer
+        preprocessor = self.pipeline.named_steps["preprocessor"]
+        tfidf = preprocessor.named_transformers_["text"]
+        lda_model = self.pipeline.named_steps["lda"]
+
+        feature_names = tfidf.get_feature_names_out()
+
+        for topic_idx in range(self.n_topics):
+            topic_dist = lda_model.components_[topic_idx]
+            top_word_indices = topic_dist.argsort()[-5:][::-1]
+            top_words = [feature_names[idx] for idx in top_word_indices]
+            self.topic_labels[topic_idx] = "_".join(top_words[:2])
+
+    def transform(self, df) -> list[dict[str, Any]]:
+        """Transform documents into topic distributions."""
+        topic_distributions = self.pipeline.transform(df)
+
+        results = []
+        for topic_probs in topic_distributions:
+            topics = []
+            for i, confidence in enumerate(topic_probs):
+                topics.append(
+                    {
+                        "topic_id": i,
+                        "topic_name": self.topic_labels.get(i, f"topic_{i}"),
+                        "confidence": float(confidence),
+                    }
+                )
+            topics.sort(key=lambda x: x["confidence"], reverse=True)
+            results.append({"topics": topics})
+
+        return results
+
 
 def train_and_register_model():
-    """Train and register the adaptive topic model with MLflow"""
+    """Train and register the adaptive topic model with MLflow."""
 
     # Set MLflow tracking
     mlflow.set_tracking_uri("http://localhost:5000")

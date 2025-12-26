@@ -18,7 +18,7 @@ FROM base AS python-deps
 
 COPY pyproject.toml uv.lock ./
 
-RUN pip install uv==0.8.13 && \
+RUN pip install uv==0.9.18 && \
     uv sync --frozen --no-dev --no-install-project
 
 # -------------------------------
