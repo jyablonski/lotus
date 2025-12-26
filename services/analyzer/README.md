@@ -82,6 +82,71 @@ The clients automatically:
 - Capture model version and run ID metadata
 - Log model loading status and version information
 
+### Model Storage Requirements
+
+Models **must** be logged to MLflow in a specific format for the analyzer service to use them:
+
+#### Required Format
+
+1. **PyFunc Model Wrapper**: Models must be logged as `mlflow.pyfunc.PythonModel` instances
+   - The wrapper class must extend `mlflow.pyfunc.PythonModel`
+   - Must implement `load_context()` to load artifacts
+   - Must implement `predict()` that accepts a pandas DataFrame
+   - **The wrapper handles all preprocessing internally** - no preprocessing needed in API code
+
+   **Preprocessing Included in Wrapper:**
+   - **Sentiment Models**: Text normalization (lowercasing, whitespace cleanup, stripping)
+   - **Topic Models**: Adaptive topic extraction based on text length:
+     - Short entries (< 20 words): min_confidence=0.25, max_topics=2
+     - Medium entries (20-50 words): min_confidence=0.20, max_topics=4
+     - Long entries (> 50 words): min_confidence=0.15, max_topics=6
+   - All text preprocessing (TF-IDF vectorization, feature extraction) is handled by the sklearn pipeline within the wrapper
+   - The API simply passes raw text and receives formatted results - no preprocessing duplication needed
+
+2. **Artifacts**: Models must include required artifacts in the `artifacts` dictionary:
+
+   **Sentiment Model Artifacts:**
+   - `sklearn_pipeline`: Path to saved sklearn pipeline (via `mlflow.sklearn.save_model()`)
+   - `label_encoder`: Path to pickled label encoder
+   - `sentiment_labels`: Path to sentiment labels mapping (parquet file)
+
+   **Topic Model Artifacts:**
+   - `sklearn_pipeline`: Path to saved sklearn pipeline (via `mlflow.sklearn.save_model()`)
+   - `topic_labels`: Path to pickled topic labels dictionary
+   - `model_config`: Path to pickled model configuration dictionary
+
+3. **Logging Example**:
+
+   ```python
+   mlflow.pyfunc.log_model(
+       artifact_path="sentiment_model",
+       python_model=SentimentAnalyzerWrapper(),  # Your wrapper class
+       artifacts={
+           "sklearn_pipeline": sklearn_path,
+           "label_encoder": label_encoder_path,
+           "sentiment_labels": sentiment_labels_path,
+       },
+       code_paths=[__file__],  # Include wrapper code
+       pip_requirements=["pandas", "numpy", "scikit-learn", "mlflow"],
+       registered_model_name="journal_sentiment_analyzer",  # Exact name required
+   )
+   ```
+
+#### Training Scripts
+
+Reference implementations can be found in:
+
+- `services/experiments/src/training/train_sentiment_analysis.py`
+- `services/experiments/src/training/train_topics.py`
+
+These scripts demonstrate the complete workflow for:
+
+- Creating the pyfunc wrapper class
+- Training the underlying sklearn pipeline
+- Saving artifacts
+- Logging to MLflow with proper format
+- Registering models with correct names
+
 ### Health Endpoints
 
 Health check endpoints are available for monitoring model status:
@@ -105,6 +170,8 @@ All health endpoints return:
 
 ### Usage Example
 
+The wrapper classes handle all preprocessing internally, so the API code is simple:
+
 ```python
 from src.dependencies import get_sentiment_client
 
@@ -112,9 +179,17 @@ from src.dependencies import get_sentiment_client
 def analyze(
     sentiment_client: SentimentClient = Depends(get_sentiment_client)
 ):
+    # No preprocessing needed - just pass raw text!
     result = sentiment_client.predict_sentiment(text)
     return result
 ```
+
+**Key Points:**
+
+- Raw text is passed directly to the client methods
+- All text preprocessing (normalization, vectorization, etc.) happens inside the MLflow pyfunc wrapper
+- The wrapper returns fully formatted results with sentiment/topics, confidence scores, and metadata
+- No need to duplicate preprocessing logic in the API code
 
 ## Notes
 
