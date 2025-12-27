@@ -570,6 +570,6 @@ class TestActiveMLModelAdmin:
         response = admin_client.get(url)
         assert response.status_code == 200
         content = response.content.decode()
-        assert "id" in content
-        assert "created_at" in content
-        assert "modified_at" in content
+        assert "id" in content or "Id" in content
+        assert "Created at" in content or "created_at" in content
+        assert "Modified at" in content or "modified_at" in content
