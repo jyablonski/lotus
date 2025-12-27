@@ -1,11 +1,18 @@
 from django.contrib import admin
-from django.contrib.admin import AdminSite
+from django.contrib.auth.admin import (
+    GroupAdmin as BaseGroupAdmin,
+    UserAdmin as BaseUserAdmin,
+)
+from django.contrib.auth.models import Group, User
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
+from unfold.sites import UnfoldAdminSite
 
 from .models import ActiveMLModel, FeatureFlag
 
 
-class LotusAdminSite(AdminSite):
+class LotusAdminSite(UnfoldAdminSite):
     """Custom admin site for internal-only admin pages."""
 
     site_header = _("Lotus Admin")
@@ -27,7 +34,7 @@ admin_site = LotusAdminSite(name="lotus_admin")
 
 
 @admin.register(FeatureFlag, site=admin_site)
-class FeatureFlagAdmin(admin.ModelAdmin):
+class FeatureFlagAdmin(ModelAdmin):
     list_display = ("flag_name", "enabled", "created_at", "modified_at")
     list_filter = ("enabled", "created_at", "modified_at")
     search_fields = ("flag_name",)
@@ -51,7 +58,7 @@ def has_ml_model_permission(user):
 
 
 @admin.register(ActiveMLModel, site=admin_site)
-class ActiveMLModelAdmin(admin.ModelAdmin):
+class ActiveMLModelAdmin(ModelAdmin):
     list_display = ("ml_model", "is_enabled", "created_at", "modified_at")
     list_filter = ("is_enabled", "created_at", "modified_at")
     search_fields = ("ml_model",)
@@ -77,3 +84,22 @@ class ActiveMLModelAdmin(admin.ModelAdmin):
     def has_view_permission(self, request, obj=None):
         """Only allow Admin role or allowed groups (product_manager, ml_engineer) to view."""
         return has_ml_model_permission(request.user)
+
+
+# Unregister User and Group from default admin site
+admin.site.unregister(User)
+admin.site.unregister(Group)
+
+
+# Register User and Group with custom admin site
+@admin.register(User, site=admin_site)
+class UserAdmin(BaseUserAdmin, ModelAdmin):
+    # Forms loaded from `unfold.forms` for proper Unfold styling
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+
+
+@admin.register(Group, site=admin_site)
+class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+    pass
