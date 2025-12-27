@@ -8,14 +8,14 @@ It allows users to create, read, update, and delete journal entries, which are t
 
 The monorepo is organized into three main directories:
 
-- **`docker/`** - Contains Docker Compose configuration files and database bootstrap scripts for local development
-- **`services/`** - Contains all application services, each with their own:
+- `docker/` - Contains Docker Compose configuration files and database bootstrap scripts for local development
+- `services/` - Contains all application services, each with their own:
   - Source code and application logic
   - Dockerfile(s) for containerization
   - Configuration files (e.g., `pyproject.toml`, `go.mod`, `package.json`)
   - Tests and documentation
   - Service-specific dependencies and build configurations
-- **`.github/workflows`** - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing, building, and deployment
+- `.github/workflows` - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing, building, and deployment
 
 ## Running the App
 
@@ -51,14 +51,15 @@ graph LR
     F --> D
     E -->|API Calls| G[OpenAI API]
 
+    H --> D
+
     subgraph Backend
         B[gRPC Gateway]
         C[gRPC Backend Service]
         D[Postgres Database]
         E[Analyzer Service<br/>FastAPI + ML/LLM Clients]
         F[MLflow Server<br/>Model Registry]
-        H[Django<br/>Admin Interface]
-        I[Dagster<br/>Data Orchestration]
+        H[Django<br/>Admin Interface & Migrations]
     end
 
     subgraph Frontend

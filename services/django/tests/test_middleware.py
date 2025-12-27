@@ -85,3 +85,23 @@ class TestAdminOnlyMiddleware:
         response = middleware(request)
 
         assert response.status_code == 200
+
+    def test_middleware_passes_through_non_admin_paths(self):
+        """Middleware should not interfere with non-admin paths (bug fix)."""
+
+        def get_response(req):
+            from django.http import HttpResponse
+
+            return HttpResponse("OK")
+
+        factory = RequestFactory()
+        # Non-admin paths should pass through without checks
+        request = factory.get("/api/some-endpoint/")
+        request.user = AnonymousUser()
+
+        middleware = AdminOnlyMiddleware(get_response)
+        response = middleware(request)
+
+        # Should pass through without redirect or 403
+        assert response.status_code == 200
+        assert response.content == b"OK"

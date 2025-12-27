@@ -65,11 +65,14 @@ The entrypoint will reject startup if migrations are missing.
 
 ## Admin Access Control
 
-The `AdminOnlyMiddleware` restricts access to users with the `Admin` role:
+The `AdminOnlyMiddleware` restricts access to the admin interface. Users can access if they meet any of the following:
 
-1. User must be authenticated
-2. User must exist in the `users` table (by email match)
-3. User must have `role = 'Admin'`
+1. **Admin Role**: User must be authenticated, exist in the `users` table (by email match), and have `role = 'Admin'`
+2. **Allowed Groups**: User must be in one of the Django groups specified in `ADMIN_ALLOWED_GROUPS` (default: `product_manager`, `ml_engineer`)
+
+### Model-Specific Permissions
+
+The `ActiveMLModel` admin form has additional restrictions - only users with Admin role or users in the `product_manager` or `ml_engineer` groups can view, add, edit, or delete ML model configurations.
 
 ## Testing
 
@@ -113,10 +116,11 @@ with connection.schema_editor() as schema_editor:
 
 - **Engine:** PostgreSQL
 - **Schema:** `source` (set via `search_path` in settings)
-- **Tables:** Most exist externally; `feature_flags` is Django-managed
+- **Tables:** Most exist externally; `feature_flags` and `active_ml_models` are Django-managed
 
 ## Notes
 
 - Use `--fake-initial` for migrations since most tables already exist
-- The `FeatureFlag` model is the only fully managed model
+- The `FeatureFlag` and `ActiveMLModel` models are fully managed by Django
 - Admin authentication bridges Django's auth system with the Lotus `users` table
+- Permission checks are cached for 5 minutes to reduce database queries

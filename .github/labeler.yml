@@ -31,3 +31,7 @@ dagster:
 django:
   - changed-files:
       - any-glob-to-any-file: "services/django/**"
+
+dbt:
+  - changed-files:
+      - any-glob-to-any-file: "services/dbt/**"

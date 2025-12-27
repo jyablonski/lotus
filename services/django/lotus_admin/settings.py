@@ -19,6 +19,7 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").sp
 
 # Application definition
 INSTALLED_APPS = [
+    "unfold",  # Must be before django.contrib.admin
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -114,6 +115,32 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Unfold (Django Admin Theme) Configuration
+# https://unfoldadmin.com/
+UNFOLD = {
+    "SITE_TITLE": "Lotus Admin Portal",
+    "SITE_HEADER": "Lotus Admin",
+    "SITE_URL": "/",
+    "SITE_ICON": None,  # You can add a path to your icon here
+    "SITE_LOGO": None,  # You can add a path to your logo here
+    "SITE_SYMBOL": "settings",  # Icon shown in the sidebar
+    "SITE_FAVICONS": None,
+    "SHOW_HISTORY": True,  # Show history button in admin
+    "SHOW_VIEW_ON_SITE": True,  # Show "view on site" button
+    "ENVIRONMENT": os.environ.get("ENVIRONMENT", "development").title(),  # Environment label
+    "DASHBOARD_CALLBACK": None,  # Optional: customize dashboard
+    "LOGIN": {
+        "image": None,  # Custom login image
+        "redirect_after": None,  # Redirect after login
+    },
+    "STYLES": [],  # Custom CSS styles
+    "SCRIPTS": [],  # Custom JavaScript scripts
+}
+
 # Admin-only access settings
 ADMIN_ONLY_ACCESS = True  # Set to False to allow non-admin users
 ADMIN_ROLE_NAME = "Admin"  # Role name from users table that grants admin access
+ADMIN_ALLOWED_GROUPS = [
+    "product_manager",
+    "ml_engineer",
+]  # Django groups that can access admin interface

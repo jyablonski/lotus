@@ -146,3 +146,21 @@ class FeatureFlag(models.Model):
     def __str__(self):
         status = "✓" if self.enabled else "✗"
         return f"{status} {self.flag_name}"
+
+
+class ActiveMLModel(models.Model):
+    """Model for tracking which ML models are currently enabled for the application."""
+
+    id = models.AutoField(primary_key=True)
+    ml_model = models.CharField(max_length=255, unique=True)
+    is_enabled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "active_ml_models"
+        ordering = ["ml_model"]
+
+    def __str__(self):
+        status = "✓" if self.is_enabled else "✗"
+        return f"{status} {self.ml_model}"
