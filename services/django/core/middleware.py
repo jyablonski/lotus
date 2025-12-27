@@ -50,24 +50,30 @@ class AdminOnlyMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Only apply to admin URLs (fixed: removed the "/" check that matched everything)
-        if not request.path.startswith("/admin/"):
+        # Check if this is an admin URL (either default Django admin or custom admin site)
+        # Custom admin site is mounted at root, so check for /core/ paths (app name)
+        is_admin_path = request.path.startswith("/admin/") or request.path.startswith("/core/")
+
+        if not is_admin_path:
             response = self.get_response(request)
             return response
 
         # Skip authentication check for login/logout pages
-        if request.path in ["/admin/login/", "/admin/logout/", "/admin/"]:
+        login_paths = ["/admin/login/", "/admin/logout/", "/admin/", "/login/", "/logout/", "/"]
+        if request.path in login_paths:
             response = self.get_response(request)
             return response
 
         # Check if user is authenticated
         if not request.user.is_authenticated:
             # Allow access to login page
-            if request.path == "/admin/login/":
+            if request.path in ["/admin/login/", "/login/"]:
                 response = self.get_response(request)
                 return response
             # Redirect to login for other admin pages
-            return redirect("/admin/login/?next=" + request.path)
+            # Use the appropriate login URL based on path
+            login_url = "/login/" if request.path.startswith("/core/") else "/admin/login/"
+            return redirect(f"{login_url}?next={request.path}")
 
         # Check if user has admin access (cached)
         if _has_admin_access(request.user):

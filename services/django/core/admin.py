@@ -12,6 +12,15 @@ class LotusAdminSite(AdminSite):
     site_title = _("Lotus Admin Portal")
     index_title = _("Welcome to Lotus Administration")
 
+    def has_permission(self, request):
+        """
+        Override to use custom permission logic instead of is_staff.
+        Allows users with Admin role or users in allowed groups.
+        """
+        from .middleware import _has_admin_access
+
+        return _has_admin_access(request.user)
+
 
 # Create custom admin site instance
 admin_site = LotusAdminSite(name="lotus_admin")

@@ -67,6 +67,11 @@ class TestActiveMLModelAdmin:
         assert not ActiveMLModel.objects.filter(ml_model="deletable_model").exists()
 
     def test_product_manager_group_can_view_list(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create product_manager group
         group, _ = Group.objects.get_or_create(name="product_manager")
 
@@ -94,6 +99,11 @@ class TestActiveMLModelAdmin:
         assert "test_model" in response.content.decode()
 
     def test_product_manager_group_can_add(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create product_manager group
         group, _ = Group.objects.get_or_create(name="product_manager")
 
@@ -119,6 +129,11 @@ class TestActiveMLModelAdmin:
         assert response.status_code == 200
 
     def test_product_manager_group_can_create(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create product_manager group
         group, _ = Group.objects.get_or_create(name="product_manager")
 
@@ -151,6 +166,11 @@ class TestActiveMLModelAdmin:
         assert model.is_enabled is True
 
     def test_product_manager_group_can_edit(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create product_manager group
         group, _ = Group.objects.get_or_create(name="product_manager")
 
@@ -187,6 +207,11 @@ class TestActiveMLModelAdmin:
         assert model.is_enabled is True
 
     def test_product_manager_group_can_delete(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create product_manager group
         group, _ = Group.objects.get_or_create(name="product_manager")
 
@@ -217,6 +242,11 @@ class TestActiveMLModelAdmin:
         assert not ActiveMLModel.objects.filter(ml_model="pm_deletable_model").exists()
 
     def test_ml_engineer_group_can_view_list(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create ml_engineer group
         group, _ = Group.objects.get_or_create(name="ml_engineer")
 
@@ -244,6 +274,11 @@ class TestActiveMLModelAdmin:
         assert "test_model" in response.content.decode()
 
     def test_ml_engineer_group_can_add(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create ml_engineer group
         group, _ = Group.objects.get_or_create(name="ml_engineer")
 
@@ -269,6 +304,11 @@ class TestActiveMLModelAdmin:
         assert response.status_code == 200
 
     def test_ml_engineer_group_can_create(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create ml_engineer group
         group, _ = Group.objects.get_or_create(name="ml_engineer")
 
@@ -301,6 +341,11 @@ class TestActiveMLModelAdmin:
         assert model.is_enabled is True
 
     def test_ml_engineer_group_can_edit(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create ml_engineer group
         group, _ = Group.objects.get_or_create(name="ml_engineer")
 
@@ -337,6 +382,11 @@ class TestActiveMLModelAdmin:
         assert model.is_enabled is True
 
     def test_ml_engineer_group_can_delete(self, client):
+        from django.core.cache import cache
+
+        # Clear cache to ensure fresh check
+        cache.clear()
+
         # Create ml_engineer group
         group, _ = Group.objects.get_or_create(name="ml_engineer")
 
