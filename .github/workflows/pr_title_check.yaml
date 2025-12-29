@@ -1,0 +1,33 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+# semantic pr title example: `feat(dbt): add new gold model for sales analysis`
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # automatically provided by GitHub
+        with:
+          # Configure which types are allowed
+          types: |
+            feat
+            fix
+            docs
+            test
+            build
+            ci
+            chore
+          # scopes: |
+          #   battery
+          #   tray
+          #   devices
+          #   config
+          #   deps
+          subjectPattern: ^[a-z].+$
+          subjectPatternError: |
+            The subject should start with a lowercase letter because fuck you

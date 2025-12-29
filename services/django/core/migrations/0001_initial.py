@@ -13,10 +13,51 @@ class Migration(migrations.Migration):
     dependencies = []
 
     operations = [
+        migrations.RunSQL(
+            'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";',
+            reverse_sql='DROP EXTENSION IF EXISTS "uuid-ossp";',
+        ),
+        migrations.CreateModel(
+            name="User",
+            fields=[
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("email", models.CharField(max_length=255, unique=True)),
+                ("password", models.CharField(blank=True, max_length=255, null=True)),
+                ("salt", models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "oauth_provider",
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
+                ("role", models.CharField(default="Consumer", max_length=50)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("modified_at", models.DateTimeField(auto_now=True)),
+                ("timezone", models.CharField(default="UTC", max_length=50)),
+            ],
+            options={
+                "db_table": "users",
+                "ordering": ["-created_at"],
+            },
+        ),
         migrations.CreateModel(
             name="Journal",
             fields=[
                 ("id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        db_column="user_id",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="core.user",
+                    ),
+                ),
                 ("journal_text", models.TextField()),
                 ("mood_score", models.IntegerField(blank=True, null=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
@@ -25,13 +66,87 @@ class Migration(migrations.Migration):
             options={
                 "db_table": "journals",
                 "ordering": ["-created_at"],
-                "managed": False,
             },
+        ),
+        migrations.AddIndex(
+            model_name="journal",
+            index=models.Index(
+                fields=["user", "-created_at"], name="idx_journals_user_created"
+            ),
+        ),
+        migrations.CreateModel(
+            name="JournalDetail",
+            fields=[
+                (
+                    "journal",
+                    models.OneToOneField(
+                        db_column="journal_id",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to="core.journal",
+                    ),
+                ),
+                ("sentiment_score", models.FloatField(blank=True, null=True)),
+                ("mood_label", models.TextField(blank=True, null=True)),
+                (
+                    "keywords",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.TextField(), blank=True, null=True, size=None
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("modified_at", models.DateTimeField(auto_now=True)),
+            ],
+            options={
+                "db_table": "journal_details",
+            },
+        ),
+        migrations.CreateModel(
+            name="JournalTopic",
+            fields=[
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "journal",
+                    models.ForeignKey(
+                        db_column="journal_id",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="core.journal",
+                    ),
+                ),
+                ("topic_name", models.CharField(max_length=100)),
+                ("confidence", models.DecimalField(decimal_places=4, max_digits=5)),
+                ("ml_model_version", models.CharField(max_length=50)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+            ],
+            options={
+                "db_table": "journal_topics",
+            },
+        ),
+        migrations.AddIndex(
+            model_name="journaltopic",
+            index=models.Index(
+                fields=["journal"], name="idx_journal_topics_journal_id"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="journaltopic",
+            index=models.Index(
+                fields=["topic_name"], name="idx_journal_topics_topic_name"
+            ),
         ),
         migrations.CreateModel(
             name="JournalSentiment",
             fields=[
                 ("id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "journal",
+                    models.ForeignKey(
+                        db_column="journal_id",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="core.journal",
+                    ),
+                ),
                 (
                     "sentiment",
                     models.CharField(
@@ -63,80 +178,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "db_table": "journal_sentiments",
-                "managed": False,
-            },
-        ),
-        migrations.CreateModel(
-            name="JournalTopic",
-            fields=[
-                ("id", models.AutoField(primary_key=True, serialize=False)),
-                ("topic_name", models.CharField(max_length=100)),
-                ("confidence", models.DecimalField(decimal_places=4, max_digits=5)),
-                ("ml_model_version", models.CharField(max_length=50)),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-            ],
-            options={
-                "db_table": "journal_topics",
-                "managed": False,
-            },
-        ),
-        migrations.CreateModel(
-            name="User",
-            fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("email", models.CharField(max_length=255, unique=True)),
-                ("password", models.CharField(blank=True, max_length=255, null=True)),
-                ("salt", models.CharField(blank=True, max_length=255, null=True)),
-                (
-                    "oauth_provider",
-                    models.CharField(blank=True, max_length=255, null=True),
-                ),
-                ("role", models.CharField(default="Consumer", max_length=50)),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("modified_at", models.DateTimeField(auto_now=True)),
-                ("timezone", models.CharField(default="UTC", max_length=50)),
-            ],
-            options={
-                "db_table": "users",
-                "ordering": ["-created_at"],
-                "managed": False,
-            },
-        ),
-        migrations.CreateModel(
-            name="JournalDetail",
-            fields=[
-                (
-                    "journal",
-                    models.OneToOneField(
-                        db_column="journal_id",
-                        on_delete=django.db.models.deletion.CASCADE,
-                        primary_key=True,
-                        serialize=False,
-                        to="core.journal",
-                    ),
-                ),
-                ("sentiment_score", models.FloatField(blank=True, null=True)),
-                ("mood_label", models.TextField(blank=True, null=True)),
-                (
-                    "keywords",
-                    django.contrib.postgres.fields.ArrayField(
-                        base_field=models.TextField(), blank=True, null=True, size=None
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("modified_at", models.DateTimeField(auto_now=True)),
-            ],
-            options={
-                "db_table": "journal_details",
-                "managed": False,
+                "unique_together": {("journal", "ml_model_version")},
             },
         ),
     ]

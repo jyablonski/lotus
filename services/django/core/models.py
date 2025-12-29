@@ -19,7 +19,6 @@ class User(models.Model):
 
     class Meta:
         db_table = "users"
-        managed = False  # Table already exists, Django won't manage it
         ordering = ["-created_at"]
 
     def __str__(self):
@@ -43,7 +42,6 @@ class Journal(models.Model):
 
     class Meta:
         db_table = "journals"
-        managed = False
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "-created_at"], name="idx_journals_user_created"),
@@ -67,7 +65,6 @@ class JournalDetail(models.Model):
 
     class Meta:
         db_table = "journal_details"
-        managed = False
 
     def __str__(self):
         return f"Details for Journal {self.journal.id}"
@@ -85,7 +82,6 @@ class JournalTopic(models.Model):
 
     class Meta:
         db_table = "journal_topics"
-        managed = False
         indexes = [
             models.Index(fields=["journal"], name="idx_journal_topics_journal_id"),
             models.Index(fields=["topic_name"], name="idx_journal_topics_topic_name"),
@@ -123,7 +119,6 @@ class JournalSentiment(models.Model):
 
     class Meta:
         db_table = "journal_sentiments"
-        managed = False
         unique_together = [["journal", "ml_model_version"]]
 
     def __str__(self):
