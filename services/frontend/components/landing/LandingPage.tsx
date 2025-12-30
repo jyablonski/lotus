@@ -200,7 +200,7 @@ const LandingPage = () => {
                 <div className="bg-dark-950 text-white py-8">
                     <div className="content-container text-center">
                         <div className="text-dark-400 text-sm">
-                            © 2025 Lotus
+                            © 2026 Lotus
                         </div>
                     </div>
                 </div>

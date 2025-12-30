@@ -12,11 +12,19 @@ async function createUserInBackend(email: string, oauthProvider?: string) {
       body: JSON.stringify({ email, oauth_provider: oauthProvider }),
     });
     if (!response.ok) {
-      console.error("Error creating user in backend:", response.status);
+      const errorText = await response.text();
+      console.error("Error creating user in backend:", response.status, errorText);
       return null;
     }
     const data = await response.json();
-    return data?.userId; // Extract the userId from the response
+    // Handle both camelCase (userId) and snake_case (user_id) from backend
+    const userId = data?.userId || data?.user_id;
+    if (!userId) {
+      console.error("No userId in response:", data);
+      return null;
+    }
+    // Return the userId - we'll fetch full user data after creation
+    return { userId };
   } catch (error) {
     console.error("Error creating user in backend:", error);
     return null;
@@ -61,14 +69,22 @@ export const authConfig: NextAuthConfig = {
         );
 
         if (!newUserResult?.userId) {
+          console.error("Failed to create user or get userId");
           return false;
         }
 
-        (user as User).backendId = newUserResult.userId;
-        (user as User).createdAt = newUserResult.createdAt;
+        // After creating user, fetch the full user data to get createdAt
+        const createdUser = await fetchBackendUser(user.email!);
+        if (!createdUser) {
+          console.error("User created but could not fetch user data");
+          return false;
+        }
+
+        (user as User).backendId = createdUser.userId || createdUser.user_id;
+        (user as User).createdAt = createdUser.createdAt || createdUser.created_at;
       } else {
-        (user as User).backendId = existingUser.userId;
-        (user as User).createdAt = existingUser.createdAt;
+        (user as User).backendId = existingUser.userId || existingUser.user_id;
+        (user as User).createdAt = existingUser.createdAt || existingUser.created_at;
       }
 
       return true;
