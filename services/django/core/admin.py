@@ -9,7 +9,7 @@ from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.sites import UnfoldAdminSite
 
-from .models import ActiveMLModel, FeatureFlag
+from .models import ActiveMLModel, FeatureFlag, User as LotusUser
 
 
 class LotusAdminSite(UnfoldAdminSite):
@@ -103,3 +103,16 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 @admin.register(Group, site=admin_site)
 class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     pass
+
+
+@admin.register(LotusUser, site=admin_site)
+class LotusUserAdmin(ModelAdmin):
+    list_display = ("email", "role", "oauth_provider", "created_at", "modified_at")
+    list_filter = ("role", "oauth_provider", "created_at", "modified_at")
+    search_fields = ("email",)
+    readonly_fields = ("id", "created_at", "modified_at")
+    fieldsets = (
+        (None, {"fields": ("id", "email", "role", "timezone")}),
+        ("Authentication", {"fields": ("password", "salt", "oauth_provider")}),
+        ("Timestamps", {"fields": ("created_at", "modified_at")}),
+    )
