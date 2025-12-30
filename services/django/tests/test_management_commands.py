@@ -16,12 +16,15 @@ class TestCreateAdminUserCommand:
 
     def test_create_admin_user_success(self):
         """Creating admin user when LotusUser exists with Admin role should succeed."""
-        # Create LotusUser with Admin role
+        # Create LotusUser with Admin role (signal will create Django User)
         LotusUser.objects.create(
             email="admin@test.com",
             role="Admin",
             timezone="UTC",
         )
+
+        # Delete Django User created by signal to test command creation
+        DjangoUser.objects.filter(username="admin@test.com").delete()
 
         # Run command
         out = StringIO()
@@ -46,20 +49,17 @@ class TestCreateAdminUserCommand:
 
     def test_create_admin_user_updates_existing_django_user(self):
         """Updating existing Django User should work."""
-        # Create LotusUser with Admin role
+        # Create LotusUser with Admin role (signal will create Django User)
         LotusUser.objects.create(
             email="admin@test.com",
             role="Admin",
             timezone="UTC",
         )
 
-        # Create Django User first
-        existing_user = DjangoUser.objects.create_user(
-            username="admin@test.com",
-            email="admin@test.com",
-        )
-        existing_user.set_password("oldpassword")
-        existing_user.save()
+        # Get Django User created by signal and set password
+        django_user = DjangoUser.objects.get(username="admin@test.com")
+        django_user.set_password("oldpassword")
+        django_user.save()
 
         # Run command
         out = StringIO()
@@ -71,7 +71,7 @@ class TestCreateAdminUserCommand:
         )
 
         # Verify Django User was updated
-        django_user = DjangoUser.objects.get(username="admin@test.com")
+        django_user.refresh_from_db()
         assert django_user.check_password("newpass123")
         assert django_user.email == "admin@test.com"
 
@@ -102,12 +102,15 @@ class TestCreateAdminUserCommand:
 
     def test_create_admin_user_fails_when_lotus_user_not_admin(self):
         """Command should fail when LotusUser exists but doesn't have Admin role."""
-        # Create LotusUser with Consumer role
+        # Create LotusUser with Consumer role (signal will create Django User)
         LotusUser.objects.create(
             email="consumer@test.com",
             role="Consumer",
             timezone="UTC",
         )
+
+        # Delete Django User created by signal - command should not recreate it
+        DjangoUser.objects.filter(username="consumer@test.com").delete()
 
         out = StringIO()
 
@@ -118,7 +121,8 @@ class TestCreateAdminUserCommand:
             stdout=out,
         )
 
-        # Verify Django User was not created
+        # Verify Django User was not created by command (signal would create it, but we deleted it)
+        # The command should fail before creating a user
         assert not DjangoUser.objects.filter(username="consumer@test.com").exists()
 
         # Verify error message
@@ -133,11 +137,14 @@ class TestSyncDjangoUsersCommand:
 
     def test_sync_django_users_creates_new_users(self):
         """Command should create Django Users for Lotus Users that don't have Django Users."""
-        # Create LotusUsers
+        # Create LotusUsers (signals will create Django Users)
         LotusUser.objects.create(
             email="user1@test.com", role="Consumer", timezone="UTC"
         )
         LotusUser.objects.create(email="admin1@test.com", role="Admin", timezone="UTC")
+
+        # Delete Django Users created by signals to test command creation
+        DjangoUser.objects.filter(username__in=["user1@test.com", "admin1@test.com"]).delete()
 
         out = StringIO()
         call_command("sync_django_users", stdout=out)
@@ -162,24 +169,27 @@ class TestSyncDjangoUsersCommand:
 
     def test_sync_django_users_updates_existing_users(self):
         """Command should update Django Users when LotusUser changes."""
-        # Create LotusUser
+        # Create LotusUser (signal will create Django User)
         lotus_user = LotusUser.objects.create(
             email="user@test.com",
             role="Consumer",
             timezone="UTC",
         )
 
-        # Create Django User with wrong permissions
-        django_user = DjangoUser.objects.create(
-            username="user@test.com",
-            email="user@test.com",
-            is_staff=True,
-            is_superuser=True,
-        )
+        # Get Django User created by signal and set wrong permissions
+        django_user = DjangoUser.objects.get(username="user@test.com")
+        django_user.is_staff = True
+        django_user.is_superuser = True
+        django_user.save()
 
-        # Update LotusUser role to Admin
+        # Update LotusUser role to Admin (signal will update Django User, but we test command too)
         lotus_user.role = "Admin"
         lotus_user.save()
+
+        # Reset permissions to test command update
+        django_user.is_staff = False
+        django_user.is_superuser = False
+        django_user.save()
 
         out = StringIO()
         call_command("sync_django_users", stdout=out)
@@ -196,22 +206,23 @@ class TestSyncDjangoUsersCommand:
 
     def test_sync_django_users_updates_email(self):
         """Command should update Django User email when LotusUser email changes."""
-        # Create LotusUser
+        # Create LotusUser (signal will create Django User)
         lotus_user = LotusUser.objects.create(
             email="original@test.com",
             role="Consumer",
             timezone="UTC",
         )
 
-        # Create Django User
-        django_user = DjangoUser.objects.create(
-            username="original@test.com",
-            email="original@test.com",
-        )
+        # Get Django User created by signal
+        django_user = DjangoUser.objects.get(username="original@test.com")
 
-        # Update LotusUser email
+        # Update LotusUser email (signal will update Django User email)
         lotus_user.email = "updated@test.com"
         lotus_user.save()
+
+        # Reset email to test command update
+        django_user.email = "original@test.com"
+        django_user.save()
 
         out = StringIO()
         call_command("sync_django_users", stdout=out)
@@ -228,19 +239,11 @@ class TestSyncDjangoUsersCommand:
 
     def test_sync_django_users_skips_already_synced_users(self):
         """Command should skip users that are already in sync."""
-        # Create LotusUser
-        lotus_user = LotusUser.objects.create(
+        # Create LotusUser (signal will create Django User that's already in sync)
+        LotusUser.objects.create(
             email="synced@test.com",
             role="Consumer",
             timezone="UTC",
-        )
-
-        # Create Django User that's already in sync
-        DjangoUser.objects.create(
-            username="synced@test.com",
-            email="synced@test.com",
-            is_staff=False,
-            is_superuser=False,
         )
 
         out = StringIO()
@@ -253,17 +256,20 @@ class TestSyncDjangoUsersCommand:
 
     def test_sync_django_users_dry_run(self):
         """Dry run should show what would be done without making changes."""
-        # Create LotusUser
+        # Create LotusUser (signal will create Django User)
         LotusUser.objects.create(
             email="dryrun@test.com",
             role="Admin",
             timezone="UTC",
         )
 
+        # Delete Django User created by signal - dry run should show it would be created
+        DjangoUser.objects.filter(username="dryrun@test.com").delete()
+
         out = StringIO()
         call_command("sync_django_users", "--dry-run", stdout=out)
 
-        # Verify Django User was NOT created
+        # Verify Django User was NOT created by command (signal would create it, but we deleted it)
         assert not DjangoUser.objects.filter(username="dryrun@test.com").exists()
 
         # Verify output shows dry run
@@ -273,28 +279,23 @@ class TestSyncDjangoUsersCommand:
 
     def test_sync_django_users_mixed_scenarios(self):
         """Command should handle mix of creates, updates, and skips."""
-        # Create LotusUsers
+        # Create LotusUsers (signals will create Django Users)
         LotusUser.objects.create(email="new@test.com", role="Consumer", timezone="UTC")
         LotusUser.objects.create(
             email="update@test.com", role="Consumer", timezone="UTC"
         )
         LotusUser.objects.create(email="skip@test.com", role="Consumer", timezone="UTC")
 
-        # Create Django User that needs updating
-        django_user = DjangoUser.objects.create(
-            username="update@test.com",
-            email="update@test.com",
-            is_staff=True,  # Wrong - should be False
-            is_superuser=True,  # Wrong - should be False
-        )
+        # Delete Django User for "new" to test creation
+        DjangoUser.objects.filter(username="new@test.com").delete()
 
-        # Create Django User that's already in sync
-        DjangoUser.objects.create(
-            username="skip@test.com",
-            email="skip@test.com",
-            is_staff=False,
-            is_superuser=False,
-        )
+        # Get Django User that needs updating and set wrong permissions
+        django_user = DjangoUser.objects.get(username="update@test.com")
+        django_user.is_staff = True  # Wrong - should be False
+        django_user.is_superuser = True  # Wrong - should be False
+        django_user.save()
+
+        # Django User for "skip" is already in sync (created by signal)
 
         out = StringIO()
         call_command("sync_django_users", stdout=out)
