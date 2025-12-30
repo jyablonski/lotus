@@ -13,7 +13,9 @@ from core.models import User as LotusUser
 class TestSyncDjangoUserSignal:
     """Tests for sync_django_user signal (post_save)."""
 
-    def test_create_lotus_user_with_admin_role_creates_django_user_with_admin_privileges(self):
+    def test_create_lotus_user_with_admin_role_creates_django_user_with_admin_privileges(
+        self,
+    ):
         """Creating a LotusUser with Admin role should create Django User with is_staff=True and is_superuser=True."""
         lotus_user = LotusUser.objects.create(
             email="admin@test.com",
@@ -26,7 +28,9 @@ class TestSyncDjangoUserSignal:
         assert django_user.is_staff is True
         assert django_user.is_superuser is True
 
-    def test_create_lotus_user_with_consumer_role_creates_django_user_without_admin_privileges(self):
+    def test_create_lotus_user_with_consumer_role_creates_django_user_without_admin_privileges(
+        self,
+    ):
         """Creating a LotusUser with Consumer role should create Django User with is_staff=False and is_superuser=False."""
         lotus_user = LotusUser.objects.create(
             email="consumer@test.com",
@@ -39,7 +43,9 @@ class TestSyncDjangoUserSignal:
         assert django_user.is_staff is False
         assert django_user.is_superuser is False
 
-    def test_create_lotus_user_with_custom_role_creates_django_user_without_admin_privileges(self):
+    def test_create_lotus_user_with_custom_role_creates_django_user_without_admin_privileges(
+        self,
+    ):
         """Creating a LotusUser with a custom role should create Django User without admin privileges."""
         lotus_user = LotusUser.objects.create(
             email="custom@test.com",
@@ -86,7 +92,9 @@ class TestSyncDjangoUserSignal:
         assert django_user.username == "original@test.com"  # Username doesn't change
         assert django_user.email == "updated@test.com"  # Email is updated
 
-    def test_update_lotus_user_role_from_consumer_to_admin_grants_admin_privileges(self):
+    def test_update_lotus_user_role_from_consumer_to_admin_grants_admin_privileges(
+        self,
+    ):
         """Updating a LotusUser role from Consumer to Admin should grant admin privileges."""
         lotus_user = LotusUser.objects.create(
             email="user@test.com",
@@ -106,7 +114,9 @@ class TestSyncDjangoUserSignal:
         assert django_user.is_staff is True
         assert django_user.is_superuser is True
 
-    def test_update_lotus_user_role_from_admin_to_consumer_removes_admin_privileges(self):
+    def test_update_lotus_user_role_from_admin_to_consumer_removes_admin_privileges(
+        self,
+    ):
         """Updating a LotusUser role from Admin to Consumer should remove admin privileges."""
         lotus_user = LotusUser.objects.create(
             email="admin@test.com",
@@ -167,7 +177,9 @@ class TestSyncDjangoUserSignal:
         )
 
         # Should update existing Django User, not create new one
-        django_user_count = DjangoUser.objects.filter(username="existing@test.com").count()
+        django_user_count = DjangoUser.objects.filter(
+            username="existing@test.com"
+        ).count()
         assert django_user_count == 1
 
         existing_django_user.refresh_from_db()
@@ -198,7 +210,9 @@ class TestDeleteDjangoUserSignal:
         # Django User should be deleted
         assert not DjangoUser.objects.filter(username="delete@test.com").exists()
 
-    def test_delete_lotus_user_when_django_user_does_not_exist_does_not_raise_error(self):
+    def test_delete_lotus_user_when_django_user_does_not_exist_does_not_raise_error(
+        self,
+    ):
         """Deleting a LotusUser when Django User doesn't exist should not raise an error."""
         lotus_user = LotusUser.objects.create(
             email="no_django_user@test.com",
