@@ -1,8 +1,18 @@
 import os
 
 import pytest
+from django.db import connection
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_database(django_db_setup, django_db_blocker):
+    """Create schema and uuid-ossp extension for tests."""
+    with django_db_blocker.unblock():
+        with connection.cursor() as cursor:
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
+            cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
 
 
 @pytest.fixture
