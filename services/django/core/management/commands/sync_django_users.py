@@ -41,7 +41,10 @@ class Command(BaseCommand):
 
                 # Check if admin privileges need updating
                 is_admin = lotus_user.role == "Admin"
-                if django_user.is_staff != is_admin or django_user.is_superuser != is_admin:
+                if (
+                    django_user.is_staff != is_admin
+                    or django_user.is_superuser != is_admin
+                ):
                     needs_update = True
                     if not dry_run:
                         django_user.is_staff = is_admin

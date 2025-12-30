@@ -1,7 +1,7 @@
 import os
 
-import pytest
 from django.db import connection
+import pytest
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 
@@ -9,14 +9,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database(django_db_setup, django_db_blocker):
     """Create schema and uuid-ossp extension for tests."""
-    with django_db_blocker.unblock():
-        with connection.cursor() as cursor:
-            # Create extension in public schema (default)
-            cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-            # Create source schema
-            cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
-            # Ensure search_path includes public so uuid_generate_v4() is accessible
-            cursor.execute("SET search_path TO source, public")
+    with django_db_blocker.unblock(), connection.cursor() as cursor:
+        # Create extension in public schema (default)
+        cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+        # Create source schema
+        cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
+        # Ensure search_path includes public so uuid_generate_v4() is accessible
+        cursor.execute("SET search_path TO source, public")
 
 
 @pytest.fixture

@@ -4,11 +4,10 @@ Keeps Django auth.User in sync with core.User for admin access.
 """
 
 from django.contrib.auth.models import User as DjangoUser
-from django.db.models.signals import post_save, post_delete, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from .models import User as LotusUser
-
 
 # Store old email before save to handle email updates
 _old_email_cache = {}
@@ -37,10 +36,10 @@ def sync_django_user(sender, instance, created, **kwargs):
 
     # Get old email if this was an update
     old_email = _old_email_cache.pop(instance.pk, None) if not created else None
-    
+
     # Determine lookup email: use old email if email changed, otherwise use current email
     lookup_email = old_email if old_email and old_email != instance.email else instance.email
-    
+
     try:
         django_user = DjangoUser.objects.get(username=lookup_email)
     except DjangoUser.DoesNotExist:

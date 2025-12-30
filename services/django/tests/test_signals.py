@@ -2,11 +2,10 @@
 Tests for Django User synchronization signals.
 """
 
+from core.models import User as LotusUser
 from django.contrib.auth.models import User as DjangoUser
 from django.test import override_settings
 import pytest
-
-from core.models import User as LotusUser
 
 
 @pytest.mark.django_db

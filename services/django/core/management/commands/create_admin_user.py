@@ -53,7 +53,9 @@ class Command(BaseCommand):
         if not created:
             django_user.email = email
             django_user.save()
-            self.stdout.write(self.style.WARNING(f"Updated existing Django user: {email}"))
+            self.stdout.write(
+                self.style.WARNING(f"Updated existing Django user: {email}")
+            )
         else:
             self.stdout.write(self.style.SUCCESS(f"Created Django user: {email}"))
 

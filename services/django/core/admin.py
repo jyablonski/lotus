@@ -9,7 +9,11 @@ from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.sites import UnfoldAdminSite
 
-from .models import ActiveMLModel, FeatureFlag, User as LotusUser
+from .models import (
+    ActiveMLModel,
+    FeatureFlag,
+    User as LotusUser,
+)
 
 
 class LotusAdminSite(UnfoldAdminSite):
