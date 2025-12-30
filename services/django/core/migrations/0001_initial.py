@@ -14,6 +14,10 @@ class Migration(migrations.Migration):
     dependencies = []
 
     operations = [
+        migrations.RunSQL(
+            'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
+            reverse_sql='DROP EXTENSION IF EXISTS "uuid-ossp"',
+        ),
         migrations.CreateModel(
             name="ActiveMLModel",
             fields=[
