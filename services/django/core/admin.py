@@ -71,22 +71,24 @@ class ActiveMLModelAdmin(ModelAdmin):
         (None, {"fields": ("id", "ml_model", "is_enabled")}),
         ("Timestamps", {"fields": ("created_at", "modified_at")}),
     )
-    list_editable = ("is_enabled",)  # Allow quick editing of enabled status from list view
+    list_editable = (
+        "is_enabled",
+    )  # Allow quick editing of enabled status from list view
 
     def has_add_permission(self, request):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to add."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to add."""
         return has_ml_model_permission(request.user)
 
     def has_change_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to change."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to change."""
         return has_ml_model_permission(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to delete."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to delete."""
         return has_ml_model_permission(request.user)
 
     def has_view_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to view."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to view."""
         return has_ml_model_permission(request.user)
 
 
