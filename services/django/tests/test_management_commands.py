@@ -25,7 +25,12 @@ class TestCreateAdminUserCommand:
 
         # Run command
         out = StringIO()
-        call_command("create_admin_user", email="admin@test.com", password="testpass123", stdout=out)
+        call_command(
+            "create_admin_user",
+            email="admin@test.com",
+            password="testpass123",
+            stdout=out,
+        )
 
         # Verify Django User was created
         django_user = DjangoUser.objects.get(username="admin@test.com")
@@ -58,7 +63,12 @@ class TestCreateAdminUserCommand:
 
         # Run command
         out = StringIO()
-        call_command("create_admin_user", email="admin@test.com", password="newpass123", stdout=out)
+        call_command(
+            "create_admin_user",
+            email="admin@test.com",
+            password="newpass123",
+            stdout=out,
+        )
 
         # Verify Django User was updated
         django_user = DjangoUser.objects.get(username="admin@test.com")
@@ -67,7 +77,10 @@ class TestCreateAdminUserCommand:
 
         # Verify output mentions update
         output = out.getvalue()
-        assert "Updated existing Django user" in output or "Successfully created/updated" in output
+        assert (
+            "Updated existing Django user" in output
+            or "Successfully created/updated" in output
+        )
 
     def test_create_admin_user_fails_when_lotus_user_does_not_exist(self):
         """Command should fail when LotusUser doesn't exist."""
@@ -121,7 +134,9 @@ class TestSyncDjangoUsersCommand:
     def test_sync_django_users_creates_new_users(self):
         """Command should create Django Users for Lotus Users that don't have Django Users."""
         # Create LotusUsers
-        LotusUser.objects.create(email="user1@test.com", role="Consumer", timezone="UTC")
+        LotusUser.objects.create(
+            email="user1@test.com", role="Consumer", timezone="UTC"
+        )
         LotusUser.objects.create(email="admin1@test.com", role="Admin", timezone="UTC")
 
         out = StringIO()
@@ -260,7 +275,9 @@ class TestSyncDjangoUsersCommand:
         """Command should handle mix of creates, updates, and skips."""
         # Create LotusUsers
         LotusUser.objects.create(email="new@test.com", role="Consumer", timezone="UTC")
-        LotusUser.objects.create(email="update@test.com", role="Consumer", timezone="UTC")
+        LotusUser.objects.create(
+            email="update@test.com", role="Consumer", timezone="UTC"
+        )
         LotusUser.objects.create(email="skip@test.com", role="Consumer", timezone="UTC")
 
         # Create Django User that needs updating
