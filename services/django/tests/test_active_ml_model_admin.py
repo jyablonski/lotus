@@ -72,8 +72,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create product_manager group
-        group, _ = Group.objects.get_or_create(name="product_manager")
+        # Create product group
+        group, _ = Group.objects.get_or_create(name="product")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -104,8 +104,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create product_manager group
-        group, _ = Group.objects.get_or_create(name="product_manager")
+        # Create product group
+        group, _ = Group.objects.get_or_create(name="product")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -134,8 +134,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create product_manager group
-        group, _ = Group.objects.get_or_create(name="product_manager")
+        # Create product group
+        group, _ = Group.objects.get_or_create(name="product")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -171,8 +171,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create product_manager group
-        group, _ = Group.objects.get_or_create(name="product_manager")
+        # Create product group
+        group, _ = Group.objects.get_or_create(name="product")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -212,8 +212,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create product_manager group
-        group, _ = Group.objects.get_or_create(name="product_manager")
+        # Create product group
+        group, _ = Group.objects.get_or_create(name="product")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -247,8 +247,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create ml_engineer group
-        group, _ = Group.objects.get_or_create(name="ml_engineer")
+        # Create ml_ops group
+        group, _ = Group.objects.get_or_create(name="ml_ops")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -279,8 +279,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create ml_engineer group
-        group, _ = Group.objects.get_or_create(name="ml_engineer")
+        # Create ml_ops group
+        group, _ = Group.objects.get_or_create(name="ml_ops")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -309,8 +309,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create ml_engineer group
-        group, _ = Group.objects.get_or_create(name="ml_engineer")
+        # Create ml_ops group
+        group, _ = Group.objects.get_or_create(name="ml_ops")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -346,8 +346,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create ml_engineer group
-        group, _ = Group.objects.get_or_create(name="ml_engineer")
+        # Create ml_ops group
+        group, _ = Group.objects.get_or_create(name="ml_ops")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -387,8 +387,8 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create ml_engineer group
-        group, _ = Group.objects.get_or_create(name="ml_engineer")
+        # Create ml_ops group
+        group, _ = Group.objects.get_or_create(name="ml_ops")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -417,7 +417,7 @@ class TestActiveMLModelAdmin:
         assert not ActiveMLModel.objects.filter(ml_model="ml_deletable_model").exists()
 
     def test_regular_user_cannot_access(self, client):
-        # Create Django user without Admin role and not in product_manager group
+        # Create Django user without Admin role and not in allowed groups
         django_user = DjangoUser.objects.create_user(
             username="regular_user",
             email="regular@test.com",
@@ -438,7 +438,7 @@ class TestActiveMLModelAdmin:
         assert response.status_code in [302, 403]
 
     def test_regular_user_cannot_add(self, client):
-        # Create Django user without Admin role and not in product_manager group
+        # Create Django user without Admin role and not in allowed groups
         django_user = DjangoUser.objects.create_user(
             username="regular_user2",
             email="regular2@test.com",
@@ -459,7 +459,7 @@ class TestActiveMLModelAdmin:
         assert response.status_code in [302, 403]
 
     def test_regular_user_cannot_edit(self, client):
-        # Create Django user without Admin role and not in product_manager group
+        # Create Django user without Admin role and not in allowed groups
         django_user = DjangoUser.objects.create_user(
             username="regular_user3",
             email="regular3@test.com",
@@ -489,14 +489,14 @@ class TestActiveMLModelAdmin:
         assert has_ml_model_permission(admin_user) is True
 
     def test_has_ml_model_permission_product_manager_group(self, db):
-        """Test that has_ml_model_permission returns True for product_manager group users."""
+        """Test that has_ml_model_permission returns True for product group users."""
         from django.core.cache import cache
 
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create product_manager group
-        group, _ = Group.objects.get_or_create(name="product_manager")
+        # Create product group
+        group, _ = Group.objects.get_or_create(name="product")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -516,14 +516,14 @@ class TestActiveMLModelAdmin:
         assert has_ml_model_permission(django_user) is True
 
     def test_has_ml_model_permission_ml_engineer_group(self, db):
-        """Test that has_ml_model_permission returns True for ml_engineer group users."""
+        """Test that has_ml_model_permission returns True for ml_ops group users."""
         from django.core.cache import cache
 
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create ml_engineer group
-        group, _ = Group.objects.get_or_create(name="ml_engineer")
+        # Create ml_ops group
+        group, _ = Group.objects.get_or_create(name="ml_ops")
 
         # Create Django user
         django_user = DjangoUser.objects.create_user(
@@ -549,7 +549,7 @@ class TestActiveMLModelAdmin:
         # Clear cache to ensure fresh check
         cache.clear()
 
-        # Create Django user without Admin role and not in product_manager group
+        # Create Django user without Admin role and not in allowed groups
         django_user = DjangoUser.objects.create_user(
             username="regular_test",
             email="regular_test@test.com",

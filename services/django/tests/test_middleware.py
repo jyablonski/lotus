@@ -4,12 +4,6 @@ from django.test import RequestFactory
 import pytest
 
 
-# NOTE: The core models (User, Journal, etc.) have managed=False, which means Django
-# won't create their tables in the test database. This makes it difficult to test
-# middleware that queries these models (like AdminOnlyMiddleware checking User.role).
-# Full integration tests would require manually creating these tables in test setup,
-# which we're deferring. For now, we test basic middleware behavior without the
-# LotusUser lookup.
 @pytest.mark.django_db
 class TestAdminOnlyMiddleware:
     def test_middleware_allows_login_page(self):

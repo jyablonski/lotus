@@ -1,25 +1,50 @@
-import uuid
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Func
+from django.db.models.functions import Now
+
+
+class UUIDGenerateV4(Func):
+    """Database function wrapper for PostgreSQL's uuid_generate_v4()."""
+
+    function = "uuid_generate_v4"
+    template = "%(function)s()"
 
 
 class User(models.Model):
     """User model matching the existing users table."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
     email = models.CharField(max_length=255, unique=True)
     password = models.CharField(max_length=255, null=True, blank=True)
     salt = models.CharField(max_length=255, null=True, blank=True)
     oauth_provider = models.CharField(max_length=255, null=True, blank=True)
-    role = models.CharField(max_length=50, default="Consumer")
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-    timezone = models.CharField(max_length=50, default="UTC")
+    role = models.CharField(
+        max_length=50,
+        default="Consumer",
+        db_default="Consumer",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+    modified_at = models.DateTimeField(
+        auto_now=True,
+        db_default=Now(),
+    )
+    timezone = models.CharField(
+        max_length=50,
+        default="UTC",
+        db_default="UTC",
+    )
 
     class Meta:
         db_table = "users"
-        managed = False  # Table already exists, Django won't manage it
         ordering = ["-created_at"]
 
     def __str__(self):
@@ -38,15 +63,22 @@ class Journal(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, db_column="user_id")
     journal_text = models.TextField()
     mood_score = models.IntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+    modified_at = models.DateTimeField(
+        auto_now=True,
+        db_default=Now(),
+    )
 
     class Meta:
         db_table = "journals"
-        managed = False
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user", "-created_at"], name="idx_journals_user_created"),
+            models.Index(
+                fields=["user", "-created_at"], name="idx_journals_user_created"
+            ),
         ]
 
     def __str__(self):
@@ -62,12 +94,17 @@ class JournalDetail(models.Model):
     sentiment_score = models.FloatField(null=True, blank=True)
     mood_label = models.TextField(null=True, blank=True)
     keywords = ArrayField(models.TextField(), null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+    modified_at = models.DateTimeField(
+        auto_now=True,
+        db_default=Now(),
+    )
 
     class Meta:
         db_table = "journal_details"
-        managed = False
 
     def __str__(self):
         return f"Details for Journal {self.journal.id}"
@@ -77,15 +114,19 @@ class JournalTopic(models.Model):
     """Journal topic model matching the existing journal_topics table."""
 
     id = models.AutoField(primary_key=True)
-    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
+    journal = models.ForeignKey(
+        Journal, on_delete=models.CASCADE, db_column="journal_id"
+    )
     topic_name = models.CharField(max_length=100)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     ml_model_version = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
 
     class Meta:
         db_table = "journal_topics"
-        managed = False
         indexes = [
             models.Index(fields=["journal"], name="idx_journal_topics_journal_id"),
             models.Index(fields=["topic_name"], name="idx_journal_topics_topic_name"),
@@ -112,28 +153,38 @@ class JournalSentiment(models.Model):
     ]
 
     id = models.AutoField(primary_key=True)
-    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
+    journal = models.ForeignKey(
+        Journal, on_delete=models.CASCADE, db_column="journal_id"
+    )
     sentiment = models.CharField(max_length=20, choices=SENTIMENT_CHOICES)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     confidence_level = models.CharField(max_length=10, choices=CONFIDENCE_LEVEL_CHOICES)
     is_reliable = models.BooleanField(default=True)
     ml_model_version = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
     all_scores = models.JSONField(null=True, blank=True)
 
     class Meta:
         db_table = "journal_sentiments"
-        managed = False
         unique_together = [["journal", "ml_model_version"]]
 
     def __str__(self):
-        return f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
+        return (
+            f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
+        )
 
 
 class FeatureFlag(models.Model):
     """Feature flag model for managing feature toggles via Django admin."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
     flag_name = models.CharField(max_length=255, unique=True)
     enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

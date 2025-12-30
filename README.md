@@ -15,7 +15,7 @@ The monorepo is organized into three main directories:
   - Configuration files (e.g., `pyproject.toml`, `go.mod`, `package.json`)
   - Tests and documentation
   - Service-specific dependencies and build configurations
-- `.github/workflows` - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing, building, and deployment
+- `.github/workflows` - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing (and in a future state - build & deployment)
 
 ## Running the App
 

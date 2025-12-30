@@ -141,6 +141,8 @@ UNFOLD = {
 ADMIN_ONLY_ACCESS = True  # Set to False to allow non-admin users
 ADMIN_ROLE_NAME = "Admin"  # Role name from users table that grants admin access
 ADMIN_ALLOWED_GROUPS = [
-    "product_manager",
-    "ml_engineer",
+    "product",
+    "ml_ops",
+    "infrastructure",
+    "engineering",
 ]  # Django groups that can access admin interface

@@ -110,6 +110,9 @@ class TestFeatureFlag:
         assert "disabled_feature" in str(flag)
 
     def test_feature_flag_ordering(self):
+        # Clear any existing flags to ensure clean test
+        FeatureFlag.objects.all().delete()
+
         FeatureFlag.objects.create(flag_name="zebra", enabled=True)
         FeatureFlag.objects.create(flag_name="alpha", enabled=True)
         FeatureFlag.objects.create(flag_name="beta", enabled=True)

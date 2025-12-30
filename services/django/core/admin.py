@@ -9,7 +9,11 @@ from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.sites import UnfoldAdminSite
 
-from .models import ActiveMLModel, FeatureFlag
+from .models import (
+    ActiveMLModel,
+    FeatureFlag,
+    User as LotusUser,
+)
 
 
 class LotusAdminSite(UnfoldAdminSite):
@@ -67,22 +71,24 @@ class ActiveMLModelAdmin(ModelAdmin):
         (None, {"fields": ("id", "ml_model", "is_enabled")}),
         ("Timestamps", {"fields": ("created_at", "modified_at")}),
     )
-    list_editable = ("is_enabled",)  # Allow quick editing of enabled status from list view
+    list_editable = (
+        "is_enabled",
+    )  # Allow quick editing of enabled status from list view
 
     def has_add_permission(self, request):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to add."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to add."""
         return has_ml_model_permission(request.user)
 
     def has_change_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to change."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to change."""
         return has_ml_model_permission(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to delete."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to delete."""
         return has_ml_model_permission(request.user)
 
     def has_view_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product_manager, ml_engineer) to view."""
+        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to view."""
         return has_ml_model_permission(request.user)
 
 
@@ -103,3 +109,16 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 @admin.register(Group, site=admin_site)
 class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     pass
+
+
+@admin.register(LotusUser, site=admin_site)
+class LotusUserAdmin(ModelAdmin):
+    list_display = ("email", "role", "oauth_provider", "created_at", "modified_at")
+    list_filter = ("role", "oauth_provider", "created_at", "modified_at")
+    search_fields = ("email",)
+    readonly_fields = ("id", "created_at", "modified_at")
+    fieldsets = (
+        (None, {"fields": ("id", "email", "role", "timezone")}),
+        ("Authentication", {"fields": ("password", "salt", "oauth_provider")}),
+        ("Timestamps", {"fields": ("created_at", "modified_at")}),
+    )
