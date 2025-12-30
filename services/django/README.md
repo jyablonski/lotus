@@ -68,4 +68,8 @@ The entrypoint will reject startup if migrations are missing.
 The `AdminOnlyMiddleware` restricts access to the admin interface. Users can access if they meet any of the following:
 
 1. **Admin Role**: User must be authenticated, exist in the `users` table (by email match), and have `role = 'Admin'`
-2. **Allowed Groups**: User must be in one of the Django groups specified in `ADMIN_ALLOWED_GROUPS` (default: `product_manager`, `ml_engineer`)
+2. **Allowed Groups**: User must be in one of the Django groups specified in `ADMIN_ALLOWED_GROUPS`:
+   - `product` - Product team members
+   - `ml_ops` - ML Operations team members
+   - `infrastructure` - Infrastructure team members
+   - `engineering` - Engineering team members
