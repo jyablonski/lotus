@@ -1,0 +1,92 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block search %}
+{{ block.super }}
+<div style="display: inline-block; margin-left: 15px; vertical-align: middle;">
+    <button type="button" id="invalidate-cache-btn"
+        style="padding: 8px 16px; background-color: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+        onmouseover="this.style.backgroundColor='#4f46e5'" onmouseout="this.style.backgroundColor='#6366f1'">
+        Invalidate Analyzer Cache
+    </button>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('invalidate-cache-btn');
+        if (btn) {
+            // Get CSRF token from cookies
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            const csrftoken = getCookie('csrftoken');
+
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const originalText = btn.textContent;
+                const originalBg = btn.style.backgroundColor;
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.cursor = 'not-allowed';
+                btn.textContent = 'Invalidating...';
+
+                fetch('{{ invalidate_cache_url }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json().catch(() => ({}));
+                        }
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Request failed');
+                        });
+                    })
+                    .then(data => {
+                        btn.textContent = 'Cache Invalidated!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                            btn.style.opacity = '';
+                            btn.style.cursor = '';
+                            btn.style.backgroundColor = originalBg;
+                            // Reload page to show Django messages
+                            window.location.reload();
+                        }, 1500);
+                    })
+                    .catch(error => {
+                        btn.textContent = 'Error - Try Again';
+                        btn.style.backgroundColor = '#dc3545';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                            btn.style.opacity = '';
+                            btn.style.cursor = '';
+                            btn.style.backgroundColor = originalBg;
+                        }, 2000);
+                    });
+            });
+        }
+    });
+</script>
+{% endblock %}

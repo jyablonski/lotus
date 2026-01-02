@@ -33,11 +33,16 @@ For example:
 make up
 
 cd services/experiments/
-python -m src.training.train_topics
+
+# train all 4 models
+uv run python -m src.training.train_topics
+uv run python -m src.training.train_sentiment_analysis
+uv run python -m src.training.train_article_recommender
+uv run python -m src.training.train_example
 ```
 
 This will:
-- Train an adaptive topic extraction model on sample journal data
-- Register the model to MLflow as "adaptive_journal_topics" 
+
+- Train and register all 4 models
 - Log training metrics and parameters
-- Create topic labels based on common journal themes
+- Create model labels based on common model themes
