@@ -19,6 +19,34 @@ services:
     networks:
       - default
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    container_name: redisinsight
+    ports:
+      - "5540:5540"  # Newer RedisInsight uses port 5540 internally
+    volumes:
+      - redisinsight_data:/db
+    depends_on:
+      - redis
+    networks:
+      - default
+    restart: unless-stopped
+
   frontend:
     build:
       context: ${PWD}/services/frontend
@@ -247,4 +275,6 @@ networks:
 
 volumes:
   postgres_data:
+  redis_data:
+  redisinsight_data:
   dagster_io_storage:

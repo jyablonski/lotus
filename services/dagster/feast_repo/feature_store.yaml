@@ -1,0 +1,15 @@
+project: lotus_feature_store
+registry: data/registry.db
+provider: local
+online_store:
+  type: redis
+  connection_string: redis:6379,db=0
+  key_ttl_seconds: null  # Keys never expire
+offline_store:
+  type: postgres
+  host: postgres
+  port: 5432
+  database: postgres
+  db_schema: gold
+  user: postgres
+  password: postgres

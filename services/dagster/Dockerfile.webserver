@@ -26,7 +26,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 COPY pyproject.toml uv.lock ./
 
 # Install only webserver dependency group (core Dagster packages)
-RUN uv sync --frozen --no-install-project --group webserver
+RUN uv sync  --no-install-project --group webserver
 
 # -------------------------------
 # Stage: Runtime
