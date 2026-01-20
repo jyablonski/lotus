@@ -150,18 +150,18 @@ The Dagster asset `materialize_user_journal_features` handles steps 1-2: it appl
 ### Directory Structure
 ```
 feast_repo/
-├── feature_store.yaml   # Feast configuration (offline/online store connections)
+├── feature_store.yaml   # Feast configuration (registry, offline/online store connections)
 ├── entities.py          # Entity definitions (e.g., user_entity with join key user_id)
-├── feature_views.py     # Feature view definitions (SQL sources, schemas, TTL)
-└── data/
-    └── registry.db      # Feast registry (tracks feature view metadata)
+└── feature_views.py     # Feature view definitions (SQL sources, schemas, TTL)
 ```
+
+**Note:** The Feast registry is stored in PostgreSQL (configured in `feature_store.yaml`), not in a local file. This enables concurrent access and better scalability.
 
 ### Key Files
 
 | File                 | Purpose                                                                                                        |
 | -------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `feature_store.yaml` | Configures Postgres as the offline store (source of truth) and Redis as the online store (low-latency serving) |
+| `feature_store.yaml` | Configures PostgreSQL as the registry (metadata storage), Postgres as the offline store (source of truth), and Redis as the online store (low-latency serving) |
 | `entities.py`        | Defines entities like `user_entity` which serve as join keys for feature lookups                               |
 | `feature_views.py`   | Defines feature views that map SQL queries to typed feature schemas                                            |
 

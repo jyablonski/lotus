@@ -43,7 +43,7 @@ user_journal_summary_fv = FeatureView(
     source=user_journal_summary_source,
     online=True,
     schema=[
-        # REMOVED user_id - it's the entity key, not a feature
+        # no user_id - it's the entity key, not a feature
         Field(name="total_journals", dtype=Int64),
         Field(name="active_days", dtype=Int64),
         Field(name="avg_mood_score", dtype=Float32),

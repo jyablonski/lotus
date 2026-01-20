@@ -35,7 +35,9 @@ When finished, run `make down`.
 - Django Admin: http://localhost:8000/admin/
 - MLFlow UI: http://localhost:5000
 - Dagster UI: http://localhost:3001
-- PostgreSQL: http://localhost:5432
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+- Redis Insight: http://localhost:5540
 
 ## Architecture
 
