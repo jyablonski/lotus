@@ -27,23 +27,23 @@ def materialize_user_journal_features(
             context.log.info(
                 f"Feature view '{feature_view_name}' not found, applying to registry..."
             )
-            
+
             # Import and apply feature views from the repo
             repo_path = Path(feast_store.repo_path)
-            
+
             # Add repo path to Python path temporarily
             if str(repo_path) not in sys.path:
                 sys.path.insert(0, str(repo_path))
-            
+
             try:
                 # Import entities and feature views
                 from entities import user_entity
                 from feature_views import user_journal_summary_fv
-                
+
                 # Apply them to the registry
                 store.apply([user_entity, user_journal_summary_fv])
                 context.log.info("Feature views applied successfully")
-                
+
                 # Now get the feature view
                 fv = store.get_feature_view(feature_view_name)
             except Exception as e:
