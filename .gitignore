@@ -54,3 +54,4 @@ docker/mlflow/**
 **tmp/
 .vscode/
 lotus.code-workspace
+services/dagster/feast_repo/data

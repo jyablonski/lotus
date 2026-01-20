@@ -4,6 +4,9 @@ Monorepo to host a full stack Journal Application with ML & LLM-powered topic cl
 
 It allows users to create, read, update, and delete journal entries, which are then analyzed and enriched with topics and sentiment scores using machine learning models and LLMs.
 
+The project is mainly designed as a learning exercise to explore full stack development, microservices architecture, monorepo management,
+and getting exposure to ML Ops concepts.
+
 ## Structure
 
 The monorepo is organized into three main directories:
@@ -32,7 +35,10 @@ When finished, run `make down`.
 - Django Admin: http://localhost:8000/admin/
 - MLFlow UI: http://localhost:5000
 - Dagster UI: http://localhost:3001
-- PostgreSQL: http://localhost:5432
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+- Redis Insight: http://localhost:5540
+  - Database Connection: `redis://redis:6379/0`
 
 ## Architecture
 
@@ -78,7 +84,7 @@ graph LR
 - **Python Analyzer Service** - FastAPI server connecting to MLflow and LLM APIs to asynchronously enrich journal entries with topic classification and sentiment analysis after user actions.
 - **Django Admin** - Database schema migration tool and internal admin interface for managing feature flags and application data
 - **PostgreSQL Database** - Primary database for journal entries and user data
-- **MLFlow Server** - Model registry and experiment tracking for ML workflows
+- **MLFlow Server** - Model registry and experiment tracking for ML workflows within the `experiments/` directory
 
 ### Data Architecture
 

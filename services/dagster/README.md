@@ -114,3 +114,59 @@ uv run dbt compile --profiles-dir ./profiles --profile local
 The manifest is generated in `services/dbt/target/manifest.json` and is automatically used by Dagster when loading dbt assets.
 
 **Note:** If dbt assets don't appear in the Dagster UI after making changes to your dbt project, regenerate the manifest using the command above.
+
+## Feast
+
+This project uses [Feast](https://feast.dev/) to serve precomputed features for low-latency online inference. Feast reads aggregated data from the PostgreSQL `gold` schema and materializes it to Redis for fast retrieval by the Analyzer API Service.
+
+
+### How It Works
+
+Feast operates in three distinct phases:
+
+1. **Apply** (`feast apply` or `store.apply()`)  
+   Registers feature definitions (entities, feature views, source queries) to the registry. This is metadata only—no data moves. Think of it like a database migration that tells Feast "these features exist."
+
+2. **Materialize** (`store.materialize()`)  
+   Executes the source SQL query against Postgres, reads the rows, and writes them to Redis keyed by entity ID. This is the actual data sync that populates the online store.
+
+3. **Serve** (`store.get_online_features()`)  
+   Retrieves features from Redis by entity ID for low-latency inference. The API calls this to fetch precomputed features without hitting Postgres.
+
+The Dagster asset `materialize_user_journal_features` handles steps 1-2: it applies definitions if missing, then materializes data to Redis on a schedule.
+
+### Architecture
+```
+┌─────────────────┐    materialize    ┌─────────────┐    get_online_features    ┌──────────────────────┐
+│  PostgreSQL     │ ───────────────►  │    Redis    │  ◄─────────────────────── │   Analyzer Service   │
+│  (gold schema)  │                   │   (online)  │                           │                      │  
+└─────────────────┘                   └─────────────┘                           └──────────────────────┘   
+        │                                                                              
+   dbt models                                                                          
+   transform data                                                                      
+```
+
+### Directory Structure
+```
+feast_repo/
+├── feature_store.yaml   # Feast configuration (registry, offline/online store connections)
+├── entities.py          # Entity definitions (e.g., user_entity with join key user_id)
+└── feature_views.py     # Feature view definitions (SQL sources, schemas, TTL)
+```
+
+**Note:** The Feast registry is stored in PostgreSQL (configured in `feature_store.yaml`), not in a local file. This enables concurrent access and better scalability.
+
+### Key Files
+
+| File                 | Purpose                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `feature_store.yaml` | Configures PostgreSQL as the registry (metadata storage), Postgres as the offline store (source of truth), and Redis as the online store (low-latency serving) |
+| `entities.py`        | Defines entities like `user_entity` which serve as join keys for feature lookups                               |
+| `feature_views.py`   | Defines feature views that map SQL queries to typed feature schemas                                            |
+
+### Resources
+
+| Resource        | Location             | Purpose                                                                    |
+| --------------- | -------------------- | -------------------------------------------------------------------------- |
+| `FeastResource` | `resources/feast.py` | Dagster resource that provides a configured Feast `FeatureStore` instance  |
+| `RedisResource` | `resources/redis.py` | Dagster resource for direct Redis access (used for verification/debugging) |

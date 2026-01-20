@@ -25,7 +25,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 COPY services/dagster/pyproject.toml services/dagster/uv.lock ./
 
-RUN uv sync --frozen --no-install-project --no-dev
+RUN uv sync --no-install-project --no-dev
 
 # -------------------------------
 # Stage: Runtime
@@ -51,6 +51,11 @@ COPY --from=builder /app/.venv /app/.venv
 # So we need to copy your dbt folder to /app/dbt
 # NOTE: Build context is project root, so we copy services/dbt
 COPY --chown=appuser:appuser services/dbt /app/dbt
+
+# --- HANDLE FEAST REPO FOLDER ---
+# Copy the Feast repository to /app/feast_repo
+# NOTE: Build context is project root, so we copy services/dagster/feast_repo
+COPY --chown=appuser:appuser services/dagster/feast_repo /app/feast_repo
 
 # Set Environment Variables
 # 1. Point dbt to the correct profile dir inside the container
