@@ -114,7 +114,6 @@ uv run dbt compile --profiles-dir ./profiles --profile local
 The manifest is generated in `services/dbt/target/manifest.json` and is automatically used by Dagster when loading dbt assets.
 
 **Note:** If dbt assets don't appear in the Dagster UI after making changes to your dbt project, regenerate the manifest using the command above.
-ddddd
 
 ## Feast
 
