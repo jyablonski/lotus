@@ -38,9 +38,9 @@ services:
     image: redislabs/redisinsight:latest
     container_name: redisinsight
     ports:
-      - "5540:5540"  # Newer RedisInsight uses port 5540 internally
+      - "5540:5540"
     volumes:
-      - redisinsight_data:/db
+      - redisinsight_data:/data
     depends_on:
       - redis
     networks:

@@ -38,6 +38,7 @@ When finished, run `make down`.
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
 - Redis Insight: http://localhost:5540
+  - Database Connection: `redis://redis:6379/0`
 
 ## Architecture
 
