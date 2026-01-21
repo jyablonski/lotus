@@ -43,25 +43,31 @@ for service, enabled in config.get("services", {}).get("enabled", {}).items():
 # ============================================================================
 # Infrastructure Setup
 # ============================================================================
-# Load Docker Compose configuration
-# docker_compose loads all services from the compose file
-# We'll only create dc_resource for enabled services below
+
+# Get enabled services config
+enabled_services = config.get("services", {}).get("enabled", {})
+infra_config = config.get("services", {}).get("infrastructure", {})
+
+# Build list of profiles based on enabled services
+profiles = []
+for service, is_enabled in enabled_services.items():
+    if is_enabled:
+        profiles.append(service)
+
+# Load Docker Compose configuration with profiles
 docker_compose(
     ["docker/docker-compose-local.yaml", "docker/docker-compose-tilt.yaml"],
     env_file=".env",
+    profiles=profiles,
 )
-
-# Setup infrastructure services (always needed if any service is enabled)
-enabled_services = config.get("services", {}).get("enabled", {})
-infra_config = config.get("services", {}).get("infrastructure", {})
 
 # Postgres is always needed if any service is enabled
 if any(enabled_services.values()):
     if infra_config.get("postgres", True):
         dc_resource("postgres", labels=["infrastructure", "database"])
 
-# MLflow is needed if analyzer is enabled
-if enabled_services.get("analyzer", False) and infra_config.get("mlflow", True):
+# MLflow starts with analyzer profile, so only configure if analyzer is enabled
+if enabled_services.get("analyzer", False):
     dc_resource("mlflow", resource_deps=["postgres"], labels=["infrastructure", "ml"])
 
 # Redis services (optional)

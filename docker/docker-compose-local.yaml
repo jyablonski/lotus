@@ -54,6 +54,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    profiles: ["frontend"]
     build:
       context: ${PWD}/services/frontend
       dockerfile: Dockerfile
@@ -77,6 +78,7 @@ services:
       - postgres
 
   backend:
+    profiles: ["backend"]
     build:
       context: ${PWD}/services/backend
       dockerfile: Dockerfile.dev
@@ -98,6 +100,7 @@ services:
     command: ["air", "-c", ".air.toml"]
 
   analyzer:
+    profiles: ["analyzer"]
     build:
       context: ${PWD}/services/analyzer
       dockerfile: Dockerfile
@@ -120,6 +123,7 @@ services:
       - mlflow
 
   django_admin:
+    profiles: ["django_admin"]
     build:
       context: ${PWD}/services/django
       dockerfile: Dockerfile
@@ -146,6 +150,7 @@ services:
       - default
 
   mlflow:
+    profiles: ["analyzer"]
     build:
       context: ${PWD}/services/experiments
       dockerfile: Dockerfile
@@ -171,6 +176,7 @@ services:
       - default
 
   dagster_grpc_server:
+    profiles: ["dagster"]
     build:
       context: ${PWD}
       dockerfile: ./services/dagster/Dockerfile
@@ -205,6 +211,7 @@ services:
         condition: service_healthy
 
   dagster_webserver:
+    profiles: ["dagster"]
     build:
       context: ${PWD}/services/dagster
       dockerfile: Dockerfile.webserver
@@ -239,6 +246,7 @@ services:
         condition: service_healthy
 
   dagster_daemon:
+    profiles: ["dagster"]
     build:
       context: ${PWD}/services/dagster
       dockerfile: Dockerfile.webserver

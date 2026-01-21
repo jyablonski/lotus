@@ -13,7 +13,7 @@ services:
     django_admin: true
 
     # dagster services
-    dagster: false
+    dagster: true
 
   # Infrastructure services (always enabled if any service depends on them)
   infrastructure:
