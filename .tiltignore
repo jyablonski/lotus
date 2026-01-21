@@ -1,0 +1,72 @@
+# Tilt ignore file - files/directories to ignore when watching for changes
+
+# Git
+.git/
+.gitignore
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.venv/
+**/venv/
+**/env/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/htmlcov/
+**/.coverage
+**/coverage.xml
+**/*.egg-info/
+
+# Node
+**/node_modules/
+**/.next/
+**/out/
+**/.pnpm-store/
+**/.yarn/
+**/.pnp.*
+
+# Go
+**/vendor/
+**/lotus  # compiled binary
+
+# IDE
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+**/.DS_Store
+
+# Build artifacts
+**/dist/
+**/build/
+**/target/  # dbt
+**/dbt_packages/  # dbt
+
+# Logs
+**/*.log
+**/logs/
+
+# Test artifacts
+**/coverage/
+**/.pytest_cache/
+**/test-results/
+
+# Docker
+**/docker/mlflow/artifacts/
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+
+# Lock files (we watch these, but ignore their directories)
+# Note: We DO want to watch lock files for dependency changes
+
+# Documentation (optional - uncomment if you don't want doc changes to trigger rebuilds)
+# **/*.md
+# **/*.rst
+# **/docs/

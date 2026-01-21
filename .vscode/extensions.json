@@ -1,0 +1,6 @@
+{
+  "recommendations": [
+    "tilt-dev.tilt",
+    "bazelbuild.vscode-bazel"
+  ]
+}

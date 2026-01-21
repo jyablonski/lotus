@@ -1,0 +1,30 @@
+# Docker Compose override file for Tilt
+#
+# Automatically loaded by the Tiltfile alongside docker-compose-local.yaml.
+# Removes build sections so Tilt's docker_build() controls image builds
+# while Docker Compose handles runtime configuration.
+
+services:
+  frontend:
+    build: null
+
+  backend:
+    build: null
+
+  analyzer:
+    build: null
+
+  django_admin:
+    build: null
+
+  mlflow:
+    build: null
+
+  dagster_grpc_server:
+    build: null
+
+  dagster_webserver:
+    build: null
+
+  dagster_daemon:
+    build: null

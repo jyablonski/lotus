@@ -3,15 +3,11 @@
 
 .PHONY: up
 up: ## Start all services in detached mode
-	@docker compose -f docker/docker-compose-local.yaml up -d
+	@tilt up
 
 .PHONY: down
 down: ## Stop and remove all services
-	@docker compose -f docker/docker-compose-local.yaml down
-
-.PHONY: build
-build: ## Build all Docker images defined in the local compose file
-	@docker compose -f docker/docker-compose-local.yaml build
+	@tilt down
 
 .PHONY: start-postgres
 start-postgres: ## Start only the PostgreSQL service

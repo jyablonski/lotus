@@ -20,12 +20,6 @@ The monorepo is organized into three main directories:
   - Service-specific dependencies and build configurations
 - `.github/workflows` - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing (and in a future state - build & deployment)
 
-## Running the App
-
-To run the app, run `make up` to spin up all resources. All applications run in Docker containers w/ hot-reloading enabled via volume linking for dev across the stack.
-
-When finished, run `make down`.
-
 **Service URLs:**
 
 - Frontend: http://localhost:3000
@@ -35,10 +29,48 @@ When finished, run `make down`.
 - Django Admin: http://localhost:8000/admin/
 - MLFlow UI: http://localhost:5000
 - Dagster UI: http://localhost:3001
+- Tilt UI: http://localhost:10350 (when using `make tilt-up`)
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
 - Redis Insight: http://localhost:5540
   - Database Connection: `redis://redis:6379/0`
+
+
+## Running the App
+
+### Tilt (Recommended for Local Development)
+
+[Tilt](https://tilt.dev/) was added to provide faster rebuilds, better caching, and a unified UI for managing all services during development compared to Docker Compose. It runs 24/7 in the background, watching for file changes and automatically rebuilding/restarting services as needed.
+
+- It reads from `tilt_config.yaml` to determine which services to enable/disable, and updates in real-time as the file is modified.
+
+**Quick Start:**
+```bash
+# Install Tilt (if not already installed)
+# macOS: brew install tilt-dev/tap/tilt
+# Linux: curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
+
+# Start Tilt
+make up
+```
+
+**Features:**
+- **Faster rebuilds**: Smart caching - only rebuilds when dependencies change
+- **Service management**: Enable/disable services via `tilt_config.yaml`
+- **Unified UI**: Monitor all services at http://localhost:10350
+- **Auto-reload**: Tilt watches `tilt_config.yaml` and automatically adjusts services
+
+### Docker Compose (CI / Fallback)
+
+Docker Compose is still available for CI/CD pipelines and as a fallback option. The `docker-compose-local.yaml` file is used by GitHub Actions workflows.
+
+**Commands:**
+```bash
+make up      # Start all services
+make down    # Stop all services
+```
+
+**Note:** For local development, Tilt is recommended for better performance and developer experience.
 
 ## Architecture
 
