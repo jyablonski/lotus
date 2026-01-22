@@ -8,7 +8,6 @@ repos:
         language: system
         files: ^services/backend/internal/sql/
         pass_filenames: false
-
       - id: buf-generate
         name: buf generate
         entry: scripts/buf-generate.sh
@@ -62,15 +61,6 @@ repos:
         exclude: ^services/airflow/
       - id: ruff-format
         exclude: ^services/airflow/
-
-  # Tiltfile/Starlark linting
-  - repo: https://github.com/bazelbuild/buildtools
-    rev: v8.2.1
-    hooks:
-      - id: buildifier
-        name: Format Tiltfile (Starlark)
-        files: (^Tiltfile$|\.star$)
-        args: ["-lint=warn"]
 
   # Docker Compose validation
   - repo: https://github.com/IamTheFij/docker-pre-commit
