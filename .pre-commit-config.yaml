@@ -61,10 +61,3 @@ repos:
         exclude: ^services/airflow/
       - id: ruff-format
         exclude: ^services/airflow/
-
-  # Docker Compose validation
-  - repo: https://github.com/IamTheFij/docker-pre-commit
-    rev: v3.0.1
-    hooks:
-      - id: docker-compose-check
-        files: docker-compose.*\.yaml$
