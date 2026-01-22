@@ -8,7 +8,6 @@ repos:
         language: system
         files: ^services/backend/internal/sql/
         pass_filenames: false
-
       - id: buf-generate
         name: buf generate
         entry: scripts/buf-generate.sh

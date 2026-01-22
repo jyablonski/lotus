@@ -20,12 +20,6 @@ The monorepo is organized into three main directories:
   - Service-specific dependencies and build configurations
 - `.github/workflows` - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing (and in a future state - build & deployment)
 
-## Running the App
-
-To run the app, run `make up` to spin up all resources. All applications run in Docker containers w/ hot-reloading enabled via volume linking for dev across the stack.
-
-When finished, run `make down`.
-
 **Service URLs:**
 
 - Frontend: http://localhost:3000
@@ -35,10 +29,56 @@ When finished, run `make down`.
 - Django Admin: http://localhost:8000/admin/
 - MLFlow UI: http://localhost:5000
 - Dagster UI: http://localhost:3001
+- Tilt UI: http://localhost:10350 (when using `make tilt-up`)
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
 - Redis Insight: http://localhost:5540
   - Database Connection: `redis://redis:6379/0`
+
+## Running the App
+
+### Tilt
+
+[Tilt](https://tilt.dev/) is used for local development to manage building and running all services. It serves as an alternative to Docker Compose with faster rebuilds, smarter caching, and a unified UI for all logs. Tilt runs in the background watching for file changes and automatically rebuilding/restarting services as needed.
+
+#### Quick Start
+
+Install Tilt [here](https://docs.tilt.dev/install.html) and run:
+
+```bash
+make up
+```
+
+This will start all enabled services as defined in `tilt_config.yaml`. Access the Tilt UI at http://localhost:10350 to monitor builds and logs.
+
+When finished, run:
+
+```bash
+make down
+```
+
+#### Configuration
+
+Tilt reads from `tilt_config.yaml` to determine which services to run. Changes to this file are picked up automatically without restarting Tilt.
+
+```yaml
+services:
+  enabled:
+    frontend: true
+    backend: true
+    analyzer: false # disable services you're not working on
+    django_admin: true
+    dagster: false
+```
+
+#### Why Tilt over Docker Compose?
+
+| Feature            | Docker Compose                                | Tilt                                   |
+| ------------------ | --------------------------------------------- | -------------------------------------- |
+| Rebuild on change  | Manual (`docker compose up --build`)          | Automatic                              |
+| Dependency caching | Basic layer caching                           | Smart rebuilds (only when deps change) |
+| Service logs       | Separate terminal or `docker compose logs -f` | Unified UI with filtering              |
+| Selective services | Profiles (static)                             | Config file (dynamic, hot-reload)      |
 
 ## Architecture
 

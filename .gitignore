@@ -52,6 +52,10 @@ __pycache__/
 docker/mlflow/**
 **.log``
 **tmp/
-.vscode/
+# VS Code - ignore user-specific settings, keep shared configs
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/*.code-workspace
 lotus.code-workspace
 services/dagster/feast_repo/data

@@ -1,14 +1,8 @@
-# pyproject.toml only used for ruff formatting and linting across all python projects
 [tool.ruff]
-# Enable auto-fixing
 fix = true
-# Show fixes that would be applied
 show-fixes = true
-# Target Python version
 target-version = "py313"
-# Line length
 line-length = 100
-# Exclude directories
 exclude = [
     ".git",
     "__pycache__",

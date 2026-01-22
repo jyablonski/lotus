@@ -1,0 +1,28 @@
+# Tilt Configuration File
+# Set services to true to enable them, false to disable them
+# After changing this file, Tilt will automatically reload
+# note: this should normally not be in version control, as it's specific to every dev.
+# but this is my project so fuck it.
+
+services:
+  enabled:
+    # Core application services
+    frontend: true
+    backend: true
+    analyzer: true
+    django_admin: true
+
+    # dagster services
+    dagster: true
+
+  # Infrastructure services (always enabled if any service depends on them)
+  infrastructure:
+    postgres: true
+    redis: true
+    redisinsight: true
+    mlflow: true
+
+options:
+  # Use shared database (postgres) for all services
+  shared-database: true
+  debug: false
