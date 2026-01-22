@@ -35,42 +35,50 @@ The monorepo is organized into three main directories:
 - Redis Insight: http://localhost:5540
   - Database Connection: `redis://redis:6379/0`
 
-
 ## Running the App
 
-### Tilt (Recommended for Local Development)
+### Tilt
 
-[Tilt](https://tilt.dev/) was added to provide faster rebuilds, better caching, and a unified UI for managing all services during development compared to Docker Compose. It runs 24/7 in the background, watching for file changes and automatically rebuilding/restarting services as needed.
+[Tilt](https://tilt.dev/) is used for local development to manage building and running all services. It serves as an alternative to Docker Compose with faster rebuilds, smarter caching, and a unified UI for all logs. Tilt runs in the background watching for file changes and automatically rebuilding/restarting services as needed.
 
-- It reads from `tilt_config.yaml` to determine which services to enable/disable, and updates in real-time as the file is modified.
+#### Quick Start
 
-**Quick Start:**
+Install Tilt [here](https://docs.tilt.dev/install.html) and run:
+
 ```bash
-# Install Tilt (if not already installed)
-# macOS: brew install tilt-dev/tap/tilt
-# Linux: curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
-
-# Start Tilt
 make up
 ```
 
-**Features:**
-- **Faster rebuilds**: Smart caching - only rebuilds when dependencies change
-- **Service management**: Enable/disable services via `tilt_config.yaml`
-- **Unified UI**: Monitor all services at http://localhost:10350
-- **Auto-reload**: Tilt watches `tilt_config.yaml` and automatically adjusts services
+This will start all enabled services as defined in `tilt_config.yaml`. Access the Tilt UI at http://localhost:10350 to monitor builds and logs.
 
-### Docker Compose (CI / Fallback)
+When finished, run:
 
-Docker Compose is still available for CI/CD pipelines and as a fallback option. The `docker-compose-local.yaml` file is used by GitHub Actions workflows.
-
-**Commands:**
 ```bash
-make up      # Start all services
-make down    # Stop all services
+make down
 ```
 
-**Note:** For local development, Tilt is recommended for better performance and developer experience.
+#### Configuration
+
+Tilt reads from `tilt_config.yaml` to determine which services to run. Changes to this file are picked up automatically without restarting Tilt.
+
+```yaml
+services:
+  enabled:
+    frontend: true
+    backend: true
+    analyzer: false # disable services you're not working on
+    django_admin: true
+    dagster: false
+```
+
+#### Why Tilt over Docker Compose?
+
+| Feature            | Docker Compose                                | Tilt                                   |
+| ------------------ | --------------------------------------------- | -------------------------------------- |
+| Rebuild on change  | Manual (`docker compose up --build`)          | Automatic                              |
+| Dependency caching | Basic layer caching                           | Smart rebuilds (only when deps change) |
+| Service logs       | Separate terminal or `docker compose logs -f` | Unified UI with filtering              |
+| Selective services | Profiles (static)                             | Config file (dynamic, hot-reload)      |
 
 ## Architecture
 
