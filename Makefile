@@ -19,11 +19,11 @@ stop-postgres: ## Stop only the PostgreSQL service
 
 .PHONY: ci-analyzer-up
 ci-analyzer-up: ## Start dependencies for analyzer CI (PostgreSQL and MLflow)
-	@docker compose -f docker/docker-compose-local.yaml up -d postgres mlflow
+	@docker compose -f docker/docker-compose-local.yaml --profile analyzer up -d postgres mlflow
 
 .PHONY: ci-analyzer-down
 ci-analyzer-down: ## Stop dependencies for analyzer CI (PostgreSQL and MLflow)
-	@docker compose -f docker/docker-compose-local.yaml down postgres mlflow
+	@docker compose -f docker/docker-compose-local.yaml --profile analyzer down postgres mlflow
 
 .PHONY: sqlc-generate
 sqlc-generate: ## Generate Go code from SQL using sqlc

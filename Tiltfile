@@ -41,6 +41,36 @@ for service, enabled in config.get("services", {}).get("enabled", {}).items():
         )
 
 # ============================================================================
+# Infrastructure Setup Functions
+# ============================================================================
+
+
+def setup_mlflow():
+    """Setup MLflow Service"""
+    docker_build(
+        "mlflow-base",
+        "services/experiments",
+        dockerfile="services/experiments/Dockerfile",
+        only=["services/experiments/pyproject.toml", "services/experiments/uv.lock"],
+        target="python-deps",
+    )
+    docker_build(
+        "mlflow",
+        "services/experiments",
+        dockerfile="services/experiments/Dockerfile",
+        target="runtime",
+        ignore=[
+            "services/experiments/.venv",
+            "services/experiments/__pycache__",
+            "services/experiments/tests",
+            "services/experiments/*.pyc",
+            "services/experiments/.git",
+        ],
+    )
+    dc_resource("mlflow", resource_deps=["postgres"], labels=["infrastructure", "ml"])
+
+
+# ============================================================================
 # Infrastructure Setup
 # ============================================================================
 
@@ -68,7 +98,7 @@ if any(enabled_services.values()):
 
 # MLflow starts with analyzer profile, so only configure if analyzer is enabled
 if enabled_services.get("analyzer", False):
-    dc_resource("mlflow", resource_deps=["postgres"], labels=["infrastructure", "ml"])
+    setup_mlflow()
 
 # Redis services (optional)
 if infra_config.get("redis", True):
@@ -85,6 +115,7 @@ update_settings(
         "django-base",
         "dagster-base",
         "dagster-webserver-base",
+        "mlflow-base",
     ]
 )
 
