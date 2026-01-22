@@ -62,3 +62,19 @@ repos:
         exclude: ^services/airflow/
       - id: ruff-format
         exclude: ^services/airflow/
+
+  # Tiltfile/Starlark linting
+  - repo: https://github.com/bazelbuild/buildtools
+    rev: v8.2.1
+    hooks:
+      - id: buildifier
+        name: Format Tiltfile (Starlark)
+        files: (^Tiltfile$|\.star$)
+        args: ["-lint=warn"]
+
+  # Docker Compose validation
+  - repo: https://github.com/IamTheFij/docker-pre-commit
+    rev: v3.0.1
+    hooks:
+      - id: docker-compose-check
+        files: docker-compose.*\.yaml$
