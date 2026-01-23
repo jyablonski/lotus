@@ -67,7 +67,7 @@ def setup_mlflow():
             "services/experiments/.git",
         ],
     )
-    dc_resource("mlflow", resource_deps=["postgres"], labels=["infrastructure", "ml"])
+    dc_resource("mlflow", resource_deps=["postgres"], labels=["data"])
 
 
 # ============================================================================
@@ -94,7 +94,7 @@ docker_compose(
 # Postgres is always needed if any service is enabled
 if any(enabled_services.values()):
     if infra_config.get("postgres", True):
-        dc_resource("postgres", labels=["infrastructure", "database"])
+        dc_resource("postgres", labels=["infrastructure"])
 
 # MLflow starts with analyzer profile, so only configure if analyzer is enabled
 if enabled_services.get("analyzer", False):
@@ -102,11 +102,9 @@ if enabled_services.get("analyzer", False):
 
 # Redis services (optional)
 if infra_config.get("redis", True):
-    dc_resource("redis", labels=["infrastructure", "cache"])
+    dc_resource("redis", labels=["infrastructure"])
 if infra_config.get("redisinsight", True):
-    dc_resource(
-        "redisinsight", resource_deps=["redis"], labels=["infrastructure", "ui"]
-    )
+    dc_resource("redisinsight", resource_deps=["redis"], labels=["infrastructure"])
 
 # Suppress warnings for intermediate base images used for caching
 update_settings(
@@ -116,8 +114,14 @@ update_settings(
         "dagster-base",
         "dagster-webserver-base",
         "mlflow-base",
-    ]
+    ],
 )
+
+# Note: Tilt groups resources by labels assigned in dc_resource() calls.
+# Each unique label creates a tab/group in the UI. To reduce tabs:
+# 1. Use consistent, fewer labels across resources
+# 2. Tilt only uses labels from dc_resource(), not Docker Compose's automatic labels
+# 3. Resources with multiple labels appear in multiple groups
 
 # ============================================================================
 # Service Setup Functions
@@ -138,9 +142,7 @@ def setup_frontend():
             "services/frontend/.git",
         ],
     )
-    dc_resource(
-        "frontend", resource_deps=["postgres", "backend"], labels=["frontend", "web"]
-    )
+    dc_resource("frontend", resource_deps=["postgres", "backend"], labels=["frontend"])
 
 
 def setup_backend():
@@ -165,7 +167,7 @@ def setup_backend():
             "services/backend/tmp",
         ],
     )
-    dc_resource("backend", resource_deps=["postgres"], labels=["backend", "api"])
+    dc_resource("backend", resource_deps=["postgres"], labels=["backend"])
 
 
 def setup_analyzer():
@@ -195,7 +197,7 @@ def setup_analyzer():
     dc_resource(
         "analyzer",
         resource_deps=["postgres", "mlflow"],
-        labels=["analyzer", "ml", "api"],
+        labels=["data"],
     )
 
 
@@ -226,12 +228,12 @@ def setup_django_admin():
     dc_resource(
         "django_admin",
         resource_deps=["postgres", "analyzer"],
-        labels=["django", "admin", "web"],
+        labels=["admin"],
     )
 
 
-def setup_dagster_grpc_server():
-    """Setup Dagster gRPC Server"""
+def setup_dagster_base():
+    """Setup Dagster Base (gRPC Server)"""
     docker_build(
         "dagster-base",
         ".",
@@ -258,9 +260,7 @@ def setup_dagster_grpc_server():
             "services/dbt/.git",
         ],
     )
-    dc_resource(
-        "dagster_grpc_server", resource_deps=["postgres"], labels=["dagster", "data"]
-    )
+    dc_resource("dagster_base", resource_deps=["postgres"], labels=["data"])
 
 
 def setup_dagster_webserver():
@@ -280,8 +280,10 @@ def setup_dagster_webserver():
     )
     dc_resource(
         "dagster_webserver",
-        resource_deps=["postgres", "dagster_grpc_server"],
-        labels=["dagster", "ui"],
+        resource_deps=["postgres", "dagster_base"],
+        labels=[
+            "data",
+        ],
     )
 
 
@@ -295,14 +297,14 @@ def setup_dagster_daemon():
     )
     dc_resource(
         "dagster_daemon",
-        resource_deps=["postgres", "dagster_grpc_server"],
-        labels=["dagster"],
+        resource_deps=["postgres", "dagster_base"],
+        labels=["data"],
     )
 
 
 def setup_dagster():
-    """Setup all Dagster services (grpc_server, webserver, daemon)"""
-    setup_dagster_grpc_server()
+    """Setup all Dagster services (base, webserver, daemon)"""
+    setup_dagster_base()
     setup_dagster_webserver()
     setup_dagster_daemon()
 

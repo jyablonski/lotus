@@ -1,5 +1,5 @@
 load_from:
   - grpc_server:
-      host: dagster_grpc_server
+      host: dagster_base
       port: 4000
       location_name: dagster_project
