@@ -14,6 +14,7 @@ EXPECTED_JOBS = [
     "sync_users_job",
     "hello_world_example_job",
     "unload_journal_entries_job",
+    "sync_flags_to_sheets_job",
 ]
 
 EXPECTED_SCHEDULES = [

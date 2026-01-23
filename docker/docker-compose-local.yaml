@@ -175,13 +175,13 @@ services:
     networks:
       - default
 
-  dagster_grpc_server:
+  dagster_base:
     profiles: ["dagster"]
     build:
       context: ${PWD}
       dockerfile: ./services/dagster/Dockerfile
     image: dagster_server_image
-    container_name: dagster_grpc_server
+    container_name: dagster_base
     restart: always
     expose:
       - "4000"
@@ -198,6 +198,8 @@ services:
       - API_KEY=fdwer424324aserdsfbbbb
       - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
       - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL}
+      - FEATURE_FLAGS_GOOGLE_SHEET_URL=${FEATURE_FLAGS_GOOGLE_SHEET_URL}
+      - FEATURE_FLAGS_GOOGLE_SHEET_CREDENTIALS_JSON=${FEATURE_FLAGS_GOOGLE_SHEET_CREDENTIALS_JSON}
     networks:
       - default
     healthcheck:
@@ -242,7 +244,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      dagster_grpc_server:
+      dagster_base:
         condition: service_healthy
 
   dagster_daemon:
@@ -271,7 +273,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      dagster_grpc_server:
+      dagster_base:
         condition: service_started
 
 networks:

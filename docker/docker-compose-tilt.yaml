@@ -20,7 +20,7 @@ services:
   mlflow:
     build: null
 
-  dagster_grpc_server:
+  dagster_base:
     build: null
 
   dagster_webserver:

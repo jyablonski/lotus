@@ -10,6 +10,8 @@ dependencies = [
     "dagster-webserver>=1.12.6",
     "dbt-postgres>=1.9.1",
     "feast[postgres]>=0.57.0",
+    "google-auth>=2.23.0",
+    "gspread>=6.0.0",
     "polars>=1.35.2",
     "redis>=5.0.0",
 ]
