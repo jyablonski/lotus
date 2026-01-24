@@ -22,9 +22,3 @@ services:
 
   dagster_base:
     build: null
-
-  dagster_webserver:
-    build: null
-
-  dagster_daemon:
-    build: null

@@ -6,6 +6,8 @@ dependencies = [
     "boto3>=1.42.2",
     "dagster==1.12.6",
     "dagster-dbt>=0.28.3",
+    "dagster-docker==0.28.6",
+    "dagster-graphql==1.12.6",
     "dagster-postgres==0.28.6",
     "dagster-webserver>=1.12.6",
     "dbt-postgres>=1.9.1",
@@ -25,13 +27,8 @@ dev = [
     "pytest-mock>=3.12.0",
 ]
 local = ["ruff>=0.14.9", "ipykernel>=7.1.0"]
-webserver = [
-    "dagster==1.12.6",
-    "dagster-graphql==1.12.6",
-    "dagster-webserver==1.12.6",
-    "dagster-postgres==0.28.6",
-    "dagster-docker==0.28.6",
-]
+# webserver group removed - webserver dependencies are now in main dependencies
+# since we use a single Dockerfile for all Dagster services
 
 [build-system]
 requires = ["hatchling"]

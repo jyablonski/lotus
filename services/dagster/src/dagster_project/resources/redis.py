@@ -1,7 +1,6 @@
-import os
 from contextlib import contextmanager
 
-from dagster import ConfigurableResource
+from dagster import ConfigurableResource, EnvVar
 import redis
 
 
@@ -32,9 +31,9 @@ class RedisResource(ConfigurableResource):
 
 # Default Redis connection instance
 redis_conn = RedisResource(
-    host=os.getenv("REDIS_HOST", "redis"),
-    port=int(os.getenv("REDIS_PORT", "6379")),
-    db=int(os.getenv("REDIS_DB", "0")),
-    password=os.getenv("REDIS_PASSWORD"),
+    host=EnvVar("REDIS_HOST"),
+    port=EnvVar.int("REDIS_PORT"),
+    db=EnvVar.int("REDIS_DB"),
+    password=EnvVar("REDIS_PASSWORD"),
     decode_responses=True,
 )

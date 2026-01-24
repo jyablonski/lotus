@@ -1,6 +1,4 @@
-import os
-
-from dagster import ConfigurableResource
+from dagster import ConfigurableResource, EnvVar
 import requests
 
 
@@ -96,7 +94,7 @@ class SlackResource(ConfigurableResource):
 
 # Create default Slack resource instance
 slack_resource = SlackResource(
-    webhook_url=os.getenv("SLACK_WEBHOOK_URL", ""),
-    bot_token=os.getenv("SLACK_BOT_TOKEN", ""),
-    default_channel=os.getenv("SLACK_DEFAULT_CHANNEL", ""),
+    webhook_url=EnvVar("SLACK_WEBHOOK_URL"),
+    bot_token=EnvVar("SLACK_BOT_TOKEN"),
+    default_channel=EnvVar("SLACK_DEFAULT_CHANNEL"),
 )

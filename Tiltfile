@@ -112,7 +112,6 @@ update_settings(
         "analyzer-base",
         "django-base",
         "dagster-base",
-        "dagster-webserver-base",
         "mlflow-base",
     ],
 )
@@ -264,37 +263,18 @@ def setup_dagster_base():
 
 
 def setup_dagster_webserver():
-    """Setup Dagster Webserver"""
-    docker_build(
-        "dagster-webserver-base",
-        "services/dagster",
-        dockerfile="services/dagster/Dockerfile.webserver",
-        only=["services/dagster/pyproject.toml", "services/dagster/uv.lock"],
-        target="builder",
-    )
-    docker_build(
-        "dagster_webserver",
-        "services/dagster",
-        dockerfile="services/dagster/Dockerfile.webserver",
-        target="runtime",
-    )
+    """Setup Dagster Webserver (uses same image as base)"""
+    # No separate build needed - uses dagster_server_image from setup_dagster_base()
     dc_resource(
         "dagster_webserver",
         resource_deps=["postgres", "dagster_base"],
-        labels=[
-            "data",
-        ],
+        labels=["data"],
     )
 
 
 def setup_dagster_daemon():
-    """Setup Dagster Daemon"""
-    docker_build(
-        "dagster_daemon",
-        "services/dagster",
-        dockerfile="services/dagster/Dockerfile.webserver",
-        target="runtime",
-    )
+    """Setup Dagster Daemon (uses same image as base)"""
+    # No separate build needed - uses dagster_server_image from setup_dagster_base()
     dc_resource(
         "dagster_daemon",
         resource_deps=["postgres", "dagster_base"],

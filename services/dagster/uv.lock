@@ -548,6 +548,8 @@ dependencies = [
     { name = "boto3" },
     { name = "dagster" },
     { name = "dagster-dbt" },
+    { name = "dagster-docker" },
+    { name = "dagster-graphql" },
     { name = "dagster-postgres" },
     { name = "dagster-webserver" },
     { name = "dbt-postgres" },
@@ -570,19 +572,14 @@ local = [
     { name = "ipykernel" },
     { name = "ruff" },
 ]
-webserver = [
-    { name = "dagster" },
-    { name = "dagster-docker" },
-    { name = "dagster-graphql" },
-    { name = "dagster-postgres" },
-    { name = "dagster-webserver" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.42.2" },
     { name = "dagster", specifier = "==1.12.6" },
     { name = "dagster-dbt", specifier = ">=0.28.3" },
+    { name = "dagster-docker", specifier = "==0.28.6" },
+    { name = "dagster-graphql", specifier = "==1.12.6" },
     { name = "dagster-postgres", specifier = "==0.28.6" },
     { name = "dagster-webserver", specifier = ">=1.12.6" },
     { name = "dbt-postgres", specifier = ">=1.9.1" },
@@ -604,13 +601,6 @@ dev = [
 local = [
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "ruff", specifier = ">=0.14.9" },
-]
-webserver = [
-    { name = "dagster", specifier = "==1.12.6" },
-    { name = "dagster-docker", specifier = "==0.28.6" },
-    { name = "dagster-graphql", specifier = "==1.12.6" },
-    { name = "dagster-postgres", specifier = "==0.28.6" },
-    { name = "dagster-webserver", specifier = "==1.12.6" },
 ]
 
 [[package]]

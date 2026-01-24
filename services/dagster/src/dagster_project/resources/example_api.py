@@ -1,6 +1,4 @@
-import os
-
-from dagster import ConfigurableResource
+from dagster import ConfigurableResource, EnvVar
 import requests
 
 
@@ -15,6 +13,6 @@ class ApiClientResource(ConfigurableResource):
 
 
 api_client = ApiClientResource(
-    api_key=os.getenv("API_KEY", ""),
-    base_url=os.getenv("API_BASE_URL", ""),
+    api_key=EnvVar("API_KEY"),
+    base_url=EnvVar("API_BASE_URL"),
 )

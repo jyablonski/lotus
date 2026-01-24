@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from contextlib import contextmanager
 
-from dagster import ConfigurableResource
+from dagster import ConfigurableResource, EnvVar
 from feast import FeatureStore
 
 
@@ -43,8 +43,8 @@ else:
 
 feast_store = FeastResource(
     repo_path=repo_path,
-    redis_host=os.getenv("REDIS_HOST", "redis"),
-    redis_port=int(os.getenv("REDIS_PORT", "6379")),
-    redis_db=int(os.getenv("REDIS_DB", "0")),
-    redis_password=os.getenv("REDIS_PASSWORD"),
+    redis_host=EnvVar("REDIS_HOST"),
+    redis_port=EnvVar.int("REDIS_PORT"),
+    redis_db=EnvVar.int("REDIS_DB"),
+    redis_password=EnvVar("REDIS_PASSWORD"),
 )
