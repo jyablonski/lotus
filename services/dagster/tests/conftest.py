@@ -3,7 +3,7 @@
 import os
 from unittest.mock import MagicMock
 
-from dagster import build_op_context, EnvVar
+from dagster import build_op_context
 from dagster_dbt import DbtCliResource
 import pytest
 
@@ -61,28 +61,15 @@ def postgres_resource():
         docker-compose -f docker/docker-compose-local.yaml up -d postgres
     """
     # Allow override via env vars, but default to Docker Compose postgres settings
-    # Use EnvVar() for environment variable lookup - Dagster will evaluate these at runtime
-    # Set test-specific defaults as env vars if not already set, so EnvVar() can use them
-    # This maintains backward compatibility while using EnvVar() for deferred evaluation
-    test_defaults = {
-        "TEST_POSTGRES_HOST": "localhost",
-        "TEST_POSTGRES_PORT": "5432",
-        "TEST_POSTGRES_USER": "postgres",
-        "TEST_POSTGRES_PASSWORD": "postgres",
-        "TEST_POSTGRES_DB": "postgres",
-        "TEST_POSTGRES_SCHEMA": "test",
-    }
-    for key, default_value in test_defaults.items():
-        if key not in os.environ:
-            os.environ[key] = default_value
-
+    # For tests, use os.getenv() directly instead of EnvVar() since we need immediate evaluation
+    # EnvVar() defers resolution until Dagster uses the resource, but tests need immediate access
     return PostgresResource(
-        host=EnvVar("TEST_POSTGRES_HOST"),
-        port=EnvVar.int("TEST_POSTGRES_PORT"),
-        user=EnvVar("TEST_POSTGRES_USER"),
-        password=EnvVar("TEST_POSTGRES_PASSWORD"),
-        database=EnvVar("TEST_POSTGRES_DB"),
-        schema_=EnvVar("TEST_POSTGRES_SCHEMA"),
+        host=os.getenv("TEST_POSTGRES_HOST", "localhost"),
+        port=int(os.getenv("TEST_POSTGRES_PORT", "5432")),
+        user=os.getenv("TEST_POSTGRES_USER", "postgres"),
+        password=os.getenv("TEST_POSTGRES_PASSWORD", "postgres"),
+        database=os.getenv("TEST_POSTGRES_DB", "postgres"),
+        schema_=os.getenv("TEST_POSTGRES_SCHEMA", "test"),
     )
 
 
