@@ -18,7 +18,8 @@ def materialize_user_journal_features(
     with feast_store.get_store() as store:
         feature_view_name = "user_journal_summary_features"
 
-        # Try to get the feature view, apply if it doesn't exist
+        # Try to get the feature view, apply if it doesn't exist.
+        # these exist in postgres under `feast.feature_views`
         try:
             fv = store.get_feature_view(feature_view_name)
             context.log.info(f"Found feature view: {fv.name}")
@@ -28,10 +29,8 @@ def materialize_user_journal_features(
                 f"Feature view '{feature_view_name}' not found, applying to registry..."
             )
 
-            # Import and apply feature views from the repo
+            # path fix to make sure we can apply the feature ddls
             repo_path = Path(feast_store.repo_path)
-
-            # Add repo path to Python path temporarily
             if str(repo_path) not in sys.path:
                 sys.path.insert(0, str(repo_path))
 

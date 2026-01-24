@@ -6,7 +6,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=3.13 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    DAGSTER_HOME=/opt/dagster/dagster_home
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -25,6 +26,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 COPY services/dagster/pyproject.toml services/dagster/uv.lock ./
 
+# Install all dependencies (webserver dependencies are now in main dependencies)
 RUN uv sync --no-install-project --no-dev
 
 # -------------------------------
@@ -37,7 +39,9 @@ WORKDIR /app
 RUN useradd --create-home appuser \
     && mkdir -p /tmp/io_manager_storage/compute_logs \
     && mkdir -p /tmp/io_manager_storage/artifacts \
-    && chown -R appuser:appuser /tmp/io_manager_storage
+    && mkdir -p $DAGSTER_HOME \
+    && chown -R appuser:appuser /tmp/io_manager_storage \
+    && chown -R appuser:appuser $DAGSTER_HOME
 
 USER appuser
 
@@ -57,9 +61,13 @@ COPY --chown=appuser:appuser services/dbt /app/dbt
 # NOTE: Build context is project root, so we copy services/dagster/feast_repo
 COPY --chown=appuser:appuser services/dagster/feast_repo /app/feast_repo
 
+# --- COPY CONFIG FILES ---
+# Copy dagster.yaml and workspace.yaml to DAGSTER_HOME for webserver/daemon
+COPY --chown=appuser:appuser services/dagster/dagster.yaml services/dagster/workspace.yaml $DAGSTER_HOME/
+
 # Set Environment Variables
 # 1. Point dbt to the correct profile dir inside the container
-ENV DBT_PROFILES_DIR="/app/dbt"
+ENV DBT_PROFILES_DIR="/app/dbt/profiles"
 # 2. Tell Dagster where the code is (optional but good practice)
 ENV DAGSTER_CURRENT_IMAGE="dagster_server_image"
 # 3. Add src to Python path so dagster_project can be imported
@@ -69,8 +77,9 @@ ENV PYTHONPATH="/app/src:$PYTHONPATH"
 # Copy source code at the end
 COPY --chown=appuser:appuser services/dagster/src /app/src
 
-EXPOSE 4000
+EXPOSE 4000 3000
 
+# Default command (can be overridden in docker-compose)
 # The standard Dagster Code Server command
 # -h 0.0.0.0: Listen on all interfaces (required for Docker)
 # -p 4000: The port we exposed

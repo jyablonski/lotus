@@ -41,8 +41,6 @@ feature_flags_google_sheet = GoogleSheetsResource(
 
 # Example: Create a second instance for a different sheet if you had multiple jobs involving different sheets
 # google_sheets_other = GoogleSheetsResource(
-#     sheet_url=os.getenv("GOOGLE_SHEETS_OTHER_URL", "PLACEHOLDER_SHEET_URL_2"),
-#     credentials_json=os.getenv(
-#         "GOOGLE_SHEETS_CREDENTIALS_JSON", "PLACEHOLDER_GCP_CREDENTIALS_JSON"
-#     ),
+#     sheet_url=EnvVar("GOOGLE_SHEETS_OTHER_URL"),
+#     credentials_json_b64=EnvVar("GOOGLE_SHEETS_CREDENTIALS_JSON"),
 # )

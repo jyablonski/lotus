@@ -1,6 +1,12 @@
-# Dagster Project
+# Dagster
 
-This Dagster project orchestrates data pipelines with automatic discovery of assets, jobs, and resources.
+Dagster is an orchestration tool primarily used for scheduling data pipelines.
+
+Jobs consist of a collection of assets (for data pipelines) or ops (for non-data tasks) that are executed in a specific order.
+
+- Assets are Dagster's core concept for data pipelines and are defined using the `@asset` decorator. Data quality checks can be defined on assets and stored as metadata during job execution.
+- Ops are Dagster's core concept for non-data tasks and are defined using the `@op` decorator.
+- Assets and ops can be sequenced together to form pipelines.
 
 ## Directory Structure
 
@@ -65,6 +71,17 @@ get_game_types_job = define_asset_job(
 
 Resources are auto-discovered from the `resources` module. The `load_resources()` function scans all `ConfigurableResource` and `ResourceDefinition` instances and adds them to the resources dictionary.
 
+Examples of Resources:
+
+- `PostgresResource` - for connecting to a PostgreSQL database
+- `RedisResource` - for connecting to a Redis instance
+- `GoogleSheetsResource` - for connecting to a Google Sheets instance
+
+To create a resource, 2 things must be created:
+
+- A `ConfigurableResource` subclass for the resource (ex: `PostgresResource`)
+- A `ResourceDefinition` instance for the resource (ex: `postgres_conn`) which gets pulled in and used by assets
+
 **To add a new resource:**
 
 1. Create a resource file in `resources/` (e.g., `resources/my_resource.py`)
@@ -83,6 +100,15 @@ class PostgresResource(ConfigurableResource):
     # ... other config fields
 
 postgres_conn = PostgresResource(...)
+```
+
+Then in the asset code, the resource can be used like this:
+
+```python
+@asset
+def my_asset(context: AssetExecutionContext, postgres_conn: PostgresResource) -> None:
+    with postgres_conn.get_connection() as conn:
+        conn.execute("SELECT * FROM my_table")
 ```
 
 ## dbt Integration
@@ -119,34 +145,35 @@ The manifest is generated in `services/dbt/target/manifest.json` and is automati
 
 This project uses [Feast](https://feast.dev/) to serve precomputed features for low-latency online inference. Feast reads aggregated data from the PostgreSQL `gold` schema and materializes it to Redis for fast retrieval by the Analyzer API Service.
 
-
 ### How It Works
 
 Feast operates in three distinct phases:
 
-1. **Apply** (`feast apply` or `store.apply()`)  
+1. **Apply** (`feast apply` or `store.apply()`)
    Registers feature definitions (entities, feature views, source queries) to the registry. This is metadata only—no data moves. Think of it like a database migration that tells Feast "these features exist."
 
-2. **Materialize** (`store.materialize()`)  
+2. **Materialize** (`store.materialize()`)
    Executes the source SQL query against Postgres, reads the rows, and writes them to Redis keyed by entity ID. This is the actual data sync that populates the online store.
 
-3. **Serve** (`store.get_online_features()`)  
-   Retrieves features from Redis by entity ID for low-latency inference. The API calls this to fetch precomputed features without hitting Postgres.
+3. **Serve** (`store.get_online_features()`)
+   Retrieves features from Redis by entity ID for low-latency inference. The Analyzer API Service calls this to fetch precomputed features from Redis w/ low latency, without having to get them from Postgres which would be slower.
 
 The Dagster asset `materialize_user_journal_features` handles steps 1-2: it applies definitions if missing, then materializes data to Redis on a schedule.
 
 ### Architecture
+
 ```
 ┌─────────────────┐    materialize    ┌─────────────┐    get_online_features    ┌──────────────────────┐
 │  PostgreSQL     │ ───────────────►  │    Redis    │  ◄─────────────────────── │   Analyzer Service   │
-│  (gold schema)  │                   │   (online)  │                           │                      │  
-└─────────────────┘                   └─────────────┘                           └──────────────────────┘   
-        │                                                                              
-   dbt models                                                                          
-   transform data                                                                      
+│  (gold schema)  │                   │   (online)  │                           │                      │
+└─────────────────┘                   └─────────────┘                           └──────────────────────┘
+        │
+   dbt models
+   transform data
 ```
 
 ### Directory Structure
+
 ```
 feast_repo/
 ├── feature_store.yaml   # Feast configuration (registry, offline/online store connections)
@@ -158,11 +185,11 @@ feast_repo/
 
 ### Key Files
 
-| File                 | Purpose                                                                                                        |
-| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| File                 | Purpose                                                                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `feature_store.yaml` | Configures PostgreSQL as the registry (metadata storage), Postgres as the offline store (source of truth), and Redis as the online store (low-latency serving) |
-| `entities.py`        | Defines entities like `user_entity` which serve as join keys for feature lookups                               |
-| `feature_views.py`   | Defines feature views that map SQL queries to typed feature schemas                                            |
+| `entities.py`        | Defines entities like `user_entity` which serve as join keys for feature lookups                                                                               |
+| `feature_views.py`   | Defines feature views that map SQL queries to typed feature schemas                                                                                            |
 
 ### Resources
 
