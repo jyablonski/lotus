@@ -78,7 +78,7 @@ def postgres_resource():
 
     return PostgresResource(
         host=EnvVar("TEST_POSTGRES_HOST"),
-        port=EnvVar("TEST_POSTGRES_PORT"),
+        port=EnvVar.int("TEST_POSTGRES_PORT"),
         user=EnvVar("TEST_POSTGRES_USER"),
         password=EnvVar("TEST_POSTGRES_PASSWORD"),
         database=EnvVar("TEST_POSTGRES_DB"),
