@@ -93,7 +93,10 @@ def postgres_resource_with_cleanup(postgres_resource):
     Creates the test schema if it doesn't exist. No cleanup is performed.
     """
     # Ensure test schema exists
-    schema_name = postgres_resource.schema_
+    # Get schema name from env var since EnvVar defers resolution
+    # When the resource is used (get_connection), Dagster will resolve it, but for tests
+    # we need immediate access, so use os.getenv directly
+    schema_name = os.getenv("TEST_POSTGRES_SCHEMA", "test")
     with postgres_resource.get_connection() as conn, conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
         conn.commit()
