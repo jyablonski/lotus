@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 
 interface ErrorProps {
@@ -32,12 +33,12 @@ export default function ProfileError({ error, reset }: ErrorProps) {
               >
                 Try again
               </button>
-              <a
+              <Link
                 href="/"
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Go to Dashboard
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>
