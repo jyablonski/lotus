@@ -89,10 +89,16 @@ describe("LoggedInDashboard", () => {
       />,
     );
 
-    // Check stats are displayed
-    expect(screen.getByText("8")).toBeInTheDocument(); // entries last 30 days
-    expect(screen.getByText("10")).toBeInTheDocument(); // total entries
-    expect(screen.getByText("3")).toBeInTheDocument(); // current streak (in "3 days")
+    // Check stats labels are displayed
+    expect(screen.getByText("Last 30 Days")).toBeInTheDocument();
+    expect(screen.getByText("Current Streak")).toBeInTheDocument();
+    expect(screen.getByText("Mood Trend")).toBeInTheDocument();
+    expect(screen.getByText("Total Entries")).toBeInTheDocument();
+
+    // Check writing stats section
+    expect(screen.getByText("Writing Stats")).toBeInTheDocument();
+    expect(screen.getByText("Total entries:")).toBeInTheDocument();
+    expect(screen.getByText("Active days:")).toBeInTheDocument();
   });
 
   test("displays recent entries", () => {
