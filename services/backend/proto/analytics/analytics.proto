@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package internal;
+
+option go_package = "github.com/jyablonski/lotus/internal/analytics_pb/gen/go/proto/analytics;analytics_pb";
+
+import "google/api/annotations.proto";
+
+service AnalyticsService {
+  // GET http://localhost:8080/v1/analytics/users/{user_id}/journal-summary
+  rpc GetUserJournalSummary(GetUserJournalSummaryRequest) returns (GetUserJournalSummaryResponse) {
+    option (google.api.http) = {
+      get: "/v1/analytics/users/{user_id}/journal-summary"
+    };
+  }
+}
+
+message GetUserJournalSummaryRequest {
+  string user_id = 1;
+}
+
+message GetUserJournalSummaryResponse {
+  UserJournalSummary summary = 1;
+}
+
+message UserJournalSummary {
+  // User info
+  string user_id = 1;
+  string user_email = 2;
+  string user_role = 3;
+  string user_timezone = 4;
+  string user_created_at = 5;
+
+  // All-time metrics
+  int32 total_journals = 6;
+  int32 active_days = 7;
+  optional double avg_mood_score = 8;
+  optional int32 min_mood_score = 9;
+  optional int32 max_mood_score = 10;
+  optional double mood_score_stddev = 11;
+
+  // Sentiment metrics
+  int32 positive_entries = 12;
+  int32 negative_entries = 13;
+  int32 neutral_entries = 14;
+  optional double avg_sentiment_score = 15;
+
+  // Content metrics
+  optional double avg_journal_length = 16;
+
+  // Timestamps
+  optional string first_journal_at = 17;
+  optional string last_journal_at = 18;
+  optional string last_modified_at = 19;
+
+  // Last 30 days metrics
+  int32 total_journals_30d = 20;
+  optional double avg_mood_score_30d = 21;
+  optional int32 min_mood_score_30d = 22;
+  optional int32 max_mood_score_30d = 23;
+
+  // Streak and calculated fields
+  int32 daily_streak = 24;
+  optional double positive_percentage = 25;
+  optional int32 days_since_last_journal = 26;
+  optional int32 days_between_first_and_last_journal = 27;
+  optional double journals_per_active_day = 28;
+}

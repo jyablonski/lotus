@@ -1,0 +1,32 @@
+-- name: GetUserJournalSummaryByUserId :one
+SELECT
+    user_id,
+    user_email,
+    user_role,
+    user_timezone,
+    user_created_at,
+    total_journals,
+    active_days,
+    avg_mood_score,
+    min_mood_score,
+    max_mood_score,
+    mood_score_stddev,
+    positive_entries,
+    negative_entries,
+    neutral_entries,
+    avg_sentiment_score,
+    avg_journal_length,
+    first_journal_at,
+    last_journal_at,
+    last_modified_at,
+    total_journals_30d,
+    avg_mood_score_30d,
+    min_mood_score_30d,
+    max_mood_score_30d,
+    daily_streak,
+    positive_percentage,
+    days_since_last_journal,
+    days_between_first_and_last_journal,
+    journals_per_active_day
+FROM gold.user_journal_summary
+WHERE user_id = $1;

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { JournalEntry } from "@/types/journal";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -8,19 +11,58 @@ interface SelectedDateEntriesProps {
   entries: JournalEntry[];
 }
 
+/**
+ * Format date in a locale-independent way to avoid hydration mismatch
+ */
+function formatDateHeader(date: Date): string {
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const dayName = days[date.getDay()];
+  const monthName = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  return `${dayName}, ${monthName} ${day}, ${year}`;
+}
+
 export function SelectedDateEntries({
   selectedDate,
   entries,
 }: SelectedDateEntriesProps) {
-  const formattedDate = selectedDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Use state for "today" checks to avoid hydration mismatch
+  // Initial render uses false (safe default), then updates after hydration
+  const [isToday, setIsToday] = useState(false);
+  const [isPastDate, setIsPastDate] = useState(false);
 
-  const isToday = selectedDate.toDateString() === new Date().toDateString();
-  const isPastDate = selectedDate < new Date(new Date().setHours(0, 0, 0, 0));
+  useEffect(() => {
+    const now = new Date();
+    setIsToday(selectedDate.toDateString() === now.toDateString());
+    setIsPastDate(selectedDate < new Date(now.setHours(0, 0, 0, 0)));
+  }, [selectedDate]);
+
+  const formattedDate = formatDateHeader(selectedDate);
 
   return (
     <Card>

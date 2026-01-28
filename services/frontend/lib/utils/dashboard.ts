@@ -104,6 +104,20 @@ export function generateTitle(text: string): string {
   return words.slice(0, 4).join(" ") + "...";
 }
 
+/**
+ * Format date as absolute string (safe for SSR)
+ * Use this for server-rendered content to avoid hydration mismatches
+ */
+export function formatAbsoluteDate(dateString: string): string {
+  const date = new Date(dateString);
+  // Use ISO format which is consistent across server/client
+  return date.toISOString().split("T")[0];
+}
+
+/**
+ * Format date as relative string (client-side only)
+ * WARNING: Do not use in server-rendered components - causes hydration mismatch
+ */
 export function formatRelativeDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
@@ -128,7 +142,7 @@ export function formatRecentEntries(
   return journals.slice(0, count).map((entry) => ({
     id: parseInt(entry.journalId),
     title: generateTitle(entry.journalText),
-    date: formatRelativeDate(entry.createdAt),
+    date: entry.createdAt, // Pass raw date string, let client component format it
     preview: entry.journalText,
     // userMood is already a number, no need to parseInt
     sentiment: getSentimentFromMoodInt(entry.userMood),
