@@ -1,5 +1,9 @@
+"use client";
+
 import { useState, useMemo } from "react";
-import { useJournalData } from "./useJournalData";
+import { CalendarHeader } from "@/components/calendar/CalendarHeader";
+import { CalendarGrid } from "@/components/calendar/CalendarGrid";
+import { SelectedDateEntries } from "@/components/calendar/SelectedDateEntries";
 import { JournalEntry } from "@/types/journal";
 
 export interface CalendarDay {
@@ -24,16 +28,29 @@ function toLocalDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function useCalendarData() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+interface CalendarClientProps {
+  journals: JournalEntry[];
+  totalEntries: number;
+  /** Server-provided current date string (YYYY-MM-DD) to avoid hydration mismatch */
+  serverDate: string;
+}
 
-  // Load ALL journals for calendar display
-  // Calendar needs complete data to show entries for all dates
-  const { journals, loading, error } = useJournalData({
-    initialLimit: 1000, // Large number to get all entries
-    autoLoad: true,
+export function CalendarClient({
+  journals,
+  totalEntries,
+  serverDate,
+}: CalendarClientProps) {
+  // Parse server-provided date to avoid hydration mismatch
+  // Server sends a stable date string that both server and client can parse identically
+  const initialDate = useMemo(() => {
+    const [year, month, day] = serverDate.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }, [serverDate]);
+
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    return new Date(initialDate.getFullYear(), initialDate.getMonth(), 1);
   });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
 
   // Group journals by date for efficient lookup
   const journalsByDate = useMemo(() => {
@@ -41,7 +58,7 @@ export function useCalendarData() {
 
     journals.forEach((journal) => {
       const date = new Date(journal.createdAt);
-      const dateKey = toLocalDateString(date); // Use local date, not UTC
+      const dateKey = toLocalDateString(date);
 
       if (!grouped.has(dateKey)) {
         grouped.set(dateKey, []);
@@ -53,7 +70,6 @@ export function useCalendarData() {
   }, [journals]);
 
   // Generate calendar days for the current month
-  // Mood scores: excited=8, happy=7, content=6, neutral=5, tired=4, sad=3, anxious=2, angry=1
   const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -61,22 +77,21 @@ export function useCalendarData() {
     // Get first day of month and calculate starting date (include previous month days)
     const firstDayOfMonth = new Date(year, month, 1);
     const startDate = new Date(firstDayOfMonth);
-    startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay()); // Start from Sunday
+    startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay());
 
     // Generate 42 days (6 weeks) to fill calendar grid
     const days: CalendarDay[] = [];
-    const today = new Date();
-    const todayString = toLocalDateString(today);
+    // Use server-provided date for "today" to ensure consistency during hydration
+    const todayString = serverDate;
 
     for (let i = 0; i < 42; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
 
-      const dateKey = toLocalDateString(date); // Use local date, not UTC
+      const dateKey = toLocalDateString(date);
       const dayEntries = journalsByDate.get(dateKey) || [];
 
       // Calculate average mood for the day
-      // userMood is already a number, no need to parseInt
       const avgMood =
         dayEntries.length > 0
           ? dayEntries.reduce((sum, entry) => sum + entry.userMood, 0) /
@@ -89,24 +104,24 @@ export function useCalendarData() {
 
       days.push({
         date: new Date(date),
-        dateString: dateKey, // YYYY-MM-DD format in local timezone
+        dateString: dateKey,
         entries: dayEntries,
         isCurrentMonth: date.getMonth() === month,
         isToday: dateKey === todayString,
         isSelected,
         entryCount: dayEntries.length,
-        avgMood: Math.round(avgMood * 10) / 10, // Round to 1 decimal
+        avgMood: Math.round(avgMood * 10) / 10,
       });
     }
 
     return days;
-  }, [currentMonth, journalsByDate, selectedDate]);
+  }, [currentMonth, journalsByDate, selectedDate, serverDate]);
 
   // Get entries for the selected date
   const selectedDateEntries = useMemo(() => {
     if (!selectedDate) return [];
 
-    const dateKey = toLocalDateString(selectedDate); // Use local date, not UTC
+    const dateKey = toLocalDateString(selectedDate);
     return journalsByDate.get(dateKey) || [];
   }, [selectedDate, journalsByDate]);
 
@@ -129,16 +144,36 @@ export function useCalendarData() {
     setSelectedDate(today);
   };
 
-  return {
-    calendarDays,
-    selectedDate,
-    setSelectedDate,
-    selectedDateEntries,
-    currentMonth,
-    navigateMonth,
-    goToToday,
-    loading,
-    error,
-    totalEntries: journals.length,
-  };
+  return (
+    <div className="page-container">
+      <div className="content-container">
+        <CalendarHeader
+          currentMonth={currentMonth}
+          onNavigateMonth={navigateMonth}
+          onGoToToday={goToToday}
+          totalEntries={totalEntries}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Calendar Grid */}
+          <div className="lg:col-span-2">
+            <CalendarGrid
+              calendarDays={calendarDays}
+              onDateSelect={setSelectedDate}
+            />
+          </div>
+
+          {/* Selected Date Entries */}
+          <div>
+            {selectedDate && (
+              <SelectedDateEntries
+                selectedDate={selectedDate}
+                entries={selectedDateEntries}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

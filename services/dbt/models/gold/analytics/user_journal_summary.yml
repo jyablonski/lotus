@@ -98,14 +98,53 @@ models:
               config:
                 where: "positive_percentage is not null"
 
-      - name: days_since_first_journal
-        description: Number of days between first and last journal entry
+      - name: total_journals_30d
+        description: Total number of journal entries created in the last 30 days
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<= total_journals"
+              config:
+                where: "total_journals > 0"
+
+      - name: avg_mood_score_30d
+        description: Average mood score across journal entries in the last 30 days
+
+      - name: min_mood_score_30d
+        description: Minimum mood score in the last 30 days
+
+      - name: max_mood_score_30d
+        description: Maximum mood score in the last 30 days
+
+      - name: daily_streak
+        description: Current consecutive days with journal entries (resets if no entry yesterday or today)
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: days_since_last_journal
+        description: Number of days since the user's last journal entry
         data_tests:
           - dbt_utils.expression_is_true:
               arguments:
                 expression: ">= 0"
               config:
-                where: "days_since_first_journal is not null"
+                where: "days_since_last_journal is not null"
+
+      - name: days_between_first_and_last_journal
+        description: Number of days between first and last journal entry (journal duration span)
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                where: "days_between_first_and_last_journal is not null"
 
       - name: journals_per_active_day
         description: Average number of journals written per active day

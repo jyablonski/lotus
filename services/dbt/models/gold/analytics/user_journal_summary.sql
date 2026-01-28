@@ -34,6 +34,65 @@ user_metrics as (
     group by journal_entries.user_id
 ),
 
+user_metrics_30d as (
+    select
+        journal_entries.user_id,
+        count(distinct journal_entries.journal_id) as total_journals_30d,
+        avg(journal_entries.mood_score) as avg_mood_score_30d,
+        min(journal_entries.mood_score) as min_mood_score_30d,
+        max(journal_entries.mood_score) as max_mood_score_30d
+    from journal_entries
+    where date_trunc('day', journal_entries.journal_created_at)::date >= current_date - interval '29 days'
+    group by journal_entries.user_id
+),
+
+daily_entries as (
+    select
+        user_id,
+        date_trunc('day', journal_created_at)::date as entry_date
+    from journal_entries
+    group by
+        user_id,
+        date_trunc('day', journal_created_at)::date
+),
+
+streaks as (
+    select
+        user_id,
+        entry_date,
+        entry_date - (row_number() over (partition by user_id order by entry_date))::int as streak_group
+    from daily_entries
+),
+
+current_streaks as (
+    select
+        user_id,
+        count(*) as streak_length,
+        min(entry_date) as streak_start,
+        max(entry_date) as streak_end
+    from streaks
+    group by user_id, streak_group
+),
+
+active_streaks as (
+    select
+        user_id,
+        streak_length,
+        streak_end,
+        row_number() over (partition by user_id order by streak_end desc) as rn
+    from current_streaks
+    where
+        streak_end::date >= current_date - interval '1 day'
+),
+
+max_current_streak as (
+    select
+        user_id,
+        streak_length as daily_streak
+    from active_streaks
+    where rn = 1
+),
+
 final as (
     select
         users.user_id,
@@ -42,6 +101,7 @@ final as (
         users.user_timezone,
         users.user_created_at,
 
+        -- All-time metrics
         coalesce(user_metrics.total_journals, 0) as total_journals,
         coalesce(user_metrics.active_days, 0) as active_days,
 
@@ -61,6 +121,15 @@ final as (
         user_metrics.last_journal_at,
         user_metrics.last_modified_at,
 
+        -- Last 30 days metrics
+        coalesce(user_metrics_30d.total_journals_30d, 0) as total_journals_30d,
+        user_metrics_30d.avg_mood_score_30d,
+        user_metrics_30d.min_mood_score_30d,
+        user_metrics_30d.max_mood_score_30d,
+
+        -- Streak metrics
+        coalesce(max_current_streak.daily_streak, 0) as daily_streak,
+
         -- Calculated fields
         round(
             coalesce(user_metrics.positive_entries, 0)::numeric /
@@ -69,11 +138,17 @@ final as (
         ) as positive_percentage,
 
         case
+            when user_metrics.last_journal_at is not null
+            then current_date - date_trunc('day', user_metrics.last_journal_at)::date
+            else null
+        end as days_since_last_journal,
+
+        case
             when user_metrics.first_journal_at is not null
                 and user_metrics.last_journal_at is not null
-            then date_part('day', user_metrics.last_journal_at - user_metrics.first_journal_at) + 1
+            then date_trunc('day', user_metrics.last_journal_at)::date - date_trunc('day', user_metrics.first_journal_at)::date + 1
             else null
-        end as days_since_first_journal,
+        end as days_between_first_and_last_journal,
 
         round(
             coalesce(user_metrics.total_journals, 0)::numeric /
@@ -84,6 +159,10 @@ final as (
     from users
     left join user_metrics
         on users.user_id = user_metrics.user_id
+    left join user_metrics_30d
+        on users.user_id = user_metrics_30d.user_id
+    left join max_current_streak
+        on users.user_id = max_current_streak.user_id
 )
 
 select * from final

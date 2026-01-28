@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createJournalEntry } from "@/lib/api/journals";
-import { moodToInt } from "@/utils/moodMapping"; // ← Add this import
+import { createJournal } from "@/actions/journals";
+import { moodToInt } from "@/utils/moodMapping";
 
 export function useCreateJournal() {
   const [entry, setEntry] = useState("");
   const [mood, setMood] = useState("neutral");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const router = useRouter();
 
@@ -27,26 +27,28 @@ export function useCreateJournal() {
       return;
     }
 
-    setIsSubmitting(true);
     setError(null);
 
-    try {
-      // ✅ Convert mood string to integer before sending
-      await createJournalEntry({
-        entry,
-        mood: moodToInt(mood), // ← Changed this line
-      });
-      setSuccess(true);
+    startTransition(async () => {
+      try {
+        const result = await createJournal({
+          journalText: entry,
+          moodScore: moodToInt(mood),
+        });
 
-      setTimeout(() => {
-        router.push("/journal/home");
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to submit journal entry:", error);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+        if (result.success) {
+          setSuccess(true);
+          setTimeout(() => {
+            router.push("/journal/home");
+          }, 2000);
+        } else {
+          setError(result.error || "Something went wrong. Please try again.");
+        }
+      } catch (err) {
+        console.error("Failed to submit journal entry:", err);
+        setError("Something went wrong. Please try again.");
+      }
+    });
   };
 
   return {
@@ -54,7 +56,7 @@ export function useCreateJournal() {
     setEntry,
     mood,
     setMood,
-    isSubmitting,
+    isSubmitting: isPending,
     success,
     error,
     handleSubmit,

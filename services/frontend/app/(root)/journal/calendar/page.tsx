@@ -1,59 +1,39 @@
-"use client";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { fetchAllJournalsForUser } from "@/lib/server";
+import { CalendarClient } from "@/components/calendar/CalendarClient";
 
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { CalendarHeader } from "@/components/calendar/CalendarHeader";
-import { CalendarGrid } from "@/components/calendar/CalendarGrid";
-import { SelectedDateEntries } from "@/components/calendar/SelectedDateEntries";
-import { useCalendarData } from "@/hooks/useCalendarData";
+/**
+ * Format date as YYYY-MM-DD in server's local timezone
+ * This provides a stable date string for hydration
+ */
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-export default function CalendarPage() {
-  const {
-    calendarDays,
-    selectedDate,
-    setSelectedDate,
-    selectedDateEntries,
-    currentMonth,
-    navigateMonth,
-    goToToday,
-    loading,
-    error,
-    totalEntries,
-  } = useCalendarData();
+export default async function CalendarPage() {
+  const session = await auth();
 
-  if (loading) return <LoadingSpinner />;
-  if (error)
-    return <div className="text-red-500">Error loading calendar: {error}</div>;
+  if (!session?.user?.id) {
+    redirect("/");
+  }
+
+  // Fetch all journals server-side for calendar display
+  const { journals, totalCount } = await fetchAllJournalsForUser(
+    session.user.id,
+  );
+
+  // Pass server date to avoid hydration mismatch with Date.now()
+  const serverDate = toLocalDateString(new Date());
 
   return (
-    <div className="page-container">
-      <div className="content-container">
-        <CalendarHeader
-          currentMonth={currentMonth}
-          onNavigateMonth={navigateMonth}
-          onGoToToday={goToToday}
-          totalEntries={totalEntries}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Calendar Grid */}
-          <div className="lg:col-span-2">
-            <CalendarGrid
-              calendarDays={calendarDays}
-              onDateSelect={setSelectedDate}
-            />
-          </div>
-
-          {/* Selected Date Entries */}
-          <div>
-            {selectedDate && (
-              <SelectedDateEntries
-                selectedDate={selectedDate}
-                entries={selectedDateEntries}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    <CalendarClient
+      journals={journals}
+      totalEntries={totalCount}
+      serverDate={serverDate}
+    />
   );
 }

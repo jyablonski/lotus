@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { getMoodConfigByInt } from "@/utils/moodMapping";
@@ -7,17 +9,53 @@ interface JournalEntryCardProps {
   entry: JournalEntry;
 }
 
+/**
+ * Format date/time in a locale-independent way to avoid hydration mismatch
+ */
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const dayName = days[date.getDay()];
+  const monthName = months[date.getMonth()];
+  const day = date.getDate();
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 should be 12
+  const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
+
+  return `${dayName}, ${monthName} ${day}, ${hours}:${minutesStr} ${ampm}`;
+}
+
 export function JournalEntryCard({ entry }: JournalEntryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const formattedDate = new Date(entry.createdAt).toLocaleString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
+  const formattedDate = formatDateTime(entry.createdAt);
 
   // userMood is already a number, no need to parseInt
   const moodConfig = getMoodConfigByInt(entry.userMood);

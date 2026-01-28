@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jyablonski/lotus/internal/db"
+	pb_analytics "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 	pb_journal "github.com/jyablonski/lotus/internal/pb/proto/journal"
 	pb_user "github.com/jyablonski/lotus/internal/pb/proto/user"
 	"google.golang.org/grpc"
@@ -61,6 +62,7 @@ func StartGRPCServer(queries *db.Queries, logger *slog.Logger, analyzerBaseURL s
 		Logger: logger,
 	})
 	pb_journal.RegisterJournalServiceServer(grpcServer, JournalService(queries, logger, analyzerBaseURL))
+	pb_analytics.RegisterAnalyticsServiceServer(grpcServer, AnalyticsService(queries, logger))
 
 	logger.Info("Starting gRPC server", "address", ":50051", "analyzer_url", analyzerBaseURL)
 	return grpcServer.Serve(lis)
