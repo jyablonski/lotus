@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: proto/journal/journal.proto
+// source: proto/journal/journal_service.proto
 
 package journal_pb
 
@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	JournalService_CreateJournal_FullMethodName          = "/internal.JournalService/CreateJournal"
-	JournalService_GetJournals_FullMethodName            = "/internal.JournalService/GetJournals"
-	JournalService_TriggerJournalAnalysis_FullMethodName = "/internal.JournalService/TriggerJournalAnalysis"
+	JournalService_CreateJournal_FullMethodName          = "/journal.JournalService/CreateJournal"
+	JournalService_GetJournals_FullMethodName            = "/journal.JournalService/GetJournals"
+	JournalService_TriggerJournalAnalysis_FullMethodName = "/journal.JournalService/TriggerJournalAnalysis"
 )
 
 // JournalServiceClient is the client API for JournalService service.
@@ -176,7 +176,7 @@ func _JournalService_TriggerJournalAnalysis_Handler(srv interface{}, ctx context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var JournalService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "internal.JournalService",
+	ServiceName: "journal.JournalService",
 	HandlerType: (*JournalServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -193,5 +193,5 @@ var JournalService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/journal/journal.proto",
+	Metadata: "proto/journal/journal_service.proto",
 }

@@ -15,11 +15,11 @@ import (
 
 type AnalyticsServer struct {
 	pb.UnimplementedAnalyticsServiceServer
-	DB     *db.Queries
+	DB     db.Querier
 	Logger *slog.Logger
 }
 
-func AnalyticsService(q *db.Queries, logger *slog.Logger) *AnalyticsServer {
+func AnalyticsService(q db.Querier, logger *slog.Logger) *AnalyticsServer {
 	return &AnalyticsServer{
 		DB:     q,
 		Logger: logger,

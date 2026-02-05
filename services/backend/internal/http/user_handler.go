@@ -18,11 +18,11 @@ import (
 var emailRegex = regexp.MustCompile(`^[a-z0-9]+@[a-z0-9]+\.[a-z]{2,}$`)
 
 type UserHandler struct {
-	queries *db.Queries
+	queries db.Querier
 }
 
 // NewUserHandler initializes the user handler with database queries
-func NewUserHandler(q *db.Queries) *UserHandler {
+func NewUserHandler(q db.Querier) *UserHandler {
 	return &UserHandler{queries: q}
 }
 

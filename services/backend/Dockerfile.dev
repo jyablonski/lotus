@@ -1,13 +1,6 @@
-FROM golang:1.25-alpine AS builder
-
-RUN go install github.com/air-verse/air@latest
-
-# ---- Final image ----
-# need to use golang:1.25 instead of slimmer image for glibc
-# because of the air binary
 FROM golang:1.25-alpine
 
-COPY --from=builder /go/bin/air /usr/local/bin/air
+RUN go install github.com/air-verse/air@latest
 
 WORKDIR /app
 
@@ -17,5 +10,6 @@ COPY . .
 
 EXPOSE 8080 50051
 
-# Start the app with Air
+# we need go toolchain for air to rebuild and enable hot reloading
+# so we cant use scratch or get much slimmer here.
 CMD ["air", "-c", ".air.toml"]

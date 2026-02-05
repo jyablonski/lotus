@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package journal;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/journal;journal_pb";
+
+import "google/api/annotations.proto";
+import "proto/journal/journal.proto";
+
+service JournalService {
+  rpc CreateJournal(CreateJournalRequest) returns (CreateJournalResponse) {
+    option (google.api.http) = {
+      post: "/v1/journals"
+      body: "*"
+    };
+  }
+
+  // GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE&limit=10&offset=20
+  rpc GetJournals(GetJournalsRequest) returns (GetJournalsResponse) {
+    option (google.api.http) = {
+      get: "/v1/journals"
+    };
+  }
+
+  rpc TriggerJournalAnalysis(TriggerAnalysisRequest) returns (TriggerAnalysisResponse);
+}

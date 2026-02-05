@@ -14,11 +14,11 @@ import (
 
 type UserServer struct {
 	pb.UnimplementedUserServiceServer
-	DB     *db.Queries
+	DB     db.Querier
 	Logger *slog.Logger
 }
 
-func UserService(q *db.Queries, logger *slog.Logger) *UserServer {
+func UserService(q db.Querier, logger *slog.Logger) *UserServer {
 	return &UserServer{
 		DB:     q,
 		Logger: logger,

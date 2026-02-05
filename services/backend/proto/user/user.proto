@@ -1,34 +1,10 @@
 syntax = "proto3";
 
-package internal;
+package user;
 
-option go_package = "github.com/jyablonski/lotus/internal/user_pb/gen/go/proto/user;user_pb";
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/user;user_pb";
 
-import "google/api/annotations.proto";
-
-service UserService {
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
-    option (google.api.http) = {
-      post: "/v1/users"
-      body: "*"
-    };
-  }
-
-  rpc CreateUserOauth(CreateUserOauthRequest) returns (CreateUserResponse) {
-    option (google.api.http) = {
-      post: "/v1/oauth/users"
-      body: "*"
-    };
-  }
-
-  // GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
-  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-    option (google.api.http) = {
-      get: "/v1/users"
-    };
-  }
-
-}
+// Request/Response messages for User operations
 
 message CreateUserRequest {
   string email = 1;
