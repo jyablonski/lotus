@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package analytics;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/analytics;analytics_pb";
+
+import "google/api/annotations.proto";
+import "proto/analytics/analytics.proto";
+
+service AnalyticsService {
+  // GET http://localhost:8080/v1/analytics/users/{user_id}/journal-summary
+  rpc GetUserJournalSummary(GetUserJournalSummaryRequest) returns (GetUserJournalSummaryResponse) {
+    option (google.api.http) = {
+      get: "/v1/analytics/users/{user_id}/journal-summary"
+    };
+  }
+}

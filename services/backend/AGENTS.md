@@ -7,9 +7,9 @@ Go gRPC service with HTTP gateway for core application logic, CRUD operations, a
 - **Language**: Go 1.25.4
 - **Framework**: gRPC with grpc-gateway for HTTP
 - **Database**: PostgreSQL
-- **Code Generation**: sqlc (SQL → Go), buf (protobuf → Go)
+- **Code Generation**: sqlc (SQL → Go), buf (protobuf → Go), moq (mocks)
 - **Hot Reload**: Air (development only)
-- **Testing**: testify
+- **Testing**: testify, moq
 
 ## Architecture Patterns
 
@@ -37,6 +37,11 @@ The service uses **code generation** for type safety:
   - Config: `buf.yaml`, `buf.gen.yaml`
   - Run: `make buf-generate` or `cd services/backend && buf generate`
 
+- **moq** - Generates mock implementations for interfaces
+  - Interfaces: `internal/db/querier.go`, `internal/grpc/interfaces.go`
+  - Generated mocks: `internal/mocks/`
+  - Run: `make moq-generate` or `./scripts/moq-generate.sh`
+
 **Important**: Always regenerate code after changing SQL queries or proto definitions.
 
 ## Code Organization
@@ -46,6 +51,7 @@ internal/
 ├── main.go                    # Entry point, starts all three servers
 ├── grpc/                      # gRPC service implementations
 │   ├── server.go              # gRPC server setup and interceptors
+│   ├── interfaces.go          # Interface definitions (HTTPClient)
 │   ├── user_service.go        # User service implementation
 │   ├── journal_service.go     # Journal service implementation
 │   └── analytics_service.go   # Analytics service implementation
@@ -54,10 +60,14 @@ internal/
 │   └── user_handler.go
 ├── db/                        # sqlc-generated database code
 │   ├── db.go                  # Database connection
+│   ├── querier.go             # Querier interface (generated)
 │   ├── models.go              # Generated models
 │   ├── users.sql.go           # Generated user queries
 │   ├── journals.sql.go        # Generated journal queries
 │   └── analytics.sql.go       # Generated analytics queries
+├── mocks/                     # moq-generated mock implementations
+│   ├── querier_mock.go        # Mock for db.Querier
+│   └── http_client_mock.go    # Mock for grpc.HTTPClient
 ├── pb/                        # buf-generated protobuf code
 │   └── proto/
 │       ├── user/              # User service proto definitions
@@ -78,7 +88,7 @@ Each gRPC service follows this pattern:
 ```go
 type ServiceServer struct {
     pb.UnimplementedServiceServer
-    DB     *db.Queries
+    DB     db.Querier   // Interface, not concrete *db.Queries
     Logger *slog.Logger
     // ... other dependencies
 }
@@ -87,6 +97,8 @@ func (s *ServiceServer) Method(ctx context.Context, req *pb.Request) (*pb.Respon
     // Implementation
 }
 ```
+
+Services use interfaces for dependencies to enable mocking in tests.
 
 ### Logging
 
@@ -123,9 +135,10 @@ func (s *ServiceServer) Method(ctx context.Context, req *pb.Request) (*pb.Respon
 
 ### Test Structure
 
-- Unit tests: `*_test.go` files alongside source code
+- Unit tests: `*_test.go` files alongside source code (use `grpc_test` package for external tests)
 - Integration tests: `*_integration_test.go` files
 - Use `testify` for assertions and test suites
+- Use `moq` for generating mock implementations
 
 ### Running Tests
 
@@ -136,9 +149,69 @@ go test ./...
 # With verbose output
 go test -v ./...
 
+# Run only unit tests (with mocks, no DB required)
+go test -v ./internal/grpc/... -run "TestUserServer_|TestJournalServer_"
+
 # Run specific test
 go test -v ./internal/grpc -run TestUserService
 ```
+
+### Mocking with moq
+
+The codebase uses [moq](https://github.com/matryer/moq) for generating mock implementations. Generated mocks are in `internal/mocks/`:
+
+- `QuerierMock` - Mock for `db.Querier` (database operations)
+- `HTTPClientMock` - Mock for `grpc.HTTPClient` (external HTTP calls)
+
+Example test using mocks:
+
+```go
+package grpc_test
+
+import (
+    "context"
+    "testing"
+
+    "github.com/google/uuid"
+    "github.com/jyablonski/lotus/internal/db"
+    internalgrpc "github.com/jyablonski/lotus/internal/grpc"
+    "github.com/jyablonski/lotus/internal/mocks"
+    "github.com/stretchr/testify/assert"
+)
+
+func TestUserServer_GetUser_Success(t *testing.T) {
+    // Configure mock behavior
+    mockQuerier := &mocks.QuerierMock{
+        GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
+            return db.SourceUser{
+                ID:    uuid.New(),
+                Email: email,
+            }, nil
+        },
+    }
+
+    // Create service with mock
+    server := internalgrpc.UserService(mockQuerier, newTestLogger())
+
+    // Test the service
+    resp, err := server.GetUser(context.Background(), req)
+
+    // Verify mock was called
+    assert.Len(t, mockQuerier.GetUserByEmailCalls(), 1)
+}
+```
+
+### Regenerating Mocks
+
+```bash
+# From repository root
+make moq-generate
+
+# Or directly
+./scripts/moq-generate.sh
+```
+
+Mocks are automatically regenerated via pre-commit hook when `internal/db/querier.go` or `internal/grpc/interfaces.go` change.
 
 ### Test Patterns
 
@@ -223,6 +296,7 @@ Before making changes:
 
 - `sqlc-generate` runs automatically when SQL files change
 - `buf-generate` runs automatically when proto files change
+- `moq-generate` runs automatically when interface files change
 - `go-fmt` runs for Go files
 
 ## Deployment

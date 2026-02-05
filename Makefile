@@ -33,8 +33,12 @@ sqlc-generate: ## Generate Go code from SQL using sqlc
 buf-generate: ## Generate protobuf/grpc code using buf
 	@cd services/backend && buf generate
 
+.PHONY: moq-generate
+moq-generate: ## Generate Go mocks using moq
+	@./scripts/moq-generate.sh
+
 .PHONY: generate
-generate: sqlc-generate buf-generate ## Run both sqlc and buf code generation
+generate: sqlc-generate buf-generate moq-generate ## Run all code generation (sqlc, buf, moq)
 
 .PHONY: help
 help: ## Show this help message

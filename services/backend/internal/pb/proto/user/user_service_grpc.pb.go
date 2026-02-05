@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: proto/user/user.proto
+// source: proto/user/user_service.proto
 
 package user_pb
 
@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName      = "/internal.UserService/CreateUser"
-	UserService_CreateUserOauth_FullMethodName = "/internal.UserService/CreateUserOauth"
-	UserService_GetUser_FullMethodName         = "/internal.UserService/GetUser"
+	UserService_CreateUser_FullMethodName      = "/user.UserService/CreateUser"
+	UserService_CreateUserOauth_FullMethodName = "/user.UserService/CreateUserOauth"
+	UserService_GetUser_FullMethodName         = "/user.UserService/GetUser"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -30,7 +30,7 @@ const (
 type UserServiceClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	CreateUserOauth(ctx context.Context, in *CreateUserOauthRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
-	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+	// GET http://localhost:8080/v1/users?email=EMAIL_HERE
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 }
 
@@ -78,7 +78,7 @@ func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opt
 type UserServiceServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
 	CreateUserOauth(context.Context, *CreateUserOauthRequest) (*CreateUserResponse, error)
-	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE
+	// GET http://localhost:8080/v1/users?email=EMAIL_HERE
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 }
 
@@ -176,7 +176,7 @@ func _UserService_GetUser_Handler(srv interface{}, ctx context.Context, dec func
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var UserService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "internal.UserService",
+	ServiceName: "user.UserService",
 	HandlerType: (*UserServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -193,5 +193,5 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/user/user.proto",
+	Metadata: "proto/user/user_service.proto",
 }

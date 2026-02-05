@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: proto/analytics/analytics.proto
+// source: proto/analytics/analytics_service.proto
 
 package analytics_pb
 
@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AnalyticsService_GetUserJournalSummary_FullMethodName = "/internal.AnalyticsService/GetUserJournalSummary"
+	AnalyticsService_GetUserJournalSummary_FullMethodName = "/analytics.AnalyticsService/GetUserJournalSummary"
 )
 
 // AnalyticsServiceClient is the client API for AnalyticsService service.
@@ -108,7 +108,7 @@ func _AnalyticsService_GetUserJournalSummary_Handler(srv interface{}, ctx contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AnalyticsService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "internal.AnalyticsService",
+	ServiceName: "analytics.AnalyticsService",
 	HandlerType: (*AnalyticsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -117,5 +117,5 @@ var AnalyticsService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/analytics/analytics.proto",
+	Metadata: "proto/analytics/analytics_service.proto",
 }

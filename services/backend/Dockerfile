@@ -7,24 +7,24 @@ RUN go mod download
 
 COPY . .
 
-# Ensure we're doing a static build with no CGO dependencies
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
 RUN go build -o lotus ./internal/main.go
 
-FROM debian:bullseye-slim
+FROM scratch
 
-RUN useradd -m -s /bin/bash lotususer
+# CA certs for HTTPS calls
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-WORKDIR /home/lotususer
+# Timezone data (if you need it)
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
-COPY --from=builder /app/lotus .
+COPY --from=builder /app/lotus /lotus
 
-RUN chown lotususer:lotususer lotus
-
-USER lotususer
+# Run as nonroot (65534 is nobody)
+USER 65534
 
 EXPOSE 8080
 EXPOSE 50051
 
-CMD ["./lotus"]
+ENTRYPOINT ["/lotus"]

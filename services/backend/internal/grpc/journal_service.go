@@ -19,9 +19,9 @@ import (
 
 type JournalServer struct {
 	pb.UnimplementedJournalServiceServer
-	DB              *db.Queries
+	DB              db.Querier
 	Logger          *slog.Logger
-	HTTPClient      *http.Client
+	HTTPClient      HTTPClient
 	AnalyzerBaseURL string
 }
 
@@ -30,7 +30,7 @@ type AnalysisRequest struct {
 	ForceReanalyze bool `json:"force_reanalyze,omitempty"`
 }
 
-func JournalService(q *db.Queries, logger *slog.Logger, analyzerBaseURL string) *JournalServer {
+func JournalService(q db.Querier, logger *slog.Logger, analyzerBaseURL string) *JournalServer {
 	return &JournalServer{
 		DB:     q,
 		Logger: logger,
