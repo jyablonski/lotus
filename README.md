@@ -41,6 +41,8 @@ The monorepo is organized into three main directories:
 
 [Tilt](https://tilt.dev/) is used for local development to manage building and running all services. It serves as an alternative to Docker Compose with faster rebuilds, smarter caching, and a unified UI for all logs. Tilt runs in the background watching for file changes and automatically rebuilding/restarting services as needed.
 
+<img width="2381" height="1349" alt="Image" src="https://github.com/user-attachments/assets/f54492b1-7023-4ca8-a62e-a5670c97ec63" />
+
 #### Quick Start
 
 Install Tilt [here](https://docs.tilt.dev/install.html) and run:
