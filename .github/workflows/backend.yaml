@@ -5,6 +5,9 @@ on:
     paths:
       - "services/backend/**"
 
+env:
+  GOTESTSUM_VERSION: "1.13.0"
+
 jobs:
   backend-pipeline:
     runs-on: ubuntu-latest
@@ -28,7 +31,7 @@ jobs:
             services/backend/go.sum
 
       - name: Install gotestsum
-        run: go install gotest.tools/gotestsum@latest
+        run: go install gotest.tools/gotestsum@v${{ env.GOTESTSUM_VERSION }}
 
       - name: Start Postgres
         run: make start-postgres
@@ -36,8 +39,7 @@ jobs:
       - name: Run Backend Tests
         working-directory: services/backend
         run: |
-          gotestsum --format pkgname --junitfile junit.xml -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils
-          go tool cover -func=coverage.out | grep -v "pb.go" | grep -v "pb.gw.go"
+          go test ./... -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils
 
       - name: Stop Postgres
         if: always()
