@@ -25,6 +25,10 @@ ci-analyzer-up: ## Start dependencies for analyzer CI (PostgreSQL and MLflow)
 ci-analyzer-down: ## Stop dependencies for analyzer CI (PostgreSQL and MLflow)
 	@docker compose -f docker/docker-compose-local.yaml --profile analyzer down postgres mlflow
 
+.PHONY: test-backend
+test-backend: ## Run backend tests with gotestsum
+	@cd services/backend && gotestsum ./... -- -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils
+
 .PHONY: sqlc-generate
 sqlc-generate: ## Generate Go code from SQL using sqlc
 	@cd services/backend && sqlc generate

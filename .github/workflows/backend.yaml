@@ -27,14 +27,18 @@ jobs:
           cache-dependency-path: |
             services/backend/go.sum
 
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
       - name: Start Postgres
         run: make start-postgres
 
       - name: Run Backend Tests
         working-directory: services/backend
         run: |
-          go test ./... -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils
+          gotestsum --format pkgname --junitfile junit.xml -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils
           go tool cover -func=coverage.out | grep -v "pb.go" | grep -v "pb.gw.go"
 
       - name: Stop Postgres
+        if: always()
         run: make stop-postgres
