@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package util;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/util;util_pb";
+
+// Request/Response messages for Util operations
+
+message GenerateRandomStringRequest {}
+
+message GenerateRandomStringResponse {
+  string random_string = 1;
+}

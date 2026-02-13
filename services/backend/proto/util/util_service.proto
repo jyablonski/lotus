@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package util;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/util;util_pb";
+
+import "google/api/annotations.proto";
+import "proto/util/util.proto";
+
+service UtilService {
+  rpc GenerateRandomString(GenerateRandomStringRequest) returns (GenerateRandomStringResponse) {
+    option (google.api.http) = {
+      get: "/v1/util/random-string"
+    };
+  }
+}
