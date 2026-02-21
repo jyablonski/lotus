@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,16 +14,20 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jyablonski/lotus/internal/db" // your sqlc generated package
+	"github.com/jyablonski/lotus/internal/db"
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
+)
+
+var (
+	ErrInvalidMoodScore    = errors.New("invalid mood score")
+	ErrInvalidJournalID    = errors.New("invalid journal ID")
+	ErrJournalNotFound     = errors.New("journal not found")
+	ErrUnknownAnalysisType = errors.New("unknown analysis type")
 )
 
 type JournalServer struct {
 	pb.UnimplementedJournalServiceServer
-	DB              db.Querier
-	Logger          *slog.Logger
-	HTTPClient      HTTPClient
-	AnalyzerBaseURL string
 }
 
 // AnalysisRequest represents the request body for analysis endpoints
@@ -30,29 +35,24 @@ type AnalysisRequest struct {
 	ForceReanalyze bool `json:"force_reanalyze,omitempty"`
 }
 
-func JournalService(q db.Querier, logger *slog.Logger, analyzerBaseURL string) *JournalServer {
-	return &JournalServer{
-		DB:     q,
-		Logger: logger,
-		HTTPClient: &http.Client{
-			Timeout: 10 * time.Second, // Set reasonable timeout
-		},
-		AnalyzerBaseURL: analyzerBaseURL, // e.g., "http://localhost:8083"
-	}
-}
-
 func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournalRequest) (*pb.CreateJournalResponse, error) {
 	// parse user_id from string to UUID
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user ID: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
 	// parse mood_score from string to integer
 	moodScore, err := strconv.Atoi(req.UserMood)
 	if err != nil {
-		return nil, fmt.Errorf("invalid mood score: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidMoodScore, err)
 	}
+
+	// Extract deps after input validation
+	dbq := inject.DBFrom(ctx)
+	logger := inject.LoggerFrom(ctx)
+	httpClient := inject.HTTPClientFrom(ctx)
+	analyzerURL := inject.AnalyzerURLFrom(ctx)
 
 	// prepare parameters for database insertion
 	params := db.CreateJournalParams{
@@ -61,15 +61,16 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 		MoodScore:   sqlNullInt32(moodScore), // Handle nullable mood score
 	}
 
-	journal, err := s.DB.CreateJournal(ctx, params)
+	journal, err := dbq.CreateJournal(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create journal: %w", err)
 	}
 
 	journalID := strconv.Itoa(int(journal.ID))
 
-	// Trigger async sentiment + topic analysis after journal is created (don't wait for completion)
-	go s.triggerAnalysis(int(journal.ID))
+	// Trigger async sentiment + topic analysis after journal is created (don't wait for completion).
+	// Capture deps into local variables before spawning the goroutine.
+	go triggerAnalysis(httpClient, analyzerURL, logger, int(journal.ID))
 
 	return &pb.CreateJournalResponse{
 		JournalId: journalID,
@@ -80,8 +81,11 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 	// parse user_id from string to UUID
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user ID: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
+
+	// Extract deps after input validation
+	dbq := inject.DBFrom(ctx)
 
 	// set default pagination values
 	limit := req.Limit
@@ -99,13 +103,13 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 	}
 
 	// fetch total count and paginated journals (separate calls)
-	totalCount, err := s.DB.GetJournalCountByUserId(ctx, userID)
+	totalCount, err := dbq.GetJournalCountByUserId(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get journal count: %w", err)
 	}
 
 	// Use the generated params struct
-	journals, err := s.DB.GetJournalsByUserIdPaginated(ctx, db.GetJournalsByUserIdPaginatedParams{
+	journals, err := dbq.GetJournalsByUserIdPaginated(ctx, db.GetJournalsByUserIdPaginatedParams{
 		UserID: userID,
 		Limit:  limit,
 		Offset: offset,
@@ -137,38 +141,68 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 	}, nil
 }
 
-// triggerAnalysis sends async requests to the analyzer service
-func (s *JournalServer) triggerAnalysis(journalID int) {
+// TriggerJournalAnalysis manually triggers analysis for an existing journal.
+func (s *JournalServer) TriggerJournalAnalysis(ctx context.Context, req *pb.TriggerAnalysisRequest) (*pb.TriggerAnalysisResponse, error) {
+	journalID, err := strconv.Atoi(req.JournalId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidJournalID, err)
+	}
+
+	// Extract deps after input validation
+	dbq := inject.DBFrom(ctx)
+	logger := inject.LoggerFrom(ctx)
+	httpClient := inject.HTTPClientFrom(ctx)
+	analyzerURL := inject.AnalyzerURLFrom(ctx)
+
+	// Verify journal exists
+	journal, err := dbq.GetJournalById(ctx, int32(journalID))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrJournalNotFound, err)
+	}
+
+	// Trigger analysis in background
+	go triggerAnalysis(httpClient, analyzerURL, logger, int(journal.ID))
+
+	return &pb.TriggerAnalysisResponse{
+		Success: true,
+		Message: "Analysis triggered successfully",
+	}, nil
+}
+
+// triggerAnalysis sends async requests to the analyzer service.
+// It is a standalone function that receives all dependencies as arguments
+// so it can safely run in a goroutine after the request context is gone.
+func triggerAnalysis(client inject.HTTPDoer, analyzerURL string, logger *slog.Logger, journalID int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Trigger sentiment analysis
-	if err := s.callAnalysisEndpoint(ctx, journalID, "sentiment"); err != nil {
-		s.Logger.Error("Failed to trigger sentiment analysis",
+	if err := callAnalysisEndpoint(ctx, client, analyzerURL, journalID, "sentiment"); err != nil {
+		logger.Error("Failed to trigger sentiment analysis",
 			"journal_id", journalID,
 			"error", err,
 		)
 	} else {
-		s.Logger.Info("Successfully triggered sentiment analysis",
+		logger.Info("Successfully triggered sentiment analysis",
 			"journal_id", journalID,
 		)
 	}
 
 	// Trigger topic classification
-	if err := s.callAnalysisEndpoint(ctx, journalID, "topics"); err != nil {
-		s.Logger.Error("Failed to trigger topic classification",
+	if err := callAnalysisEndpoint(ctx, client, analyzerURL, journalID, "topics"); err != nil {
+		logger.Error("Failed to trigger topic classification",
 			"journal_id", journalID,
 			"error", err,
 		)
 	} else {
-		s.Logger.Info("Successfully triggered topic classification",
+		logger.Info("Successfully triggered topic classification",
 			"journal_id", journalID,
 		)
 	}
 }
 
-// callAnalysisEndpoint makes HTTP request to analysis service
-func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int, analysisType string) error {
+// callAnalysisEndpoint makes HTTP request to analysis service.
+func callAnalysisEndpoint(ctx context.Context, client inject.HTTPDoer, analyzerBaseURL string, journalID int, analysisType string) error {
 	// Prepare request body
 	requestBody := AnalysisRequest{
 		ForceReanalyze: false, // Set to true if you want to force reanalysis
@@ -180,7 +214,7 @@ func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int,
 	}
 
 	// Build URL
-	url := fmt.Sprintf("%s/v1/journals/%d/openai/%s", s.AnalyzerBaseURL, journalID, analysisType)
+	url := fmt.Sprintf("%s/v1/journals/%d/openai/%s", analyzerBaseURL, journalID, analysisType)
 
 	// Determine HTTP method based on analysis type
 	var method string
@@ -191,7 +225,7 @@ func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int,
 	} else if analysisType == "topics" {
 		method = "POST" // topics uses POST
 	} else {
-		return fmt.Errorf("unknown analysis type: %s", analysisType)
+		return fmt.Errorf("%w: %s", ErrUnknownAnalysisType, analysisType)
 	}
 
 	// Create HTTP request
@@ -203,7 +237,7 @@ func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int,
 	req.Header.Set("Content-Type", "application/json")
 
 	// Make the request
-	resp, err := s.HTTPClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}
@@ -215,28 +249,6 @@ func (s *JournalServer) callAnalysisEndpoint(ctx context.Context, journalID int,
 	}
 
 	return nil
-}
-
-// Optional: Add method to manually trigger analysis for existing journals
-func (s *JournalServer) TriggerJournalAnalysis(ctx context.Context, req *pb.TriggerAnalysisRequest) (*pb.TriggerAnalysisResponse, error) {
-	journalID, err := strconv.Atoi(req.JournalId)
-	if err != nil {
-		return nil, fmt.Errorf("invalid journal ID: %w", err)
-	}
-
-	// Verify journal exists
-	journal, err := s.DB.GetJournalById(ctx, int32(journalID))
-	if err != nil {
-		return nil, fmt.Errorf("journal not found: %w", err)
-	}
-
-	// Trigger analysis in background
-	go s.triggerAnalysis(int(journal.ID))
-
-	return &pb.TriggerAnalysisResponse{
-		Success: true,
-		Message: "Analysis triggered successfully",
-	}, nil
 }
 
 // Helper functions

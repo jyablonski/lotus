@@ -126,65 +126,62 @@ package grpc
 import (
     "context"
     "fmt"
-    "log/slog"
 
-    "github.com/jyablonski/lotus/internal/db"
+    "github.com/jyablonski/lotus/internal/inject"
     pb "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
 )
 
 type {Domain}Server struct {
     pb.Unimplemented{Domain}ServiceServer
-    DB     db.Querier
-    Logger *slog.Logger
-}
-
-func {Domain}Service(q db.Querier, logger *slog.Logger) *{Domain}Server {
-    return &{Domain}Server{
-        DB:     q,
-        Logger: logger,
-    }
 }
 
 func (s *{Domain}Server) GetWidget(ctx context.Context, req *pb.GetWidgetRequest) (*pb.GetWidgetResponse, error) {
-    // 1. Parse/validate input
-    // 2. Call s.DB.SomeQuery(ctx, params)
-    // 3. Map DB model to proto response
-    // 4. Return response, or gRPC status error on failure
+    // 1. Parse/validate input (before extracting deps, so validation
+    //    tests don't need a fully-populated context)
+
+    // 2. Extract dependencies from context
+    dbq := inject.DBFrom(ctx)
+    logger := inject.LoggerFrom(ctx)
+
+    // 3. Call dbq.SomeQuery(ctx, params)
+    // 4. Map DB model to proto response
+    // 5. Return response, or gRPC status error on failure
 }
 ```
 
 Key conventions:
 
-- Use `db.Querier` interface (not `*db.Queries` concrete type) for testability.
+- Service structs are **empty** (only embed `Unimplemented*Server`). There are no `DB`, `Logger`, or other fields -- all dependencies come from context via the `internal/inject` package.
+- A gRPC unary interceptor in `main.go` populates every request context with `db.Querier`, `*slog.Logger`, `inject.HTTPDoer`, and the analyzer URL. Service methods extract what they need via `inject.DBFrom(ctx)`, `inject.LoggerFrom(ctx)`, etc.
+- **Extract deps after input validation.** This way, tests for validation failures (bad UUIDs, missing fields) can use a bare `context.Background()` without setting up any dependencies.
 - Use `log/slog` for structured logging.
 - Return gRPC status errors: `status.Errorf(codes.NotFound, "widget not found")`.
 - Log errors with context before returning them.
-- If the service makes outbound HTTP calls, add an `HTTPClient` field (see `JournalServer` for reference).
+- If the service makes outbound HTTP calls, extract the HTTP client via `inject.HTTPClientFrom(ctx)` (see `JournalServer` for reference). If launching a background goroutine, capture deps into local variables before the `go` call since the request context should not be used after the handler returns.
 
 ### Step 4: Register the service (new domains only)
 
 Skip this step if adding an RPC to an existing service.
 
-**In `services/backend/internal/grpc/server.go`**, register the new service:
+Both gRPC and gateway registration live in `services/backend/internal/grpc/server.go`. Add the new service to both functions so that `main.go` does not need any changes.
+
+**In `RegisterServices`**, add the gRPC registration:
 
 ```go
 import pb_{domain} "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
 
-// Inside StartGRPCServer():
-pb_{domain}.Register{Domain}ServiceServer(grpcServer, {Domain}Service(queries, logger))
+// Inside RegisterServices():
+pb_{domain}.Register{Domain}ServiceServer(s, &{Domain}Server{})
 ```
 
-**In `services/backend/internal/main.go`**, register the gateway handler:
+**In `RegisterGateway`**, add the gateway handler registration:
 
 ```go
-import {domain}_pb "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
-
-// Inside the gRPC-Gateway goroutine:
-err = {domain}_pb.Register{Domain}ServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts)
-if err != nil {
-    logger.Error("Failed to register {Domain}Service gRPC-Gateway", "error", err)
-}
+// Add to the slice inside RegisterGateway():
+pb_{domain}.Register{Domain}ServiceHandlerFromEndpoint,
 ```
+
+No changes to `main.go` are needed -- it calls `RegisterServices` and `RegisterGateway` generically.
 
 ### Step 5: Regenerate mocks
 
@@ -200,6 +197,8 @@ This regenerates `services/backend/internal/mocks/querier_mock.go`. **Do not edi
 
 Add unit tests in `services/backend/internal/grpc/{domain}_service_test.go`. Use package `grpc_test` (external test package) with `testify` assertions and `moq`-generated mocks.
 
+Tests use context-based dependency injection -- create a context with mocked deps using `inject.WithX` helpers, then call the method on an empty server struct:
+
 ```go
 package grpc_test
 
@@ -209,11 +208,21 @@ import (
 
     "github.com/jyablonski/lotus/internal/db"
     internalgrpc "github.com/jyablonski/lotus/internal/grpc"
+    "github.com/jyablonski/lotus/internal/inject"
     "github.com/jyablonski/lotus/internal/mocks"
     pb "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
 )
+
+// testCtx returns a context populated with a mock Querier.
+func testCtx(q db.Querier) context.Context {
+    ctx := context.Background()
+    ctx = inject.WithDB(ctx, q)
+    // Add inject.WithLogger, inject.WithHTTPClient, inject.WithAnalyzerURL
+    // as needed by the service methods under test.
+    return ctx
+}
 
 func Test{Domain}Server_GetWidget_Success(t *testing.T) {
     mockQuerier := &mocks.QuerierMock{
@@ -222,14 +231,24 @@ func Test{Domain}Server_GetWidget_Success(t *testing.T) {
         },
     }
 
-    server := internalgrpc.{Domain}Service(mockQuerier, newTestLogger())
+    server := &internalgrpc.{Domain}Server{}
+    ctx := testCtx(mockQuerier)
 
-    resp, err := server.GetWidget(context.Background(), &pb.GetWidgetRequest{WidgetId: "1"})
+    resp, err := server.GetWidget(ctx, &pb.GetWidgetRequest{WidgetId: "1"})
 
     require.NoError(t, err)
     require.NotNil(t, resp)
     assert.Equal(t, "1", resp.WidgetId)
     assert.Len(t, mockQuerier.GetWidgetByIdCalls(), 1)
+}
+
+func Test{Domain}Server_GetWidget_InvalidInput(t *testing.T) {
+    // Validation-only tests don't need any context deps -- validation
+    // runs before inject.DBFrom(ctx), so a bare context is fine.
+    server := &internalgrpc.{Domain}Server{}
+
+    _, err := server.GetWidget(context.Background(), &pb.GetWidgetRequest{WidgetId: ""})
+    require.Error(t, err)
 }
 ```
 
@@ -256,6 +275,47 @@ These run automatically and handle regeneration:
 - `moq-generate` when `internal/db/querier.go` or `internal/grpc/interfaces.go` change
 - `go-fmt` on all Go files
 
+## Sentinel errors
+
+Service files define sentinel errors (`var ErrXxx = errors.New("...")`) for domain-level conditions that callers or tests might check with `errors.Is()`. Sentinels belong at the top of the service file, grouped in a `var` block.
+
+### When to use sentinels
+
+Use a sentinel for **validation and domain conditions** -- things the caller could branch on:
+
+- `ErrInvalidUserID`, `ErrEmailRequired`, `ErrUserNotFound`, `ErrInvalidJournalID`, `ErrJournalNotFound`
+
+Do **not** use sentinels for **operational wrap errors** that just add context to an underlying cause. These stay as plain `fmt.Errorf`:
+
+- `fmt.Errorf("failed to create journal: %w", err)` -- the caller checks the wrapped `err`, not the message prefix
+
+### Shared vs per-service sentinels
+
+- Sentinels used in only one service file are defined in that file.
+- Sentinels shared across multiple files in the `grpc` package (e.g., `ErrInvalidUserID` used by both `journal_service.go` and `analytics_service.go`) are defined once in `internal/grpc/errors.go`.
+
+### How to wire sentinels to errors
+
+There are two patterns depending on how the error is returned:
+
+**`fmt.Errorf` wrapping** (non-gRPC returns): wrap with `%w` so `errors.Is()` works:
+
+```go
+return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
+```
+
+**`status.Error` / `status.Errorf`** (gRPC returns): embed via `.Error()` since gRPC status errors don't support `errors.Is()` on the inner sentinel:
+
+```go
+return nil, status.Error(codes.NotFound, ErrUserNotFound.Error())
+return nil, status.Errorf(codes.Internal, "%s: %v", ErrGetUserFailed.Error(), err)
+```
+
+### Testing sentinels
+
+- For `fmt.Errorf("%w", sentinel)` errors, use `assert.ErrorIs(t, err, internalgrpc.ErrXxx)`.
+- For `status.Error(code, sentinel.Error())` errors, `errors.Is()` won't match the sentinel. Use `assert.Contains(t, err.Error(), "...")` or check `status.Code(err)`.
+
 ## Quick reference: key file paths
 
 | What                             | Path                                                      |
@@ -264,9 +324,11 @@ These run automatically and handle regeneration:
 | SQL queries                      | `services/backend/internal/sql/queries/{domain}.sql`      |
 | SQL schema                       | `services/backend/internal/sql/schema/`                   |
 | Handler implementations          | `services/backend/internal/grpc/{domain}_service.go`      |
+| Shared sentinel errors           | `services/backend/internal/grpc/errors.go`                |
 | Unit tests                       | `services/backend/internal/grpc/{domain}_service_test.go` |
-| gRPC server setup                | `services/backend/internal/grpc/server.go`                |
-| Main / gateway registration      | `services/backend/internal/main.go`                       |
+| gRPC + gateway registration      | `services/backend/internal/grpc/server.go`                |
+| Dependency injection helpers     | `services/backend/internal/inject/inject.go`              |
+| Main entry point                 | `services/backend/internal/main.go`                       |
 | Generated DB code (read-only)    | `services/backend/internal/db/`                           |
 | Generated proto code (read-only) | `services/backend/internal/pb/`                           |
 | Generated mocks (read-only)      | `services/backend/internal/mocks/`                        |

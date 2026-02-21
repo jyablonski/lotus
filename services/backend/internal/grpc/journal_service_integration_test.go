@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db" // your sqlc generated package
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,16 @@ func setupFailingAnalyzerServer() *httptest.Server {
 	}))
 }
 
+// journalIntegrationCtx creates a context enriched with all deps needed by journal service methods.
+func journalIntegrationCtx(queries *db.Queries, logger *slog.Logger, analyzerURL string) context.Context {
+	ctx := context.Background()
+	ctx = inject.WithDB(ctx, queries)
+	ctx = inject.WithLogger(ctx, logger)
+	ctx = inject.WithHTTPClient(ctx, http.DefaultClient)
+	ctx = inject.WithAnalyzerURL(ctx, analyzerURL)
+	return ctx
+}
+
 func TestCreateJournal(t *testing.T) {
 	dbConn, queries := setupTestDB(t)
 	defer dbConn.Close()
@@ -75,7 +86,8 @@ func TestCreateJournal(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	userID := uuid.New()
 	userIDString := userID.String()
@@ -86,7 +98,7 @@ func TestCreateJournal(t *testing.T) {
 	}
 
 	// call CreateJournal
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(ctx, req)
 	require.NoError(t, err)
 
 	// Validate the response
@@ -132,7 +144,8 @@ func TestCreateJournalWithFailingAnalyzer(t *testing.T) {
 		Level: slog.LevelInfo,
 	}))
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	userID := uuid.New()
 	req := &pb.CreateJournalRequest{
@@ -142,7 +155,7 @@ func TestCreateJournalWithFailingAnalyzer(t *testing.T) {
 	}
 
 	// Journal creation should still succeed even if analysis fails
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(ctx, req)
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.JournalId)
 
@@ -164,7 +177,8 @@ func TestCreateJournalWithInvalidAnalyzerURL(t *testing.T) {
 	}))
 
 	// Use invalid analyzer URL
-	server := JournalService(queries, logger, "http://invalid-url:9999")
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, "http://invalid-url:9999")
 
 	userID := uuid.New()
 	req := &pb.CreateJournalRequest{
@@ -174,7 +188,7 @@ func TestCreateJournalWithInvalidAnalyzerURL(t *testing.T) {
 	}
 
 	// Journal creation should still succeed
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(ctx, req)
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.JournalId)
 
@@ -194,7 +208,8 @@ func TestGetJournals(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	userID := uuid.New().String()
 	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
@@ -210,7 +225,7 @@ func TestGetJournals(t *testing.T) {
 	}
 
 	// call GetJournals
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	// validate the response
@@ -236,7 +251,8 @@ func TestGetJournalsPagination(t *testing.T) {
 		Level: slog.LevelInfo,
 	}))
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	userID := uuid.New()
 
@@ -259,7 +275,7 @@ func TestGetJournalsPagination(t *testing.T) {
 		Offset: 0,
 	}
 
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	assert.Len(t, resp.Journals, 2, "Should return 2 journals")
@@ -273,7 +289,7 @@ func TestGetJournalsPagination(t *testing.T) {
 		Offset: 2,
 	}
 
-	resp, err = server.GetJournals(context.Background(), req)
+	resp, err = server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	assert.Len(t, resp.Journals, 2, "Should return 2 journals")
@@ -287,7 +303,7 @@ func TestGetJournalsPagination(t *testing.T) {
 		Offset: 4,
 	}
 
-	resp, err = server.GetJournals(context.Background(), req)
+	resp, err = server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	assert.Len(t, resp.Journals, 1, "Should return 1 journal (last one)")
@@ -307,7 +323,8 @@ func TestGetJournalsPaginationDefaults(t *testing.T) {
 		Level: slog.LevelInfo,
 	}))
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	userID := uuid.New()
 
@@ -327,7 +344,7 @@ func TestGetJournalsPaginationDefaults(t *testing.T) {
 		// Limit and Offset not specified, should use defaults
 	}
 
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	assert.Len(t, resp.Journals, 2, "Should return all journals (within default limit)")
@@ -341,7 +358,7 @@ func TestGetJournalsPaginationDefaults(t *testing.T) {
 		Offset: -10, // Should default to 0
 	}
 
-	resp, err = server.GetJournals(context.Background(), req)
+	resp, err = server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	assert.Len(t, resp.Journals, 2, "Should return all journals")
@@ -361,7 +378,8 @@ func TestGetJournalsPaginationLimitEnforcement(t *testing.T) {
 		Level: slog.LevelInfo,
 	}))
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	userID := uuid.New()
 
@@ -380,7 +398,7 @@ func TestGetJournalsPaginationLimitEnforcement(t *testing.T) {
 		Offset: 0,
 	}
 
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(ctx, req)
 	require.NoError(t, err)
 
 	// Should still work, just with the limit enforced
@@ -399,7 +417,8 @@ func TestTriggerJournalAnalysis(t *testing.T) {
 		Level: slog.LevelInfo,
 	}))
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	// First create a journal
 	userID := uuid.New()
@@ -415,7 +434,7 @@ func TestTriggerJournalAnalysis(t *testing.T) {
 		JournalId: strconv.Itoa(int(journal.ID)),
 	}
 
-	resp, err := server.TriggerJournalAnalysis(context.Background(), req)
+	resp, err := server.TriggerJournalAnalysis(ctx, req)
 	require.NoError(t, err)
 	assert.True(t, resp.Success)
 	assert.Equal(t, "Analysis triggered successfully", resp.Message)
@@ -425,19 +444,9 @@ func TestTriggerJournalAnalysis(t *testing.T) {
 }
 
 func TestTriggerJournalAnalysisInvalidID(t *testing.T) {
-	dbConn, queries := setupTestDB(t)
-	defer dbConn.Close()
+	server := &JournalServer{}
 
-	mockServer := setupMockAnalyzerServer()
-	defer mockServer.Close()
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-
-	server := JournalService(queries, logger, mockServer.URL)
-
-	// Test with invalid journal ID
+	// Test with invalid journal ID — validation happens before dep extraction
 	req := &pb.TriggerAnalysisRequest{
 		JournalId: "invalid-id",
 	}
@@ -457,32 +466,22 @@ func TestTriggerJournalAnalysisNonExistentJournal(t *testing.T) {
 		Level: slog.LevelInfo,
 	}))
 
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	// Test with non-existent journal ID
 	req := &pb.TriggerAnalysisRequest{
 		JournalId: "99999", // Assuming this ID doesn't exist
 	}
 
-	_, err := server.TriggerJournalAnalysis(context.Background(), req)
+	_, err := server.TriggerJournalAnalysis(ctx, req)
 	assert.Error(t, err, "Should return error for non-existent journal")
 }
 
 func TestCreateJournalInvalidUserID(t *testing.T) {
-	dbConn, queries := setupTestDB(t)
-	defer dbConn.Close()
+	server := &JournalServer{}
 
-	mockServer := setupMockAnalyzerServer()
-	defer mockServer.Close()
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	slog.SetDefault(logger)
-
-	server := JournalService(queries, logger, mockServer.URL)
-
-	// invalid user ID (not a valid UUID)
+	// invalid user ID (not a valid UUID) — validation happens before dep extraction
 	req := &pb.CreateJournalRequest{
 		UserId:      "invalid-uuid",
 		JournalText: "This is a test journal entry",
@@ -495,20 +494,9 @@ func TestCreateJournalInvalidUserID(t *testing.T) {
 }
 
 func TestGetJournalsInvalidUserID(t *testing.T) {
-	dbConn, queries := setupTestDB(t)
-	defer dbConn.Close()
+	server := &JournalServer{}
 
-	mockServer := setupMockAnalyzerServer()
-	defer mockServer.Close()
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	slog.SetDefault(logger)
-
-	server := JournalService(queries, logger, mockServer.URL)
-
-	// invalid user ID (not a valid UUID)
+	// invalid user ID (not a valid UUID) — validation happens before dep extraction
 	req := &pb.GetJournalsRequest{
 		UserId: "invalid-uuid",
 	}
@@ -519,14 +507,7 @@ func TestGetJournalsInvalidUserID(t *testing.T) {
 }
 
 func TestCreateJournalInvalidMoodScore(t *testing.T) {
-	dbConn, queries := setupTestDB(t)
-	defer dbConn.Close()
-
-	mockServer := setupMockAnalyzerServer()
-	defer mockServer.Close()
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	server := JournalService(queries, logger, mockServer.URL)
+	server := &JournalServer{}
 
 	req := &pb.CreateJournalRequest{
 		UserId:      uuid.New().String(),
@@ -546,7 +527,9 @@ func TestCreateJournalDBError(t *testing.T) {
 	defer mockServer.Close()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	server := JournalService(queries, logger, mockServer.URL)
+
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	// put in a bad user mood score to trigger a DB error
 	req := &pb.CreateJournalRequest{
@@ -555,19 +538,20 @@ func TestCreateJournalDBError(t *testing.T) {
 		UserMood:    "nil",
 	}
 
-	_, err := server.CreateJournal(context.Background(), req)
+	_, err := server.CreateJournal(ctx, req)
 	assert.Error(t, err, "Should return error on DB failure")
 }
 
 func TestGetJournalsDBError(t *testing.T) {
 	dbConn, queries := setupTestDB(t)
-	defer dbConn.Close()
 
 	mockServer := setupMockAnalyzerServer()
 	defer mockServer.Close()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	server := JournalService(queries, logger, mockServer.URL)
+
+	server := &JournalServer{}
+	ctx := journalIntegrationCtx(queries, logger, mockServer.URL)
 
 	// Use a UUID with no journals (and trigger a query failure if possible)
 	req := &pb.GetJournalsRequest{
@@ -577,6 +561,6 @@ func TestGetJournalsDBError(t *testing.T) {
 	// Simulate DB error by closing the DB first (hacky)
 	_ = dbConn.Close()
 
-	_, err := server.GetJournals(context.Background(), req)
+	_, err := server.GetJournals(ctx, req)
 	assert.Error(t, err, "Should return error when DB is unavailable")
 }

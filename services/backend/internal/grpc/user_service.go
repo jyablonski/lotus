@@ -3,36 +3,39 @@ package grpc
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log/slog"
 
 	"github.com/jyablonski/lotus/internal/db"
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	"github.com/jyablonski/lotus/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
+var (
+	ErrEmailRequired = errors.New("email is required")
+	ErrUserNotFound  = errors.New("user not found")
+	ErrCreateUser    = errors.New("could not create user")
+	ErrGenerateSalt  = errors.New("failed to generate salt")
+	ErrGetUserFailed = errors.New("failed to get user")
+)
+
 type UserServer struct {
 	pb.UnimplementedUserServiceServer
-	DB     db.Querier
-	Logger *slog.Logger
-}
-
-func UserService(q db.Querier, logger *slog.Logger) *UserServer {
-	return &UserServer{
-		DB:     q,
-		Logger: logger,
-	}
 }
 
 // CreateUser handles username/password-based user creation.
 func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+	logger := inject.LoggerFrom(ctx)
+	dbq := inject.DBFrom(ctx)
 
 	// Salt and password are only used for non-OAuth users.
 	salt, err := utils.GenerateSalt(24) // base64 encoding of 24 bytes = ~32 characters
 	if err != nil {
-		s.Logger.Error("Failed to generate salt", "error", err)
-		return nil, status.Errorf(codes.Internal, "internal error")
+		logger.Error("Failed to generate salt", "error", err)
+		return nil, status.Error(codes.Internal, ErrGenerateSalt.Error())
 	}
 
 	hashed_password := utils.HashPassword(req.Password, salt)
@@ -41,17 +44,17 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 	password := sql.NullString{String: hashed_password, Valid: true}
 	saltStr := sql.NullString{String: salt, Valid: true}
 
-	user, err := s.DB.CreateUser(ctx, db.CreateUserParams{
+	user, err := dbq.CreateUser(ctx, db.CreateUserParams{
 		Email:    req.Email,
 		Password: password,
 		Salt:     saltStr,
 	})
 	if err != nil {
-		s.Logger.Error("Failed to create user", "email", req.Email, "error", err)
-		return nil, status.Errorf(codes.Internal, "could not create user")
+		logger.Error("Failed to create user", "email", req.Email, "error", err)
+		return nil, status.Error(codes.Internal, ErrCreateUser.Error())
 	}
 
-	s.Logger.Info("User created successfully", "user_id", user.ID.String(), "email", req.Email)
+	logger.Info("User created successfully", "user_id", user.ID.String(), "email", req.Email)
 
 	return &pb.CreateUserResponse{
 		UserId: user.ID.String(),
@@ -60,9 +63,12 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 
 // CreateUserOauth handles OAuth-based user creation.
 func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOauthRequest) (*pb.CreateUserResponse, error) {
+	logger := inject.LoggerFrom(ctx)
+	dbq := inject.DBFrom(ctx)
+
 	// create a structured log w/ `time: xxx`, `level`, `msg`, and `user_info`:`
 	// "user_info":{"email":"user_oauth2@email.com","oauth_provider":"github"}}
-	s.Logger.Info("CreateUser request received",
+	logger.Info("CreateUser request received",
 		slog.Group("user_info",
 			slog.String("email", req.Email),
 			slog.String("oauth_provider", "github"),
@@ -73,7 +79,7 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 	// Using sql.NullString for nullable OAuth provider field
 	oauthProvider := sql.NullString{String: req.OauthProvider, Valid: true}
 
-	user, err := s.DB.CreateUserOauth(ctx, db.CreateUserOauthParams{
+	user, err := dbq.CreateUserOauth(ctx, db.CreateUserOauthParams{
 		Email:         req.Email,
 		OauthProvider: oauthProvider, // e.g., "github"
 	})
@@ -89,15 +95,18 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	email := req.GetEmail()
 	if email == "" {
-		return nil, status.Error(codes.InvalidArgument, "email is required")
+		return nil, status.Error(codes.InvalidArgument, ErrEmailRequired.Error())
 	}
 
-	u, err := s.DB.GetUserByEmail(ctx, email)
+	// Extract deps after input validation
+	dbq := inject.DBFrom(ctx)
+
+	u, err := dbq.GetUserByEmail(ctx, email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, status.Error(codes.NotFound, "user not found")
+			return nil, status.Error(codes.NotFound, ErrUserNotFound.Error())
 		}
-		return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
+		return nil, status.Errorf(codes.Internal, "%s: %v", ErrGetUserFailed.Error(), err)
 	}
 
 	return &pb.GetUserResponse{
