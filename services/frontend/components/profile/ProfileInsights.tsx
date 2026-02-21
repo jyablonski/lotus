@@ -21,7 +21,7 @@ export function ProfileInsights({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Average Mood */}
-        <div className="flex items-center justify-between p-4 bg-dark-800/50 rounded-lg">
+        <div className="insight-row">
           <div>
             <p className="text-sm font-medium text-dark-400">Average Mood</p>
             <p className="text-lg font-semibold text-dark-50">
@@ -37,7 +37,7 @@ export function ProfileInsights({
         </div>
 
         {/* Most Active Day */}
-        <div className="flex items-center justify-between p-4 bg-dark-800/50 rounded-lg">
+        <div className="insight-row">
           <div>
             <p className="text-sm font-medium text-dark-400">Most Active Day</p>
             <p className="text-lg font-semibold text-dark-50">
@@ -48,7 +48,7 @@ export function ProfileInsights({
         </div>
 
         {/* Favorite Mood Category */}
-        <div className="flex items-center justify-between p-4 bg-dark-800/50 rounded-lg">
+        <div className="insight-row">
           <div>
             <p className="text-sm font-medium text-dark-400">
               Most Common Mood

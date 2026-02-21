@@ -123,7 +123,7 @@ export function SelectedDateEntries({
             {isToday && (
               <div className="pt-4 border-t border-dark-600">
                 <Link href="/journal/create" className="block">
-                  <button className="w-full text-lotus-400 hover:text-lotus-300 py-3 text-sm font-medium border border-lotus-500/30 rounded-lg hover:bg-lotus-500/10 transition-colors">
+                  <button className="w-full link-lotus py-3 text-sm font-medium border border-lotus-500/30 rounded-lg hover:bg-lotus-500/10 transition-colors">
                     Add Another Entry for Today
                   </button>
                 </Link>

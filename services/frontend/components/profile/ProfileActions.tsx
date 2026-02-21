@@ -11,21 +11,21 @@ export function ProfileActions() {
       </CardHeader>
       <CardContent className="space-y-3">
         <Link href="/journal/create" className="block">
-          <button className="w-full flex items-center space-x-3 p-3 text-left rounded-lg bg-lotus-500/20 hover:bg-lotus-500/30 transition-colors">
+          <button className="action-item-primary">
             <PlusCircle size={20} className="text-lotus-400" />
             <span className="text-lotus-300 font-medium">Create New Entry</span>
           </button>
         </Link>
 
         <Link href="/journal/home" className="block">
-          <button className="w-full flex items-center space-x-3 p-3 text-left rounded-lg hover:bg-dark-700/50 transition-colors">
+          <button className="action-item">
             <BarChart3 size={20} className="text-dark-400" />
             <span className="text-dark-200">View All Entries</span>
           </button>
         </Link>
 
         <Link href="/journal/calendar" className="block">
-          <button className="w-full flex items-center space-x-3 p-3 text-left rounded-lg hover:bg-dark-700/50 transition-colors">
+          <button className="action-item">
             <Calendar size={20} className="text-dark-400" />
             <span className="text-dark-200">Calendar View</span>
           </button>

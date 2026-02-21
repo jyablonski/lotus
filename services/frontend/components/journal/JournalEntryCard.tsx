@@ -91,7 +91,7 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
           <div className="mt-4 pt-4 border-t border-dark-600">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-lotus-400 hover:text-lotus-300 text-sm font-medium transition-colors"
+              className="link-lotus text-sm font-medium"
             >
               {isExpanded ? "Show less" : "Read more"}
             </button>

@@ -277,6 +277,85 @@
     color: theme(colors.lotus.300);
   }
 
+  /* Filter badges - Dark theme */
+  .badge-filter-blue {
+    @apply px-2 py-1 rounded text-sm;
+    background: rgba(168, 85, 247, 0.2);
+    color: theme(colors.lotus.300);
+  }
+
+  .badge-filter-green {
+    @apply px-2 py-1 rounded text-sm;
+    background: rgba(34, 197, 94, 0.2);
+    color: rgb(74, 222, 128);
+  }
+
+  /* Select input - Dark theme (extends input-primary for <select> elements) */
+  .select-primary {
+    @apply w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 appearance-none;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.100);
+  }
+
+  .select-primary:focus {
+    border-color: theme(colors.lotus.500);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    background: rgba(30, 41, 59, 0.9);
+  }
+
+  .select-primary option {
+    background: theme(colors.dark.800);
+    color: theme(colors.dark.100);
+  }
+
+  /* Pagination button - Dark theme */
+  .btn-page {
+    @apply flex items-center gap-1 px-3 py-2 text-sm rounded-md transition-colors;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.200);
+  }
+
+  .btn-page:hover {
+    background: rgba(100, 116, 139, 0.15);
+    color: theme(colors.dark.100);
+  }
+
+  .btn-page:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .btn-page:disabled:hover {
+    background: transparent;
+    color: theme(colors.dark.200);
+  }
+
+  .btn-page-active {
+    @apply px-3 py-2 text-sm rounded-md min-w-[40px];
+    background: theme(colors.lotus.500);
+    color: white;
+    border: 1px solid theme(colors.lotus.500);
+  }
+
+  .btn-page-inactive {
+    @apply px-3 py-2 text-sm rounded-md min-w-[40px] transition-colors;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.200);
+  }
+
+  .btn-page-inactive:hover {
+    background: rgba(100, 116, 139, 0.15);
+    color: theme(colors.dark.100);
+  }
+
+  /* Error alert - Dark theme */
+  .alert-error {
+    @apply rounded-lg p-4;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: rgb(248, 113, 113);
+  }
+
   /* Navigation styles - Dark theme */
   .nav-link {
     @apply px-4 py-2 rounded-lg transition-all duration-200;
@@ -292,6 +371,75 @@
     @apply px-4 py-2 rounded-lg transition-all duration-200;
     background: theme(colors.lotus.500);
     color: white;
+  }
+
+  /* Button - Outline (dark theme) */
+  .btn-outline {
+    @apply px-6 py-3 rounded-lg font-medium transition-colors;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.200);
+  }
+
+  .btn-outline:hover {
+    background: rgba(100, 116, 139, 0.15);
+    color: theme(colors.dark.100);
+  }
+
+  /* Button - Danger (dark theme) */
+  .btn-danger {
+    @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
+    color: theme(colors.rose.400);
+  }
+
+  .btn-danger:hover {
+    background: rgba(244, 63, 94, 0.1);
+    color: theme(colors.rose.300);
+  }
+
+  /* Link - Lotus accent */
+  .link-lotus {
+    @apply transition-colors;
+    color: theme(colors.lotus.400);
+  }
+
+  .link-lotus:hover {
+    color: theme(colors.lotus.300);
+  }
+
+  /* Action item - Full-width list button */
+  .action-item {
+    @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
+  }
+
+  .action-item:hover {
+    background: rgba(51, 65, 85, 0.5);
+  }
+
+  .action-item-primary {
+    @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
+    background: rgba(168, 85, 247, 0.2);
+  }
+
+  .action-item-primary:hover {
+    background: rgba(168, 85, 247, 0.3);
+  }
+
+  /* Insight row - Label + value in a muted container */
+  .insight-row {
+    @apply flex items-center justify-between p-4 rounded-lg;
+    background: rgba(30, 41, 59, 0.5);
+  }
+
+  /* Skeleton loading elements - Dark theme */
+  .skeleton {
+    @apply rounded animate-pulse;
+    background: rgba(51, 65, 85, 0.6);
+  }
+
+  .skeleton-card {
+    @apply rounded-2xl;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.2);
   }
 
   /* Loading states - Dark theme */
