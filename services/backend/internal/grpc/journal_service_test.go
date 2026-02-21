@@ -13,11 +13,34 @@ import (
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
+	"github.com/jyablonski/lotus/internal/inject"
 	"github.com/jyablonski/lotus/internal/mocks"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// journalTestCtx returns a context with all deps needed by the journal service.
+func journalTestCtx(dbMock db.Querier, httpMock inject.HTTPDoer) context.Context {
+	ctx := context.Background()
+	ctx = inject.WithDB(ctx, dbMock)
+	ctx = inject.WithLogger(ctx, newTestLogger())
+	ctx = inject.WithHTTPClient(ctx, httpMock)
+	ctx = inject.WithAnalyzerURL(ctx, "http://localhost:8083")
+	return ctx
+}
+
+// noopHTTPClient is a simple mock that returns 200 OK for all requests.
+func noopHTTPClient() *mocks.HTTPClientMock {
+	return &mocks.HTTPClientMock{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(`{"success": true}`)),
+			}, nil
+		},
+	}
+}
 
 func TestJournalServer_CreateJournal_Success(t *testing.T) {
 	// Arrange
@@ -44,19 +67,8 @@ func TestJournalServer_CreateJournal_Success(t *testing.T) {
 		},
 	}
 
-	// Mock HTTP client for async analysis calls
-	mockHTTPClient := &mocks.HTTPClientMock{
-		DoFunc: func(req *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(bytes.NewBufferString(`{"success": true}`)),
-			}, nil
-		},
-	}
-
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
-	// Inject the mock HTTP client
-	server.HTTPClient = mockHTTPClient
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.CreateJournalRequest{
 		UserId:      userID.String(),
@@ -65,7 +77,7 @@ func TestJournalServer_CreateJournal_Success(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -77,10 +89,13 @@ func TestJournalServer_CreateJournal_Success(t *testing.T) {
 }
 
 func TestJournalServer_CreateJournal_InvalidUserID(t *testing.T) {
-	// Arrange
+	// Arrange — validation fails before deps are extracted, but context still
+	// needs deps because the service extracts them after this particular check
+	// passes. For invalid-uuid the error is before dep extraction.
 	mockQuerier := &mocks.QuerierMock{}
+	mockHTTPClient := noopHTTPClient()
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.CreateJournalRequest{
 		UserId:      "invalid-uuid",
@@ -89,12 +104,12 @@ func TestJournalServer_CreateJournal_InvalidUserID(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
 
 	// Verify DB was NOT called
 	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
@@ -104,8 +119,9 @@ func TestJournalServer_CreateJournal_InvalidMoodScore(t *testing.T) {
 	// Arrange
 	userID := uuid.New()
 	mockQuerier := &mocks.QuerierMock{}
+	mockHTTPClient := noopHTTPClient()
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.CreateJournalRequest{
 		UserId:      userID.String(),
@@ -114,12 +130,12 @@ func TestJournalServer_CreateJournal_InvalidMoodScore(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "invalid mood score")
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidMoodScore)
 
 	// Verify DB was NOT called
 	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
@@ -135,7 +151,8 @@ func TestJournalServer_CreateJournal_DBError(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.CreateJournalRequest{
 		UserId:      userID.String(),
@@ -144,7 +161,7 @@ func TestJournalServer_CreateJournal_DBError(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateJournal(context.Background(), req)
+	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.Error(t, err)
@@ -187,7 +204,8 @@ func TestJournalServer_GetJournals_Success(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.GetJournalsRequest{
 		UserId: userID.String(),
@@ -196,7 +214,7 @@ func TestJournalServer_GetJournals_Success(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -240,7 +258,8 @@ func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.GetJournalsRequest{
 		UserId: userID.String(),
@@ -249,7 +268,7 @@ func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -274,7 +293,8 @@ func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.GetJournalsRequest{
 		UserId: userID.String(),
@@ -283,7 +303,7 @@ func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -305,7 +325,8 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.GetJournalsRequest{
 		UserId: userID.String(),
@@ -314,7 +335,7 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.GetJournals(context.Background(), req)
+	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -339,24 +360,15 @@ func TestJournalServer_TriggerJournalAnalysis_Success(t *testing.T) {
 		},
 	}
 
-	mockHTTPClient := &mocks.HTTPClientMock{
-		DoFunc: func(req *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(bytes.NewBufferString(`{"success": true}`)),
-			}, nil
-		},
-	}
-
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
-	server.HTTPClient = mockHTTPClient
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.TriggerAnalysisRequest{
 		JournalId: "123",
 	}
 
 	// Act
-	resp, err := server.TriggerJournalAnalysis(context.Background(), req)
+	resp, err := server.TriggerJournalAnalysis(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -376,36 +388,38 @@ func TestJournalServer_TriggerJournalAnalysis_JournalNotFound(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	mockHTTPClient := noopHTTPClient()
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.TriggerAnalysisRequest{
 		JournalId: "999",
 	}
 
 	// Act
-	resp, err := server.TriggerJournalAnalysis(context.Background(), req)
+	resp, err := server.TriggerJournalAnalysis(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "journal not found")
+	assert.ErrorIs(t, err, internalgrpc.ErrJournalNotFound)
 }
 
 func TestJournalServer_TriggerJournalAnalysis_InvalidJournalId(t *testing.T) {
 	// Arrange
 	mockQuerier := &mocks.QuerierMock{}
+	mockHTTPClient := noopHTTPClient()
 
-	server := internalgrpc.JournalService(mockQuerier, newTestLogger(), "http://localhost:8083")
+	server := &internalgrpc.JournalServer{}
 
 	req := &pb.TriggerAnalysisRequest{
 		JournalId: "not-a-number",
 	}
 
 	// Act
-	resp, err := server.TriggerJournalAnalysis(context.Background(), req)
+	resp, err := server.TriggerJournalAnalysis(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "invalid journal ID")
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidJournalID)
 }

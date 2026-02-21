@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,14 @@ func setupAnalyticsTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
+}
+
+// analyticsIntegrationCtx creates a context enriched with deps needed by analytics service methods.
+func analyticsIntegrationCtx(queries *db.Queries, logger *slog.Logger) context.Context {
+	ctx := context.Background()
+	ctx = inject.WithDB(ctx, queries)
+	ctx = inject.WithLogger(ctx, logger)
+	return ctx
 }
 
 // Helper function to create a test user and journals for analytics testing
@@ -58,7 +67,8 @@ func TestGetUserJournalSummary(t *testing.T) {
 	}
 
 	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
+	server := &AnalyticsServer{}
+	ctx := analyticsIntegrationCtx(queries, logger)
 
 	// Create a test user with journals
 	userID := createTestUserWithJournals(t, queries)
@@ -71,7 +81,7 @@ func TestGetUserJournalSummary(t *testing.T) {
 		UserId: userID.String(),
 	}
 
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(ctx, req)
 
 	// If the materialized view doesn't have data for this user, we expect an error
 	// This is expected behavior in a test environment without dbt running
@@ -88,39 +98,29 @@ func TestGetUserJournalSummary(t *testing.T) {
 }
 
 func TestGetUserJournalSummaryInvalidUserID(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
+	server := &AnalyticsServer{}
 
-	// This test doesn't need DB connectivity - it tests UUID validation
-	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
-
-	// Test with invalid UUID format
+	// Test with invalid UUID format — validation happens before dep extraction
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: "invalid-uuid-format",
 	}
 
 	_, err := server.GetUserJournalSummary(context.Background(), req)
 	assert.Error(t, err, "Should return error for invalid UUID format")
-	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.ErrorIs(t, err, ErrInvalidUserID)
 }
 
 func TestGetUserJournalSummaryEmptyUserID(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
+	server := &AnalyticsServer{}
 
-	// This test doesn't need DB connectivity - it tests UUID validation
-	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
-
-	// Test with empty user ID
+	// Test with empty user ID — validation happens before dep extraction
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: "",
 	}
 
 	_, err := server.GetUserJournalSummary(context.Background(), req)
 	assert.Error(t, err, "Should return error for empty user ID")
-	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.ErrorIs(t, err, ErrInvalidUserID)
 }
 
 func TestGetUserJournalSummaryNonExistentUser(t *testing.T) {
@@ -133,7 +133,8 @@ func TestGetUserJournalSummaryNonExistentUser(t *testing.T) {
 	}
 
 	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
+	server := &AnalyticsServer{}
+	ctx := analyticsIntegrationCtx(queries, logger)
 
 	// Test with a valid UUID that doesn't exist in the database
 	nonExistentUserID := uuid.New()
@@ -141,7 +142,7 @@ func TestGetUserJournalSummaryNonExistentUser(t *testing.T) {
 		UserId: nonExistentUserID.String(),
 	}
 
-	_, err := server.GetUserJournalSummary(context.Background(), req)
+	_, err := server.GetUserJournalSummary(ctx, req)
 	assert.Error(t, err, "Should return error for non-existent user")
 }
 
@@ -149,7 +150,8 @@ func TestGetUserJournalSummaryDBError(t *testing.T) {
 	dbConn, queries := setupAnalyticsTestDB(t)
 
 	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
+	server := &AnalyticsServer{}
+	ctx := analyticsIntegrationCtx(queries, logger)
 
 	// Close the DB connection to simulate a DB error
 	_ = dbConn.Close()
@@ -158,21 +160,8 @@ func TestGetUserJournalSummaryDBError(t *testing.T) {
 		UserId: uuid.New().String(),
 	}
 
-	_, err := server.GetUserJournalSummary(context.Background(), req)
+	_, err := server.GetUserJournalSummary(ctx, req)
 	assert.Error(t, err, "Should return error when DB is unavailable")
-}
-
-func TestAnalyticsServiceCreation(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
-
-	logger := setupAnalyticsTestLogger()
-
-	server := AnalyticsService(queries, logger)
-
-	assert.NotNil(t, server)
-	assert.Equal(t, queries, server.DB)
-	assert.Equal(t, logger, server.Logger)
 }
 
 func TestParseNumericToFloat64(t *testing.T) {
@@ -239,24 +228,8 @@ func TestNullTimeToString(t *testing.T) {
 	}
 }
 
-func TestGetUserJournalSummaryResponseMapping(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
-
-	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
-
-	assert.NotNil(t, server)
-	assert.NotNil(t, server.DB)
-	assert.NotNil(t, server.Logger)
-}
-
 func TestGetUserJournalSummaryUUIDFormats(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
-
-	logger := setupAnalyticsTestLogger()
-	server := AnalyticsService(queries, logger)
+	server := &AnalyticsServer{}
 
 	invalidUUIDs := []struct {
 		name   string
@@ -264,7 +237,7 @@ func TestGetUserJournalSummaryUUIDFormats(t *testing.T) {
 	}{
 		{"short string", "abc123"},
 		{"too long", "12345678-1234-1234-1234-1234567890123"},
-		{"wrong format", "12345678123412341234123456789012"},
+		// Note: "12345678123412341234123456789012" (32 hex chars) is actually a valid UUID
 		{"special characters", "12345678-1234-1234-1234-12345678901!"},
 		{"spaces", "12345678-1234-1234-1234-12345678 012"},
 	}

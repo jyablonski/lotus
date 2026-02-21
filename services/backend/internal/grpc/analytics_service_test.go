@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
+	"github.com/jyablonski/lotus/internal/inject"
 	"github.com/jyablonski/lotus/internal/mocks"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,14 @@ import (
 // newAnalyticsTestLogger creates a logger that discards output for testing
 func newAnalyticsTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
+
+// analyticsTestCtx returns a context with DB and logger for analytics tests.
+func analyticsTestCtx(mock db.Querier) context.Context {
+	ctx := context.Background()
+	ctx = inject.WithDB(ctx, mock)
+	ctx = inject.WithLogger(ctx, newAnalyticsTestLogger())
+	return ctx
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
@@ -66,14 +75,14 @@ func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: userID.String(),
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -133,19 +142,19 @@ func TestAnalyticsServer_GetUserJournalSummary_InvalidUserID(t *testing.T) {
 	// Arrange
 	mockQuerier := &mocks.QuerierMock{}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: "not-a-valid-uuid",
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
 
 	// Verify mock was NOT called (validation should fail first)
 	assert.Len(t, mockQuerier.GetUserJournalSummaryByUserIdCalls(), 0)
@@ -155,19 +164,19 @@ func TestAnalyticsServer_GetUserJournalSummary_EmptyUserID(t *testing.T) {
 	// Arrange
 	mockQuerier := &mocks.QuerierMock{}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: "",
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
 
 	// Verify mock was NOT called
 	assert.Len(t, mockQuerier.GetUserJournalSummaryByUserIdCalls(), 0)
@@ -183,14 +192,14 @@ func TestAnalyticsServer_GetUserJournalSummary_DBError(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: userID.String(),
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
@@ -211,14 +220,14 @@ func TestAnalyticsServer_GetUserJournalSummary_NotFound(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: userID.String(),
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
@@ -265,14 +274,14 @@ func TestAnalyticsServer_GetUserJournalSummary_NullableFieldsAreNil(t *testing.T
 		},
 	}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: userID.String(),
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -348,14 +357,14 @@ func TestAnalyticsServer_GetUserJournalSummary_PartialNullableFields(t *testing.
 		},
 	}
 
-	server := internalgrpc.AnalyticsService(mockQuerier, newAnalyticsTestLogger())
+	server := &internalgrpc.AnalyticsServer{}
 
 	req := &pb.GetUserJournalSummaryRequest{
 		UserId: userID.String(),
 	}
 
 	// Act
-	resp, err := server.GetUserJournalSummary(context.Background(), req)
+	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
 	// Assert
 	require.NoError(t, err)

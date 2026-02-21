@@ -9,6 +9,7 @@ import (
 
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ func setupTestDB(t *testing.T) (*sql.DB, *db.Queries) {
 	return dbConn, db.New(dbConn)
 }
 
-func newTestUserServer(t *testing.T) *grpcServer.UserServer {
+func newTestUserCtx(t *testing.T) (context.Context, *db.Queries) {
 	dbConn, queries := setupTestDB(t)
 
 	// Clean up before test
@@ -32,11 +33,14 @@ func newTestUserServer(t *testing.T) *grpcServer.UserServer {
 	})
 
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	return grpcServer.UserService(queries, logger)
+	ctx := inject.WithDB(context.Background(), queries)
+	ctx = inject.WithLogger(ctx, logger)
+	return ctx, queries
 }
 
 func TestCreateUser(t *testing.T) {
-	svc := newTestUserServer(t)
+	ctx, queries := newTestUserCtx(t)
+	svc := &grpcServer.UserServer{}
 
 	email := "test_user@example.com"
 	req := &pb.CreateUserRequest{
@@ -44,13 +48,12 @@ func TestCreateUser(t *testing.T) {
 		Password: "strongpassword123!",
 	}
 
-	ctx := context.Background()
 	resp, err := svc.CreateUser(ctx, req)
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.UserId)
 
 	// Validate in DB
-	user, err := svc.DB.GetUserByEmail(ctx, email)
+	user, err := queries.GetUserByEmail(ctx, email)
 	require.NoError(t, err)
 	require.Equal(t, email, user.Email)
 	require.True(t, user.Password.Valid)
@@ -58,7 +61,8 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateUserOauth(t *testing.T) {
-	svc := newTestUserServer(t)
+	ctx, queries := newTestUserCtx(t)
+	svc := &grpcServer.UserServer{}
 
 	email := "oauth_user@example.com"
 	req := &pb.CreateUserOauthRequest{
@@ -66,12 +70,11 @@ func TestCreateUserOauth(t *testing.T) {
 		OauthProvider: "github",
 	}
 
-	ctx := context.Background()
 	resp, err := svc.CreateUserOauth(ctx, req)
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.UserId)
 
-	user, err := svc.DB.GetUserByEmail(ctx, email)
+	user, err := queries.GetUserByEmail(ctx, email)
 	require.NoError(t, err)
 	require.Equal(t, email, user.Email)
 	require.True(t, user.OauthProvider.Valid)
@@ -81,14 +84,14 @@ func TestCreateUserOauth(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	svc := newTestUserServer(t)
+	ctx, _ := newTestUserCtx(t)
+	svc := &grpcServer.UserServer{}
 
 	email := "get_user@example.com"
 	createReq := &pb.CreateUserRequest{
 		Email:    email,
 		Password: "getme123",
 	}
-	ctx := context.Background()
 	createResp, err := svc.CreateUser(ctx, createReq)
 	require.NoError(t, err)
 
@@ -102,18 +105,19 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUser_NotFound(t *testing.T) {
-	svc := newTestUserServer(t)
+	ctx, _ := newTestUserCtx(t)
+	svc := &grpcServer.UserServer{}
 
 	getReq := &pb.GetUserRequest{
 		Email: "nonexistent@example.com",
 	}
-	_, err := svc.GetUser(context.Background(), getReq)
+	_, err := svc.GetUser(ctx, getReq)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "user not found")
 }
 
 func TestGetUser_InvalidEmail(t *testing.T) {
-	svc := newTestUserServer(t)
+	svc := &grpcServer.UserServer{}
 
 	getReq := &pb.GetUserRequest{} // no email
 	_, err := svc.GetUser(context.Background(), getReq)

@@ -4,22 +4,20 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"log/slog"
+	"errors"
 
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
+var (
+	ErrGenerateRandomString = errors.New("failed to generate random string")
+)
+
 type UtilServer struct {
 	pb.UnimplementedUtilServiceServer
-	Logger *slog.Logger
-}
-
-func UtilService(logger *slog.Logger) *UtilServer {
-	return &UtilServer{
-		Logger: logger,
-	}
 }
 
 func (s *UtilServer) GenerateRandomString(ctx context.Context, req *pb.GenerateRandomStringRequest) (*pb.GenerateRandomStringResponse, error) {
@@ -27,13 +25,15 @@ func (s *UtilServer) GenerateRandomString(ctx context.Context, req *pb.GenerateR
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
-		s.Logger.Error("Failed to generate random bytes", "error", err)
-		return nil, status.Errorf(codes.Internal, "failed to generate random string")
+		logger := inject.LoggerFrom(ctx)
+		logger.Error("Failed to generate random bytes", "error", err)
+		return nil, status.Error(codes.Internal, ErrGenerateRandomString.Error())
 	}
 
 	randomStr := hex.EncodeToString(b)
 
-	s.Logger.Info("Generated random string", "length", len(randomStr))
+	logger := inject.LoggerFrom(ctx)
+	logger.Info("Generated random string", "length", len(randomStr))
 
 	return &pb.GenerateRandomStringResponse{
 		RandomString: randomStr,

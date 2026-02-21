@@ -3,10 +3,9 @@ package grpc
 import (
 	"context"
 	"log/slog"
-	"net"
 	"time"
 
-	"github.com/jyablonski/lotus/internal/db"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	pb_analytics "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 	pb_journal "github.com/jyablonski/lotus/internal/pb/proto/journal"
 	pb_user "github.com/jyablonski/lotus/internal/pb/proto/user"
@@ -46,26 +45,29 @@ func LoggingInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
-func StartGRPCServer(queries *db.Queries, logger *slog.Logger, analyzerBaseURL string) error {
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		return err
+// RegisterServices registers all gRPC service implementations on the given
+// server. Services are empty structs that pull dependencies from context
+// via the inject package (populated by the injector interceptor in main).
+func RegisterServices(s *grpc.Server) {
+	pb_user.RegisterUserServiceServer(s, &UserServer{})
+	pb_journal.RegisterJournalServiceServer(s, &JournalServer{})
+	pb_analytics.RegisterAnalyticsServiceServer(s, &AnalyticsServer{})
+	pb_util.RegisterUtilServiceServer(s, &UtilServer{})
+}
+
+// RegisterGateway registers all gRPC-Gateway HTTP handlers on the given mux.
+// This keeps all service registration in one package so that main.go doesn't
+// need to import every protobuf package individually.
+func RegisterGateway(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error {
+	for _, reg := range []func(context.Context, *runtime.ServeMux, string, []grpc.DialOption) error{
+		pb_user.RegisterUserServiceHandlerFromEndpoint,
+		pb_journal.RegisterJournalServiceHandlerFromEndpoint,
+		pb_analytics.RegisterAnalyticsServiceHandlerFromEndpoint,
+		pb_util.RegisterUtilServiceHandlerFromEndpoint,
+	} {
+		if err := reg(ctx, mux, endpoint, opts); err != nil {
+			return err
+		}
 	}
-
-	// Register gRPC server with the logging interceptor
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(LoggingInterceptor(logger)),
-	)
-
-	// Register services with logger injected
-	pb_user.RegisterUserServiceServer(grpcServer, &UserServer{
-		DB:     queries,
-		Logger: logger,
-	})
-	pb_journal.RegisterJournalServiceServer(grpcServer, JournalService(queries, logger, analyzerBaseURL))
-	pb_analytics.RegisterAnalyticsServiceServer(grpcServer, AnalyticsService(queries, logger))
-	pb_util.RegisterUtilServiceServer(grpcServer, UtilService(logger))
-
-	logger.Info("Starting gRPC server", "address", ":50051", "analyzer_url", analyzerBaseURL)
-	return grpcServer.Serve(lis)
+	return nil
 }

@@ -4,37 +4,30 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jyablonski/lotus/internal/db"
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 )
 
 type AnalyticsServer struct {
 	pb.UnimplementedAnalyticsServiceServer
-	DB     db.Querier
-	Logger *slog.Logger
-}
-
-func AnalyticsService(q db.Querier, logger *slog.Logger) *AnalyticsServer {
-	return &AnalyticsServer{
-		DB:     q,
-		Logger: logger,
-	}
 }
 
 func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.GetUserJournalSummaryRequest) (*pb.GetUserJournalSummaryResponse, error) {
 	// Parse user_id from string to UUID
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user ID: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
+	// Extract deps after input validation
+	dbq := inject.DBFrom(ctx)
+
 	// Fetch the user journal summary from the database
-	summary, err := s.DB.GetUserJournalSummaryByUserId(ctx, userID)
+	summary, err := dbq.GetUserJournalSummaryByUserId(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user journal summary: %w", err)
 	}

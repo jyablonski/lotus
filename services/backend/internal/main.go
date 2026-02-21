@@ -2,40 +2,39 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/jyablonski/lotus/internal/db"
 	grpcSrv "github.com/jyablonski/lotus/internal/grpc"
-	httpSrv "github.com/jyablonski/lotus/internal/http"
-	analytics_pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
-	journal_pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
-	user_pb "github.com/jyablonski/lotus/internal/pb/proto/user"
-	util_pb "github.com/jyablonski/lotus/internal/pb/proto/util"
+	"github.com/jyablonski/lotus/internal/inject"
+
+	"database/sql"
 
 	_ "github.com/lib/pq"
 )
 
-func allowCORS(h http.Handler) http.Handler {
+func allowCORS(origin string, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// If this is a preflight request, respond immediately
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		// Otherwise, pass along to the next handler
 		h.ServeHTTP(w, r)
 	})
 }
@@ -53,73 +52,120 @@ func main() {
 	logger := initLogger()
 	logger.Info("Starting Lotus Backend Service")
 
+	// ── Required environment ───────────────────────────────────────────
 	connStr := os.Getenv("DB_CONN")
 	if connStr == "" {
 		logger.Error("DB_CONN environment variable is required")
+		os.Exit(1)
 	}
 
-	// Get analyzer service URL from environment
 	analyzerBaseURL := os.Getenv("ANALYZER_BASE_URL")
 	if analyzerBaseURL == "" {
-		analyzerBaseURL = "http://localhost:8083" // default fallback
+		analyzerBaseURL = "http://localhost:8083"
 		logger.Info("Using default analyzer URL", "url", analyzerBaseURL)
 	} else {
 		logger.Info("Using analyzer URL from environment", "url", analyzerBaseURL)
 	}
 
+	corsOrigin := os.Getenv("CORS_ALLOWED_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "http://localhost:3000"
+	}
+
+	// ── Database ───────────────────────────────────────────────────────
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
-		logger.Error("Failed to connect to database", "error", err)
+		logger.Error("Failed to open database connection", "error", err)
+		os.Exit(1)
 	}
 	defer dbConn.Close()
 
+	if err := dbConn.Ping(); err != nil {
+		logger.Error("Failed to ping database", "error", err)
+		os.Exit(1)
+	}
+
 	queries := db.New(dbConn)
 
-	// Start original HTTP server on :8081
-	go func() {
-		httpSrv.StartHTTPServer(queries, logger)
-	}()
+	// ── Shared HTTP client for outbound calls ──────────────────────────
+	httpClient := &http.Client{Timeout: 10 * time.Second}
 
-	// Start gRPC server on :50052 with analyzer URL
-	go func() {
-		if err := grpcSrv.StartGRPCServer(queries, logger, analyzerBaseURL); err != nil {
-			logger.Error("Failed to start gRPC server", "error", err)
-		}
-	}()
+	// ── Injector interceptor ───────────────────────────────────────────
+	// Populates every incoming gRPC request context with all dependencies.
+	injector := func(
+		ctx context.Context,
+		req interface{},
+		_ *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		ctx = inject.WithDB(ctx, queries)
+		ctx = inject.WithLogger(ctx, logger)
+		ctx = inject.WithHTTPClient(ctx, httpClient)
+		ctx = inject.WithAnalyzerURL(ctx, analyzerBaseURL)
+		return handler(ctx, req)
+	}
 
-	// Start gRPC-Gateway on :8080
-	go func() {
-		logger.Info("Starting gRPC-Gateway on :8080")
+	// ── gRPC server ────────────────────────────────────────────────────
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(injector, grpcSrv.LoggingInterceptor(logger)),
+	)
+	grpcSrv.RegisterServices(grpcServer)
 
-		ctx := context.Background()
-		mux := runtime.NewServeMux()
-		opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	// ── gRPC-Gateway (HTTP) ────────────────────────────────────────────
+	gwMux := runtime.NewServeMux()
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
-		err := user_pb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts)
+	if err := grpcSrv.RegisterGateway(context.Background(), gwMux, "localhost:50051", dialOpts); err != nil {
+		logger.Error("Failed to register gRPC-Gateway handlers", "error", err)
+		os.Exit(1)
+	}
+
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: allowCORS(corsOrigin, gwMux),
+	}
+
+	// ── Graceful shutdown context ──────────────────────────────────────
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	g, gCtx := errgroup.WithContext(ctx)
+
+	// Start gRPC server
+	g.Go(func() error {
+		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			logger.Error("Failed to register UserService gRPC-Gateway", "error", err)
+			return err
 		}
+		logger.Info("gRPC server listening", "address", ":50051")
+		return grpcServer.Serve(lis)
+	})
 
-		err = journal_pb.RegisterJournalServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts)
-		if err != nil {
-			logger.Error("Failed to register JournalService gRPC-Gateway", "error", err)
+	// Start HTTP gateway
+	g.Go(func() error {
+		logger.Info("gRPC-Gateway listening", "address", ":8080", "cors_origin", corsOrigin)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
 		}
+		return nil
+	})
 
-		err = analytics_pb.RegisterAnalyticsServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts)
-		if err != nil {
-			logger.Error("Failed to register AnalyticsService gRPC-Gateway", "error", err)
-		}
+	// Shutdown goroutine: waits for cancellation, then stops servers.
+	g.Go(func() error {
+		<-gCtx.Done()
+		logger.Info("Shutting down servers …")
 
-		err = util_pb.RegisterUtilServiceHandlerFromEndpoint(ctx, mux, "localhost:50051", opts)
-		if err != nil {
-			logger.Error("Failed to register UtilService gRPC-Gateway", "error", err)
-		}
+		grpcServer.GracefulStop()
 
-		if err := http.ListenAndServe(":8080", allowCORS(mux)); err != nil {
-			logger.Error("Failed to serve gRPC-Gateway", "error", err)
-		}
-	}()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return httpServer.Shutdown(shutdownCtx)
+	})
 
-	// Block forever
-	select {}
+	if err := g.Wait(); err != nil {
+		logger.Error("Server exited with error", "error", err)
+		os.Exit(1)
+	}
+
+	logger.Info("Server shut down gracefully")
 }

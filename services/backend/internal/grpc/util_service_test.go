@@ -11,7 +11,7 @@ import (
 )
 
 func TestUtilServer_GenerateRandomString_Success(t *testing.T) {
-	server := internalgrpc.UtilService(newTestLogger())
+	server := &internalgrpc.UtilServer{}
 
 	resp, err := server.GenerateRandomString(context.Background(), &pb.GenerateRandomStringRequest{})
 
@@ -21,7 +21,7 @@ func TestUtilServer_GenerateRandomString_Success(t *testing.T) {
 }
 
 func TestUtilServer_GenerateRandomString_IsHex(t *testing.T) {
-	server := internalgrpc.UtilService(newTestLogger())
+	server := &internalgrpc.UtilServer{}
 
 	resp, err := server.GenerateRandomString(context.Background(), &pb.GenerateRandomStringRequest{})
 
@@ -35,7 +35,7 @@ func TestUtilServer_GenerateRandomString_IsHex(t *testing.T) {
 }
 
 func TestUtilServer_GenerateRandomString_Unique(t *testing.T) {
-	server := internalgrpc.UtilService(newTestLogger())
+	server := &internalgrpc.UtilServer{}
 
 	resp1, err := server.GenerateRandomString(context.Background(), &pb.GenerateRandomStringRequest{})
 	require.NoError(t, err)

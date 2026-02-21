@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
+	"github.com/jyablonski/lotus/internal/inject"
 	"github.com/jyablonski/lotus/internal/mocks"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,14 @@ import (
 // newTestLogger creates a logger that discards output for testing
 func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
+
+// testCtx returns a context populated with the given DB mock and a discard logger.
+func testCtx(mock db.Querier) context.Context {
+	ctx := context.Background()
+	ctx = inject.WithDB(ctx, mock)
+	ctx = inject.WithLogger(ctx, newTestLogger())
+	return ctx
 }
 
 func TestUserServer_CreateUser_Success(t *testing.T) {
@@ -47,7 +56,7 @@ func TestUserServer_CreateUser_Success(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.UserService(mockQuerier, newTestLogger())
+	server := &internalgrpc.UserServer{}
 
 	req := &pb.CreateUserRequest{
 		Email:    expectedEmail,
@@ -55,7 +64,7 @@ func TestUserServer_CreateUser_Success(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateUser(context.Background(), req)
+	resp, err := server.CreateUser(testCtx(mockQuerier), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -74,7 +83,7 @@ func TestUserServer_CreateUser_DBError(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.UserService(mockQuerier, newTestLogger())
+	server := &internalgrpc.UserServer{}
 
 	req := &pb.CreateUserRequest{
 		Email:    "test@example.com",
@@ -82,7 +91,7 @@ func TestUserServer_CreateUser_DBError(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateUser(context.Background(), req)
+	resp, err := server.CreateUser(testCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
@@ -113,14 +122,14 @@ func TestUserServer_GetUser_Success(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.UserService(mockQuerier, newTestLogger())
+	server := &internalgrpc.UserServer{}
 
 	req := &pb.GetUserRequest{
 		Email: expectedEmail,
 	}
 
 	// Act
-	resp, err := server.GetUser(context.Background(), req)
+	resp, err := server.GetUser(testCtx(mockQuerier), req)
 
 	// Assert
 	require.NoError(t, err)
@@ -142,14 +151,14 @@ func TestUserServer_GetUser_NotFound(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.UserService(mockQuerier, newTestLogger())
+	server := &internalgrpc.UserServer{}
 
 	req := &pb.GetUserRequest{
 		Email: "nonexistent@example.com",
 	}
 
 	// Act
-	resp, err := server.GetUser(context.Background(), req)
+	resp, err := server.GetUser(testCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
@@ -158,17 +167,19 @@ func TestUserServer_GetUser_NotFound(t *testing.T) {
 }
 
 func TestUserServer_GetUser_EmptyEmail(t *testing.T) {
-	// Arrange
+	// Arrange — no DB mock needed; validation fails before DB access.
 	mockQuerier := &mocks.QuerierMock{}
 
-	server := internalgrpc.UserService(mockQuerier, newTestLogger())
+	server := &internalgrpc.UserServer{}
 
 	req := &pb.GetUserRequest{
 		Email: "",
 	}
 
-	// Act
-	resp, err := server.GetUser(context.Background(), req)
+	// Act — context still needs DB because GetUser extracts it after validation,
+	// but with the new code DB is only extracted after the empty-email check,
+	// so a bare context is sufficient.
+	resp, err := server.GetUser(testCtx(mockQuerier), req)
 
 	// Assert
 	require.Error(t, err)
@@ -203,7 +214,7 @@ func TestUserServer_CreateUserOauth_Success(t *testing.T) {
 		},
 	}
 
-	server := internalgrpc.UserService(mockQuerier, newTestLogger())
+	server := &internalgrpc.UserServer{}
 
 	req := &pb.CreateUserOauthRequest{
 		Email:         expectedEmail,
@@ -211,7 +222,7 @@ func TestUserServer_CreateUserOauth_Success(t *testing.T) {
 	}
 
 	// Act
-	resp, err := server.CreateUserOauth(context.Background(), req)
+	resp, err := server.CreateUserOauth(testCtx(mockQuerier), req)
 
 	// Assert
 	require.NoError(t, err)
