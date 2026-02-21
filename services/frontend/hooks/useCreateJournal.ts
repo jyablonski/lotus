@@ -1,7 +1,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createJournal } from "@/actions/journals";
-import { moodToInt } from "@/utils/moodMapping";
+import { moodToInt } from "@/lib/utils/moodMapping";
 
 export function useCreateJournal() {
   const [entry, setEntry] = useState("");

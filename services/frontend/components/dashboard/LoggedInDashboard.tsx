@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import {
   BookOpen,
@@ -154,7 +152,7 @@ export const LoggedInDashboard = ({
             </div>
             <p className="text-xs text-muted-dark">
               {avgMoodRounded > 0
-                ? `Avg mood: ${avgMoodRounded}/10`
+                ? `Avg mood: ${avgMoodRounded}/8`
                 : "No data yet"}
             </p>
           </div>
@@ -304,7 +302,7 @@ export const LoggedInDashboard = ({
                     <div className="flex justify-between">
                       <span className="text-muted-dark">Avg mood:</span>
                       <span className="font-medium text-primary-dark">
-                        {avgMoodRounded}/10
+                        {avgMoodRounded}/8
                       </span>
                     </div>
                   )}

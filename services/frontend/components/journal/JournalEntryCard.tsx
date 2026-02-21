@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { getMoodConfigByInt } from "@/utils/moodMapping";
+import { getMoodConfigByInt } from "@/lib/utils/moodMapping";
 import { JournalEntry } from "@/types/journal";
 
 interface JournalEntryCardProps {
@@ -71,7 +71,7 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <p className="text-sm text-gray-500">{formattedDate}</p>
+            <p className="text-sm text-dark-400">{formattedDate}</p>
           </div>
           <span
             className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full ${moodConfig.color}`}
@@ -82,18 +82,18 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
         </div>
 
         <div className="prose prose-sm max-w-none">
-          <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
+          <p className="text-dark-200 whitespace-pre-wrap leading-relaxed">
             {displayText}
           </p>
         </div>
 
         {shouldTruncate && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-dark-600">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+              className="text-lotus-400 hover:text-lotus-300 text-sm font-medium transition-colors"
             >
-              {isExpanded ? "Show less ↑" : "Read more →"}
+              {isExpanded ? "Show less" : "Read more"}
             </button>
           </div>
         )}
