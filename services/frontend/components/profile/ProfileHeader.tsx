@@ -14,7 +14,7 @@ interface ProfileHeaderProps {
 }
 
 /**
- * Format date in a locale-independent way to avoid hydration mismatch
+ * Format date in a locale-independent way to avoid hydration mismatch.
  */
 function formatDate(date: Date): string {
   const months = [
@@ -31,12 +31,7 @@ function formatDate(date: Date): string {
     "November",
     "December",
   ];
-
-  const monthName = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-
-  return `${monthName} ${day}, ${year}`;
+  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
 
 export function ProfileHeader({
@@ -51,7 +46,6 @@ export function ProfileHeader({
     ? formatDate(firstEntryDate)
     : null;
 
-  // Calculate days since signup client-side to avoid hydration mismatch
   const [daysSinceSignup, setDaysSinceSignup] = useState<number | null>(null);
 
   useEffect(() => {
@@ -65,7 +59,6 @@ export function ProfileHeader({
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center space-x-6">
-          {/* Avatar - GitHub image or placeholder */}
           <div className="flex-shrink-0">
             {image ? (
               <Image
@@ -76,25 +69,24 @@ export function ProfileHeader({
                 className="rounded-full"
               />
             ) : (
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-                <User size={32} className="text-blue-600" />
+              <div className="w-20 h-20 bg-lotus-500/20 rounded-full flex items-center justify-center">
+                <User size={32} className="text-lotus-400" />
               </div>
             )}
           </div>
 
-          {/* User info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 truncate">
-              {name}
-            </h1>
-            <p className="text-gray-600 mt-1">{email}</p>
+            <h1 className="text-2xl font-bold text-dark-50 truncate">{name}</h1>
+            <p className="text-dark-400 mt-1">{email}</p>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Member since:</span>
-                <p className="font-medium">{formattedSignupDate}</p>
+                <span className="text-dark-400">Member since:</span>
+                <p className="font-medium text-dark-200">
+                  {formattedSignupDate}
+                </p>
                 {daysSinceSignup !== null && (
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-dark-500">
                     {daysSinceSignup} days ago
                   </p>
                 )}
@@ -102,8 +94,10 @@ export function ProfileHeader({
 
               {firstEntryDate && (
                 <div>
-                  <span className="text-gray-500">First journal entry:</span>
-                  <p className="font-medium">{formattedFirstEntry}</p>
+                  <span className="text-dark-400">First journal entry:</span>
+                  <p className="font-medium text-dark-200">
+                    {formattedFirstEntry}
+                  </p>
                 </div>
               )}
             </div>

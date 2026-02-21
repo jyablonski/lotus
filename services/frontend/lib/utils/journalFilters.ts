@@ -1,5 +1,5 @@
 import { JournalEntry } from "@/types/journal";
-import { intToMood, getMoodConfigByInt } from "@/utils/moodMapping";
+import { intToMood, getMoodConfigByInt } from "@/lib/utils/moodMapping";
 
 export type MoodOption = {
   key: string;

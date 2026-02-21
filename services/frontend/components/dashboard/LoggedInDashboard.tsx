@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import {
   BookOpen,
@@ -19,6 +17,8 @@ import {
   DashboardEntry,
 } from "@/lib/utils/dashboard";
 import { RelativeDate } from "@/components/ui/RelativeDate";
+import { CardHeader } from "@/components/ui/Card";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface LoggedInDashboardProps {
   analytics: UserJournalSummary | null;
@@ -92,72 +92,49 @@ export const LoggedInDashboard = ({
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-muted-dark text-sm">Last 30 Days</p>
-                <p className="text-2xl font-bold text-primary-dark">
-                  {entriesLast30Days}
-                </p>
-              </div>
-              <BookOpen size={24} className="text-lotus-400" />
-            </div>
-            <p className="text-xs text-muted-dark">
-              {entriesLast30Days > 0
+          <StatCard
+            title="Last 30 Days"
+            value={entriesLast30Days}
+            icon={<BookOpen size={24} className="text-lotus-400" />}
+            trend={
+              entriesLast30Days > 0
                 ? `${entriesLast30Days} entries`
-                : "Start writing!"}
-            </p>
-          </div>
+                : "Start writing!"
+            }
+            iconContainerClassName="p-2 bg-lotus-500/10 rounded-lg"
+          />
 
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-muted-dark text-sm">Current Streak</p>
-                <p className="text-2xl font-bold text-primary-dark">
-                  {currentStreak > 0 ? `${currentStreak}` : "0"}
-                  <span className="text-sm font-normal text-muted-dark ml-1">
-                    days
-                  </span>
-                </p>
-              </div>
-              <Flame size={24} className="text-orange-400" />
-            </div>
-            <p className="text-xs text-muted-dark">{getStreakMessage()}</p>
-          </div>
+          <StatCard
+            title="Current Streak"
+            value={currentStreak > 0 ? `${currentStreak} days` : "0 days"}
+            icon={<Flame size={24} className="text-orange-400" />}
+            trend={getStreakMessage()}
+            iconContainerClassName="p-2 bg-orange-500/10 rounded-lg"
+          />
 
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-muted-dark text-sm">Mood Trend</p>
-                <p className="text-2xl font-bold text-primary-dark">
-                  {sentimentTrend}
-                </p>
-              </div>
-              <Smile size={24} className="text-green-400" />
-            </div>
-            <p className="text-xs text-muted-dark">
-              {sentimentTrend !== "No Data"
+          <StatCard
+            title="Mood Trend"
+            value={sentimentTrend}
+            icon={<Smile size={24} className="text-green-400" />}
+            trend={
+              sentimentTrend !== "No Data"
                 ? getTrendIndicator(sentimentTrend)
-                : "Write to see trends"}
-            </p>
-          </div>
+                : "Write to see trends"
+            }
+            iconContainerClassName="p-2 bg-green-500/10 rounded-lg"
+          />
 
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-muted-dark text-sm">Total Entries</p>
-                <p className="text-2xl font-bold text-primary-dark">
-                  {totalEntries}
-                </p>
-              </div>
-              <BarChart3 size={24} className="text-lotus-400" />
-            </div>
-            <p className="text-xs text-muted-dark">
-              {avgMoodRounded > 0
-                ? `Avg mood: ${avgMoodRounded}/10`
-                : "No data yet"}
-            </p>
-          </div>
+          <StatCard
+            title="Total Entries"
+            value={totalEntries}
+            icon={<BarChart3 size={24} className="text-lotus-400" />}
+            trend={
+              avgMoodRounded > 0
+                ? `Avg mood: ${avgMoodRounded}/8`
+                : "No data yet"
+            }
+            iconContainerClassName="p-2 bg-lotus-500/10 rounded-lg"
+          />
         </div>
 
         {/* Main Content Grid */}
@@ -165,11 +142,11 @@ export const LoggedInDashboard = ({
           {/* Left Column - Recent Entries */}
           <div className="lg:col-span-2 space-y-6">
             <div className="card">
-              <div className="p-6 border-b border-dark-600">
+              <CardHeader>
                 <h2 className="text-xl font-semibold text-primary-dark">
                   Recent Entries
                 </h2>
-              </div>
+              </CardHeader>
               <div className="p-6 space-y-4">
                 {recentEntries.length > 0 ? (
                   <>
@@ -196,14 +173,14 @@ export const LoggedInDashboard = ({
                           href={`/journal/${entry.id}`}
                           className="inline-block mt-2"
                         >
-                          <span className="text-lotus-400 text-sm hover:text-lotus-300 transition-colors">
+                          <span className="link-lotus text-sm">
                             Read more →
                           </span>
                         </Link>
                       </div>
                     ))}
                     <Link href="/journal/home" className="block">
-                      <div className="text-center py-4 text-lotus-400 hover:text-lotus-300 font-medium transition-colors">
+                      <div className="text-center py-4 link-lotus font-medium">
                         View all entries →
                       </div>
                     </Link>
@@ -226,11 +203,11 @@ export const LoggedInDashboard = ({
           <div className="space-y-6">
             {/* Quick Actions */}
             <div className="card">
-              <div className="p-6 border-b border-dark-600">
+              <CardHeader>
                 <h2 className="text-lg font-semibold text-primary-dark">
                   Quick Actions
                 </h2>
-              </div>
+              </CardHeader>
               <div className="p-6 space-y-3">
                 <Link
                   href="/journal/calendar"
@@ -275,11 +252,11 @@ export const LoggedInDashboard = ({
 
             {/* Writing Stats */}
             <div className="card">
-              <div className="p-6 border-b border-dark-600">
+              <CardHeader>
                 <h2 className="text-lg font-semibold text-primary-dark">
                   Writing Stats
                 </h2>
-              </div>
+              </CardHeader>
               <div className="p-6">
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
@@ -304,7 +281,7 @@ export const LoggedInDashboard = ({
                     <div className="flex justify-between">
                       <span className="text-muted-dark">Avg mood:</span>
                       <span className="font-medium text-primary-dark">
-                        {avgMoodRounded}/10
+                        {avgMoodRounded}/8
                       </span>
                     </div>
                   )}

@@ -11,69 +11,84 @@ export type CalendarDay = {
   avgMood: number;
 };
 
-export function groupJournalsByDate(
-  journals: JournalEntry[],
-): Record<string, JournalEntry[]> {
-  return journals.reduce(
-    (acc, journal) => {
-      const date = new Date(journal.createdAt).toISOString().split("T")[0];
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(journal);
-      return acc;
-    },
-    {} as Record<string, JournalEntry[]>,
-  );
+/**
+ * Format date as YYYY-MM-DD in local timezone (not UTC).
+ * This ensures entries created at e.g. 5pm PT show on today's date, not tomorrow.
+ */
+export function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**
- * Generate calendar days with journal entries
- * Mood scores: excited=8, happy=7, content=6, neutral=5, tired=4, sad=3, anxious=2, angry=1
+ * Group journals by local date for efficient lookup.
+ */
+export function groupJournalsByDate(
+  journals: JournalEntry[],
+): Map<string, JournalEntry[]> {
+  const grouped = new Map<string, JournalEntry[]>();
+
+  journals.forEach((journal) => {
+    const date = new Date(journal.createdAt);
+    const dateKey = toLocalDateString(date);
+
+    if (!grouped.has(dateKey)) {
+      grouped.set(dateKey, []);
+    }
+    grouped.get(dateKey)!.push(journal);
+  });
+
+  return grouped;
+}
+
+/**
+ * Generate 42 calendar days (6 weeks) for a given month.
  */
 export function generateCalendarDays(
   currentMonth: Date,
-  entriesByDate: Record<string, JournalEntry[]>,
-  selectedDate: Date,
+  journalsByDate: Map<string, JournalEntry[]>,
+  selectedDate: Date | null,
+  todayString: string,
 ): CalendarDay[] {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
-  // First day of the month
-  const firstDay = new Date(year, month, 1);
+  const firstDayOfMonth = new Date(year, month, 1);
+  const startDate = new Date(firstDayOfMonth);
+  startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay());
 
-  // Start from the first Sunday before or on the first day
-  const startDate = new Date(firstDay);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
-
-  // Generate 42 days (6 weeks) for the calendar grid
-  const calendarDays: CalendarDay[] = [];
-  const currentDate = new Date(startDate);
-  const selectedDateString = selectedDate.toISOString().split("T")[0];
-  const todayString = new Date().toISOString().split("T")[0];
+  const days: CalendarDay[] = [];
 
   for (let i = 0; i < 42; i++) {
-    const dateString = currentDate.toISOString().split("T")[0];
-    const entries = entriesByDate[dateString] || [];
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
 
-    calendarDays.push({
-      date: new Date(currentDate),
-      dateString,
-      entries,
-      isCurrentMonth: currentDate.getMonth() === month,
-      isToday: dateString === todayString,
-      isSelected: dateString === selectedDateString,
-      entryCount: entries.length,
-      // userMood is already a number, no need to parseInt
-      avgMood:
-        entries.length > 0
-          ? entries.reduce((sum, entry) => sum + entry.userMood, 0) /
-            entries.length
-          : 0,
+    const dateKey = toLocalDateString(date);
+    const dayEntries = journalsByDate.get(dateKey) || [];
+
+    const avgMood =
+      dayEntries.length > 0
+        ? dayEntries.reduce((sum, entry) => sum + entry.userMood, 0) /
+          dayEntries.length
+        : 0;
+
+    const isSelected = selectedDate
+      ? toLocalDateString(date) === toLocalDateString(selectedDate)
+      : false;
+
+    days.push({
+      date: new Date(date),
+      dateString: dateKey,
+      entries: dayEntries,
+      isCurrentMonth: date.getMonth() === month,
+      isToday: dateKey === todayString,
+      isSelected,
+      entryCount: dayEntries.length,
+      avgMood: Math.round(avgMood * 10) / 10,
     });
-
-    currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  return calendarDays;
+  return days;
 }

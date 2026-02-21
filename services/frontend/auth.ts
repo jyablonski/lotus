@@ -2,93 +2,174 @@ import NextAuth, { type User } from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { NextAuthConfig } from "next-auth";
 
-async function createUserInBackend(email: string, oauthProvider?: string) {
+// ---------------------------------------------------------------------------
+// Types for backend responses
+// ---------------------------------------------------------------------------
+
+/** Response shape from GET /v1/users?email=... */
+interface BackendUserResponse {
+  userId?: string;
+  user_id?: string;
+  createdAt?: string;
+  created_at?: string;
+}
+
+/** Normalized backend user data */
+interface BackendUser {
+  userId: string;
+  createdAt: string | undefined;
+}
+
+/** Response shape from POST /v1/oauth/users */
+interface CreateUserResponse {
+  userId?: string;
+  user_id?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function parseBackendUser(data: BackendUserResponse): BackendUser | null {
+  const userId = data.userId || data.user_id;
+  if (!userId) return null;
+  return {
+    userId,
+    createdAt: data.createdAt || data.created_at,
+  };
+}
+
+/** Server-side structured log (JSON for production, readable for dev). */
+function authLog(
+  level: "info" | "warn" | "error",
+  msg: string,
+  meta?: Record<string, unknown>,
+) {
+  const entry = { ts: new Date().toISOString(), level, msg, ...meta };
+  if (level === "error") {
+    console.error(JSON.stringify(entry));
+  } else {
+    console.log(JSON.stringify(entry));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Backend API calls
+// ---------------------------------------------------------------------------
+
+async function createUserInBackend(
+  email: string,
+  oauthProvider?: string,
+): Promise<{ userId: string } | null> {
   try {
     const response = await fetch(`${process.env.BACKEND_URL}/v1/oauth/users`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, oauth_provider: oauthProvider }),
     });
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Error creating user in backend:", response.status, errorText);
+      authLog("error", "Failed to create user in backend", {
+        status: response.status,
+        body: errorText,
+      });
       return null;
     }
-    const data = await response.json();
-    // Handle both camelCase (userId) and snake_case (user_id) from backend
-    const userId = data?.userId || data?.user_id;
+
+    const data: CreateUserResponse = await response.json();
+    const userId = data.userId || data.user_id;
+
     if (!userId) {
-      console.error("No userId in response:", data);
+      authLog("error", "Backend create-user response missing userId", { data });
       return null;
     }
-    // Return the userId - we'll fetch full user data after creation
+
     return { userId };
   } catch (error) {
-    console.error("Error creating user in backend:", error);
+    authLog("error", "Network error creating user in backend", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
 
-async function fetchBackendUser(email: string) {
+async function fetchBackendUser(email: string): Promise<BackendUser | null> {
   try {
     const response = await fetch(
-      `${process.env.BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`
+      `${process.env.BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
     );
+
     if (!response.ok) {
-      if (response.status === 404) {
-        return null; // User not found
-      }
-      console.error("Error fetching user from backend:", response.status);
+      if (response.status === 404) return null; // User not found — expected
+      authLog("error", "Failed to fetch user from backend", {
+        status: response.status,
+      });
       return null;
     }
-    const data = await response.json();
-    return data; // Return the entire data object
+
+    const data: BackendUserResponse = await response.json();
+    return parseBackendUser(data);
   } catch (error) {
-    console.error("Error fetching user from backend:", error);
+    authLog("error", "Network error fetching user from backend", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// NextAuth config
+// ---------------------------------------------------------------------------
 
 export const authConfig: NextAuthConfig = {
   providers: [
-    GitHub({ clientId: process.env.AUTH_GITHUB_ID, clientSecret: process.env.AUTH_GITHUB_SECRET }),
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-      // check if the user exists in the backend
-      const existingUser = await fetchBackendUser(user.email!);
-      console.log("Existing User:", existingUser); // Log the result
-
-      if (!existingUser) {
-        console.log("User not found in backend, creating new user...");
-        const newUserResult = await createUserInBackend(
-          user.email!,
-          account?.provider
-        );
-
-        if (!newUserResult?.userId) {
-          console.error("Failed to create user or get userId");
-          return false;
-        }
-
-        // After creating user, fetch the full user data to get createdAt
-        const createdUser = await fetchBackendUser(user.email!);
-        if (!createdUser) {
-          console.error("User created but could not fetch user data");
-          return false;
-        }
-
-        (user as User).backendId = createdUser.userId || createdUser.user_id;
-        (user as User).createdAt = createdUser.createdAt || createdUser.created_at;
-      } else {
-        (user as User).backendId = existingUser.userId || existingUser.user_id;
-        (user as User).createdAt = existingUser.createdAt || existingUser.created_at;
+      if (!user.email) {
+        authLog("warn", "Sign-in attempt with no email on the OAuth user");
+        return false;
       }
+
+      // Check if user already exists
+      let backendUser = await fetchBackendUser(user.email);
+
+      if (!backendUser) {
+        // Create the user, then fetch full record for createdAt
+        const createResult = await createUserInBackend(
+          user.email,
+          account?.provider,
+        );
+        if (!createResult?.userId) {
+          authLog(
+            "error",
+            "Failed to create user or get userId — blocking sign-in",
+          );
+          return false;
+        }
+
+        backendUser = await fetchBackendUser(user.email);
+        if (!backendUser) {
+          authLog(
+            "error",
+            "User created but could not fetch user data — blocking sign-in",
+          );
+          return false;
+        }
+      }
+
+      // Attach backend fields to the NextAuth user object
+      (user as User).backendId = backendUser.userId;
+      (user as User).createdAt = backendUser.createdAt;
 
       return true;
     },
+
     async jwt({ token, user }) {
       if (user?.backendId) {
         token.backendId = user.backendId;
@@ -98,6 +179,7 @@ export const authConfig: NextAuthConfig = {
       }
       return token;
     },
+
     async session({ session, token, user }) {
       if (token?.backendId) {
         session.user.id = token.backendId as string;

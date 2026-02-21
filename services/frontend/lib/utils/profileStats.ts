@@ -8,10 +8,22 @@ export type ProfileStats = {
   longestStreak: number;
   currentStreak: number;
   mostActiveDay: string;
-  firstEntryDate: Date | null;
+  firstEntryDate: string | null;
   favoriteModCategory: string;
   totalWords: number;
 };
+
+/**
+ * Collect unique entry dates as a sorted Set of YYYY-MM-DD strings.
+ * Reused by streak calculations and calendar logic.
+ */
+export function getUniqueDateStrings(journals: JournalEntry[]): Set<string> {
+  return journals.reduce((acc, journal) => {
+    const date = new Date(journal.createdAt).toISOString().split("T")[0];
+    acc.add(date);
+    return acc;
+  }, new Set<string>());
+}
 
 export function calculateBasicCounts(journals: JournalEntry[]) {
   const now = new Date();
@@ -27,19 +39,14 @@ export function calculateBasicCounts(journals: JournalEntry[]) {
   };
 }
 
-/**
- * Calculate average mood score
- * Mood scores: excited=8, happy=7, content=6, neutral=5, tired=4, sad=3, anxious=2, angry=1
- */
 export function calculateAverageMood(journals: JournalEntry[]): number {
   if (!journals.length) return 0;
-  // userMood is already a number, no need to parseInt
   return journals.reduce((sum, j) => sum + j.userMood, 0) / journals.length;
 }
 
-export function getFirstEntryDate(journals: JournalEntry[]): Date | null {
+export function getFirstEntryDate(journals: JournalEntry[]): string | null {
   if (!journals.length) return null;
-  return new Date(journals[journals.length - 1].createdAt);
+  return journals[journals.length - 1].createdAt;
 }
 
 export function getMostActiveDay(journals: JournalEntry[]): string {
@@ -68,7 +75,6 @@ export function getFavoriteMoodCategory(journals: JournalEntry[]): string {
 
   const moodCount = journals.reduce(
     (acc, journal) => {
-      // userMood is already a number, no need to parseInt
       const category =
         journal.userMood >= 7
           ? "Positive"
@@ -100,12 +106,7 @@ export function calculateTotalWords(journals: JournalEntry[]): number {
 export function calculateCurrentStreak(journals: JournalEntry[]): number {
   if (!journals.length) return 0;
 
-  const entriesByDate = journals.reduce((acc, journal) => {
-    const date = new Date(journal.createdAt).toISOString().split("T")[0];
-    acc.add(date);
-    return acc;
-  }, new Set<string>());
-
+  const entriesByDate = getUniqueDateStrings(journals);
   const sortedDates: string[] = Array.from(entriesByDate).sort().reverse();
   let streak = 0;
   const today = new Date().toISOString().split("T")[0];
@@ -137,12 +138,7 @@ export function calculateCurrentStreak(journals: JournalEntry[]): number {
 export function calculateLongestStreak(journals: JournalEntry[]): number {
   if (!journals.length) return 0;
 
-  const entriesByDate = journals.reduce((acc, journal) => {
-    const date = new Date(journal.createdAt).toISOString().split("T")[0];
-    acc.add(date);
-    return acc;
-  }, new Set<string>());
-
+  const entriesByDate = getUniqueDateStrings(journals);
   const sortedDates: string[] = Array.from(entriesByDate).sort();
   let longestStreak = 0;
   let currentStreak = 0;
@@ -151,12 +147,8 @@ export function calculateLongestStreak(journals: JournalEntry[]): number {
     if (i === 0) {
       currentStreak = 1;
     } else {
-      const prevDateString: string = sortedDates[i - 1];
-      const currDateString: string = sortedDates[i];
-
-      const prevDate = new Date(prevDateString);
-      const currDate = new Date(currDateString);
-
+      const prevDate = new Date(sortedDates[i - 1]);
+      const currDate = new Date(sortedDates[i]);
       const diffInDays = Math.round(
         (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24),
       );

@@ -9,11 +9,11 @@
   --color-lotus-400: #bc8eff;
   --color-lotus-500: #a855f7;
   --color-lotus-600: #9333ea;
-  --color-lotus-700: #7c2d12;
+  --color-lotus-700: #7e22ce;
   --color-lotus-800: #581c87;
   --color-lotus-900: #4c1d95;
   --color-lotus-950: #2e1065;
-  
+
   --color-rose-50: #fff1f2;
   --color-rose-100: #ffe4e6;
   --color-rose-200: #fecdd3;
@@ -44,8 +44,13 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 /* Component layer for reusable classes */
@@ -54,73 +59,81 @@
   .btn-primary {
     @apply text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300;
     background: linear-gradient(135deg, #a855f7 0%, #f43f5e 100%);
-    box-shadow: 0 10px 25px -3px rgba(168, 85, 247, 0.3), 0 4px 6px -2px rgba(168, 85, 247, 0.1);
+    box-shadow:
+      0 10px 25px -3px rgba(168, 85, 247, 0.3),
+      0 4px 6px -2px rgba(168, 85, 247, 0.1);
   }
-  
+
   .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.4), 0 10px 10px -5px rgba(168, 85, 247, 0.2);
+    box-shadow:
+      0 20px 25px -5px rgba(168, 85, 247, 0.4),
+      0 10px 10px -5px rgba(168, 85, 247, 0.2);
   }
-  
+
   .btn-secondary {
     @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
     border: 2px solid theme(colors.lotus.400);
     color: theme(colors.lotus.400);
     background: rgba(168, 85, 247, 0.1);
   }
-  
+
   .btn-secondary:hover {
     background: rgba(168, 85, 247, 0.2);
     border-color: theme(colors.lotus.300);
     color: theme(colors.lotus.300);
   }
-  
+
   .btn-ghost {
     @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
     color: theme(colors.lotus.400);
   }
-  
+
   .btn-ghost:hover {
     background: rgba(168, 85, 247, 0.1);
     color: theme(colors.lotus.300);
   }
-  
+
   /* Card variants - Dark theme */
   .card {
-    @apply rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply rounded-2xl shadow-lg transition-all duration-300;
     background: rgba(30, 41, 59, 0.8);
     border: 1px solid rgba(100, 116, 139, 0.2);
     backdrop-filter: blur(10px);
   }
-  
+
   .card-hover {
     @apply rounded-2xl shadow-lg transition-all duration-300;
     background: rgba(30, 41, 59, 0.8);
     border: 1px solid rgba(100, 116, 139, 0.2);
     backdrop-filter: blur(10px);
   }
-  
+
   .card-hover:hover {
     transform: translateY(-4px);
     background: rgba(30, 41, 59, 0.9);
     border-color: rgba(168, 85, 247, 0.3);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
-  
+
   .card-lotus {
     @apply rounded-2xl transition-all duration-300;
     background: rgba(30, 41, 59, 0.8);
     border: 1px solid rgba(168, 85, 247, 0.3);
     backdrop-filter: blur(10px);
-    box-shadow: 0 10px 25px -3px rgba(168, 85, 247, 0.2), 0 4px 6px -2px rgba(168, 85, 247, 0.1);
+    box-shadow:
+      0 10px 25px -3px rgba(168, 85, 247, 0.2),
+      0 4px 6px -2px rgba(168, 85, 247, 0.1);
   }
-  
+
   .card-lotus:hover {
     background: rgba(30, 41, 59, 0.9);
     border-color: rgba(168, 85, 247, 0.5);
-    box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.3), 0 10px 10px -5px rgba(168, 85, 247, 0.2);
+    box-shadow:
+      0 20px 25px -5px rgba(168, 85, 247, 0.3),
+      0 10px 10px -5px rgba(168, 85, 247, 0.2);
   }
-  
+
   /* Input styles - Dark theme */
   .input-primary {
     @apply w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200;
@@ -128,83 +141,103 @@
     border: 1px solid rgba(100, 116, 139, 0.3);
     color: theme(colors.dark.100);
   }
-  
+
   .input-primary:focus {
     border-color: theme(colors.lotus.500);
     box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
     background: rgba(30, 41, 59, 0.9);
   }
-  
+
   /* Text styles - Dark theme */
   .text-gradient {
-    background: linear-gradient(135deg, theme(colors.lotus.400) 0%, theme(colors.rose.400) 100%);
+    background: linear-gradient(
+      135deg,
+      theme(colors.lotus.400) 0%,
+      theme(colors.rose.400) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
-  
+
   .heading-1 {
     @apply text-4xl md:text-5xl font-bold leading-tight;
     color: theme(colors.dark.50);
   }
-  
+
   .heading-2 {
     @apply text-3xl md:text-4xl font-bold leading-tight;
     color: theme(colors.dark.50);
   }
-  
+
   .heading-3 {
     @apply text-2xl md:text-3xl font-bold leading-tight;
     color: theme(colors.dark.50);
   }
-  
+
   /* Dark theme text colors */
   .text-muted-dark {
     color: theme(colors.dark.400);
   }
-  
+
   .text-secondary-dark {
     color: theme(colors.dark.300);
   }
-  
+
   .text-primary-dark {
     color: theme(colors.dark.100);
   }
-  
+
   /* Background patterns - Dark theme */
   .bg-lotus-gradient {
-    background: linear-gradient(135deg, theme(colors.lotus.500) 0%, theme(colors.rose.500) 100%);
+    background: linear-gradient(
+      135deg,
+      theme(colors.lotus.500) 0%,
+      theme(colors.rose.500) 100%
+    );
   }
-  
+
   .bg-lotus-light {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(244, 63, 94, 0.2) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(168, 85, 247, 0.2) 0%,
+      rgba(244, 63, 94, 0.2) 100%
+    );
   }
-  
+
   .bg-lotus-subtle {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(244, 63, 94, 0.1) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(168, 85, 247, 0.1) 0%,
+      rgba(244, 63, 94, 0.1) 100%
+    );
   }
-  
+
   /* Page layouts - Dark theme */
   .page-container {
     @apply min-h-screen;
-    background: radial-gradient(ellipse at top, theme(colors.dark.800) 0%, theme(colors.dark.900) 100%);
+    background: radial-gradient(
+      ellipse at top,
+      theme(colors.dark.800) 0%,
+      theme(colors.dark.900) 100%
+    );
   }
-  
+
   .content-container {
     @apply max-w-6xl mx-auto px-4 py-8;
   }
-  
+
   /* Form elements - Dark theme */
   .form-group {
     @apply mb-6;
   }
-  
+
   .label {
     @apply block text-sm font-medium mb-2;
     color: theme(colors.dark.200);
   }
-  
+
   .textarea-primary {
     @apply w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 resize-none;
     min-height: 120px;
@@ -212,55 +245,203 @@
     border: 1px solid rgba(100, 116, 139, 0.3);
     color: theme(colors.dark.100);
   }
-  
+
   .textarea-primary:focus {
     border-color: theme(colors.lotus.500);
     box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
     background: rgba(30, 41, 59, 0.9);
   }
-  
+
   /* Status badges - Dark theme */
   .badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
   }
-  
+
   .badge-success {
     background: rgba(34, 197, 94, 0.2);
     color: rgb(74, 222, 128);
   }
-  
+
   .badge-warning {
     background: rgba(245, 158, 11, 0.2);
     color: rgb(251, 191, 36);
   }
-  
+
   .badge-error {
     background: rgba(239, 68, 68, 0.2);
     color: rgb(248, 113, 113);
   }
-  
+
   .badge-lotus {
     background: rgba(168, 85, 247, 0.2);
     color: theme(colors.lotus.300);
   }
-  
+
+  /* Filter badges - Dark theme */
+  .badge-filter-blue {
+    @apply px-2 py-1 rounded text-sm;
+    background: rgba(168, 85, 247, 0.2);
+    color: theme(colors.lotus.300);
+  }
+
+  .badge-filter-green {
+    @apply px-2 py-1 rounded text-sm;
+    background: rgba(34, 197, 94, 0.2);
+    color: rgb(74, 222, 128);
+  }
+
+  /* Select input - Dark theme (extends input-primary for <select> elements) */
+  .select-primary {
+    @apply w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 appearance-none;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.100);
+  }
+
+  .select-primary:focus {
+    border-color: theme(colors.lotus.500);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    background: rgba(30, 41, 59, 0.9);
+  }
+
+  .select-primary option {
+    background: theme(colors.dark.800);
+    color: theme(colors.dark.100);
+  }
+
+  /* Pagination button - Dark theme */
+  .btn-page {
+    @apply flex items-center gap-1 px-3 py-2 text-sm rounded-md transition-colors;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.200);
+  }
+
+  .btn-page:hover {
+    background: rgba(100, 116, 139, 0.15);
+    color: theme(colors.dark.100);
+  }
+
+  .btn-page:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .btn-page:disabled:hover {
+    background: transparent;
+    color: theme(colors.dark.200);
+  }
+
+  .btn-page-active {
+    @apply px-3 py-2 text-sm rounded-md min-w-[40px];
+    background: theme(colors.lotus.500);
+    color: white;
+    border: 1px solid theme(colors.lotus.500);
+  }
+
+  .btn-page-inactive {
+    @apply px-3 py-2 text-sm rounded-md min-w-[40px] transition-colors;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.200);
+  }
+
+  .btn-page-inactive:hover {
+    background: rgba(100, 116, 139, 0.15);
+    color: theme(colors.dark.100);
+  }
+
+  /* Error alert - Dark theme */
+  .alert-error {
+    @apply rounded-lg p-4;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: rgb(248, 113, 113);
+  }
+
   /* Navigation styles - Dark theme */
   .nav-link {
     @apply px-4 py-2 rounded-lg transition-all duration-200;
     color: theme(colors.dark.300);
   }
-  
+
   .nav-link:hover {
     background: rgba(168, 85, 247, 0.1);
     color: theme(colors.dark.100);
   }
-  
+
   .nav-link-active {
     @apply px-4 py-2 rounded-lg transition-all duration-200;
     background: theme(colors.lotus.500);
     color: white;
   }
-  
+
+  /* Button - Outline (dark theme) */
+  .btn-outline {
+    @apply px-6 py-3 rounded-lg font-medium transition-colors;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    color: theme(colors.dark.200);
+  }
+
+  .btn-outline:hover {
+    background: rgba(100, 116, 139, 0.15);
+    color: theme(colors.dark.100);
+  }
+
+  /* Button - Danger (dark theme) */
+  .btn-danger {
+    @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
+    color: theme(colors.rose.400);
+  }
+
+  .btn-danger:hover {
+    background: rgba(244, 63, 94, 0.1);
+    color: theme(colors.rose.300);
+  }
+
+  /* Link - Lotus accent */
+  .link-lotus {
+    @apply transition-colors;
+    color: theme(colors.lotus.400);
+  }
+
+  .link-lotus:hover {
+    color: theme(colors.lotus.300);
+  }
+
+  /* Action item - Full-width list button */
+  .action-item {
+    @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
+  }
+
+  .action-item:hover {
+    background: rgba(51, 65, 85, 0.5);
+  }
+
+  .action-item-primary {
+    @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
+    background: rgba(168, 85, 247, 0.2);
+  }
+
+  .action-item-primary:hover {
+    background: rgba(168, 85, 247, 0.3);
+  }
+
+  /* Insight row - Label + value in a muted container */
+  .insight-row {
+    @apply flex items-center justify-between p-4 rounded-lg;
+    background: rgba(30, 41, 59, 0.5);
+  }
+
+  /* Skeleton loading elements - Dark theme */
+  .skeleton {
+    @apply rounded animate-pulse;
+    background: rgba(51, 65, 85, 0.6);
+  }
+
+  .skeleton-card {
+    @apply rounded-2xl;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+  }
+
   /* Loading states - Dark theme */
   .loading-spinner {
     @apply animate-spin rounded-full border-2;
@@ -269,32 +450,32 @@
     width: 20px;
     height: 20px;
   }
-  
+
   /* Journal entry styles - Softer dark theme */
   .journal-entry {
     @apply rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200;
     background: rgba(45, 36, 54, 0.5);
     border: 1px solid rgba(124, 111, 138, 0.2);
   }
-  
+
   .journal-entry:hover {
     background: rgba(45, 36, 54, 0.7);
     border-color: rgba(168, 85, 247, 0.3);
   }
-  
+
   /* Mood indicators */
   .mood-indicator {
     @apply w-3 h-3 rounded-full;
   }
-  
+
   .mood-positive {
     @apply bg-green-400;
   }
-  
+
   .mood-neutral {
     @apply bg-yellow-400;
   }
-  
+
   .mood-negative {
     @apply bg-red-400;
   }
