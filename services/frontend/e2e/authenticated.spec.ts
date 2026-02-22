@@ -37,15 +37,12 @@ test.describe("Authenticated: Dashboard", () => {
     await page.goto("/");
 
     // The four stat card titles from LoggedInDashboard.tsx
-    const statTitles = [
-      "Last 30 Days",
-      "Current Streak",
-      "Mood Trend",
-      "Total Entries",
-    ];
-    for (const title of statTitles) {
-      await expect(page.getByText(title)).toBeVisible();
-    }
+    await expect(page.getByText("Last 30 Days")).toBeVisible();
+    await expect(
+      page.getByText("Current Streak", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Mood Trend")).toBeVisible();
+    await expect(page.getByText("Total Entries").first()).toBeVisible();
   });
 
   test("dashboard has a 'New Entry' button linking to create page", async ({
@@ -119,8 +116,8 @@ test.describe("Authenticated: Journal Create", () => {
   test("journal create page loads with the form", async ({ page }) => {
     await page.goto("/journal/create");
 
-    // Should see the text editor placeholder or the mood selector
-    await expect(page.getByPlaceholder(/write your thoughts/i)).toBeVisible();
+    // Should see the text editor with its placeholder
+    await expect(page.getByPlaceholder(/what's on your mind/i)).toBeVisible();
   });
 
   test("journal create page shows mood selector", async ({ page }) => {
