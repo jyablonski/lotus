@@ -1,0 +1,35 @@
+# Production-style build for CI / e2e tests.
+# Copies source, builds the Next.js app, then runs `npm start`.
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# These are required at build time for Next.js to compile server components
+# that reference them. Values don't matter — they're overridden at runtime.
+ENV NEXTAUTH_URL=http://localhost:3000
+ENV AUTH_SECRET=build-placeholder
+ENV AUTH_GITHUB_ID=build-placeholder
+ENV AUTH_GITHUB_SECRET=build-placeholder
+ENV AUTH_TRUST_HOST=true
+ENV BACKEND_URL=http://backend:8080
+
+RUN npm run build
+
+# ── Runtime stage ──────────────────────────────────────────────
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

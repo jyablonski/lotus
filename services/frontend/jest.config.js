@@ -8,9 +8,15 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testEnvironment: "jsdom",
-  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
+  testPathIgnorePatterns: [
+    "<rootDir>/.next/",
+    "<rootDir>/node_modules/",
+    "<rootDir>/__tests__/__mocks__/",
+    "<rootDir>/e2e/",
+  ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    "^server-only$": "<rootDir>/__tests__/__mocks__/server-only.js",
   },
   collectCoverageFrom: [
     "components/**/*.{js,jsx,ts,tsx}",
