@@ -1,0 +1,59 @@
+# Docker Compose configuration for e2e tests.
+# Spins up postgres, backend, and frontend with source baked into images
+# (no volume mounts). Playwright runs on the host against localhost:3000.
+#
+# Usage:
+#   docker compose -f docker/docker-compose-e2e.yaml up -d --build --wait
+#   cd services/frontend && npm run test:e2e
+#   docker compose -f docker/docker-compose-e2e.yaml down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: e2e-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ../services/backend
+      dockerfile: Dockerfile
+    container_name: e2e-backend
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - ANALYZER_BASE_URL=http://localhost:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../services/frontend
+      dockerfile: Dockerfile.e2e
+    container_name: e2e-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXTAUTH_URL=http://localhost:3000
+      - BACKEND_URL=http://backend:8080
+      - AUTH_SECRET=${AUTH_SECRET:-e2e-test-secret-at-least-32-characters-long}
+      - AUTH_GITHUB_ID=${AUTH_GITHUB_ID:-fake-github-id}
+      - AUTH_GITHUB_SECRET=${AUTH_GITHUB_SECRET:-fake-github-secret}
+      - AUTH_TRUST_HOST=true
+    depends_on:
+      backend:
+        condition: service_started

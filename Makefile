@@ -44,6 +44,18 @@ moq-generate: ## Generate Go mocks using moq
 .PHONY: generate
 generate: sqlc-generate buf-generate moq-generate ## Run all code generation (sqlc, buf, moq)
 
+.PHONY: e2e-up
+e2e-up: ## Start e2e stack (postgres, backend, frontend)
+	@docker compose -f docker/docker-compose-e2e.yaml up -d --build
+
+.PHONY: e2e-down
+e2e-down: ## Stop e2e stack and remove volumes
+	@docker compose -f docker/docker-compose-e2e.yaml down -v
+
+.PHONY: e2e-test
+e2e-test: ## Run Playwright e2e tests (stack must be running)
+	@cd services/frontend && npx playwright test
+
 .PHONY: help
 help: ## Show this help message
 	@echo "Available targets:"

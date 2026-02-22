@@ -12,6 +12,8 @@ services/frontend/node_modules
 
 # testing
 /coverage
+services/frontend/playwright-report/
+services/frontend/test-results/
 
 # next.js
 services/frontend/.next/
