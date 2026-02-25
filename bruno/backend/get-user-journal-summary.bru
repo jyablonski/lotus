@@ -1,0 +1,11 @@
+meta {
+  name: Get User Journal Summary
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{backend_url}}/v1/analytics/users/{{user_id}}/journal-summary
+  body: none
+  auth: none
+}

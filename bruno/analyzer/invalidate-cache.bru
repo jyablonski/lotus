@@ -1,0 +1,11 @@
+meta {
+  name: Invalidate Cache
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{analyzer_url}}/v1/cache/invalidation
+  body: none
+  auth: none
+}

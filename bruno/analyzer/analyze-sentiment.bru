@@ -1,0 +1,17 @@
+meta {
+  name: Analyze Sentiment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{analyzer_url}}/v1/journals/{{journal_id}}/sentiment/analyze
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "force_reanalyze": false
+  }
+}

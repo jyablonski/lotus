@@ -1,0 +1,17 @@
+meta {
+  name: Recent Sentiments
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{analyzer_url}}/v1/journals/sentiment/recent
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 10
+  reliable_only: true
+  ~user_id:
+}

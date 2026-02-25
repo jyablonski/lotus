@@ -1,0 +1,15 @@
+meta {
+  name: Get User
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{backend_url}}/v1/users?email=test@example.com
+  body: none
+  auth: none
+}
+
+params:query {
+  email: test@example.com
+}

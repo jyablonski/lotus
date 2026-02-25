@@ -1,0 +1,18 @@
+meta {
+  name: Sentiment Trends
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{analyzer_url}}/v1/journals/sentiment/trends
+  body: none
+  auth: none
+}
+
+params:query {
+  ~user_id:
+  days_back: 30
+  group_by: week
+  reliable_only: true
+}

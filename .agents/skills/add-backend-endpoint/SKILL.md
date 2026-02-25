@@ -266,6 +266,58 @@ Run tests:
 cd services/backend && go test ./internal/grpc/...
 ```
 
+### Step 7: Update the Bruno API collection
+
+After adding a new endpoint, add a corresponding `.bru` request file to the Bruno collection so the team can test it from the Bruno GUI.
+
+**Backend requests** go in `bruno/backend/`. Create a new `.bru` file named after the endpoint (e.g., `get-widget.bru`):
+
+```bru
+meta {
+  name: Get Widget
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{backend_url}}/v1/widgets/{{widget_id}}
+  body: none
+  auth: none
+}
+```
+
+For POST/PUT endpoints with a request body:
+
+```bru
+meta {
+  name: Create Widget
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{backend_url}}/v1/widgets
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "example widget",
+    "userId": "{{user_id}}"
+  }
+}
+```
+
+Key conventions:
+
+- Use `{{backend_url}}` for the base URL (resolved from the Bruno environment)
+- Use `{{user_id}}`, `{{journal_id}}`, etc. for shared variable references
+- Use kebab-case for file names (e.g., `get-user-journal-summary.bru`)
+- Disable optional query params with the `~` prefix (e.g., `~model_version:`)
+- JSON field names use lowerCamelCase (matching the gRPC-gateway JSON serialization)
+- If the endpoint introduces a new variable that other requests might reference, add it to `bruno/environments/local.bru`
+
 ## Pre-commit hooks
 
 These run automatically and handle regeneration:
@@ -332,5 +384,7 @@ return nil, status.Errorf(codes.Internal, "%s: %v", ErrGetUserFailed.Error(), er
 | Generated DB code (read-only)    | `services/backend/internal/db/`                           |
 | Generated proto code (read-only) | `services/backend/internal/pb/`                           |
 | Generated mocks (read-only)      | `services/backend/internal/mocks/`                        |
+| Bruno API collection (backend)   | `bruno/backend/`                                          |
+| Bruno environment variables      | `bruno/environments/local.bru`                            |
 | sqlc config                      | `services/backend/sqlc.yaml`                              |
 | buf config                       | `services/backend/buf.yaml`, `buf.gen.yaml`               |

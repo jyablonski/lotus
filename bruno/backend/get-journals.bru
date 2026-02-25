@@ -1,0 +1,17 @@
+meta {
+  name: Get Journals
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{backend_url}}/v1/journals?user_id={{user_id}}&limit=10&offset=0
+  body: none
+  auth: none
+}
+
+params:query {
+  user_id: {{user_id}}
+  limit: 10
+  offset: 0
+}

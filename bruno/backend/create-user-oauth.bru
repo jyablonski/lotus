@@ -1,0 +1,18 @@
+meta {
+  name: Create User OAuth
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{backend_url}}/v1/oauth/users
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "test@example.com",
+    "oauthProvider": "github"
+  }
+}
