@@ -1,7 +1,7 @@
 meta {
-  name: Analyze Batch
+  name: Analyze Journals Sentiment Batch
   type: http
-  seq: 5
+  seq: 8
 }
 
 post {
@@ -11,8 +11,10 @@ post {
 }
 
 body:json {
-  {
-    "journal_ids": [1, 2, 3],
-    "force_reanalyze": false
-  }
+{
+  "journal_ids": [
+    0
+  ],
+  "force_reanalyze": false
+}
 }

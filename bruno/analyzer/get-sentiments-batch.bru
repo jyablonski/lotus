@@ -1,18 +1,16 @@
 meta {
   name: Get Sentiments Batch
   type: http
-  seq: 8
+  seq: 11
 }
 
 get {
-  url: {{analyzer_url}}/v1/journals/sentiment/batch?journal_ids=1&journal_ids=2&journal_ids=3
+  url: {{analyzer_url}}/v1/journals/sentiment/batch?journal_ids=&reliable_only=false
   body: none
   auth: none
 }
 
 params:query {
-  journal_ids: 1
-  journal_ids: 2
-  journal_ids: 3
+  journal_ids:
   reliable_only: false
 }

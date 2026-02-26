@@ -20,6 +20,12 @@ repos:
         language: system
         files: ^services/backend/internal/(db/querier\.go|grpc/interfaces\.go)$
         pass_filenames: false
+      - id: bruno-generate
+        name: bruno generate
+        entry: scripts/bruno-generate.sh
+        language: system
+        files: ^(services/backend/proto/|services/analyzer/src/(main\.py|routers/|schemas/))
+        pass_filenames: false
 
   # General purpose linters and formatting
   - repo: https://github.com/pre-commit/pre-commit-hooks

@@ -1,17 +1,17 @@
 meta {
   name: Get Journals
   type: http
-  seq: 2
+  seq: 3
 }
 
 get {
-  url: {{backend_url}}/v1/journals?user_id={{user_id}}&limit=10&offset=0
+  url: {{backend_url}}/v1/journals?userId=&limit=&offset=
   body: none
   auth: none
 }
 
 params:query {
-  user_id: {{user_id}}
-  limit: 10
-  offset: 0
+  ~userId:
+  ~limit:
+  ~offset:
 }

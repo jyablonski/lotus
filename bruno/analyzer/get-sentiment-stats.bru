@@ -1,0 +1,16 @@
+meta {
+  name: Get Sentiment Stats
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{analyzer_url}}/v1/journals/sentiment/stats?user_id=&days_back=
+  body: none
+  auth: none
+}
+
+params:query {
+  ~user_id:
+  ~days_back:
+}

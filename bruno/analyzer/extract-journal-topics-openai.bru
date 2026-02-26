@@ -1,0 +1,15 @@
+meta {
+  name: Extract Journal Topics (Openai)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{analyzer_url}}/v1/journals/{{journal_id}}/openai/topics
+  body: none
+  auth: none
+}
+
+params:query {
+  max_topics: 7
+}
