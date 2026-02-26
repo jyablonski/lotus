@@ -1,0 +1,17 @@
+meta {
+  name: Update Journal Sentiment
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{analyzer_url}}/v1/journals/{{journal_id}}/sentiment
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "force_reanalyze": false
+}
+}

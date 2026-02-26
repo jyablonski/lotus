@@ -1,0 +1,16 @@
+meta {
+  name: Get Sentiments Batch
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{analyzer_url}}/v1/journals/sentiment/batch?journal_ids=&reliable_only=false
+  body: none
+  auth: none
+}
+
+params:query {
+  journal_ids:
+  reliable_only: false
+}

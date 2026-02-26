@@ -1,0 +1,15 @@
+meta {
+  name: Delete Journal Sentiment
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{analyzer_url}}/v1/journals/{{journal_id}}/sentiment
+  body: none
+  auth: none
+}
+
+params:query {
+  ~model_version:
+}

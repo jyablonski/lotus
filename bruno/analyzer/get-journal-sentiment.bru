@@ -1,0 +1,15 @@
+meta {
+  name: Get Journal Sentiment
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{analyzer_url}}/v1/journals/{{journal_id}}/sentiment?model_version=
+  body: none
+  auth: none
+}
+
+params:query {
+  ~model_version:
+}

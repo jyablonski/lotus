@@ -41,6 +41,10 @@ buf-generate: ## Generate protobuf/grpc code using buf
 moq-generate: ## Generate Go mocks using moq
 	@./scripts/moq-generate.sh
 
+.PHONY: bruno-generate
+bruno-generate: ## Generate Bruno API collection from OpenAPI specs
+	@./scripts/bruno-generate.sh
+
 .PHONY: generate
 generate: sqlc-generate buf-generate moq-generate ## Run all code generation (sqlc, buf, moq)
 

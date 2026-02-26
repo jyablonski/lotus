@@ -1,0 +1,17 @@
+meta {
+  name: Trigger Journal Analysis
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{backend_url}}/journal.JournalService/TriggerJournalAnalysis
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "journalId": "string"
+}
+}

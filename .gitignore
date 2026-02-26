@@ -61,3 +61,7 @@ docker/mlflow/**
 .vscode/*.code-workspace
 lotus.code-workspace
 services/dagster/feast_repo/data
+
+# Generated OpenAPI specs (intermediate files for Bruno generation)
+services/analyzer/openapi.json
+*.swagger.json

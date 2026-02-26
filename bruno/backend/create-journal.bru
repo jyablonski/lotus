@@ -1,0 +1,19 @@
+meta {
+  name: Create Journal
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{backend_url}}/v1/journals
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "userId": "string",
+  "journalText": "string",
+  "userMood": "string"
+}
+}

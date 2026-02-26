@@ -1,0 +1,20 @@
+meta {
+  name: Analyze Journals Sentiment Batch
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{analyzer_url}}/v1/journals/sentiment/analyze-batch
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "journal_ids": [
+    0
+  ],
+  "force_reanalyze": false
+}
+}
