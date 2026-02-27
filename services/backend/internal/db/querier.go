@@ -18,9 +18,11 @@ type Querier interface {
 	GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error)
 	GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error)
 	GetJournalsByUserIdPaginated(ctx context.Context, arg GetJournalsByUserIdPaginatedParams) ([]SourceJournal, error)
+	GetRuntimeConfigByKey(ctx context.Context, key string) (SourceRuntimeConfig, error)
 	GetUserByEmail(ctx context.Context, email string) (SourceUser, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (SourceUser, error)
 	GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (GoldUserJournalSummary, error)
+	UpsertRuntimeConfigValue(ctx context.Context, arg UpsertRuntimeConfigValueParams) (SourceRuntimeConfig, error)
 }
 
 var _ Querier = (*Queries)(nil)
