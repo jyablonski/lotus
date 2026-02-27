@@ -27,7 +27,7 @@ test.describe("Landing Page", () => {
     await page.goto("/");
 
     await expect(cta).toBeVisible();
-    await expect(cta).toHaveAttribute("href", "/api/auth/signin");
+    await expect(cta).toHaveAttribute("href", "/signin");
   });
 
   test("shows feature cards", async ({ page }) => {
@@ -45,13 +45,13 @@ test.describe("Landing Page", () => {
     }
   });
 
-  test("shows the Login button in the navbar for unauthenticated users", async ({
+  test("shows the Login link in the navbar for unauthenticated users", async ({
     page,
   }) => {
     await page.goto("/");
 
-    // LoginButton renders a form with a submit button containing "Login"
-    await expect(page.getByRole("button", { name: /login/i })).toBeVisible();
+    // LoginButton renders a Link (anchor) containing "Login"
+    await expect(page.getByRole("link", { name: /login/i })).toBeVisible();
   });
 
   test("footer shows copyright", async ({ page }) => {
