@@ -25,7 +25,7 @@ func newRuntimeConfigMock(lastRunTimestamp string) *mocks.QuerierMock {
 		GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
 			return db.SourceRuntimeConfig{
 				ID:          1,
-				Key:         "go_config_test",
+				Key:         "go_config_example",
 				Value:       configValue,
 				Service:     "backend",
 				Description: "Runtime config managed by GenerateRandomString",
@@ -59,9 +59,9 @@ func TestUtilServer_GenerateRandomString_Success(t *testing.T) {
 
 	// Verify DB interactions
 	assert.Len(t, mockQuerier.GetRuntimeConfigByKeyCalls(), 1)
-	assert.Equal(t, "go_config_test", mockQuerier.GetRuntimeConfigByKeyCalls()[0].Key)
+	assert.Equal(t, "go_config_example", mockQuerier.GetRuntimeConfigByKeyCalls()[0].Key)
 	assert.Len(t, mockQuerier.UpsertRuntimeConfigValueCalls(), 1)
-	assert.Equal(t, "go_config_test", mockQuerier.UpsertRuntimeConfigValueCalls()[0].Arg.Key)
+	assert.Equal(t, "go_config_example", mockQuerier.UpsertRuntimeConfigValueCalls()[0].Arg.Key)
 	assert.Equal(t, "backend", mockQuerier.UpsertRuntimeConfigValueCalls()[0].Arg.Service)
 }
 
