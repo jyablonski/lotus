@@ -1,14 +1,13 @@
 import os
 
-import requests
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import (
     GroupAdmin as BaseGroupAdmin,
     UserAdmin as BaseUserAdmin,
 )
 from django.contrib.auth.models import Group, User
-from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
+import requests
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.sites import UnfoldAdminSite
@@ -16,6 +15,7 @@ from unfold.sites import UnfoldAdminSite
 from .models import (
     ActiveMLModel,
     FeatureFlag,
+    RuntimeConfig,
     User as LotusUser,
 )
 
@@ -80,9 +80,9 @@ class FeatureFlagAdmin(ModelAdmin):
 
     def invalidate_cache_view(self, request):
         """Custom admin view to invalidate analyzer cache"""
+        from django.http import JsonResponse
         from django.shortcuts import redirect
         from django.urls import reverse
-        from django.http import JsonResponse
 
         # Handle AJAX requests
         if (
@@ -106,7 +106,7 @@ class FeatureFlagAdmin(ModelAdmin):
             except requests.exceptions.RequestException as e:
                 messages.error(
                     request,
-                    f"Failed to invalidate analyzer cache: {str(e)}",
+                    f"Failed to invalidate analyzer cache: {e!s}",
                 )
                 return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
@@ -125,11 +125,33 @@ class FeatureFlagAdmin(ModelAdmin):
         except requests.exceptions.RequestException as e:
             messages.error(
                 request,
-                f"Failed to invalidate analyzer cache: {str(e)}",
+                f"Failed to invalidate analyzer cache: {e!s}",
             )
 
         # Redirect back to feature flag changelist
         return redirect(reverse("lotus_admin:core_featureflag_changelist"))
+
+
+@admin.register(RuntimeConfig, site=admin_site)
+class RuntimeConfigAdmin(ModelAdmin):
+    list_display = ("key", "service", "value_preview", "description", "modified_at")
+    list_filter = ("service", "created_at", "modified_at")
+    search_fields = ("key", "description")
+    readonly_fields = ("id", "created_at", "modified_at")
+    fieldsets = (
+        (None, {"fields": ("id", "key", "service", "value", "description")}),
+        ("Timestamps", {"fields": ("created_at", "modified_at")}),
+    )
+
+    @admin.display(description="Value")
+    def value_preview(self, obj):
+        """Show a truncated preview of the JSON value in the list view."""
+        import json
+
+        text = json.dumps(obj.value)
+        if len(text) > 80:
+            return text[:80] + "..."
+        return text
 
 
 def has_ml_model_permission(user):
@@ -153,9 +175,7 @@ class ActiveMLModelAdmin(ModelAdmin):
         (None, {"fields": ("id", "ml_model", "is_enabled")}),
         ("Timestamps", {"fields": ("created_at", "modified_at")}),
     )
-    list_editable = (
-        "is_enabled",
-    )  # Allow quick editing of enabled status from list view
+    list_editable = ("is_enabled",)  # Allow quick editing of enabled status from list view
 
     def has_add_permission(self, request):
         """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to add."""

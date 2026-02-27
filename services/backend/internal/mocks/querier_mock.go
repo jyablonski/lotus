@@ -41,6 +41,9 @@ var _ db.Querier = &QuerierMock{}
 //			GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
 //				panic("mock out the GetJournalsByUserIdPaginated method")
 //			},
+//			GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
+//				panic("mock out the GetRuntimeConfigByKey method")
+//			},
 //			GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
 //				panic("mock out the GetUserByEmail method")
 //			},
@@ -49,6 +52,9 @@ var _ db.Querier = &QuerierMock{}
 //			},
 //			GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
 //				panic("mock out the GetUserJournalSummaryByUserId method")
+//			},
+//			UpsertRuntimeConfigValueFunc: func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
+//				panic("mock out the UpsertRuntimeConfigValue method")
 //			},
 //		}
 //
@@ -78,6 +84,9 @@ type QuerierMock struct {
 	// GetJournalsByUserIdPaginatedFunc mocks the GetJournalsByUserIdPaginated method.
 	GetJournalsByUserIdPaginatedFunc func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error)
 
+	// GetRuntimeConfigByKeyFunc mocks the GetRuntimeConfigByKey method.
+	GetRuntimeConfigByKeyFunc func(ctx context.Context, key string) (db.SourceRuntimeConfig, error)
+
 	// GetUserByEmailFunc mocks the GetUserByEmail method.
 	GetUserByEmailFunc func(ctx context.Context, email string) (db.SourceUser, error)
 
@@ -86,6 +95,9 @@ type QuerierMock struct {
 
 	// GetUserJournalSummaryByUserIdFunc mocks the GetUserJournalSummaryByUserId method.
 	GetUserJournalSummaryByUserIdFunc func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error)
+
+	// UpsertRuntimeConfigValueFunc mocks the UpsertRuntimeConfigValue method.
+	UpsertRuntimeConfigValueFunc func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -138,6 +150,13 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.GetJournalsByUserIdPaginatedParams
 		}
+		// GetRuntimeConfigByKey holds details about calls to the GetRuntimeConfigByKey method.
+		GetRuntimeConfigByKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Key is the key argument value.
+			Key string
+		}
 		// GetUserByEmail holds details about calls to the GetUserByEmail method.
 		GetUserByEmail []struct {
 			// Ctx is the ctx argument value.
@@ -159,6 +178,13 @@ type QuerierMock struct {
 			// UserID is the userID argument value.
 			UserID uuid.UUID
 		}
+		// UpsertRuntimeConfigValue holds details about calls to the UpsertRuntimeConfigValue method.
+		UpsertRuntimeConfigValue []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertRuntimeConfigValueParams
+		}
 	}
 	lockCreateJournal                 sync.RWMutex
 	lockCreateUser                    sync.RWMutex
@@ -167,9 +193,11 @@ type QuerierMock struct {
 	lockGetJournalCountByUserId       sync.RWMutex
 	lockGetJournalsByUserId           sync.RWMutex
 	lockGetJournalsByUserIdPaginated  sync.RWMutex
+	lockGetRuntimeConfigByKey         sync.RWMutex
 	lockGetUserByEmail                sync.RWMutex
 	lockGetUserById                   sync.RWMutex
 	lockGetUserJournalSummaryByUserId sync.RWMutex
+	lockUpsertRuntimeConfigValue      sync.RWMutex
 }
 
 // CreateJournal calls CreateJournalFunc.
@@ -424,6 +452,42 @@ func (mock *QuerierMock) GetJournalsByUserIdPaginatedCalls() []struct {
 	return calls
 }
 
+// GetRuntimeConfigByKey calls GetRuntimeConfigByKeyFunc.
+func (mock *QuerierMock) GetRuntimeConfigByKey(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
+	if mock.GetRuntimeConfigByKeyFunc == nil {
+		panic("QuerierMock.GetRuntimeConfigByKeyFunc: method is nil but Querier.GetRuntimeConfigByKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Key string
+	}{
+		Ctx: ctx,
+		Key: key,
+	}
+	mock.lockGetRuntimeConfigByKey.Lock()
+	mock.calls.GetRuntimeConfigByKey = append(mock.calls.GetRuntimeConfigByKey, callInfo)
+	mock.lockGetRuntimeConfigByKey.Unlock()
+	return mock.GetRuntimeConfigByKeyFunc(ctx, key)
+}
+
+// GetRuntimeConfigByKeyCalls gets all the calls that were made to GetRuntimeConfigByKey.
+// Check the length with:
+//
+//	len(mockedQuerier.GetRuntimeConfigByKeyCalls())
+func (mock *QuerierMock) GetRuntimeConfigByKeyCalls() []struct {
+	Ctx context.Context
+	Key string
+} {
+	var calls []struct {
+		Ctx context.Context
+		Key string
+	}
+	mock.lockGetRuntimeConfigByKey.RLock()
+	calls = mock.calls.GetRuntimeConfigByKey
+	mock.lockGetRuntimeConfigByKey.RUnlock()
+	return calls
+}
+
 // GetUserByEmail calls GetUserByEmailFunc.
 func (mock *QuerierMock) GetUserByEmail(ctx context.Context, email string) (db.SourceUser, error) {
 	if mock.GetUserByEmailFunc == nil {
@@ -529,5 +593,41 @@ func (mock *QuerierMock) GetUserJournalSummaryByUserIdCalls() []struct {
 	mock.lockGetUserJournalSummaryByUserId.RLock()
 	calls = mock.calls.GetUserJournalSummaryByUserId
 	mock.lockGetUserJournalSummaryByUserId.RUnlock()
+	return calls
+}
+
+// UpsertRuntimeConfigValue calls UpsertRuntimeConfigValueFunc.
+func (mock *QuerierMock) UpsertRuntimeConfigValue(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
+	if mock.UpsertRuntimeConfigValueFunc == nil {
+		panic("QuerierMock.UpsertRuntimeConfigValueFunc: method is nil but Querier.UpsertRuntimeConfigValue was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertRuntimeConfigValueParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertRuntimeConfigValue.Lock()
+	mock.calls.UpsertRuntimeConfigValue = append(mock.calls.UpsertRuntimeConfigValue, callInfo)
+	mock.lockUpsertRuntimeConfigValue.Unlock()
+	return mock.UpsertRuntimeConfigValueFunc(ctx, arg)
+}
+
+// UpsertRuntimeConfigValueCalls gets all the calls that were made to UpsertRuntimeConfigValue.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertRuntimeConfigValueCalls())
+func (mock *QuerierMock) UpsertRuntimeConfigValueCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertRuntimeConfigValueParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertRuntimeConfigValueParams
+	}
+	mock.lockUpsertRuntimeConfigValue.RLock()
+	calls = mock.calls.UpsertRuntimeConfigValue
+	mock.lockUpsertRuntimeConfigValue.RUnlock()
 	return calls
 }

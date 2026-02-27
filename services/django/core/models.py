@@ -1,4 +1,3 @@
-
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Func
@@ -76,9 +75,7 @@ class Journal(models.Model):
         db_table = "journals"
         ordering = ["-created_at"]
         indexes = [
-            models.Index(
-                fields=["user", "-created_at"], name="idx_journals_user_created"
-            ),
+            models.Index(fields=["user", "-created_at"], name="idx_journals_user_created"),
         ]
 
     def __str__(self):
@@ -114,9 +111,7 @@ class JournalTopic(models.Model):
     """Journal topic model matching the existing journal_topics table."""
 
     id = models.AutoField(primary_key=True)
-    journal = models.ForeignKey(
-        Journal, on_delete=models.CASCADE, db_column="journal_id"
-    )
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
     topic_name = models.CharField(max_length=100)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     ml_model_version = models.CharField(max_length=50)
@@ -153,9 +148,7 @@ class JournalSentiment(models.Model):
     ]
 
     id = models.AutoField(primary_key=True)
-    journal = models.ForeignKey(
-        Journal, on_delete=models.CASCADE, db_column="journal_id"
-    )
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
     sentiment = models.CharField(max_length=20, choices=SENTIMENT_CHOICES)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     confidence_level = models.CharField(max_length=10, choices=CONFIDENCE_LEVEL_CHOICES)
@@ -172,9 +165,7 @@ class JournalSentiment(models.Model):
         unique_together = [["journal", "ml_model_version"]]
 
     def __str__(self):
-        return (
-            f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
-        )
+        return f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
 
 
 class FeatureFlag(models.Model):
@@ -215,3 +206,39 @@ class ActiveMLModel(models.Model):
     def __str__(self):
         status = "✓" if self.is_enabled else "✗"
         return f"{status} {self.ml_model}"
+
+
+class RuntimeConfig(models.Model):
+    """Key-value configuration store for cross-service settings and runtime data.
+
+    Stores arbitrary JSON data keyed by a unique string. Any service can read or write
+    entries to share configuration, timestamps, state, or other data without requiring
+    code changes.
+    """
+
+    SERVICE_CHOICES = [
+        ("analyzer", "Analyzer"),
+        ("backend", "Backend"),
+        ("dagster", "Dagster"),
+        ("dbt", "dbt"),
+        ("django", "Django"),
+        ("experiments", "Experiments"),
+        ("frontend", "Frontend"),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=255, unique=True)
+    value = models.JSONField(default=dict)
+    service = models.CharField(max_length=50, choices=SERVICE_CHOICES)
+    description = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    modified_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "runtime_config"
+        ordering = ["key"]
+        verbose_name = "runtime config"
+        verbose_name_plural = "runtime config"
+
+    def __str__(self):
+        return self.key

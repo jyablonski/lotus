@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,6 +48,16 @@ type SourceJournal struct {
 	UserID      uuid.UUID
 	JournalText string
 	MoodScore   sql.NullInt32
+	CreatedAt   time.Time
+	ModifiedAt  time.Time
+}
+
+type SourceRuntimeConfig struct {
+	ID          int32
+	Key         string
+	Value       json.RawMessage
+	Service     string
+	Description string
 	CreatedAt   time.Time
 	ModifiedAt  time.Time
 }
