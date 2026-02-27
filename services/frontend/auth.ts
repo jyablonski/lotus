@@ -1,6 +1,12 @@
 import NextAuth, { type User } from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Resend from "next-auth/providers/resend";
 import { NextAuthConfig } from "next-auth";
+import type {
+  Adapter,
+  AdapterUser,
+  VerificationToken,
+} from "@auth/core/adapters";
 
 // ---------------------------------------------------------------------------
 // Types for backend responses
@@ -119,31 +125,160 @@ async function fetchBackendUser(email: string): Promise<BackendUser | null> {
 }
 
 // ---------------------------------------------------------------------------
+// Minimal adapter for the email (magic link) provider
+// ---------------------------------------------------------------------------
+// NextAuth's email provider requires: getUserByEmail, createUser,
+// createVerificationToken, and useVerificationToken.
+//
+// User CRUD is delegated to the Go backend via HTTP.  Verification tokens are
+// stored in-memory (swap for Redis / DB in production at scale).
+//
+// The token Map is attached to globalThis so it survives Next.js hot reloads
+// and is shared across middleware / RSC / route-handler bundles.
+// ---------------------------------------------------------------------------
+
+const globalForTokens = globalThis as unknown as {
+  __verificationTokens?: Map<string, VerificationToken>;
+};
+if (!globalForTokens.__verificationTokens) {
+  globalForTokens.__verificationTokens = new Map<string, VerificationToken>();
+}
+const verificationTokens = globalForTokens.__verificationTokens;
+
+function tokenKey(identifier: string, token: string) {
+  return `${identifier}:${token}`;
+}
+
+function toAdapterUser(
+  email: string,
+  backendUser: BackendUser | null,
+): AdapterUser {
+  return {
+    id: backendUser?.userId ?? email, // use backend UUID when available
+    email,
+    emailVerified: backendUser ? new Date() : null,
+  };
+}
+
+const magicLinkAdapter: Adapter = {
+  // -- User methods (backed by Go backend) ----------------------------------
+
+  async getUserByEmail(email: string) {
+    const backendUser = await fetchBackendUser(email);
+    if (!backendUser) return null;
+    return toAdapterUser(email, backendUser);
+  },
+
+  async createUser(user: AdapterUser) {
+    // Create the user in the Go backend then return an AdapterUser.
+    const result = await createUserInBackend(user.email, "email");
+    if (!result) {
+      throw new Error(`Failed to create user in backend for ${user.email}`);
+    }
+    const backendUser = await fetchBackendUser(user.email);
+    return toAdapterUser(user.email, backendUser);
+  },
+
+  async getUser(id: string) {
+    // Not used with JWT strategy, but return null to satisfy the interface.
+    return null;
+  },
+
+  async getUserByAccount() {
+    // Not used — account linking is handled by our signIn callback.
+    return null;
+  },
+
+  async updateUser(user) {
+    // No-op: we don't update users through NextAuth.
+    return user as AdapterUser;
+  },
+
+  async linkAccount() {
+    // No-op: account linking is managed by our signIn callback.
+    return undefined;
+  },
+
+  // -- Verification token methods (in-memory) -------------------------------
+
+  createVerificationToken(verificationToken: VerificationToken) {
+    const key = tokenKey(verificationToken.identifier, verificationToken.token);
+    verificationTokens.set(key, verificationToken);
+    return verificationToken;
+  },
+
+  useVerificationToken({
+    identifier,
+    token,
+  }: {
+    identifier: string;
+    token: string;
+  }) {
+    const key = tokenKey(identifier, token);
+    const storedToken = verificationTokens.get(key);
+    if (!storedToken) return null;
+    verificationTokens.delete(key);
+    return storedToken;
+  },
+};
+
+// ---------------------------------------------------------------------------
 // NextAuth config
 // ---------------------------------------------------------------------------
 
 export const authConfig: NextAuthConfig = {
+  adapter: magicLinkAdapter,
+  // Keep using JWT strategy — the adapter is only needed for verification
+  // tokens (magic link). We do NOT use database sessions.
+  session: { strategy: "jwt" },
+  pages: {
+    signIn: "/signin",
+    verifyRequest: "/verify-request",
+  },
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
       clientSecret: process.env.AUTH_GITHUB_SECRET,
     }),
+    Resend({
+      apiKey: process.env.AUTH_RESEND_KEY,
+      from: process.env.AUTH_EMAIL_FROM || "Lotus <onboarding@resend.dev>",
+    }),
   ],
   callbacks: {
     async signIn({ user, account }) {
       if (!user.email) {
-        authLog("warn", "Sign-in attempt with no email on the OAuth user");
+        authLog("warn", "Sign-in attempt with no email");
         return false;
       }
 
-      // Check if user already exists
+      // For the email provider, the signIn callback fires twice:
+      //   1. When the email is sent (account.type === "email") — allow it
+      //      through so the verification email is dispatched.
+      //   2. When the user clicks the magic link — the callback fires again
+      //      with the verified user. At that point we sync with the backend.
+      //
+      // We detect phase-1 by checking if the user has no `id` yet (NextAuth
+      // hasn't resolved the user from the adapter).  In that case we simply
+      // return true to let the email be sent.
+      const isEmailProvider = account?.provider === "resend";
+
+      // Phase-1 of email sign-in: just allow the email to be sent.
+      if (isEmailProvider && !user.id) {
+        return true;
+      }
+
+      // ----- Backend user sync (runs for GitHub and magic-link phase-2) -----
       let backendUser = await fetchBackendUser(user.email);
 
       if (!backendUser) {
-        // Create the user, then fetch full record for createdAt
+        // Create the user in the Go backend.
+        // For email sign-ins we pass "email" as the oauth_provider value
+        // to distinguish them from GitHub-authenticated users.
+        const providerLabel = isEmailProvider ? "email" : account?.provider;
         const createResult = await createUserInBackend(
           user.email,
-          account?.provider,
+          providerLabel,
         );
         if (!createResult?.userId) {
           authLog(
@@ -170,13 +305,47 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
 
-    async jwt({ token, user }) {
-      if (user?.backendId) {
-        token.backendId = user.backendId;
+    async jwt({ token, user, account }) {
+      // On initial sign-in the `user` object is populated.
+      if (user) {
+        if (user.backendId) {
+          token.backendId = user.backendId;
+        } else if (user.id) {
+          // For email sign-ins, the adapter's getUserByEmail already returned
+          // the backend UUID as the AdapterUser.id — use it directly.
+          token.backendId = user.id;
+        }
+        if (user.createdAt) {
+          token.createdAt = user.createdAt;
+        }
+        // Persist the email on the token so we can resolve backendId later.
+        if (user.email) {
+          token.email = user.email;
+        }
       }
-      if (user?.createdAt) {
-        token.createdAt = user.createdAt;
+
+      // If backendId is still missing (common with email/magic-link sign-ins
+      // where the adapter user object doesn't carry our custom fields), look
+      // it up from the Go backend by email.
+      const email = (token.email as string) || undefined;
+      if (!token.backendId && email) {
+        const backendUser = await fetchBackendUser(email);
+        if (backendUser) {
+          token.backendId = backendUser.userId;
+          token.createdAt = backendUser.createdAt;
+        } else {
+          // User doesn't exist yet — create them.
+          const result = await createUserInBackend(email, "email");
+          if (result) {
+            const created = await fetchBackendUser(email);
+            if (created) {
+              token.backendId = created.userId;
+              token.createdAt = created.createdAt;
+            }
+          }
+        }
       }
+
       return token;
     },
 

@@ -73,6 +73,7 @@ services:
       - AUTH_GITHUB_ID=${AUTH_GITHUB_ID}
       - AUTH_GITHUB_SECRET=${AUTH_GITHUB_SECRET}
       - AUTH_TRUST_HOST=true
+      - AUTH_RESEND_KEY=${AUTH_RESEND_KEY}
     depends_on:
       - backend
       - postgres

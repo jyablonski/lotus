@@ -56,7 +56,7 @@ const LandingPage = () => {
               and reflect on your journey.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/api/auth/signin">
+              <Link href="/signin">
                 <button className="btn-primary">Start Your Journey</button>
               </Link>
               <Link href="#features">
