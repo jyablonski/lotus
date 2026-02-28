@@ -10,14 +10,17 @@ Load tests for the Lotus backend service using [k6](https://grafana.com/docs/k6/
 
 ## CI Pipeline
 
-The `k6-smoke` job in `.github/workflows/backend.yaml` runs automatically on PRs that modify `services/backend/**`. It:
+The `k6-smoke` job in `.github/workflows/backend.yaml` runs automatically on PRs that modify `services/backend/**`. It uses the same Docker Compose setup as local development, running k6 inside the Docker network so it can reach the backend directly at `http://backend:8080`.
+
+**Steps:**
 
 1. Checks out the repo (sparse checkout: `services/backend/`, `docker/`, `Makefile`)
-2. Starts the e2e stack (Postgres + backend) via Docker Compose
-3. Runs the HTTP gateway smoke test using `grafana/k6-action`
-4. Tears down the stack
+2. Starts Postgres and the backend via `docker compose --profile load-test up -d --build --wait`
+3. Runs the HTTP gateway smoke test via `docker compose --profile load-test run k6 run /scripts/http-gateway-load.js`
+4. Dumps backend logs on failure for debugging
+5. Tears down the stack
 
-The smoke test validates that all endpoints respond correctly under minimal load (1 req/s for 30s). It acts as a regression gate — if any endpoint starts returning errors or latencies exceed thresholds, the PR check fails.
+k6's `waitForReady()` function in `setup()` polls the backend until it responds before starting the test. If any threshold fails (e.g. error rate > 1% or p95 latency > 500ms), k6 exits with a non-zero code and the PR check fails.
 
 ## Test Scripts
 
