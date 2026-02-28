@@ -122,3 +122,14 @@ CREATE TABLE IF NOT EXISTS source.journal_sentiments (
 INSERT INTO source.journal_sentiments (journal_id, sentiment, confidence, confidence_level, is_reliable, ml_model_version, all_scores) VALUES
 (1, 'positive', 0.8234, 'high', TRUE, 'v1.0.0', '{"positive": 0.8234, "negative": 0.1234, "neutral": 0.0532}'),
 (2, 'negative', 0.7891, 'high', TRUE, 'v1.0.0', '{"positive": 0.0823, "negative": 0.7891, "neutral": 0.1286}');
+
+CREATE TABLE IF NOT EXISTS source.runtime_config
+(
+    id SERIAL PRIMARY KEY,
+    key VARCHAR(255) NOT NULL UNIQUE,
+    value JSONB NOT NULL DEFAULT '{}',
+    service VARCHAR(50) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    modified_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
