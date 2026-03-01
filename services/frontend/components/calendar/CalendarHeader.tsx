@@ -26,7 +26,7 @@ function formatMonthYear(date: Date): string {
     "December",
   ];
 
-  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  return `${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 export function CalendarHeader({

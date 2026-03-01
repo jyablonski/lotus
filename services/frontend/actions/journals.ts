@@ -13,6 +13,7 @@ export interface CreateJournalInput {
 export interface CreateJournalResult {
   success: boolean;
   journalId?: string;
+  totalCount?: number;
   error?: string;
 }
 
@@ -59,6 +60,21 @@ export async function createJournal(
 
     const data = await response.json();
 
+    // Fetch the updated total count so the client can detect first-entry
+    let totalCount: number | undefined;
+    try {
+      const countResp = await fetch(
+        `${BACKEND_URL}/v1/journals?user_id=${session.user.id}&limit=1&offset=0`,
+        { method: "GET", headers: { "Content-Type": "application/json" } },
+      );
+      if (countResp.ok) {
+        const countData = await countResp.json();
+        totalCount = parseInt(countData.totalCount, 10) || undefined;
+      }
+    } catch {
+      // Non-critical — analytics only; swallow silently
+    }
+
     // Revalidate cached data on pages that display journals
     revalidatePath("/");
     revalidatePath("/journal/home");
@@ -67,6 +83,7 @@ export async function createJournal(
     return {
       success: true,
       journalId: data.journalId,
+      totalCount,
     };
   } catch (error) {
     console.error("Error creating journal:", error);

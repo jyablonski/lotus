@@ -39,10 +39,10 @@ function formatDateHeader(date: Date): string {
     "December",
   ];
 
-  const dayName = days[date.getDay()];
-  const monthName = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
+  const dayName = days[date.getUTCDay()];
+  const monthName = months[date.getUTCMonth()];
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
 
   return `${dayName}, ${monthName} ${day}, ${year}`;
 }

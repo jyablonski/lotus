@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
+import { trackEvent } from "@/lib/analytics";
 
 interface ErrorFallbackProps {
   error: Error & { digest?: string };
@@ -25,9 +27,17 @@ export function ErrorFallback({
   backHref,
   backLabel = "Go to Dashboard",
 }: ErrorFallbackProps) {
+  const pathname = usePathname();
+
   useEffect(() => {
     console.error(`${logLabel}:`, error);
-  }, [error, logLabel]);
+
+    // §3e: error_encountered — fire when any error boundary catches an error
+    trackEvent("error_encountered", {
+      error_type: "load_failed",
+      page: pathname ?? "unknown",
+    });
+  }, [error, logLabel, pathname]);
 
   return (
     <div className="page-container">

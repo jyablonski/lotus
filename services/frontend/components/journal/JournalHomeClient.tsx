@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { JournalHeader } from "@/components/journal/JournalHeader";
 import { JournalFilters } from "@/components/journal/JournalFilters";
 import { JournalEmptyState } from "@/components/journal/JournalEmptyState";
@@ -11,6 +11,7 @@ import {
   filterJournals,
   getUniqueMoodsFromJournals,
 } from "@/lib/utils/journalFilters";
+import { trackEvent } from "@/lib/analytics";
 
 interface JournalHomeClientProps {
   journals: JournalEntry[];
@@ -25,6 +26,18 @@ export function JournalHomeClient({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMood, setSelectedMood] = useState<string>("all");
   const itemsPerPage = 10;
+
+  // §3c: entries_browsed — fire once when the browse page is viewed
+  const hasFiredBrowse = useRef(false);
+  useEffect(() => {
+    if (!hasFiredBrowse.current) {
+      hasFiredBrowse.current = true;
+      trackEvent("entries_browsed", { entries_count: totalCount });
+    }
+  }, [totalCount]);
+
+  // §3c: search_used — fire when the user stops typing (debounce 800ms)
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Extract unique moods from journals using existing utility
   const uniqueMoods = useMemo(() => {
@@ -53,6 +66,16 @@ export function JournalHomeClient({
   const handleSearchChange = useCallback((term: string) => {
     setSearchTerm(term);
     setCurrentPage(1);
+
+    // §3c: search_used — debounced so we fire once the user pauses typing
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    if (term.trim()) {
+      searchDebounceRef.current = setTimeout(() => {
+        trackEvent("search_used", { query_length: term.trim().length });
+      }, 800);
+    }
   }, []);
 
   const handleMoodChange = useCallback((mood: string) => {

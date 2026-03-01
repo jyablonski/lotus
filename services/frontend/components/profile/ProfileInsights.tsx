@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { getMoodConfigByInt } from "@/lib/utils/moodMapping";
+import { trackEvent } from "@/lib/analytics";
 
 interface ProfileInsightsProps {
   averageMood: number;
@@ -14,6 +15,10 @@ export function ProfileInsights({
 }: ProfileInsightsProps) {
   const moodConfig = getMoodConfigByInt(Math.round(averageMood));
 
+  const handleInsightClick = (insightType: string) => {
+    trackEvent("insight_interaction", { insight_type: insightType });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -21,7 +26,10 @@ export function ProfileInsights({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Average Mood */}
-        <div className="insight-row">
+        <div
+          className="insight-row cursor-pointer"
+          onClick={() => handleInsightClick("average_mood")}
+        >
           <div>
             <p className="text-sm font-medium text-dark-400">Average Mood</p>
             <p className="text-lg font-semibold text-dark-50">
@@ -37,7 +45,10 @@ export function ProfileInsights({
         </div>
 
         {/* Most Active Day */}
-        <div className="insight-row">
+        <div
+          className="insight-row cursor-pointer"
+          onClick={() => handleInsightClick("most_active_day")}
+        >
           <div>
             <p className="text-sm font-medium text-dark-400">Most Active Day</p>
             <p className="text-lg font-semibold text-dark-50">
@@ -48,7 +59,10 @@ export function ProfileInsights({
         </div>
 
         {/* Favorite Mood Category */}
-        <div className="insight-row">
+        <div
+          className="insight-row cursor-pointer"
+          onClick={() => handleInsightClick("most_common_mood")}
+        >
           <div>
             <p className="text-sm font-medium text-dark-400">
               Most Common Mood

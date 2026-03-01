@@ -74,6 +74,7 @@ services:
       - AUTH_GITHUB_SECRET=${AUTH_GITHUB_SECRET}
       - AUTH_TRUST_HOST=true
       - AUTH_RESEND_KEY=${AUTH_RESEND_KEY}
+      - GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}
     depends_on:
       - backend
       - postgres
