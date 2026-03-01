@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { getMoodConfigByInt } from "@/lib/utils/moodMapping";
 import { JournalEntry } from "@/types/journal";
+import { trackEvent } from "@/lib/analytics";
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
@@ -38,12 +39,12 @@ function formatDateTime(dateString: string): string {
     "December",
   ];
 
-  const dayName = days[date.getDay()];
-  const monthName = months[date.getMonth()];
-  const day = date.getDate();
+  const dayName = days[date.getUTCDay()];
+  const monthName = months[date.getUTCMonth()];
+  const day = date.getUTCDate();
 
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
+  let hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
   const ampm = hours >= 12 ? "PM" : "AM";
   hours = hours % 12;
   hours = hours ? hours : 12; // 0 should be 12
@@ -90,7 +91,21 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
         {shouldTruncate && (
           <div className="mt-4 pt-4 border-t border-dark-600">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => {
+                const expanding = !isExpanded;
+                setIsExpanded(expanding);
+
+                // §3c: entry_viewed — fire when the user expands to read
+                if (expanding) {
+                  const createdDate = new Date(entry.createdAt);
+                  const now = new Date();
+                  const daysOld = Math.floor(
+                    (now.getTime() - createdDate.getTime()) /
+                      (1000 * 60 * 60 * 24),
+                  );
+                  trackEvent("entry_viewed", { days_old: daysOld });
+                }
+              }}
               className="link-lotus text-sm font-medium"
             >
               {isExpanded ? "Show less" : "Read more"}

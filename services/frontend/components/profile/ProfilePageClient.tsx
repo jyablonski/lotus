@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileStats } from "./ProfileStats";
 import { ProfileInsights } from "./ProfileInsights";
 import { ProfileActions } from "./ProfileActions";
+import { trackEvent } from "@/lib/analytics";
 import type { ProfileStats as ProfileStatsType } from "@/lib/server/profile";
 
 interface ProfilePageClientProps {
@@ -33,6 +35,15 @@ export function ProfilePageClient({
     favoriteModCategory,
     totalWords,
   } = stats;
+
+  // §3d: insights_viewed — fire once when the profile/insights page loads
+  const hasFiredInsights = useRef(false);
+  useEffect(() => {
+    if (!hasFiredInsights.current) {
+      hasFiredInsights.current = true;
+      trackEvent("insights_viewed");
+    }
+  }, []);
 
   return (
     <div className="page-container">
