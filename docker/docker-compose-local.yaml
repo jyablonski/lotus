@@ -53,6 +53,20 @@ services:
       - default
     restart: unless-stopped
 
+  pact-broker:
+    image: pactfoundation/pact-broker:latest
+    ports:
+      - "9292:9292"
+    environment:
+      PACT_BROKER_DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/pact_broker"
+      PACT_BROKER_BASIC_AUTH_USERNAME: "pact"
+      PACT_BROKER_BASIC_AUTH_PASSWORD: "pact"
+      PACT_BROKER_LOG_LEVEL: "INFO"
+    depends_on:
+      - postgres
+    profiles:
+      - pact
+
   frontend:
     profiles: ["frontend"]
     build:

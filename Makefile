@@ -60,6 +60,14 @@ e2e-down: ## Stop e2e stack and remove volumes
 e2e-test: ## Run Playwright e2e tests (stack must be running)
 	@cd services/frontend && npx playwright test
 
+.PHONY: pact-broker-up
+pact-broker-up: ## Start the Pact Broker
+	@docker compose -f docker/docker-compose-local.yaml --profile pact up -d pact-broker
+
+.PHONY: pact-broker-down
+pact-broker-down: ## Stop the Pact Broker
+	@docker compose -f docker/docker-compose-local.yaml --profile pact down pact-broker
+
 .PHONY: help
 help: ## Show this help message
 	@echo "Available targets:"
