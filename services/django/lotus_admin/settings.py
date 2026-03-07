@@ -26,7 +26,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "core",
+    "core.apps.WaffleConfig",
+    "core.apps.CoreConfig",
 ]
 
 MIDDLEWARE = [
@@ -37,6 +38,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "waffle.middleware.WaffleMiddleware",
     "core.middleware.AdminOnlyMiddleware",  # Custom middleware for admin-only access
 ]
 
@@ -146,3 +148,8 @@ ADMIN_ALLOWED_GROUPS = [
     "infrastructure",
     "engineering",
 ]  # Django groups that can access admin interface
+
+# Django Waffle - Feature Flag Settings
+# https://waffle.readthedocs.io/en/stable/starting/configuring.html
+WAFFLE_CREATE_MISSING_FLAGS = True  # Auto-create flags on first check (dev convenience)
+WAFFLE_FLAG_DEFAULT = False  # Flags are off by default (opt-in)

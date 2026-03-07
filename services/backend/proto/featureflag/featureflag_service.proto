@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package featureflag;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/featureflag;featureflag_pb";
+
+import "google/api/annotations.proto";
+import "proto/featureflag/featureflag.proto";
+
+service FeatureFlagService {
+  // GET http://localhost:8080/v1/feature-flags?user_role=Admin
+  rpc GetFeatureFlags(GetFeatureFlagsRequest) returns (GetFeatureFlagsResponse) {
+    option (google.api.http) = {
+      get: "/v1/feature-flags"
+    };
+  }
+}

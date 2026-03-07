@@ -29,7 +29,7 @@ class TestAdminOnlyMiddleware:
 
         factory = RequestFactory()
         # Use a specific admin path that isn't in the skip list
-        request = factory.get("/admin/core/featureflag/")
+        request = factory.get("/admin/core/runtimeconfig/")
         request.user = AnonymousUser()
 
         middleware = AdminOnlyMiddleware(get_response)
@@ -52,7 +52,7 @@ class TestAdminOnlyMiddleware:
 
         factory = RequestFactory()
         # Use a specific admin path that isn't in the skip list
-        request = factory.get("/admin/core/featureflag/")
+        request = factory.get("/admin/core/runtimeconfig/")
         request.user = django_user
         # Add mock session since middleware calls logout() which requires session
         request.session = type("MockSession", (), {"flush": lambda self: None})()

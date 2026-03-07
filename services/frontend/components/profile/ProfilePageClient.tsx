@@ -14,6 +14,7 @@ interface ProfilePageClientProps {
   image: string | null;
   signupDate: string;
   stats: ProfileStatsType;
+  isAdmin?: boolean;
 }
 
 export function ProfilePageClient({
@@ -22,6 +23,7 @@ export function ProfilePageClient({
   image,
   signupDate,
   stats,
+  isAdmin = false,
 }: ProfilePageClientProps) {
   const {
     totalEntries,
@@ -55,6 +57,7 @@ export function ProfilePageClient({
           image={image}
           signupDate={signupDate}
           firstEntryDate={firstEntryDate ? new Date(firstEntryDate) : null}
+          isAdmin={isAdmin}
         />
 
         {/* Statistics Section */}

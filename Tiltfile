@@ -222,6 +222,9 @@ def setup_django_admin():
             "services/django/tests",
             "services/django/*.pyc",
             "services/django/.git",
+            "services/django/**/*.py",
+            "services/django/core/templates",
+            "services/django/core/static",
         ],
     )
     dc_resource(

@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface User {
     backendId?: string;
     createdAt?: string;
+    role?: string;
   }
 
   interface Session {
@@ -11,6 +12,7 @@ declare module "next-auth" {
       id: string;
       backendId?: string;
       createdAt?: string;
+      role?: string;
     } & DefaultSession["user"];
   }
 
@@ -23,5 +25,6 @@ declare module "next-auth" {
   interface JWT {
     backendId?: string;
     createdAt?: string;
+    role?: string;
   }
 }

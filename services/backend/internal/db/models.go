@@ -73,3 +73,19 @@ type SourceUser struct {
 	ModifiedAt    time.Time
 	Timezone      string
 }
+
+type SourceWaffleFlag struct {
+	ID            int32
+	Name          string
+	Everyone      sql.NullBool
+	Percent       sql.NullString
+	Testing       bool
+	Superusers    bool
+	Staff         bool
+	Authenticated bool
+	Languages     string
+	Rollout       bool
+	Note          string
+	Created       time.Time
+	Modified      time.Time
+}

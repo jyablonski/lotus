@@ -1,0 +1,15 @@
+meta {
+  name: Get Feature Flags
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{backend_url}}/v1/feature-flags?user_role=
+  body: none
+  auth: none
+}
+
+params:query {
+  ~user_role: Admin
+}

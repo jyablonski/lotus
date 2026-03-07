@@ -18,12 +18,14 @@ interface BackendUserResponse {
   user_id?: string;
   createdAt?: string;
   created_at?: string;
+  role?: string;
 }
 
 /** Normalized backend user data */
 interface BackendUser {
   userId: string;
   createdAt: string | undefined;
+  role: string | undefined;
 }
 
 /** Response shape from POST /v1/oauth/users */
@@ -42,6 +44,7 @@ function parseBackendUser(data: BackendUserResponse): BackendUser | null {
   return {
     userId,
     createdAt: data.createdAt || data.created_at,
+    role: data.role,
   };
 }
 
@@ -301,6 +304,7 @@ export const authConfig: NextAuthConfig = {
       // Attach backend fields to the NextAuth user object
       (user as User).backendId = backendUser.userId;
       (user as User).createdAt = backendUser.createdAt;
+      (user as User).role = backendUser.role;
 
       return true;
     },
@@ -318,6 +322,9 @@ export const authConfig: NextAuthConfig = {
         if (user.createdAt) {
           token.createdAt = user.createdAt;
         }
+        if (user.role) {
+          token.role = user.role;
+        }
         // Persist the email on the token so we can resolve backendId later.
         if (user.email) {
           token.email = user.email;
@@ -333,6 +340,7 @@ export const authConfig: NextAuthConfig = {
         if (backendUser) {
           token.backendId = backendUser.userId;
           token.createdAt = backendUser.createdAt;
+          token.role = backendUser.role;
         } else {
           // User doesn't exist yet — create them.
           const result = await createUserInBackend(email, "email");
@@ -341,6 +349,7 @@ export const authConfig: NextAuthConfig = {
             if (created) {
               token.backendId = created.userId;
               token.createdAt = created.createdAt;
+              token.role = created.role;
             }
           }
         }
@@ -357,6 +366,9 @@ export const authConfig: NextAuthConfig = {
         session.user.createdAt = token.createdAt as string;
       } else if (user?.createdAt) {
         session.user.createdAt = (user as User).createdAt;
+      }
+      if (token?.role) {
+        session.user.role = token.role as string;
       }
       return session;
     },

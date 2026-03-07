@@ -7,6 +7,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	pb_analytics "github.com/jyablonski/lotus/internal/pb/proto/analytics"
+	pb_featureflag "github.com/jyablonski/lotus/internal/pb/proto/featureflag"
 	pb_journal "github.com/jyablonski/lotus/internal/pb/proto/journal"
 	pb_user "github.com/jyablonski/lotus/internal/pb/proto/user"
 	pb_util "github.com/jyablonski/lotus/internal/pb/proto/util"
@@ -53,6 +54,7 @@ func RegisterServices(s *grpc.Server) {
 	pb_journal.RegisterJournalServiceServer(s, &JournalServer{})
 	pb_analytics.RegisterAnalyticsServiceServer(s, &AnalyticsServer{})
 	pb_util.RegisterUtilServiceServer(s, &UtilServer{})
+	pb_featureflag.RegisterFeatureFlagServiceServer(s, &FeatureFlagServer{})
 }
 
 // RegisterGateway registers all gRPC-Gateway HTTP handlers on the given mux.
@@ -64,6 +66,7 @@ func RegisterGateway(ctx context.Context, mux *runtime.ServeMux, endpoint string
 		pb_journal.RegisterJournalServiceHandlerFromEndpoint,
 		pb_analytics.RegisterAnalyticsServiceHandlerFromEndpoint,
 		pb_util.RegisterUtilServiceHandlerFromEndpoint,
+		pb_featureflag.RegisterFeatureFlagServiceHandlerFromEndpoint,
 	} {
 		if err := reg(ctx, mux, endpoint, opts); err != nil {
 			return err

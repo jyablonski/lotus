@@ -168,28 +168,6 @@ class JournalSentiment(models.Model):
         return f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
 
 
-class FeatureFlag(models.Model):
-    """Feature flag model for managing feature toggles via Django admin."""
-
-    id = models.UUIDField(
-        primary_key=True,
-        editable=False,
-        db_default=UUIDGenerateV4(),
-    )
-    flag_name = models.CharField(max_length=255, unique=True)
-    enabled = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "feature_flags"
-        ordering = ["flag_name"]
-
-    def __str__(self):
-        status = "✓" if self.enabled else "✗"
-        return f"{status} {self.flag_name}"
-
-
 class ActiveMLModel(models.Model):
     """Model for tracking which ML models are currently enabled for the application."""
 
