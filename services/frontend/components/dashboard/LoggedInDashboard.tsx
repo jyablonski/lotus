@@ -19,17 +19,20 @@ import {
 import { RelativeDate } from "@/components/ui/RelativeDate";
 import { CardHeader } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
+import { ROUTES, journalDetailRoute } from "@/lib/routes";
 
 interface LoggedInDashboardProps {
   analytics: UserJournalSummary | null;
   recentJournals: JournalEntry[];
   userName?: string;
+  timezone?: string;
 }
 
 export const LoggedInDashboard = ({
   analytics,
   recentJournals,
   userName,
+  timezone,
 }: LoggedInDashboardProps) => {
   // Derive display values from analytics (or use defaults for new users)
   const totalEntries = analytics?.totalJournals ?? 0;
@@ -82,7 +85,7 @@ export const LoggedInDashboard = ({
               Here&apos;s what&apos;s happening with your journal
             </p>
           </div>
-          <Link href="/journal/create">
+          <Link href={ROUTES.journal.create}>
             <button className="btn-primary flex items-center space-x-2">
               <Edit3 size={16} />
               <span>New Entry</span>
@@ -140,14 +143,14 @@ export const LoggedInDashboard = ({
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Recent Entries */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card">
+          <div className="lg:col-span-2 flex flex-col">
+            <div className="card flex-1 flex flex-col">
               <CardHeader>
                 <h2 className="text-xl font-semibold text-primary-dark">
                   Recent Entries
                 </h2>
               </CardHeader>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 flex-1 flex flex-col">
                 {recentEntries.length > 0 ? (
                   <>
                     {recentEntries.map((entry) => (
@@ -163,6 +166,7 @@ export const LoggedInDashboard = ({
                             <RelativeDate
                               date={entry.date}
                               className="text-xs text-muted-dark"
+                              timezone={timezone ?? "UTC"}
                             />
                           </div>
                         </div>
@@ -170,7 +174,7 @@ export const LoggedInDashboard = ({
                           {entry.preview}
                         </p>
                         <Link
-                          href={`/journal/${entry.id}`}
+                          href={journalDetailRoute(entry.id)}
                           className="inline-block mt-2"
                         >
                           <span className="link-lotus text-sm">
@@ -179,7 +183,7 @@ export const LoggedInDashboard = ({
                         </Link>
                       </div>
                     ))}
-                    <Link href="/journal/home" className="block">
+                    <Link href={ROUTES.journal.home} className="block">
                       <div className="text-center py-4 link-lotus font-medium">
                         View all entries →
                       </div>
@@ -188,7 +192,7 @@ export const LoggedInDashboard = ({
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-dark mb-4">No entries yet</p>
-                    <Link href="/journal/create">
+                    <Link href={ROUTES.journal.create}>
                       <button className="btn-primary">
                         Create Your First Entry
                       </button>
@@ -200,7 +204,7 @@ export const LoggedInDashboard = ({
           </div>
 
           {/* Right Column - Quick Actions & Insights */}
-          <div className="space-y-6">
+          <div className="flex flex-col space-y-6">
             {/* Quick Actions */}
             <div className="card">
               <CardHeader>
@@ -210,7 +214,7 @@ export const LoggedInDashboard = ({
               </CardHeader>
               <div className="p-6 space-y-3">
                 <Link
-                  href="/journal/calendar"
+                  href={ROUTES.journal.calendar}
                   className="nav-link flex items-center space-x-3 p-3 rounded-lg"
                 >
                   <Calendar size={20} className="text-lotus-400" />
@@ -224,7 +228,7 @@ export const LoggedInDashboard = ({
                   </div>
                 </Link>
                 <Link
-                  href="/journal/insights"
+                  href={ROUTES.profile}
                   className="nav-link flex items-center space-x-3 p-3 rounded-lg"
                 >
                   <TrendingUp size={20} className="text-green-400" />
@@ -236,7 +240,7 @@ export const LoggedInDashboard = ({
                   </div>
                 </Link>
                 <Link
-                  href="/profile"
+                  href={ROUTES.profile}
                   className="nav-link flex items-center space-x-3 p-3 rounded-lg"
                 >
                   <User size={20} className="text-muted-dark" />
@@ -251,7 +255,7 @@ export const LoggedInDashboard = ({
             </div>
 
             {/* Writing Stats */}
-            <div className="card">
+            <div className="card flex-1 flex flex-col">
               <CardHeader>
                 <h2 className="text-lg font-semibold text-primary-dark">
                   Writing Stats

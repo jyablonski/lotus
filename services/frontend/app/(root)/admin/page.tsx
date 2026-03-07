@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Admin page — restricted to allowed admin emails.
@@ -18,11 +19,11 @@ export default async function AdminPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect("/");
+    redirect(ROUTES.home);
   }
 
   if (!isAdmin(session.user.email)) {
-    redirect("/");
+    redirect(ROUTES.home);
   }
 
   // Show only non-sensitive session info

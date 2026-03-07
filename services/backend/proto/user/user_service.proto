@@ -28,4 +28,11 @@ service UserService {
       get: "/v1/users"
     };
   }
+
+  rpc UpdateUserTimezone(UpdateUserTimezoneRequest) returns (UpdateUserTimezoneResponse) {
+    option (google.api.http) = {
+      patch: "/v1/users/{user_id}/timezone"
+      body: "*"
+    };
+  }
 }

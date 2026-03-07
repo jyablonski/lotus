@@ -105,12 +105,10 @@ describe("Mood Mapping Utils", () => {
       expect(options).toHaveLength(8);
     });
 
-    test("each option has key, value, label, emoji, and color", () => {
+    test("each option has key, label, emoji, and color", () => {
       const options = getAllMoodOptions();
       options.forEach((option) => {
         expect(option.key).toBeTruthy();
-        expect(option.value).toBeGreaterThanOrEqual(1);
-        expect(option.value).toBeLessThanOrEqual(8);
         expect(option.label).toBeTruthy();
         expect(option.emoji).toBeTruthy();
         expect(option.color).toBeTruthy();

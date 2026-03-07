@@ -1,4 +1,5 @@
 import { JournalEntry } from "@/types/journal";
+import { toTimezoneDateString } from "@/lib/utils/datetime";
 
 export type CalendarDay = {
   date: Date;
@@ -12,14 +13,14 @@ export type CalendarDay = {
 };
 
 /**
- * Format date as YYYY-MM-DD in local timezone (not UTC).
+ * Format date as YYYY-MM-DD in the given timezone.
  * This ensures entries created at e.g. 5pm PT show on today's date, not tomorrow.
  */
-export function toLocalDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+export function toLocalDateString(
+  date: Date,
+  timezone: string = "UTC",
+): string {
+  return toTimezoneDateString(date, timezone);
 }
 
 /**
@@ -27,12 +28,13 @@ export function toLocalDateString(date: Date): string {
  */
 export function groupJournalsByDate(
   journals: JournalEntry[],
+  timezone: string = "UTC",
 ): Map<string, JournalEntry[]> {
   const grouped = new Map<string, JournalEntry[]>();
 
   journals.forEach((journal) => {
     const date = new Date(journal.createdAt);
-    const dateKey = toLocalDateString(date);
+    const dateKey = toLocalDateString(date, timezone);
 
     if (!grouped.has(dateKey)) {
       grouped.set(dateKey, []);
@@ -51,6 +53,7 @@ export function generateCalendarDays(
   journalsByDate: Map<string, JournalEntry[]>,
   selectedDate: Date | null,
   todayString: string,
+  timezone: string = "UTC",
 ): CalendarDay[] {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -65,7 +68,7 @@ export function generateCalendarDays(
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
 
-    const dateKey = toLocalDateString(date);
+    const dateKey = toLocalDateString(date, timezone);
     const dayEntries = journalsByDate.get(dateKey) || [];
 
     const avgMood =
@@ -75,7 +78,8 @@ export function generateCalendarDays(
         : 0;
 
     const isSelected = selectedDate
-      ? toLocalDateString(date) === toLocalDateString(selectedDate)
+      ? toLocalDateString(date, timezone) ===
+        toLocalDateString(selectedDate, timezone)
       : false;
 
     days.push({

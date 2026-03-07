@@ -2,6 +2,7 @@ import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Heart, Github, Mail } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 export default async function SignInPage({
   searchParams,
@@ -10,11 +11,11 @@ export default async function SignInPage({
 }) {
   const session = await auth();
   if (session?.user) {
-    redirect("/");
+    redirect(ROUTES.home);
   }
 
   const params = await searchParams;
-  const callbackUrl = params.callbackUrl ?? "/";
+  const callbackUrl = params.callbackUrl ?? ROUTES.home;
   const error = params.error;
 
   return (
@@ -23,7 +24,7 @@ export default async function SignInPage({
         {/* Logo */}
         <div className="text-center mb-8">
           <Link
-            href="/"
+            href={ROUTES.home}
             className="inline-flex items-center justify-center w-16 h-16 bg-lotus-gradient rounded-2xl mb-4 shadow-lg"
           >
             <Heart className="w-8 h-8 text-white" />
@@ -103,7 +104,7 @@ export default async function SignInPage({
 
         {/* Back link */}
         <p className="text-center mt-6">
-          <Link href="/" className="link-lotus text-sm">
+          <Link href={ROUTES.home} className="link-lotus text-sm">
             Back to home
           </Link>
         </p>

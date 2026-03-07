@@ -2,19 +2,25 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { fetchProfileStats, fetchFeatureFlags } from "@/lib/server";
 import { ProfilePageClient } from "@/components/profile/ProfilePageClient";
+import { ROUTES } from "@/lib/routes";
 
 export default async function ProfilePage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect("/");
+    redirect(ROUTES.home);
   }
 
-  const name = session.user?.name ?? "Unknown User";
   const email = session.user?.email ?? "No Email Provided";
+  // Prefer the OAuth-provided name; fall back to the email prefix so
+  // magic-link users see something meaningful instead of "Unknown User".
+  const name =
+    session.user?.name ||
+    (email !== "No Email Provided" ? email.split("@")[0] : "Unknown User");
   const image = session.user?.image ?? null;
-  const signUpDate = session.user?.createdAt ?? new Date().toISOString();
+  const signUpDate = session.user?.createdAt ?? "";
   const userRole = session.user?.role ?? "";
+  const timezone = session.user?.timezone ?? "UTC";
 
   // Fetch profile stats and feature flags server-side in parallel
   const [stats, flags] = await Promise.all([
@@ -30,6 +36,7 @@ export default async function ProfilePage() {
       signupDate={signUpDate}
       stats={stats}
       isAdmin={flags.frontend_admin ?? false}
+      timezone={timezone}
     />
   );
 }

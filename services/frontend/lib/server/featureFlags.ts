@@ -1,6 +1,6 @@
 import "server-only";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+import { BACKEND_URL } from "@/lib/config";
 
 export interface FeatureFlags {
   [key: string]: boolean;

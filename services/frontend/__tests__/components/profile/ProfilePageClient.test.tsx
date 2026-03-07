@@ -27,6 +27,12 @@ jest.mock("@/components/profile/ProfileActions", () => ({
   ProfileActions: () => <div data-testid="profile-actions">Actions</div>,
 }));
 
+jest.mock("@/components/profile/TimezoneSelector", () => ({
+  TimezoneSelector: ({ currentTimezone }: { currentTimezone: string }) => (
+    <div data-testid="timezone-selector">Timezone: {currentTimezone}</div>
+  ),
+}));
+
 describe("ProfilePageClient", () => {
   const mockStats: ProfileStats = {
     totalEntries: 42,
@@ -47,6 +53,7 @@ describe("ProfilePageClient", () => {
     image: "https://example.com/avatar.jpg",
     signupDate: "2025-01-15T00:00:00Z",
     stats: mockStats,
+    timezone: "UTC",
   };
 
   it("renders ProfileHeader with user info", () => {
@@ -78,5 +85,13 @@ describe("ProfilePageClient", () => {
   it("renders ProfileActions", () => {
     render(<ProfilePageClient {...defaultProps} />);
     expect(screen.getByTestId("profile-actions")).toBeInTheDocument();
+  });
+
+  it("renders Settings heading and TimezoneSelector", () => {
+    render(<ProfilePageClient {...defaultProps} />);
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByTestId("timezone-selector")).toHaveTextContent(
+      "Timezone: UTC",
+    );
   });
 });

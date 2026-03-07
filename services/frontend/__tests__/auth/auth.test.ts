@@ -74,6 +74,7 @@ describe("signIn callback", () => {
       json: async () => ({
         userId: "backend-123",
         createdAt: "2025-01-01T00:00:00Z",
+        timezone: "America/New_York",
       }),
     });
 
@@ -86,6 +87,7 @@ describe("signIn callback", () => {
     expect(result).toBe(true);
     expect(user.backendId).toBe("backend-123");
     expect(user.createdAt).toBe("2025-01-01T00:00:00Z");
+    expect(user.timezone).toBe("America/New_York");
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
@@ -103,6 +105,7 @@ describe("signIn callback", () => {
       json: async () => ({
         userId: "new-user-456",
         createdAt: "2025-02-01T00:00:00Z",
+        timezone: "UTC",
       }),
     });
 
@@ -155,6 +158,7 @@ describe("signIn callback", () => {
       json: async () => ({
         user_id: "snake-case-id",
         created_at: "2025-03-01T00:00:00Z",
+        timezone: "Europe/London",
       }),
     });
 
@@ -185,7 +189,11 @@ describe("signIn callback", () => {
     });
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ userId: "u1", createdAt: "2025-01-01" }),
+      json: async () => ({
+        userId: "u1",
+        createdAt: "2025-01-01",
+        timezone: "UTC",
+      }),
     });
 
     const user = { email: "new@example.com" } as Record<string, unknown>;
@@ -216,8 +224,23 @@ describe("jwt callback", () => {
   });
 
   test("preserves existing token when no user (subsequent requests)", async () => {
+    // The always-refresh block fetches backend user to refresh role + createdAt + timezone
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userId: "existing-id",
+        createdAt: "2025-01-01",
+        role: "Consumer",
+        timezone: "America/Chicago",
+      }),
+    });
+
     const result = await jwt({
-      token: { backendId: "existing-id", createdAt: "2025-01-01" },
+      token: {
+        backendId: "existing-id",
+        email: "test@example.com",
+        createdAt: "2025-01-01",
+      },
       user: undefined,
     } as never);
 
@@ -244,7 +267,11 @@ describe("session callback", () => {
   test("sets session.user.id from token.backendId", async () => {
     const result = await session({
       session: { user: { id: "" } },
-      token: { backendId: "b-123", createdAt: "2025-01-01" },
+      token: {
+        backendId: "b-123",
+        createdAt: "2025-01-01",
+        timezone: "America/Los_Angeles",
+      },
       user: undefined,
     } as never);
 
@@ -255,6 +282,9 @@ describe("session callback", () => {
       (result as never as Record<string, Record<string, string>>).user
         .createdAt,
     ).toBe("2025-01-01");
+    expect(
+      (result as never as Record<string, Record<string, string>>).user.timezone,
+    ).toBe("America/Los_Angeles");
   });
 
   test("falls back to user.createdAt when token has no createdAt", async () => {
@@ -296,6 +326,7 @@ describe("signIn callback – magic link (email provider)", () => {
       json: async () => ({
         userId: "email-user-100",
         createdAt: "2025-05-01T00:00:00Z",
+        timezone: "America/Denver",
       }),
     });
 
@@ -328,6 +359,7 @@ describe("signIn callback – magic link (email provider)", () => {
       json: async () => ({
         userId: "new-email-user-200",
         createdAt: "2025-06-01T00:00:00Z",
+        timezone: "UTC",
       }),
     });
 
@@ -371,11 +403,24 @@ describe("jwt callback – magic link fallback paths", () => {
   test("looks up backend user by email when backendId is still missing", async () => {
     // Scenario: token has email but no backendId (user object had neither
     // backendId nor a useful id)
+    // First call: initial lookup sets backendId
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         userId: "looked-up-id",
         createdAt: "2025-07-01T00:00:00Z",
+        role: "Consumer",
+        timezone: "Asia/Tokyo",
+      }),
+    });
+    // Second call: always-refresh-role lookup
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userId: "looked-up-id",
+        createdAt: "2025-07-01T00:00:00Z",
+        role: "Consumer",
+        timezone: "Asia/Tokyo",
       }),
     });
 
@@ -386,7 +431,8 @@ describe("jwt callback – magic link fallback paths", () => {
 
     expect(result.backendId).toBe("looked-up-id");
     expect(result.createdAt).toBe("2025-07-01T00:00:00Z");
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // 1 initial lookup + 1 role refresh = 2
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   test("creates user in backend when email lookup returns null", async () => {
@@ -403,6 +449,18 @@ describe("jwt callback – magic link fallback paths", () => {
       json: async () => ({
         userId: "auto-created-id",
         createdAt: "2025-08-01T00:00:00Z",
+        role: "Consumer",
+        timezone: "UTC",
+      }),
+    });
+    // Always-refresh-role lookup
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userId: "auto-created-id",
+        createdAt: "2025-08-01T00:00:00Z",
+        role: "Consumer",
+        timezone: "UTC",
       }),
     });
 
@@ -434,15 +492,30 @@ describe("jwt callback – magic link fallback paths", () => {
     expect(result.backendId).toBeUndefined();
   });
 
-  test("skips email lookup when backendId is already on the token", async () => {
+  test("refreshes role and createdAt from backend when backendId is already on the token", async () => {
+    // The jwt callback now always refreshes role, createdAt, and timezone from the backend,
+    // so even when backendId is already set, one fetch is made.
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userId: "already-set",
+        createdAt: "2024-06-15T00:00:00Z",
+        role: "Admin",
+        timezone: "Europe/Paris",
+      }),
+    });
+
     const result = await jwt({
       token: { backendId: "already-set", email: "skip@example.com" },
       user: undefined,
     } as never);
 
     expect(result.backendId).toBe("already-set");
-    // No fetch calls should be made
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result.role).toBe("Admin");
+    expect(result.createdAt).toBe("2024-06-15T00:00:00Z");
+    expect(result.timezone).toBe("Europe/Paris");
+    // 1 role-refresh fetch
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
 

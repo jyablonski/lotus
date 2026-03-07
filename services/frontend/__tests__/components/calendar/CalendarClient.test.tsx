@@ -83,6 +83,7 @@ describe("CalendarClient", () => {
     journals: mockJournals,
     totalEntries: 1,
     serverDate: "2025-06-15",
+    timezone: "UTC",
   };
 
   it("renders CalendarHeader", () => {

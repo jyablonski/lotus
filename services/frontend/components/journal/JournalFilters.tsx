@@ -1,11 +1,6 @@
 import { Search, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
-
-interface MoodOption {
-  key: string;
-  label: string;
-  emoji: string;
-}
+import type { MoodOption } from "@/lib/utils/moodMapping";
 
 interface JournalFiltersProps {
   searchTerm: string;

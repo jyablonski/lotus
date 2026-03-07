@@ -63,6 +63,7 @@ describe("LoggedInDashboard", () => {
         analytics={mockAnalytics}
         recentJournals={mockJournals}
         userName="John"
+        timezone="UTC"
       />,
     );
 
@@ -74,6 +75,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        timezone="UTC"
       />,
     );
 
@@ -86,6 +88,7 @@ describe("LoggedInDashboard", () => {
         analytics={mockAnalytics}
         recentJournals={mockJournals}
         userName="John"
+        timezone="UTC"
       />,
     );
 
@@ -107,6 +110,7 @@ describe("LoggedInDashboard", () => {
         analytics={mockAnalytics}
         recentJournals={mockJournals}
         userName="John"
+        timezone="UTC"
       />,
     );
 
@@ -123,6 +127,7 @@ describe("LoggedInDashboard", () => {
         analytics={null}
         recentJournals={[]}
         userName="John"
+        timezone="UTC"
       />,
     );
 
@@ -136,6 +141,7 @@ describe("LoggedInDashboard", () => {
         analytics={mockAnalytics}
         recentJournals={mockJournals}
         userName="John"
+        timezone="UTC"
       />,
     );
 
@@ -148,6 +154,7 @@ describe("LoggedInDashboard", () => {
         analytics={mockAnalytics}
         recentJournals={mockJournals}
         userName="John"
+        timezone="UTC"
       />,
     );
 

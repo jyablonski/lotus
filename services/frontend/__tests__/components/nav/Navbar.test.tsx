@@ -92,6 +92,7 @@ describe("Navbar", () => {
       expect(screen.getAllByText("Home")).toHaveLength(2); // desktop + mobile
       expect(screen.getAllByText("Journal")).toHaveLength(2);
       expect(screen.getAllByText("Calendar")).toHaveLength(2);
+      expect(screen.getAllByText("Profile")).toHaveLength(2);
     });
 
     it("shows user avatar", async () => {

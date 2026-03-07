@@ -8,6 +8,7 @@ import {
   Pen,
   Lightbulb,
 } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 const LandingPage = () => {
   const features = [
@@ -56,7 +57,7 @@ const LandingPage = () => {
               and reflect on your journey.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signin">
+              <Link href={ROUTES.signin}>
                 <button className="btn-primary">Start Your Journey</button>
               </Link>
               <Link href="#features">

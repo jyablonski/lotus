@@ -28,25 +28,49 @@ describe("SelectedDateEntries", () => {
     const pastDate = new Date(2024, 0, 15); // Jan 15, 2024
 
     it("renders the formatted date", () => {
-      render(<SelectedDateEntries selectedDate={pastDate} entries={[]} />);
-      expect(screen.getByText(/Monday, January 15, 2024/)).toBeInTheDocument();
+      render(
+        <SelectedDateEntries
+          selectedDate={pastDate}
+          entries={[]}
+          timezone="UTC"
+        />,
+      );
+      expect(screen.getByText(/January 15, 2024/)).toBeInTheDocument();
     });
 
     it("shows '0 entries' count", () => {
-      render(<SelectedDateEntries selectedDate={pastDate} entries={[]} />);
+      render(
+        <SelectedDateEntries
+          selectedDate={pastDate}
+          entries={[]}
+          timezone="UTC"
+        />,
+      );
       expect(screen.getByText("0 entries")).toBeInTheDocument();
     });
 
     it("shows 'No entries for this date'", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={pastDate} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={pastDate}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(screen.getByText("No entries for this date")).toBeInTheDocument();
     });
 
     it("shows 'Past entries cannot be created' after effect", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={pastDate} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={pastDate}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(
         screen.getByText("Past entries cannot be created"),
@@ -60,7 +84,13 @@ describe("SelectedDateEntries", () => {
 
     it("shows 'Future entries cannot be created' after effect", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={futureDate} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={futureDate}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(
         screen.getByText("Future entries cannot be created"),
@@ -69,7 +99,13 @@ describe("SelectedDateEntries", () => {
 
     it("does not show 'Add Entry' button", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={futureDate} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={futureDate}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(
         screen.queryByRole("button", { name: "Add Entry" }),
@@ -82,21 +118,39 @@ describe("SelectedDateEntries", () => {
 
     it("shows 'Today' as the header after effect", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={today} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={today}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(screen.getByText("Today")).toBeInTheDocument();
     });
 
     it("shows 'No entries for today yet'", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={today} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={today}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(screen.getByText("No entries for today yet")).toBeInTheDocument();
     });
 
     it("shows 'Create Todays Entry' button", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={today} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={today}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(
         screen.getByRole("button", { name: "Create Todays Entry" }),
@@ -105,7 +159,13 @@ describe("SelectedDateEntries", () => {
 
     it("shows 'Add Entry' button in header when no entries today", async () => {
       await act(async () => {
-        render(<SelectedDateEntries selectedDate={today} entries={[]} />);
+        render(
+          <SelectedDateEntries
+            selectedDate={today}
+            entries={[]}
+            timezone="UTC"
+          />,
+        );
       });
       expect(
         screen.getByRole("button", { name: "Add Entry" }),
@@ -121,19 +181,35 @@ describe("SelectedDateEntries", () => {
     ];
 
     it("shows entry count", () => {
-      render(<SelectedDateEntries selectedDate={pastDate} entries={entries} />);
+      render(
+        <SelectedDateEntries
+          selectedDate={pastDate}
+          entries={entries}
+          timezone="UTC"
+        />,
+      );
       expect(screen.getByText("2 entries")).toBeInTheDocument();
     });
 
     it("shows singular 'entry' for single entry", () => {
       render(
-        <SelectedDateEntries selectedDate={pastDate} entries={[mockEntry]} />,
+        <SelectedDateEntries
+          selectedDate={pastDate}
+          entries={[mockEntry]}
+          timezone="UTC"
+        />,
       );
       expect(screen.getByText("1 entry")).toBeInTheDocument();
     });
 
     it("renders JournalEntryCard for each entry", () => {
-      render(<SelectedDateEntries selectedDate={pastDate} entries={entries} />);
+      render(
+        <SelectedDateEntries
+          selectedDate={pastDate}
+          entries={entries}
+          timezone="UTC"
+        />,
+      );
       expect(screen.getByTestId("entry-card-1")).toBeInTheDocument();
       expect(screen.getByTestId("entry-card-2")).toBeInTheDocument();
     });
@@ -142,7 +218,11 @@ describe("SelectedDateEntries", () => {
       const today = new Date();
       await act(async () => {
         render(
-          <SelectedDateEntries selectedDate={today} entries={[mockEntry]} />,
+          <SelectedDateEntries
+            selectedDate={today}
+            entries={[mockEntry]}
+            timezone="UTC"
+          />,
         );
       });
       expect(
@@ -153,7 +233,11 @@ describe("SelectedDateEntries", () => {
     it("does not show 'Add Another Entry' for past dates", async () => {
       await act(async () => {
         render(
-          <SelectedDateEntries selectedDate={pastDate} entries={[mockEntry]} />,
+          <SelectedDateEntries
+            selectedDate={pastDate}
+            entries={[mockEntry]}
+            timezone="UTC"
+          />,
         );
       });
       expect(

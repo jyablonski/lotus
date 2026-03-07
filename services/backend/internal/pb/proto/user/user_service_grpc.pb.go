@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName      = "/user.UserService/CreateUser"
-	UserService_CreateUserOauth_FullMethodName = "/user.UserService/CreateUserOauth"
-	UserService_GetUser_FullMethodName         = "/user.UserService/GetUser"
+	UserService_CreateUser_FullMethodName         = "/user.UserService/CreateUser"
+	UserService_CreateUserOauth_FullMethodName    = "/user.UserService/CreateUserOauth"
+	UserService_GetUser_FullMethodName            = "/user.UserService/GetUser"
+	UserService_UpdateUserTimezone_FullMethodName = "/user.UserService/UpdateUserTimezone"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -32,6 +33,7 @@ type UserServiceClient interface {
 	CreateUserOauth(ctx context.Context, in *CreateUserOauthRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	// GET http://localhost:8080/v1/users?email=EMAIL_HERE
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
+	UpdateUserTimezone(ctx context.Context, in *UpdateUserTimezoneRequest, opts ...grpc.CallOption) (*UpdateUserTimezoneResponse, error)
 }
 
 type userServiceClient struct {
@@ -72,6 +74,16 @@ func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opt
 	return out, nil
 }
 
+func (c *userServiceClient) UpdateUserTimezone(ctx context.Context, in *UpdateUserTimezoneRequest, opts ...grpc.CallOption) (*UpdateUserTimezoneResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserTimezoneResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserTimezone_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations should embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -80,6 +92,7 @@ type UserServiceServer interface {
 	CreateUserOauth(context.Context, *CreateUserOauthRequest) (*CreateUserResponse, error)
 	// GET http://localhost:8080/v1/users?email=EMAIL_HERE
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	UpdateUserTimezone(context.Context, *UpdateUserTimezoneRequest) (*UpdateUserTimezoneResponse, error)
 }
 
 // UnimplementedUserServiceServer should be embedded to have
@@ -97,6 +110,9 @@ func (UnimplementedUserServiceServer) CreateUserOauth(context.Context, *CreateUs
 }
 func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserTimezone(context.Context, *UpdateUserTimezoneRequest) (*UpdateUserTimezoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserTimezone not implemented")
 }
 func (UnimplementedUserServiceServer) testEmbeddedByValue() {}
 
@@ -172,6 +188,24 @@ func _UserService_GetUser_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UpdateUserTimezone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserTimezoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserTimezone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserTimezone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserTimezone(ctx, req.(*UpdateUserTimezoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUser",
 			Handler:    _UserService_GetUser_Handler,
+		},
+		{
+			MethodName: "UpdateUserTimezone",
+			Handler:    _UserService_UpdateUserTimezone_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

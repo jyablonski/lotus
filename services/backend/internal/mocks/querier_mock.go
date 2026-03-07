@@ -59,6 +59,9 @@ var _ db.Querier = &QuerierMock{}
 //			GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
 //				panic("mock out the GetUserJournalSummaryByUserId method")
 //			},
+//			UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
+//				panic("mock out the UpdateUserTimezone method")
+//			},
 //			UpsertRuntimeConfigValueFunc: func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
 //				panic("mock out the UpsertRuntimeConfigValue method")
 //			},
@@ -107,6 +110,9 @@ type QuerierMock struct {
 
 	// GetUserJournalSummaryByUserIdFunc mocks the GetUserJournalSummaryByUserId method.
 	GetUserJournalSummaryByUserIdFunc func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error)
+
+	// UpdateUserTimezoneFunc mocks the UpdateUserTimezone method.
+	UpdateUserTimezoneFunc func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error)
 
 	// UpsertRuntimeConfigValueFunc mocks the UpsertRuntimeConfigValue method.
 	UpsertRuntimeConfigValueFunc func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error)
@@ -202,6 +208,13 @@ type QuerierMock struct {
 			// UserID is the userID argument value.
 			UserID uuid.UUID
 		}
+		// UpdateUserTimezone holds details about calls to the UpdateUserTimezone method.
+		UpdateUserTimezone []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateUserTimezoneParams
+		}
 		// UpsertRuntimeConfigValue holds details about calls to the UpsertRuntimeConfigValue method.
 		UpsertRuntimeConfigValue []struct {
 			// Ctx is the ctx argument value.
@@ -223,6 +236,7 @@ type QuerierMock struct {
 	lockGetUserByEmail                sync.RWMutex
 	lockGetUserById                   sync.RWMutex
 	lockGetUserJournalSummaryByUserId sync.RWMutex
+	lockUpdateUserTimezone            sync.RWMutex
 	lockUpsertRuntimeConfigValue      sync.RWMutex
 }
 
@@ -687,6 +701,42 @@ func (mock *QuerierMock) GetUserJournalSummaryByUserIdCalls() []struct {
 	mock.lockGetUserJournalSummaryByUserId.RLock()
 	calls = mock.calls.GetUserJournalSummaryByUserId
 	mock.lockGetUserJournalSummaryByUserId.RUnlock()
+	return calls
+}
+
+// UpdateUserTimezone calls UpdateUserTimezoneFunc.
+func (mock *QuerierMock) UpdateUserTimezone(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
+	if mock.UpdateUserTimezoneFunc == nil {
+		panic("QuerierMock.UpdateUserTimezoneFunc: method is nil but Querier.UpdateUserTimezone was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateUserTimezoneParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateUserTimezone.Lock()
+	mock.calls.UpdateUserTimezone = append(mock.calls.UpdateUserTimezone, callInfo)
+	mock.lockUpdateUserTimezone.Unlock()
+	return mock.UpdateUserTimezoneFunc(ctx, arg)
+}
+
+// UpdateUserTimezoneCalls gets all the calls that were made to UpdateUserTimezone.
+// Check the length with:
+//
+//	len(mockedQuerier.UpdateUserTimezoneCalls())
+func (mock *QuerierMock) UpdateUserTimezoneCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateUserTimezoneParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateUserTimezoneParams
+	}
+	mock.lockUpdateUserTimezone.RLock()
+	calls = mock.calls.UpdateUserTimezone
+	mock.lockUpdateUserTimezone.RUnlock()
 	return calls
 }
 

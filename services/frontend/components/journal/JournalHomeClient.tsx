@@ -16,11 +16,13 @@ import { trackEvent } from "@/lib/analytics";
 interface JournalHomeClientProps {
   journals: JournalEntry[];
   totalCount: number;
+  timezone: string;
 }
 
 export function JournalHomeClient({
   journals,
   totalCount,
+  timezone,
 }: JournalHomeClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,7 +115,7 @@ export function JournalHomeClient({
           <JournalEmptyState hasEntries={totalCount > 0} />
         ) : (
           <>
-            <JournalList entries={paginatedJournals} />
+            <JournalList entries={paginatedJournals} timezone={timezone} />
 
             {totalPages > 1 && (
               <JournalPagination

@@ -7,6 +7,8 @@ import type {
   AdapterUser,
   VerificationToken,
 } from "@auth/core/adapters";
+import { BACKEND_URL } from "@/lib/config";
+import { ROUTES } from "@/lib/routes";
 
 // ---------------------------------------------------------------------------
 // Types for backend responses
@@ -19,6 +21,7 @@ interface BackendUserResponse {
   createdAt?: string;
   created_at?: string;
   role?: string;
+  timezone?: string;
 }
 
 /** Normalized backend user data */
@@ -26,6 +29,7 @@ interface BackendUser {
   userId: string;
   createdAt: string | undefined;
   role: string | undefined;
+  timezone: string;
 }
 
 /** Response shape from POST /v1/oauth/users */
@@ -45,6 +49,7 @@ function parseBackendUser(data: BackendUserResponse): BackendUser | null {
     userId,
     createdAt: data.createdAt || data.created_at,
     role: data.role,
+    timezone: data.timezone || "UTC",
   };
 }
 
@@ -71,7 +76,7 @@ async function createUserInBackend(
   oauthProvider?: string,
 ): Promise<{ userId: string } | null> {
   try {
-    const response = await fetch(`${process.env.BACKEND_URL}/v1/oauth/users`, {
+    const response = await fetch(`${BACKEND_URL}/v1/oauth/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, oauth_provider: oauthProvider }),
@@ -106,7 +111,7 @@ async function createUserInBackend(
 async function fetchBackendUser(email: string): Promise<BackendUser | null> {
   try {
     const response = await fetch(
-      `${process.env.BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
+      `${BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
     );
 
     if (!response.ok) {
@@ -235,13 +240,17 @@ export const authConfig: NextAuthConfig = {
   // tokens (magic link). We do NOT use database sessions.
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/signin",
-    verifyRequest: "/verify-request",
+    signIn: ROUTES.signin,
+    verifyRequest: ROUTES.verifyRequest,
   },
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
       clientSecret: process.env.AUTH_GITHUB_SECRET,
+      // Allow users who originally signed in via magic link (Resend) to
+      // later sign in with GitHub using the same verified email address.
+      // Safe because GitHub verifies email ownership.
+      allowDangerousEmailAccountLinking: true,
     }),
     Resend({
       apiKey: process.env.AUTH_RESEND_KEY,
@@ -305,6 +314,7 @@ export const authConfig: NextAuthConfig = {
       (user as User).backendId = backendUser.userId;
       (user as User).createdAt = backendUser.createdAt;
       (user as User).role = backendUser.role;
+      (user as User).timezone = backendUser.timezone;
 
       return true;
     },
@@ -325,22 +335,31 @@ export const authConfig: NextAuthConfig = {
         if (user.role) {
           token.role = user.role;
         }
+        if (user.timezone) {
+          token.timezone = user.timezone;
+        }
         // Persist the email on the token so we can resolve backendId later.
         if (user.email) {
           token.email = user.email;
         }
+        // Persist the name (only OAuth providers like GitHub supply one).
+        if (user.name) {
+          token.name = user.name;
+        }
       }
+
+      const email = (token.email as string) || undefined;
 
       // If backendId is still missing (common with email/magic-link sign-ins
       // where the adapter user object doesn't carry our custom fields), look
       // it up from the Go backend by email.
-      const email = (token.email as string) || undefined;
       if (!token.backendId && email) {
         const backendUser = await fetchBackendUser(email);
         if (backendUser) {
           token.backendId = backendUser.userId;
           token.createdAt = backendUser.createdAt;
           token.role = backendUser.role;
+          token.timezone = backendUser.timezone;
         } else {
           // User doesn't exist yet — create them.
           const result = await createUserInBackend(email, "email");
@@ -350,7 +369,22 @@ export const authConfig: NextAuthConfig = {
               token.backendId = created.userId;
               token.createdAt = created.createdAt;
               token.role = created.role;
+              token.timezone = created.timezone;
             }
+          }
+        }
+      }
+
+      // Always refresh role and createdAt from the backend so that
+      // admin promotions (or demotions) take effect without requiring
+      // a new sign-in, and createdAt is always accurate.
+      if (token.backendId && email) {
+        const backendUser = await fetchBackendUser(email);
+        if (backendUser) {
+          token.role = backendUser.role;
+          token.timezone = backendUser.timezone;
+          if (backendUser.createdAt) {
+            token.createdAt = backendUser.createdAt;
           }
         }
       }
@@ -369,6 +403,18 @@ export const authConfig: NextAuthConfig = {
       }
       if (token?.role) {
         session.user.role = token.role as string;
+      }
+      if (token?.timezone) {
+        session.user.timezone = token.timezone as string;
+      }
+      // Explicitly propagate name and email from the JWT token.
+      // NextAuth's default mapping usually handles this, but being
+      // explicit avoids silent breakage (e.g. magic-link users).
+      if (token?.name) {
+        session.user.name = token.name as string;
+      }
+      if (token?.email) {
+        session.user.email = token.email as string;
       }
       return session;
     },

@@ -88,17 +88,35 @@ function makeEntries(count: number): JournalEntry[] {
 
 describe("JournalHomeClient", () => {
   it("renders header with total count", () => {
-    render(<JournalHomeClient journals={makeEntries(5)} totalCount={5} />);
+    render(
+      <JournalHomeClient
+        journals={makeEntries(5)}
+        totalCount={5}
+        timezone="UTC"
+      />,
+    );
     expect(screen.getByTestId("journal-header")).toHaveTextContent("Total: 5");
   });
 
   it("renders filters", () => {
-    render(<JournalHomeClient journals={makeEntries(5)} totalCount={5} />);
+    render(
+      <JournalHomeClient
+        journals={makeEntries(5)}
+        totalCount={5}
+        timezone="UTC"
+      />,
+    );
     expect(screen.getByTestId("journal-filters")).toBeInTheDocument();
   });
 
   it("renders journal list with entries", () => {
-    render(<JournalHomeClient journals={makeEntries(3)} totalCount={3} />);
+    render(
+      <JournalHomeClient
+        journals={makeEntries(3)}
+        totalCount={3}
+        timezone="UTC"
+      />,
+    );
     expect(screen.getByTestId("journal-list")).toBeInTheDocument();
     expect(screen.getByTestId("entry-1")).toBeInTheDocument();
     expect(screen.getByTestId("entry-2")).toBeInTheDocument();
@@ -106,24 +124,42 @@ describe("JournalHomeClient", () => {
   });
 
   it("shows empty state when no entries", () => {
-    render(<JournalHomeClient journals={[]} totalCount={0} />);
+    render(<JournalHomeClient journals={[]} totalCount={0} timezone="UTC" />);
     expect(screen.getByTestId("journal-empty-state")).toHaveTextContent(
       "No entries",
     );
   });
 
   it("does not show pagination when entries fit on one page", () => {
-    render(<JournalHomeClient journals={makeEntries(5)} totalCount={5} />);
+    render(
+      <JournalHomeClient
+        journals={makeEntries(5)}
+        totalCount={5}
+        timezone="UTC"
+      />,
+    );
     expect(screen.queryByTestId("journal-pagination")).not.toBeInTheDocument();
   });
 
   it("shows pagination when entries exceed one page", () => {
-    render(<JournalHomeClient journals={makeEntries(15)} totalCount={15} />);
+    render(
+      <JournalHomeClient
+        journals={makeEntries(15)}
+        totalCount={15}
+        timezone="UTC"
+      />,
+    );
     expect(screen.getByTestId("journal-pagination")).toBeInTheDocument();
   });
 
   it("only shows 10 entries per page", () => {
-    render(<JournalHomeClient journals={makeEntries(15)} totalCount={15} />);
+    render(
+      <JournalHomeClient
+        journals={makeEntries(15)}
+        totalCount={15}
+        timezone="UTC"
+      />,
+    );
     const list = screen.getByTestId("journal-list");
     const entries = list.querySelectorAll("[data-testid^='entry-']");
     expect(entries).toHaveLength(10);
@@ -131,7 +167,13 @@ describe("JournalHomeClient", () => {
 
   describe("search filtering", () => {
     it("resets to page 1 when search changes", () => {
-      render(<JournalHomeClient journals={makeEntries(15)} totalCount={15} />);
+      render(
+        <JournalHomeClient
+          journals={makeEntries(15)}
+          totalCount={15}
+          timezone="UTC"
+        />,
+      );
       // Go to page 2 first
       fireEvent.click(screen.getByText("Go to page 2"));
       expect(screen.getByTestId("current-page")).toHaveTextContent("2");
@@ -144,7 +186,13 @@ describe("JournalHomeClient", () => {
 
   describe("mood filtering", () => {
     it("resets to page 1 when mood changes", () => {
-      render(<JournalHomeClient journals={makeEntries(15)} totalCount={15} />);
+      render(
+        <JournalHomeClient
+          journals={makeEntries(15)}
+          totalCount={15}
+          timezone="UTC"
+        />,
+      );
       fireEvent.click(screen.getByText("Go to page 2"));
       fireEvent.click(screen.getByText("Set Mood"));
       expect(screen.getByTestId("current-page")).toHaveTextContent("1");
@@ -153,14 +201,26 @@ describe("JournalHomeClient", () => {
 
   describe("clear filters", () => {
     it("shows clear filters button when filters are active", () => {
-      render(<JournalHomeClient journals={makeEntries(5)} totalCount={5} />);
+      render(
+        <JournalHomeClient
+          journals={makeEntries(5)}
+          totalCount={5}
+          timezone="UTC"
+        />,
+      );
       // Activate a filter
       fireEvent.click(screen.getByText("Set Search"));
       expect(screen.getByText("Clear Filters")).toBeInTheDocument();
     });
 
     it("resets search and mood when clear filters is clicked", () => {
-      render(<JournalHomeClient journals={makeEntries(5)} totalCount={5} />);
+      render(
+        <JournalHomeClient
+          journals={makeEntries(5)}
+          totalCount={5}
+          timezone="UTC"
+        />,
+      );
       // Activate filters
       fireEvent.click(screen.getByText("Set Search"));
       fireEvent.click(screen.getByText("Set Mood"));

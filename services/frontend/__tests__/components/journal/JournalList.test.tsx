@@ -37,14 +37,14 @@ describe("JournalList", () => {
   ];
 
   it("renders a card for each entry", () => {
-    render(<JournalList entries={mockEntries} />);
+    render(<JournalList entries={mockEntries} timezone="UTC" />);
     expect(screen.getByTestId("journal-card-1")).toBeInTheDocument();
     expect(screen.getByTestId("journal-card-2")).toBeInTheDocument();
     expect(screen.getByTestId("journal-card-3")).toBeInTheDocument();
   });
 
   it("renders entries in order", () => {
-    render(<JournalList entries={mockEntries} />);
+    render(<JournalList entries={mockEntries} timezone="UTC" />);
     const cards = screen.getAllByTestId(/^journal-card-/);
     expect(cards).toHaveLength(3);
     expect(cards[0]).toHaveTextContent("First entry");
@@ -53,7 +53,7 @@ describe("JournalList", () => {
   });
 
   it("renders empty list without errors", () => {
-    const { container } = render(<JournalList entries={[]} />);
+    const { container } = render(<JournalList entries={[]} timezone="UTC" />);
     expect(container.querySelector(".space-y-6")).toBeInTheDocument();
     expect(screen.queryByTestId(/^journal-card-/)).not.toBeInTheDocument();
   });

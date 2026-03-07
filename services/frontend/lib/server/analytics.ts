@@ -1,74 +1,197 @@
 import "server-only";
 
+import { JournalEntry } from "@/types/journal";
 import { UserJournalSummary } from "@/types/analytics";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+import { fetchAllJournalsForUser } from "./journals";
+import {
+  getUniqueDateStrings,
+  calculateCurrentStreak,
+} from "@/lib/utils/profileStats";
 
 /**
- * Fetch user analytics from the backend (server-side only)
- * This calls the Go backend directly, bypassing the API route
+ * Compute a UserJournalSummary entirely from raw journal entries.
+ * This replaces the previous approach that queried the gold.user_journal_summary
+ * dbt-materialized table, removing the dependency on gold.* tables.
+ */
+function computeAnalyticsFromJournals(
+  journals: JournalEntry[],
+  userId: string,
+): UserJournalSummary {
+  if (journals.length === 0) {
+    return emptyAnalytics(userId);
+  }
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  // All-time metrics
+  const totalJournals = journals.length;
+  const uniqueDates = getUniqueDateStrings(journals);
+  const activeDays = uniqueDates.size;
+
+  const moodScores = journals.map((j) => j.userMood);
+  const avgMoodScore =
+    moodScores.reduce((sum, m) => sum + m, 0) / moodScores.length;
+  const minMoodScore = Math.min(...moodScores);
+  const maxMoodScore = Math.max(...moodScores);
+
+  // Standard deviation
+  const variance =
+    moodScores.reduce((sum, m) => sum + Math.pow(m - avgMoodScore, 2), 0) /
+    moodScores.length;
+  const moodScoreStddev = Math.sqrt(variance);
+
+  // Sentiment counts (mood >= 7 = positive, >= 4 = neutral, < 4 = negative)
+  const positiveEntries = moodScores.filter((m) => m >= 7).length;
+  const negativeEntries = moodScores.filter((m) => m < 4).length;
+  const neutralEntries = moodScores.filter((m) => m >= 4 && m < 7).length;
+
+  // Avg sentiment as a normalized -1..1 score based on mood:
+  // Map mood 1-8 to roughly -1..1 range: (mood - 4.5) / 3.5
+  const avgSentimentScore =
+    moodScores.reduce((sum, m) => sum + (m - 4.5) / 3.5, 0) / moodScores.length;
+
+  // Content metrics
+  const avgJournalLength =
+    journals.reduce(
+      (sum, j) =>
+        sum + j.journalText.split(/\s+/).filter((w) => w.length > 0).length,
+      0,
+    ) / journals.length;
+
+  // Timestamps
+  const sortedByDate = [...journals].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+  const firstJournalAt = sortedByDate[0].createdAt;
+  const lastJournalAt = sortedByDate[sortedByDate.length - 1].createdAt;
+
+  // 30-day metrics
+  const recent30d = journals.filter(
+    (j) => new Date(j.createdAt) >= thirtyDaysAgo,
+  );
+  const totalJournals30d = recent30d.length;
+  const recentMoods = recent30d.map((j) => j.userMood);
+  const avgMoodScore30d =
+    recentMoods.length > 0
+      ? recentMoods.reduce((sum, m) => sum + m, 0) / recentMoods.length
+      : null;
+  const minMoodScore30d =
+    recentMoods.length > 0 ? Math.min(...recentMoods) : null;
+  const maxMoodScore30d =
+    recentMoods.length > 0 ? Math.max(...recentMoods) : null;
+
+  // Streak
+  const dailyStreak = calculateCurrentStreak(journals);
+
+  // Calculated fields
+  const positivePercentage =
+    totalJournals > 0 ? (positiveEntries / totalJournals) * 100 : null;
+
+  const lastJournalDate = new Date(lastJournalAt);
+  const daysSinceLastJournal = Math.floor(
+    (now.getTime() - lastJournalDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  const firstDate = new Date(firstJournalAt);
+  const daysBetweenFirstAndLastJournal = Math.floor(
+    (lastJournalDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  const journalsPerActiveDay =
+    activeDays > 0 ? totalJournals / activeDays : null;
+
+  return {
+    userId,
+    userEmail: "",
+    userRole: "",
+    userTimezone: "",
+    userCreatedAt: "",
+    totalJournals,
+    activeDays,
+    avgMoodScore: round2(avgMoodScore),
+    minMoodScore,
+    maxMoodScore,
+    moodScoreStddev: round2(moodScoreStddev),
+    positiveEntries,
+    negativeEntries,
+    neutralEntries,
+    avgSentimentScore: round2(avgSentimentScore),
+    avgJournalLength: round2(avgJournalLength),
+    firstJournalAt,
+    lastJournalAt,
+    lastModifiedAt: lastJournalAt,
+    totalJournals30d,
+    avgMoodScore30d: avgMoodScore30d !== null ? round2(avgMoodScore30d) : null,
+    minMoodScore30d,
+    maxMoodScore30d,
+    dailyStreak,
+    positivePercentage:
+      positivePercentage !== null ? round2(positivePercentage) : null,
+    daysSinceLastJournal,
+    daysBetweenFirstAndLastJournal,
+    journalsPerActiveDay:
+      journalsPerActiveDay !== null ? round2(journalsPerActiveDay) : null,
+  };
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function emptyAnalytics(userId: string): UserJournalSummary {
+  return {
+    userId,
+    userEmail: "",
+    userRole: "",
+    userTimezone: "",
+    userCreatedAt: "",
+    totalJournals: 0,
+    activeDays: 0,
+    avgMoodScore: null,
+    minMoodScore: null,
+    maxMoodScore: null,
+    moodScoreStddev: null,
+    positiveEntries: 0,
+    negativeEntries: 0,
+    neutralEntries: 0,
+    avgSentimentScore: null,
+    avgJournalLength: null,
+    firstJournalAt: null,
+    lastJournalAt: null,
+    lastModifiedAt: null,
+    totalJournals30d: 0,
+    avgMoodScore30d: null,
+    minMoodScore30d: null,
+    maxMoodScore30d: null,
+    dailyStreak: 0,
+    positivePercentage: null,
+    daysSinceLastJournal: null,
+    daysBetweenFirstAndLastJournal: null,
+    journalsPerActiveDay: null,
+  };
+}
+
+/**
+ * Fetch user analytics by computing from source journal entries.
+ *
+ * Previously this called GET /v1/analytics/users/{userId}/journal-summary
+ * which queried the gold.user_journal_summary dbt table. Now it computes
+ * everything from source.journals via the existing journals endpoint.
  */
 export async function fetchUserAnalytics(
   userId: string,
 ): Promise<UserJournalSummary | null> {
   try {
-    const response = await fetch(
-      `${BACKEND_URL}/v1/analytics/users/${userId}/journal-summary`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // Cache for 60 seconds, revalidate in background
-        next: { revalidate: 60 },
-      },
-    );
+    const { journals } = await fetchAllJournalsForUser(userId);
 
-    if (!response.ok) {
-      // User may not have any analytics yet (new user)
-      if (response.status === 404) {
-        return null;
-      }
-      console.error(`Backend analytics error: ${response.status}`);
+    if (journals.length === 0) {
       return null;
     }
 
-    const data = await response.json();
-    const summary = data.summary;
-
-    return {
-      userId: summary.userId,
-      userEmail: summary.userEmail,
-      userRole: summary.userRole,
-      userTimezone: summary.userTimezone,
-      userCreatedAt: summary.userCreatedAt,
-      totalJournals: summary.totalJournals || 0,
-      activeDays: summary.activeDays || 0,
-      avgMoodScore: summary.avgMoodScore ?? null,
-      minMoodScore: summary.minMoodScore ?? null,
-      maxMoodScore: summary.maxMoodScore ?? null,
-      moodScoreStddev: summary.moodScoreStddev ?? null,
-      positiveEntries: summary.positiveEntries || 0,
-      negativeEntries: summary.negativeEntries || 0,
-      neutralEntries: summary.neutralEntries || 0,
-      avgSentimentScore: summary.avgSentimentScore ?? null,
-      avgJournalLength: summary.avgJournalLength ?? null,
-      firstJournalAt: summary.firstJournalAt ?? null,
-      lastJournalAt: summary.lastJournalAt ?? null,
-      lastModifiedAt: summary.lastModifiedAt ?? null,
-      totalJournals30d: summary.totalJournals_30d || 0,
-      avgMoodScore30d: summary.avgMoodScore_30d ?? null,
-      minMoodScore30d: summary.minMoodScore_30d ?? null,
-      maxMoodScore30d: summary.maxMoodScore_30d ?? null,
-      dailyStreak: summary.dailyStreak || 0,
-      positivePercentage: summary.positivePercentage ?? null,
-      daysSinceLastJournal: summary.daysSinceLastJournal ?? null,
-      daysBetweenFirstAndLastJournal:
-        summary.daysBetweenFirstAndLastJournal ?? null,
-      journalsPerActiveDay: summary.journalsPerActiveDay ?? null,
-    };
+    return computeAnalyticsFromJournals(journals, userId);
   } catch (error) {
-    console.error("Error fetching analytics:", error);
+    console.error("Error computing analytics:", error);
     return null;
   }
 }

@@ -18,7 +18,8 @@ describe("ProfileHeader", () => {
     email: "jane@example.com",
     image: "https://example.com/avatar.jpg",
     signupDate: "2025-01-15T12:00:00Z",
-    firstEntryDate: null as Date | null,
+    firstEntryDate: null as string | null,
+    timezone: "UTC",
   };
 
   it("renders the user name", () => {
@@ -58,10 +59,7 @@ describe("ProfileHeader", () => {
 
   it("renders first entry date when provided", () => {
     render(
-      <ProfileHeader
-        {...defaultProps}
-        firstEntryDate={new Date(2025, 1, 20)} // Feb 20, 2025
-      />,
+      <ProfileHeader {...defaultProps} firstEntryDate="2025-02-20T00:00:00Z" />,
     );
     expect(screen.getByText("First journal entry:")).toBeInTheDocument();
     expect(screen.getByText("February 20, 2025")).toBeInTheDocument();
@@ -70,5 +68,10 @@ describe("ProfileHeader", () => {
   it("does not show first entry section when null", () => {
     render(<ProfileHeader {...defaultProps} firstEntryDate={null} />);
     expect(screen.queryByText("First journal entry:")).not.toBeInTheDocument();
+  });
+
+  it("does not show Member since when signupDate is empty", () => {
+    render(<ProfileHeader {...defaultProps} signupDate="" />);
+    expect(screen.queryByText("Member since:")).not.toBeInTheDocument();
   });
 });

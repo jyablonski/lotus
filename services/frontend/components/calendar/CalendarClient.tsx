@@ -19,12 +19,14 @@ interface CalendarClientProps {
   totalEntries: number;
   /** Server-provided current date string (YYYY-MM-DD) to avoid hydration mismatch */
   serverDate: string;
+  timezone: string;
 }
 
 export function CalendarClient({
   journals,
   totalEntries,
   serverDate,
+  timezone,
 }: CalendarClientProps) {
   const initialDate = useMemo(() => {
     const [year, month, day] = serverDate.split("-").map(Number);
@@ -37,8 +39,8 @@ export function CalendarClient({
   const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
 
   const journalsByDate = useMemo(
-    () => groupJournalsByDate(journals),
-    [journals],
+    () => groupJournalsByDate(journals, timezone),
+    [journals, timezone],
   );
 
   const calendarDays = useMemo(
@@ -48,15 +50,16 @@ export function CalendarClient({
         journalsByDate,
         selectedDate,
         serverDate,
+        timezone,
       ),
-    [currentMonth, journalsByDate, selectedDate, serverDate],
+    [currentMonth, journalsByDate, selectedDate, serverDate, timezone],
   );
 
   const selectedDateEntries = useMemo(() => {
     if (!selectedDate) return [];
-    const dateKey = toLocalDateString(selectedDate);
+    const dateKey = toLocalDateString(selectedDate, timezone);
     return journalsByDate.get(dateKey) || [];
-  }, [selectedDate, journalsByDate]);
+  }, [selectedDate, journalsByDate, timezone]);
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) => {
@@ -84,6 +87,7 @@ export function CalendarClient({
           onNavigateMonth={navigateMonth}
           onGoToToday={goToToday}
           totalEntries={totalEntries}
+          timezone={timezone}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,6 +103,7 @@ export function CalendarClient({
               <SelectedDateEntries
                 selectedDate={selectedDate}
                 entries={selectedDateEntries}
+                timezone={timezone}
               />
             )}
           </div>

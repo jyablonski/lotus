@@ -232,3 +232,91 @@ func TestUserServer_CreateUserOauth_Success(t *testing.T) {
 	// Verify the mock was called exactly once
 	assert.Len(t, mockQuerier.CreateUserOauthCalls(), 1)
 }
+
+func TestUserServer_UpdateUserTimezone_Success(t *testing.T) {
+	expectedUserID := uuid.New()
+	expectedTimezone := "America/Los_Angeles"
+
+	mockQuerier := &mocks.QuerierMock{
+		UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
+			assert.Equal(t, expectedUserID, arg.ID)
+			assert.Equal(t, expectedTimezone, arg.Timezone)
+			return db.SourceUser{
+				ID:         expectedUserID,
+				Timezone:   expectedTimezone,
+				ModifiedAt: time.Now(),
+			}, nil
+		},
+	}
+
+	server := &internalgrpc.UserServer{}
+	req := &pb.UpdateUserTimezoneRequest{
+		UserId:   expectedUserID.String(),
+		Timezone: expectedTimezone,
+	}
+
+	resp, err := server.UpdateUserTimezone(testCtx(mockQuerier), req)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, expectedUserID.String(), resp.UserId)
+	assert.Equal(t, expectedTimezone, resp.Timezone)
+	assert.Len(t, mockQuerier.UpdateUserTimezoneCalls(), 1)
+}
+
+func TestUserServer_UpdateUserTimezone_InvalidTimezone(t *testing.T) {
+	mockQuerier := &mocks.QuerierMock{}
+	server := &internalgrpc.UserServer{}
+
+	req := &pb.UpdateUserTimezoneRequest{
+		UserId:   uuid.New().String(),
+		Timezone: "Not/A/Timezone",
+	}
+
+	resp, err := server.UpdateUserTimezone(testCtx(mockQuerier), req)
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "invalid timezone")
+	assert.Len(t, mockQuerier.UpdateUserTimezoneCalls(), 0)
+}
+
+func TestUserServer_UpdateUserTimezone_InvalidUserID(t *testing.T) {
+	mockQuerier := &mocks.QuerierMock{}
+	server := &internalgrpc.UserServer{}
+
+	req := &pb.UpdateUserTimezoneRequest{
+		UserId:   "not-a-uuid",
+		Timezone: "America/New_York",
+	}
+
+	resp, err := server.UpdateUserTimezone(testCtx(mockQuerier), req)
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.Len(t, mockQuerier.UpdateUserTimezoneCalls(), 0)
+}
+
+func TestUserServer_UpdateUserTimezone_DBError(t *testing.T) {
+	expectedUserID := uuid.New()
+
+	mockQuerier := &mocks.QuerierMock{
+		UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
+			return db.SourceUser{}, errors.New("database error")
+		},
+	}
+
+	server := &internalgrpc.UserServer{}
+	req := &pb.UpdateUserTimezoneRequest{
+		UserId:   expectedUserID.String(),
+		Timezone: "America/Chicago",
+	}
+
+	resp, err := server.UpdateUserTimezone(testCtx(mockQuerier), req)
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "failed to update timezone")
+	assert.Len(t, mockQuerier.UpdateUserTimezoneCalls(), 1)
+}

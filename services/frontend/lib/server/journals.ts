@@ -5,8 +5,7 @@ import {
   BackendJournal,
   transformBackendJournal,
 } from "@/types/journal";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+import { BACKEND_URL } from "@/lib/config";
 
 export interface JournalsResponse {
   journals: JournalEntry[];

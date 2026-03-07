@@ -152,6 +152,7 @@ describe("journalFilters", () => {
         key: "happy",
         label: "Happy",
         emoji: "😊",
+        color: "bg-green-500/20 text-green-300 border-green-500/30",
       });
     });
 

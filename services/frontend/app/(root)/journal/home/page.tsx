@@ -2,12 +2,13 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { fetchAllJournalsForUser } from "@/lib/server";
 import { JournalHomeClient } from "@/components/journal/JournalHomeClient";
+import { ROUTES } from "@/lib/routes";
 
 export default async function JournalHomePage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect("/");
+    redirect(ROUTES.home);
   }
 
   // Fetch all journals server-side for filtering
@@ -15,5 +16,13 @@ export default async function JournalHomePage() {
     session.user.id,
   );
 
-  return <JournalHomeClient journals={journals} totalCount={totalCount} />;
+  const timezone = session.user?.timezone ?? "UTC";
+
+  return (
+    <JournalHomeClient
+      journals={journals}
+      totalCount={totalCount}
+      timezone={timezone}
+    />
+  );
 }

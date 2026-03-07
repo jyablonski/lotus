@@ -13,3 +13,9 @@ SELECT * FROM source.users WHERE email = $1;
 
 -- name: GetUserById :one
 SELECT * FROM source.users WHERE id = $1;
+
+-- name: UpdateUserTimezone :one
+UPDATE source.users
+SET timezone = $2, modified_at = NOW()
+WHERE id = $1
+RETURNING *;

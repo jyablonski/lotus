@@ -7,9 +7,9 @@ RETURNING *;
 SELECT * FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC;
 
 -- name: GetJournalsByUserIdPaginated :many
-SELECT * FROM source.journals 
-WHERE user_id = $1 
-ORDER BY created_at DESC 
+SELECT * FROM source.journals
+WHERE user_id = $1
+ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: GetJournalCountByUserId :one
