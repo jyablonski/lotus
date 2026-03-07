@@ -20,39 +20,40 @@
   /* Borders */
   --border-default: #2a2a35;
   --border-subtle: #1f1f28;
-  --border-focus: rgba(168, 85, 247, 0.5);
+  --border-focus: rgba(14, 165, 233, 0.5);
 
-  /* Accent – lotus purple */
-  --accent: #a855f7;
-  --accent-hover: #bc8eff;
-  --accent-muted: rgba(168, 85, 247, 0.15);
+  /* Accent – lotus sky blue */
+  --accent: #0ea5e9;
+  --accent-hover: #38bdf8;
+  --accent-muted: rgba(14, 165, 233, 0.15);
 }
 
 /* Tailwind v4 Custom Theme Configuration */
 @theme {
-  --color-lotus-50: #faf7ff;
-  --color-lotus-100: #f3edff;
-  --color-lotus-200: #e9dbff;
-  --color-lotus-300: #d6bbff;
-  --color-lotus-400: #bc8eff;
-  --color-lotus-500: #a855f7;
-  --color-lotus-600: #9333ea;
-  --color-lotus-700: #7e22ce;
-  --color-lotus-800: #581c87;
-  --color-lotus-900: #4c1d95;
-  --color-lotus-950: #2e1065;
+  --color-lotus-50: #f0f9ff;
+  --color-lotus-100: #e0f2fe;
+  --color-lotus-200: #bae6fd;
+  --color-lotus-300: #7dd3fc;
+  --color-lotus-400: #38bdf8;
+  --color-lotus-500: #0ea5e9;
+  --color-lotus-600: #0284c7;
+  --color-lotus-700: #0369a1;
+  --color-lotus-800: #075985;
+  --color-lotus-900: #0c4a6e;
+  --color-lotus-950: #082f49;
 
-  --color-rose-50: #fff1f2;
-  --color-rose-100: #ffe4e6;
-  --color-rose-200: #fecdd3;
-  --color-rose-300: #fda4af;
-  --color-rose-400: #fb7185;
-  --color-rose-500: #f43f5e;
-  --color-rose-600: #e11d48;
-  --color-rose-700: #be123c;
-  --color-rose-800: #9f1239;
-  --color-rose-900: #881337;
-  --color-rose-950: #4c0519;
+  /* Secondary palette – emerald/teal values (kept as "rose-*" for token stability) */
+  --color-rose-50: #ecfdf5;
+  --color-rose-100: #d1fae5;
+  --color-rose-200: #a7f3d0;
+  --color-rose-300: #6ee7b7;
+  --color-rose-400: #34d399;
+  --color-rose-500: #10b981;
+  --color-rose-600: #059669;
+  --color-rose-700: #047857;
+  --color-rose-800: #065f46;
+  --color-rose-900: #064e3b;
+  --color-rose-950: #022c22;
 
   /* Refined dark palette – maps to semantic tokens above */
   --color-dark-50: #e4e4e7;
@@ -86,17 +87,17 @@
   /* Button variants - Dark theme */
   .btn-primary {
     @apply text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300;
-    background: linear-gradient(135deg, var(--accent) 0%, #f43f5e 100%);
+    background: linear-gradient(135deg, var(--accent) 0%, #10b981 100%);
     box-shadow:
-      0 10px 25px -3px rgba(168, 85, 247, 0.3),
-      0 4px 6px -2px rgba(168, 85, 247, 0.1);
+      0 10px 25px -3px rgba(14, 165, 233, 0.3),
+      0 4px 6px -2px rgba(14, 165, 233, 0.1);
   }
 
   .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow:
-      0 20px 25px -5px rgba(168, 85, 247, 0.4),
-      0 10px 10px -5px rgba(168, 85, 247, 0.2);
+      0 20px 25px -5px rgba(14, 165, 233, 0.4),
+      0 10px 10px -5px rgba(14, 165, 233, 0.2);
   }
 
   .btn-secondary {
@@ -107,7 +108,7 @@
   }
 
   .btn-secondary:hover {
-    background: rgba(168, 85, 247, 0.25);
+    background: rgba(14, 165, 233, 0.25);
     border-color: theme(colors.lotus.300);
     color: theme(colors.lotus.300);
   }
@@ -140,26 +141,26 @@
   .card-hover:hover {
     transform: translateY(-4px);
     background: var(--bg-elevated);
-    border-color: rgba(168, 85, 247, 0.3);
+    border-color: rgba(14, 165, 233, 0.3);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
 
   .card-lotus {
     @apply rounded-2xl transition-all duration-300;
     background: var(--bg-surface);
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    border: 1px solid rgba(14, 165, 233, 0.3);
     backdrop-filter: blur(10px);
     box-shadow:
-      0 10px 25px -3px rgba(168, 85, 247, 0.2),
-      0 4px 6px -2px rgba(168, 85, 247, 0.1);
+      0 10px 25px -3px rgba(14, 165, 233, 0.2),
+      0 4px 6px -2px rgba(14, 165, 233, 0.1);
   }
 
   .card-lotus:hover {
     background: var(--bg-elevated);
-    border-color: rgba(168, 85, 247, 0.5);
+    border-color: rgba(14, 165, 233, 0.5);
     box-shadow:
-      0 20px 25px -5px rgba(168, 85, 247, 0.3),
-      0 10px 10px -5px rgba(168, 85, 247, 0.2);
+      0 20px 25px -5px rgba(14, 165, 233, 0.3),
+      0 10px 10px -5px rgba(14, 165, 233, 0.2);
   }
 
   /* Input styles - Dark theme */
@@ -172,7 +173,7 @@
 
   .input-primary:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
     background: var(--bg-surface);
   }
 
@@ -229,16 +230,16 @@
   .bg-lotus-light {
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.15) 0%,
-      rgba(244, 63, 94, 0.15) 100%
+      rgba(14, 165, 233, 0.15) 0%,
+      rgba(16, 185, 129, 0.15) 100%
     );
   }
 
   .bg-lotus-subtle {
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.08) 0%,
-      rgba(244, 63, 94, 0.08) 100%
+      rgba(14, 165, 233, 0.08) 0%,
+      rgba(16, 185, 129, 0.08) 100%
     );
   }
 
@@ -276,7 +277,7 @@
 
   .textarea-primary:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
     background: var(--bg-surface);
   }
 
@@ -328,7 +329,7 @@
 
   .select-primary:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
     background: var(--bg-surface);
   }
 
@@ -416,12 +417,12 @@
   /* Button - Danger (dark theme) */
   .btn-danger {
     @apply w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors;
-    color: theme(colors.rose.400);
+    color: theme(colors.red.400);
   }
 
   .btn-danger:hover {
-    background: rgba(244, 63, 94, 0.1);
-    color: theme(colors.rose.300);
+    background: rgba(239, 68, 68, 0.1);
+    color: theme(colors.red.300);
   }
 
   /* Link - Lotus accent */
@@ -449,7 +450,7 @@
   }
 
   .action-item-primary:hover {
-    background: rgba(168, 85, 247, 0.25);
+    background: rgba(14, 165, 233, 0.25);
   }
 
   /* Insight row - Label + value in a muted container */
@@ -488,7 +489,7 @@
 
   .journal-entry:hover {
     background: rgba(37, 37, 48, 0.9);
-    border-color: rgba(168, 85, 247, 0.3);
+    border-color: rgba(14, 165, 233, 0.3);
   }
 
   /* Mood indicators */
