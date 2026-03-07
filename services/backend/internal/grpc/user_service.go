@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
@@ -15,11 +17,13 @@ import (
 )
 
 var (
-	ErrEmailRequired = errors.New("email is required")
-	ErrUserNotFound  = errors.New("user not found")
-	ErrCreateUser    = errors.New("could not create user")
-	ErrGenerateSalt  = errors.New("failed to generate salt")
-	ErrGetUserFailed = errors.New("failed to get user")
+	ErrEmailRequired   = errors.New("email is required")
+	ErrUserNotFound    = errors.New("user not found")
+	ErrCreateUser      = errors.New("could not create user")
+	ErrGenerateSalt    = errors.New("failed to generate salt")
+	ErrGetUserFailed   = errors.New("failed to get user")
+	ErrInvalidTimezone = errors.New("invalid timezone")
+	ErrUpdateTimezone  = errors.New("failed to update timezone")
 )
 
 type UserServer struct {
@@ -116,5 +120,40 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 		Timezone:  u.Timezone,
 		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: u.ModifiedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}, nil
+}
+
+func (s *UserServer) UpdateUserTimezone(ctx context.Context, req *pb.UpdateUserTimezoneRequest) (*pb.UpdateUserTimezoneResponse, error) {
+	logger := inject.LoggerFrom(ctx)
+
+	// Validate user ID
+	userID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, ErrInvalidUserID.Error())
+	}
+
+	// Validate timezone is a valid IANA timezone name
+	tz := req.GetTimezone()
+	if _, err := time.LoadLocation(tz); err != nil {
+		return nil, status.Error(codes.InvalidArgument, ErrInvalidTimezone.Error())
+	}
+
+	dbq := inject.DBFrom(ctx)
+
+	u, err := dbq.UpdateUserTimezone(ctx, db.UpdateUserTimezoneParams{
+		ID:       userID,
+		Timezone: tz,
+	})
+	if err != nil {
+		logger.Error("Failed to update user timezone", "user_id", req.GetUserId(), "timezone", tz, "error", err)
+		return nil, status.Error(codes.Internal, ErrUpdateTimezone.Error())
+	}
+
+	logger.Info("User timezone updated", "user_id", u.ID.String(), "timezone", u.Timezone)
+
+	return &pb.UpdateUserTimezoneResponse{
+		UserId:    u.ID.String(),
+		Timezone:  u.Timezone,
+		UpdatedAt: u.ModifiedAt.Format(time.RFC3339),
 	}, nil
 }

@@ -1,9 +1,8 @@
 "use client";
 
-import { useCreateJournal } from '@/hooks/useCreateJournal';
-import { JournalHeader } from '@/components/journal/JournalHeader';
-import { CreateJournalForm } from '@/components/journal/CreateJournalForm';
-import { SuccessMessage } from '@/components/journal/SuccessMessage';
+import { useCreateJournal } from "@/hooks/useCreateJournal";
+import { CreateJournalForm } from "@/components/journal/CreateJournalForm";
+import { SuccessMessage } from "@/components/journal/SuccessMessage";
 
 export default function CreateJournalPage() {
   const {
@@ -19,7 +18,9 @@ export default function CreateJournalPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <JournalHeader totalEntries={0} />
+      <div className="mb-8">
+        <h1 className="heading-1">New Entry</h1>
+      </div>
 
       {success ? (
         <SuccessMessage />

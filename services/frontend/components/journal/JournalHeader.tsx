@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 interface JournalHeaderProps {
   totalEntries: number;
@@ -41,7 +42,7 @@ export function JournalHeader({
           </p>
         )}
       </div>
-      <Link href="/journal/create">
+      <Link href={ROUTES.journal.create}>
         <button className="btn-primary flex items-center space-x-2">
           <Plus size={20} />
           <span>New Entry</span>

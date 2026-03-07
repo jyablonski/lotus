@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Heart, Mail } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 export default function VerifyRequestPage() {
   return (
@@ -7,7 +8,7 @@ export default function VerifyRequestPage() {
       <div className="w-full max-w-md text-center">
         {/* Logo */}
         <Link
-          href="/"
+          href={ROUTES.home}
           className="inline-flex items-center justify-center w-16 h-16 bg-lotus-gradient rounded-2xl mb-6 shadow-lg"
         >
           <Heart className="w-8 h-8 text-white" />
@@ -27,7 +28,7 @@ export default function VerifyRequestPage() {
             <p>The link will expire in 24 hours.</p>
             <p>
               Didn&apos;t receive it?{" "}
-              <Link href="/signin" className="link-lotus">
+              <Link href={ROUTES.signin} className="link-lotus">
                 Try again
               </Link>
             </p>
@@ -35,7 +36,7 @@ export default function VerifyRequestPage() {
         </div>
 
         <p className="mt-6">
-          <Link href="/" className="link-lotus text-sm">
+          <Link href={ROUTES.home} className="link-lotus text-sm">
             Back to home
           </Link>
         </p>

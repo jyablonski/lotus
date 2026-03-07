@@ -1,5 +1,6 @@
 import { JournalEntry } from "@/types/journal";
 import { calculateCurrentStreak } from "@/lib/utils/profileStats";
+import { formatShortDate, toTimezoneDateString } from "@/lib/utils/datetime";
 
 export type DashboardEntry = {
   id: number;
@@ -20,8 +21,11 @@ export function calculateEntriesThisWeek(journals: JournalEntry[]): number {
 /**
  * Calculate current streak. Delegates to shared implementation.
  */
-export function calculateStreak(journals: JournalEntry[]): number {
-  return calculateCurrentStreak(journals);
+export function calculateStreak(
+  journals: JournalEntry[],
+  timezone: string = "UTC",
+): number {
+  return calculateCurrentStreak(journals, timezone);
 }
 
 /**
@@ -74,16 +78,21 @@ export function generateTitle(text: string): string {
  * Format date as absolute string (safe for SSR).
  * Use this for server-rendered content to avoid hydration mismatches.
  */
-export function formatAbsoluteDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toISOString().split("T")[0];
+export function formatAbsoluteDate(
+  dateString: string,
+  timezone: string = "UTC",
+): string {
+  return toTimezoneDateString(new Date(dateString), timezone);
 }
 
 /**
  * Format date as relative string (client-side only).
  * WARNING: Do not use in server-rendered components - causes hydration mismatch.
  */
-export function formatRelativeDate(dateString: string): string {
+export function formatRelativeDate(
+  dateString: string,
+  timezone: string = "UTC",
+): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffInHours = Math.floor(
@@ -97,7 +106,7 @@ export function formatRelativeDate(dateString: string): string {
   if (diffInDays === 1) return "1 day ago";
   if (diffInDays < 7) return `${diffInDays} days ago`;
 
-  return date.toLocaleDateString();
+  return formatShortDate(dateString, timezone);
 }
 
 export function formatRecentEntries(

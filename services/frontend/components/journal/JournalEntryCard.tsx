@@ -5,58 +5,17 @@ import { Card } from "@/components/ui/Card";
 import { getMoodConfigByInt } from "@/lib/utils/moodMapping";
 import { JournalEntry } from "@/types/journal";
 import { trackEvent } from "@/lib/analytics";
+import { formatEntryDate } from "@/lib/utils/datetime";
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
+  timezone: string;
 }
 
-/**
- * Format date/time in a locale-independent way to avoid hydration mismatch
- */
-function formatDateTime(dateString: string): string {
-  const date = new Date(dateString);
-  const days = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const dayName = days[date.getUTCDay()];
-  const monthName = months[date.getUTCMonth()];
-  const day = date.getUTCDate();
-
-  let hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12;
-  hours = hours ? hours : 12; // 0 should be 12
-  const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
-
-  return `${dayName}, ${monthName} ${day}, ${hours}:${minutesStr} ${ampm}`;
-}
-
-export function JournalEntryCard({ entry }: JournalEntryCardProps) {
+export function JournalEntryCard({ entry, timezone }: JournalEntryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const formattedDate = formatDateTime(entry.createdAt);
+  const formattedDate = formatEntryDate(entry.createdAt, timezone);
 
   // userMood is already a number, no need to parseInt
   const moodConfig = getMoodConfigByInt(entry.userMood);

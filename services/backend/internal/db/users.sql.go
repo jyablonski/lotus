@@ -110,3 +110,32 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (SourceUser, er
 	)
 	return i, err
 }
+
+const updateUserTimezone = `-- name: UpdateUserTimezone :one
+UPDATE source.users
+SET timezone = $2, modified_at = NOW()
+WHERE id = $1
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone
+`
+
+type UpdateUserTimezoneParams struct {
+	ID       uuid.UUID
+	Timezone string
+}
+
+func (q *Queries) UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (SourceUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserTimezone, arg.ID, arg.Timezone)
+	var i SourceUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Salt,
+		&i.OauthProvider,
+		&i.Role,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+		&i.Timezone,
+	)
+	return i, err
+}

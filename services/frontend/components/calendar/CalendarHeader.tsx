@@ -1,32 +1,12 @@
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { formatMonthYear } from "@/lib/utils/datetime";
 
 interface CalendarHeaderProps {
   currentMonth: Date;
   onNavigateMonth: (direction: "prev" | "next") => void;
   onGoToToday: () => void;
   totalEntries?: number;
-}
-
-/**
- * Format month/year in a locale-independent way to avoid hydration mismatch
- */
-function formatMonthYear(date: Date): string {
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  return `${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  timezone: string;
 }
 
 export function CalendarHeader({
@@ -34,8 +14,9 @@ export function CalendarHeader({
   onNavigateMonth,
   onGoToToday,
   totalEntries,
+  timezone,
 }: CalendarHeaderProps) {
-  const monthYear = formatMonthYear(currentMonth);
+  const monthYear = formatMonthYear(currentMonth, timezone);
 
   return (
     <div className="flex items-center justify-between mb-6">

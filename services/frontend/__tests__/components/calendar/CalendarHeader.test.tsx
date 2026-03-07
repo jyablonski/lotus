@@ -12,6 +12,7 @@ describe("CalendarHeader", () => {
     currentMonth: new Date(2025, 5, 1), // June 2025
     onNavigateMonth: jest.fn(),
     onGoToToday: jest.fn(),
+    timezone: "UTC",
   };
 
   beforeEach(() => {

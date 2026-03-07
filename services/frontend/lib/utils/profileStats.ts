@@ -1,4 +1,5 @@
 import { JournalEntry } from "@/types/journal";
+import { toTimezoneDateString, getWeekdayName } from "@/lib/utils/datetime";
 
 export type ProfileStats = {
   totalEntries: number;
@@ -17,9 +18,12 @@ export type ProfileStats = {
  * Collect unique entry dates as a sorted Set of YYYY-MM-DD strings.
  * Reused by streak calculations and calendar logic.
  */
-export function getUniqueDateStrings(journals: JournalEntry[]): Set<string> {
+export function getUniqueDateStrings(
+  journals: JournalEntry[],
+  timezone: string = "UTC",
+): Set<string> {
   return journals.reduce((acc, journal) => {
-    const date = new Date(journal.createdAt).toISOString().split("T")[0];
+    const date = toTimezoneDateString(new Date(journal.createdAt), timezone);
     acc.add(date);
     return acc;
   }, new Set<string>());
@@ -49,14 +53,15 @@ export function getFirstEntryDate(journals: JournalEntry[]): string | null {
   return journals[journals.length - 1].createdAt;
 }
 
-export function getMostActiveDay(journals: JournalEntry[]): string {
+export function getMostActiveDay(
+  journals: JournalEntry[],
+  timezone: string = "UTC",
+): string {
   if (!journals.length) return "No data";
 
   const dayCount = journals.reduce(
     (acc, journal) => {
-      const day = new Date(journal.createdAt).toLocaleDateString("en-US", {
-        weekday: "long",
-      });
+      const day = getWeekdayName(journal.createdAt, timezone);
       acc[day] = (acc[day] || 0) + 1;
       return acc;
     },
@@ -103,19 +108,23 @@ export function calculateTotalWords(journals: JournalEntry[]): number {
   }, 0);
 }
 
-export function calculateCurrentStreak(journals: JournalEntry[]): number {
+export function calculateCurrentStreak(
+  journals: JournalEntry[],
+  timezone: string = "UTC",
+): number {
   if (!journals.length) return 0;
 
-  const entriesByDate = getUniqueDateStrings(journals);
+  const entriesByDate = getUniqueDateStrings(journals, timezone);
   const sortedDates: string[] = Array.from(entriesByDate).sort().reverse();
   let streak = 0;
-  const today = new Date().toISOString().split("T")[0];
+  const today = toTimezoneDateString(new Date(), timezone);
   let currentDate = today;
 
   if (!sortedDates.includes(today)) {
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    const yesterday = toTimezoneDateString(
+      new Date(Date.now() - 24 * 60 * 60 * 1000),
+      timezone,
+    );
     if (!sortedDates.includes(yesterday)) return 0;
     currentDate = yesterday;
   }
@@ -126,7 +135,7 @@ export function calculateCurrentStreak(journals: JournalEntry[]): number {
       const prevDate = new Date(
         new Date(currentDate).getTime() - 24 * 60 * 60 * 1000,
       );
-      currentDate = prevDate.toISOString().split("T")[0];
+      currentDate = toTimezoneDateString(prevDate, timezone);
     } else {
       break;
     }
@@ -135,10 +144,13 @@ export function calculateCurrentStreak(journals: JournalEntry[]): number {
   return streak;
 }
 
-export function calculateLongestStreak(journals: JournalEntry[]): number {
+export function calculateLongestStreak(
+  journals: JournalEntry[],
+  timezone: string = "UTC",
+): number {
   if (!journals.length) return 0;
 
-  const entriesByDate = getUniqueDateStrings(journals);
+  const entriesByDate = getUniqueDateStrings(journals, timezone);
   const sortedDates: string[] = Array.from(entriesByDate).sort();
   let longestStreak = 0;
   let currentStreak = 0;
@@ -165,7 +177,10 @@ export function calculateLongestStreak(journals: JournalEntry[]): number {
   return Math.max(longestStreak, currentStreak);
 }
 
-export function calculateProfileStats(journals: JournalEntry[]): ProfileStats {
+export function calculateProfileStats(
+  journals: JournalEntry[],
+  timezone: string = "UTC",
+): ProfileStats {
   if (!journals.length) {
     return {
       totalEntries: 0,
@@ -184,11 +199,11 @@ export function calculateProfileStats(journals: JournalEntry[]): ProfileStats {
   const basicCounts = calculateBasicCounts(journals);
   const averageMood = calculateAverageMood(journals);
   const firstEntryDate = getFirstEntryDate(journals);
-  const mostActiveDay = getMostActiveDay(journals);
+  const mostActiveDay = getMostActiveDay(journals, timezone);
   const favoriteModCategory = getFavoriteMoodCategory(journals);
   const totalWords = calculateTotalWords(journals);
-  const currentStreak = calculateCurrentStreak(journals);
-  const longestStreak = calculateLongestStreak(journals);
+  const currentStreak = calculateCurrentStreak(journals, timezone);
+  const longestStreak = calculateLongestStreak(journals, timezone);
 
   return {
     ...basicCounts,

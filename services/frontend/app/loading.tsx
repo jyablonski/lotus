@@ -1,7 +1,5 @@
-import React from "react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-const loading = () => {
-  return <div>____________</div>;
-};
-
-export default loading;
+export default function Loading() {
+  return <LoadingSpinner />;
+}

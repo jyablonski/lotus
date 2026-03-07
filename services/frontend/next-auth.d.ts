@@ -5,6 +5,7 @@ declare module "next-auth" {
     backendId?: string;
     createdAt?: string;
     role?: string;
+    timezone?: string;
   }
 
   interface Session {
@@ -13,6 +14,7 @@ declare module "next-auth" {
       backendId?: string;
       createdAt?: string;
       role?: string;
+      timezone?: string;
     } & DefaultSession["user"];
   }
 
@@ -26,5 +28,6 @@ declare module "next-auth" {
     backendId?: string;
     createdAt?: string;
     role?: string;
+    timezone?: string;
   }
 }

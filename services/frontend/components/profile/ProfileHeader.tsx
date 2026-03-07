@@ -4,35 +4,16 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
+import { formatProfileDate } from "@/lib/utils/datetime";
 
 interface ProfileHeaderProps {
   name: string;
   email: string;
   image: string | null;
   signupDate: string;
-  firstEntryDate: Date | null;
+  firstEntryDate: string | null;
   isAdmin?: boolean;
-}
-
-/**
- * Format date in a locale-independent way to avoid hydration mismatch.
- */
-function formatDate(date: Date): string {
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  return `${months[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+  timezone: string;
 }
 
 export function ProfileHeader({
@@ -42,15 +23,19 @@ export function ProfileHeader({
   signupDate,
   firstEntryDate,
   isAdmin = false,
+  timezone,
 }: ProfileHeaderProps) {
-  const formattedSignupDate = formatDate(new Date(signupDate));
+  const formattedSignupDate = signupDate
+    ? formatProfileDate(signupDate, timezone)
+    : null;
   const formattedFirstEntry = firstEntryDate
-    ? formatDate(firstEntryDate)
+    ? formatProfileDate(firstEntryDate, timezone)
     : null;
 
   const [daysSinceSignup, setDaysSinceSignup] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!signupDate) return;
     const days = Math.floor(
       (Date.now() - new Date(signupDate).getTime()) / (1000 * 60 * 60 * 24),
     );
@@ -89,17 +74,19 @@ export function ProfileHeader({
             <p className="text-dark-400 mt-1">{email}</p>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-dark-400">Member since:</span>
-                <p className="font-medium text-dark-200">
-                  {formattedSignupDate}
-                </p>
-                {daysSinceSignup !== null && (
-                  <p className="text-xs text-dark-500">
-                    {daysSinceSignup} days ago
+              {formattedSignupDate && (
+                <div>
+                  <span className="text-dark-400">Member since:</span>
+                  <p className="font-medium text-dark-200">
+                    {formattedSignupDate}
                   </p>
-                )}
-              </div>
+                  {daysSinceSignup !== null && (
+                    <p className="text-xs text-dark-500">
+                      {daysSinceSignup} days ago
+                    </p>
+                  )}
+                </div>
+              )}
 
               {firstEntryDate && (
                 <div>

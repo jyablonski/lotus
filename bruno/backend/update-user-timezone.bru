@@ -1,0 +1,17 @@
+meta {
+  name: Update User Timezone
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{backend_url}}/v1/users/{{user_id}}/timezone
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "timezone": "string"
+}
+}

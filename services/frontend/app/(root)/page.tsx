@@ -22,6 +22,7 @@ export default async function HomePage() {
       analytics={analytics}
       recentJournals={recentJournals}
       userName={session.user.name ?? undefined}
+      timezone={session.user.timezone ?? "UTC"}
     />
   );
 }

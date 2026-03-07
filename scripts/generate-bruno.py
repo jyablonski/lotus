@@ -445,13 +445,17 @@ def write_bru_files(endpoints: list[dict], output_dir: Path) -> None:
 def write_collection_files(bruno_dir: Path) -> None:
     """Write the collection-level bruno.json, collection.bru, and environment files."""
     # bruno.json
-    bruno_json = {
-        "version": "1",
-        "name": "Lotus API",
-        "type": "collection",
-        "ignore": ["node_modules", ".git"],
-    }
-    (bruno_dir / "bruno.json").write_text(json.dumps(bruno_json, indent=2) + "\n")
+    # Write with manual formatting to match prettier output and avoid
+    # pre-commit flip-flopping between json.dumps and prettier styles.
+    content = (
+        "{\n"
+        '  "version": "1",\n'
+        '  "name": "Lotus API",\n'
+        '  "type": "collection",\n'
+        '  "ignore": ["node_modules", ".git"]\n'
+        "}\n"
+    )
+    (bruno_dir / "bruno.json").write_text(content)
 
     # collection.bru
     (bruno_dir / "collection.bru").write_text("headers {\n  Content-Type: application/json\n}\n")

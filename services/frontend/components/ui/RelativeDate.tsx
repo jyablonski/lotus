@@ -1,21 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatShortDate } from "@/lib/utils/datetime";
 
 interface RelativeDateProps {
   date: string;
   className?: string;
-}
-
-/**
- * Format date in a locale-independent way to avoid hydration mismatch
- */
-function formatAbsoluteDate(dateString: string): string {
-  const date = new Date(dateString);
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-  const year = date.getUTCFullYear();
-  return `${month}/${day}/${year}`;
+  timezone: string;
 }
 
 /**
@@ -23,10 +14,10 @@ function formatAbsoluteDate(dateString: string): string {
  * Shows absolute date on initial render, then updates to relative after hydration
  * This avoids hydration mismatches while still showing "2 hours ago" style dates
  */
-export function RelativeDate({ date, className }: RelativeDateProps) {
+export function RelativeDate({ date, className, timezone }: RelativeDateProps) {
   const [formattedDate, setFormattedDate] = useState<string>(() => {
     // Initial render: use absolute date (same on server and client)
-    return formatAbsoluteDate(date);
+    return formatShortDate(date, timezone);
   });
 
   useEffect(() => {
@@ -49,7 +40,7 @@ export function RelativeDate({ date, className }: RelativeDateProps) {
         } else if (diffInDays < 7) {
           setFormattedDate(`${diffInDays} days ago`);
         } else {
-          setFormattedDate(formatAbsoluteDate(date));
+          setFormattedDate(formatShortDate(date, timezone));
         }
       }
     };
@@ -59,7 +50,7 @@ export function RelativeDate({ date, className }: RelativeDateProps) {
     // Optionally update every minute for "Just now" entries
     const interval = setInterval(updateDate, 60000);
     return () => clearInterval(interval);
-  }, [date]);
+  }, [date, timezone]);
 
   return <span className={className}>{formattedDate}</span>;
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
+import { ROUTES } from "@/lib/routes";
 
 interface JournalEmptyStateProps {
   hasEntries: boolean;
@@ -17,7 +18,7 @@ export function JournalEmptyState({ hasEntries }: JournalEmptyStateProps) {
             <p className="text-muted-dark mb-6">
               Start your journaling journey by creating your first entry.
             </p>
-            <Link href="/journal/create">
+            <Link href={ROUTES.journal.create}>
               <button className="btn-primary">Create Your First Entry</button>
             </Link>
           </div>

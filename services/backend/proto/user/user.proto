@@ -32,3 +32,14 @@ message GetUserResponse {
   string created_at = 5;
   string updated_at = 6;
 }
+
+message UpdateUserTimezoneRequest {
+  string user_id = 1;
+  string timezone = 2;
+}
+
+message UpdateUserTimezoneResponse {
+  string user_id = 1;
+  string timezone = 2;
+  string updated_at = 3;
+}

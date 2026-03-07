@@ -5,51 +5,19 @@ import Link from "next/link";
 import { JournalEntry } from "@/types/journal";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { JournalEntryCard } from "@/components/journal/JournalEntryCard";
+import { ROUTES } from "@/lib/routes";
+import { formatProfileDate } from "@/lib/utils/datetime";
 
 interface SelectedDateEntriesProps {
   selectedDate: Date;
   entries: JournalEntry[];
-}
-
-/**
- * Format date in a locale-independent way to avoid hydration mismatch
- */
-function formatDateHeader(date: Date): string {
-  const days = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const dayName = days[date.getUTCDay()];
-  const monthName = months[date.getUTCMonth()];
-  const day = date.getUTCDate();
-  const year = date.getUTCFullYear();
-
-  return `${dayName}, ${monthName} ${day}, ${year}`;
+  timezone: string;
 }
 
 export function SelectedDateEntries({
   selectedDate,
   entries,
+  timezone,
 }: SelectedDateEntriesProps) {
   // Use state for "today" checks to avoid hydration mismatch
   // Initial render uses false (safe default), then updates after hydration
@@ -62,7 +30,7 @@ export function SelectedDateEntries({
     setIsPastDate(selectedDate < new Date(now.setHours(0, 0, 0, 0)));
   }, [selectedDate]);
 
-  const formattedDate = formatDateHeader(selectedDate);
+  const formattedDate = formatProfileDate(selectedDate.toISOString(), timezone);
 
   return (
     <Card>
@@ -73,7 +41,7 @@ export function SelectedDateEntries({
           </h2>
           {/* Only show Add Entry button for today */}
           {entries.length === 0 && isToday && (
-            <Link href="/journal/create">
+            <Link href={ROUTES.journal.create}>
               <button className="btn-primary px-4 py-2 text-sm">
                 Add Entry
               </button>
@@ -91,7 +59,7 @@ export function SelectedDateEntries({
             {isToday ? (
               <>
                 <p className="text-dark-400 mb-4">No entries for today yet</p>
-                <Link href="/journal/create">
+                <Link href={ROUTES.journal.create}>
                   <button className="btn-primary px-4 py-2">
                     Create Todays Entry
                   </button>
@@ -116,13 +84,17 @@ export function SelectedDateEntries({
         ) : (
           <div className="space-y-4">
             {entries.map((entry) => (
-              <JournalEntryCard key={entry.journalId} entry={entry} />
+              <JournalEntryCard
+                key={entry.journalId}
+                entry={entry}
+                timezone={timezone}
+              />
             ))}
 
             {/* Show add another entry button only for today */}
             {isToday && (
               <div className="pt-4 border-t border-dark-600">
-                <Link href="/journal/create" className="block">
+                <Link href={ROUTES.journal.create} className="block">
                   <button className="w-full link-lotus py-3 text-sm font-medium border border-lotus-500/30 rounded-lg hover:bg-lotus-500/10 transition-colors">
                     Add Another Entry for Today
                   </button>

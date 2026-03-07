@@ -1,11 +1,11 @@
 import { JournalEntry } from "@/types/journal";
-import { intToMood, getMoodConfigByInt } from "@/lib/utils/moodMapping";
+import {
+  intToMood,
+  getMoodConfigByInt,
+  type MoodOption,
+} from "@/lib/utils/moodMapping";
 
-export type MoodOption = {
-  key: string;
-  label: string;
-  emoji: string;
-};
+export type { MoodOption };
 
 export function filterJournalsBySearch(
   journals: JournalEntry[],
@@ -65,6 +65,7 @@ export function getUniqueMoodsFromJournals(
         key: moodKey,
         label: config.label,
         emoji: config.emoji,
+        color: config.color,
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically

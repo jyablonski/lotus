@@ -24,6 +24,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (SourceUser, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (SourceUser, error)
 	GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (GoldUserJournalSummary, error)
+	UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (SourceUser, error)
 	UpsertRuntimeConfigValue(ctx context.Context, arg UpsertRuntimeConfigValueParams) (SourceRuntimeConfig, error)
 }
 

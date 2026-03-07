@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { createJournal } from "@/actions/journals";
 import { moodToInt } from "@/lib/utils/moodMapping";
 import { trackEvent, getTimeOfDay, countWords } from "@/lib/analytics";
+import { ROUTES } from "@/lib/routes";
 
 export function useCreateJournal() {
   const [entry, setEntry] = useState("");
@@ -114,7 +115,7 @@ export function useCreateJournal() {
 
           setSuccess(true);
           setTimeout(() => {
-            router.push("/journal/home");
+            router.push(ROUTES.journal.home);
           }, 2000);
         } else {
           setError(result.error || "Something went wrong. Please try again.");

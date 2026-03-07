@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { getMoodConfigByInt } from "@/lib/utils/moodMapping";
 import { trackEvent } from "@/lib/analytics";

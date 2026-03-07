@@ -60,6 +60,10 @@ const workSans = localFont({
 export const metadata: Metadata = {
   title: "Lotus",
   description: "Yadda yadda yadda",
+  other: {
+    "color-scheme": "dark",
+    "darkreader-lock": "",
+  },
 };
 
 export default function RootLayout({
@@ -68,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={workSans.variable}>
         <GoogleAnalytics />
         <SessionProvider>

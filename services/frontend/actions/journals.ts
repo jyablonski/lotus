@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+import { BACKEND_URL } from "@/lib/config";
+import { ROUTES } from "@/lib/routes";
 
 export interface CreateJournalInput {
   journalText: string;
@@ -76,9 +76,9 @@ export async function createJournal(
     }
 
     // Revalidate cached data on pages that display journals
-    revalidatePath("/");
-    revalidatePath("/journal/home");
-    revalidatePath("/journal/calendar");
+    revalidatePath(ROUTES.home);
+    revalidatePath(ROUTES.journal.home);
+    revalidatePath(ROUTES.journal.calendar);
 
     return {
       success: true,

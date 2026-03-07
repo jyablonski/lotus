@@ -1,3 +1,21 @@
+/**
+ * Typed mood configuration using `as const` for compile-time safety.
+ * Mood keys are a closed union, not arbitrary strings.
+ */
+
+export const MOOD_KEYS = [
+  "excited",
+  "happy",
+  "content",
+  "neutral",
+  "tired",
+  "sad",
+  "anxious",
+  "angry",
+] as const;
+
+export type MoodKey = (typeof MOOD_KEYS)[number];
+
 export interface MoodConfig {
   value: number;
   label: string;
@@ -5,7 +23,7 @@ export interface MoodConfig {
   color: string;
 }
 
-export const MOOD_CONFIGS: Record<string, MoodConfig> = {
+export const MOOD_CONFIGS = {
   excited: {
     value: 8,
     label: "Excited",
@@ -54,24 +72,32 @@ export const MOOD_CONFIGS: Record<string, MoodConfig> = {
     emoji: "😠",
     color: "bg-red-500/20 text-red-300 border-red-500/30",
   },
+} as const satisfies Record<MoodKey, MoodConfig>;
+
+/** Type for mood option used in selectors and filters. */
+export type MoodOption = {
+  key: MoodKey;
+  label: string;
+  emoji: string;
+  color: string;
 };
 
 // Convert string mood to integer for API
 export function moodToInt(moodKey: string): number {
-  return MOOD_CONFIGS[moodKey]?.value || 5; // Default to neutral
+  return (MOOD_CONFIGS[moodKey as MoodKey]?.value as number) ?? 5;
 }
 
 // Convert integer mood to string for frontend
-export function intToMood(moodInt: number): string {
-  const moodEntry = Object.entries(MOOD_CONFIGS).find(
+export function intToMood(moodInt: number): MoodKey {
+  const entry = Object.entries(MOOD_CONFIGS).find(
     ([, config]) => config.value === moodInt,
   );
-  return moodEntry?.[0] || "neutral"; // Default to neutral
+  return (entry?.[0] as MoodKey) ?? "neutral";
 }
 
 // Get mood config by string key
 export function getMoodConfig(moodKey: string): MoodConfig {
-  return MOOD_CONFIGS[moodKey] || MOOD_CONFIGS.neutral;
+  return MOOD_CONFIGS[moodKey as MoodKey] ?? MOOD_CONFIGS.neutral;
 }
 
 // Get mood config by integer value
@@ -81,9 +107,11 @@ export function getMoodConfigByInt(moodInt: number): MoodConfig {
 }
 
 // Get all mood options for selectors
-export function getAllMoodOptions() {
-  return Object.entries(MOOD_CONFIGS).map(([key, config]) => ({
+export function getAllMoodOptions(): MoodOption[] {
+  return MOOD_KEYS.map((key) => ({
     key,
-    ...config,
+    label: MOOD_CONFIGS[key].label,
+    emoji: MOOD_CONFIGS[key].emoji,
+    color: MOOD_CONFIGS[key].color,
   }));
 }

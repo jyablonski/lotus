@@ -10,6 +10,12 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+# Ensure Go-installed binaries (protoc-gen-grpc-gateway, protoc-gen-openapiv2)
+# and Python tools (uv) are available even when invoked from environments with
+# a limited $PATH (e.g. IDE git).
+GOBIN="$(go env GOPATH)/bin"
+export PATH="$GOBIN:$HOME/.local/bin:$PATH"
+
 echo "==> Generating backend OpenAPI specs (buf generate)..."
 cd "$REPO_ROOT/services/backend" && buf generate
 
