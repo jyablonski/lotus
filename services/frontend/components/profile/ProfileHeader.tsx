@@ -11,6 +11,7 @@ interface ProfileHeaderProps {
   image: string | null;
   signupDate: string;
   firstEntryDate: Date | null;
+  isAdmin?: boolean;
 }
 
 /**
@@ -40,6 +41,7 @@ export function ProfileHeader({
   image,
   signupDate,
   firstEntryDate,
+  isAdmin = false,
 }: ProfileHeaderProps) {
   const formattedSignupDate = formatDate(new Date(signupDate));
   const formattedFirstEntry = firstEntryDate
@@ -76,7 +78,14 @@ export function ProfileHeader({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-dark-50 truncate">{name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-dark-50 truncate">
+                {name}
+              </h1>
+              {isAdmin && (
+                <span className="badge badge-lotus text-xs">Admin</span>
+              )}
+            </div>
             <p className="text-dark-400 mt-1">{email}</p>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

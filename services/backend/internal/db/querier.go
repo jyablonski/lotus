@@ -14,6 +14,8 @@ type Querier interface {
 	CreateJournal(ctx context.Context, arg CreateJournalParams) (SourceJournal, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (SourceUser, error)
 	CreateUserOauth(ctx context.Context, arg CreateUserOauthParams) (SourceUser, error)
+	GetActiveFeatureFlags(ctx context.Context) ([]SourceWaffleFlag, error)
+	GetFeatureFlagByName(ctx context.Context, name string) (SourceWaffleFlag, error)
 	GetJournalById(ctx context.Context, id int32) (SourceJournal, error)
 	GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error)
 	GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error)

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package featureflag;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/featureflag;featureflag_pb";
+
+// Request/Response messages for FeatureFlag operations
+
+message GetFeatureFlagsRequest {
+  string user_role = 1;
+}
+
+message FeatureFlag {
+  string name = 1;
+  bool is_active = 2;
+}
+
+message GetFeatureFlagsResponse {
+  repeated FeatureFlag flags = 1;
+}

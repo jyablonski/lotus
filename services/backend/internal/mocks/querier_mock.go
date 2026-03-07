@@ -29,6 +29,12 @@ var _ db.Querier = &QuerierMock{}
 //			CreateUserOauthFunc: func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error) {
 //				panic("mock out the CreateUserOauth method")
 //			},
+//			GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
+//				panic("mock out the GetActiveFeatureFlags method")
+//			},
+//			GetFeatureFlagByNameFunc: func(ctx context.Context, name string) (db.SourceWaffleFlag, error) {
+//				panic("mock out the GetFeatureFlagByName method")
+//			},
 //			GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
 //				panic("mock out the GetJournalById method")
 //			},
@@ -71,6 +77,12 @@ type QuerierMock struct {
 
 	// CreateUserOauthFunc mocks the CreateUserOauth method.
 	CreateUserOauthFunc func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error)
+
+	// GetActiveFeatureFlagsFunc mocks the GetActiveFeatureFlags method.
+	GetActiveFeatureFlagsFunc func(ctx context.Context) ([]db.SourceWaffleFlag, error)
+
+	// GetFeatureFlagByNameFunc mocks the GetFeatureFlagByName method.
+	GetFeatureFlagByNameFunc func(ctx context.Context, name string) (db.SourceWaffleFlag, error)
 
 	// GetJournalByIdFunc mocks the GetJournalById method.
 	GetJournalByIdFunc func(ctx context.Context, id int32) (db.SourceJournal, error)
@@ -121,6 +133,18 @@ type QuerierMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.CreateUserOauthParams
+		}
+		// GetActiveFeatureFlags holds details about calls to the GetActiveFeatureFlags method.
+		GetActiveFeatureFlags []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// GetFeatureFlagByName holds details about calls to the GetFeatureFlagByName method.
+		GetFeatureFlagByName []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
 		}
 		// GetJournalById holds details about calls to the GetJournalById method.
 		GetJournalById []struct {
@@ -189,6 +213,8 @@ type QuerierMock struct {
 	lockCreateJournal                 sync.RWMutex
 	lockCreateUser                    sync.RWMutex
 	lockCreateUserOauth               sync.RWMutex
+	lockGetActiveFeatureFlags         sync.RWMutex
+	lockGetFeatureFlagByName          sync.RWMutex
 	lockGetJournalById                sync.RWMutex
 	lockGetJournalCountByUserId       sync.RWMutex
 	lockGetJournalsByUserId           sync.RWMutex
@@ -305,6 +331,74 @@ func (mock *QuerierMock) CreateUserOauthCalls() []struct {
 	mock.lockCreateUserOauth.RLock()
 	calls = mock.calls.CreateUserOauth
 	mock.lockCreateUserOauth.RUnlock()
+	return calls
+}
+
+// GetActiveFeatureFlags calls GetActiveFeatureFlagsFunc.
+func (mock *QuerierMock) GetActiveFeatureFlags(ctx context.Context) ([]db.SourceWaffleFlag, error) {
+	if mock.GetActiveFeatureFlagsFunc == nil {
+		panic("QuerierMock.GetActiveFeatureFlagsFunc: method is nil but Querier.GetActiveFeatureFlags was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetActiveFeatureFlags.Lock()
+	mock.calls.GetActiveFeatureFlags = append(mock.calls.GetActiveFeatureFlags, callInfo)
+	mock.lockGetActiveFeatureFlags.Unlock()
+	return mock.GetActiveFeatureFlagsFunc(ctx)
+}
+
+// GetActiveFeatureFlagsCalls gets all the calls that were made to GetActiveFeatureFlags.
+// Check the length with:
+//
+//	len(mockedQuerier.GetActiveFeatureFlagsCalls())
+func (mock *QuerierMock) GetActiveFeatureFlagsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetActiveFeatureFlags.RLock()
+	calls = mock.calls.GetActiveFeatureFlags
+	mock.lockGetActiveFeatureFlags.RUnlock()
+	return calls
+}
+
+// GetFeatureFlagByName calls GetFeatureFlagByNameFunc.
+func (mock *QuerierMock) GetFeatureFlagByName(ctx context.Context, name string) (db.SourceWaffleFlag, error) {
+	if mock.GetFeatureFlagByNameFunc == nil {
+		panic("QuerierMock.GetFeatureFlagByNameFunc: method is nil but Querier.GetFeatureFlagByName was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Name string
+	}{
+		Ctx:  ctx,
+		Name: name,
+	}
+	mock.lockGetFeatureFlagByName.Lock()
+	mock.calls.GetFeatureFlagByName = append(mock.calls.GetFeatureFlagByName, callInfo)
+	mock.lockGetFeatureFlagByName.Unlock()
+	return mock.GetFeatureFlagByNameFunc(ctx, name)
+}
+
+// GetFeatureFlagByNameCalls gets all the calls that were made to GetFeatureFlagByName.
+// Check the length with:
+//
+//	len(mockedQuerier.GetFeatureFlagByNameCalls())
+func (mock *QuerierMock) GetFeatureFlagByNameCalls() []struct {
+	Ctx  context.Context
+	Name string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Name string
+	}
+	mock.lockGetFeatureFlagByName.RLock()
+	calls = mock.calls.GetFeatureFlagByName
+	mock.lockGetFeatureFlagByName.RUnlock()
 	return calls
 }
 

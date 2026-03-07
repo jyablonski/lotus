@@ -1,4 +1,6 @@
 export { fetchUserAnalytics } from "./analytics";
+export { fetchFeatureFlags } from "./featureFlags";
+export type { FeatureFlags } from "./featureFlags";
 export {
   fetchJournalsForUser,
   fetchRecentJournals,
