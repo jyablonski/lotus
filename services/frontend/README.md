@@ -1,6 +1,6 @@
 # Frontend
 
-Next.js 15 frontend for the Lotus journal application, built with React 19, TypeScript, and Tailwind CSS 4. Provides a dark-themed journal interface with calendar views, mood tracking (8-point scale), and analytics.
+Next.js 15 frontend for the Lotus journal application, built with React 19, TypeScript, and Tailwind CSS 4. Provides a dark-themed journal interface with calendar views, mood tracking (1-10 scale), and analytics.
 
 ## How It Works
 
@@ -142,7 +142,6 @@ E2E tests do not run on every PR. To trigger them, add the `e2e` label to your p
 1. Starts the full stack via `docker compose -f docker/docker-compose-e2e.yaml`
 2. Waits for the frontend to be healthy
 3. Installs Playwright and runs all e2e tests
-4. Uploads the Playwright report as a CI artifact
 
 ## Development
 

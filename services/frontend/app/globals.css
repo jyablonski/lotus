@@ -22,7 +22,7 @@
   --border-subtle: #1f1f28;
   --border-focus: rgba(14, 165, 233, 0.5);
 
-  /* Accent – lotus sky blue */
+  /* Accent - lotus sky blue */
   --accent: #0ea5e9;
   --accent-hover: #38bdf8;
   --accent-muted: rgba(14, 165, 233, 0.15);
@@ -42,7 +42,7 @@
   --color-lotus-900: #0c4a6e;
   --color-lotus-950: #082f49;
 
-  /* Secondary palette – emerald/teal values (kept as "rose-*" for token stability) */
+  /* Secondary palette - emerald/teal values (kept as "rose-*" for token stability) */
   --color-rose-50: #ecfdf5;
   --color-rose-100: #d1fae5;
   --color-rose-200: #a7f3d0;
@@ -55,7 +55,7 @@
   --color-rose-900: #064e3b;
   --color-rose-950: #022c22;
 
-  /* Refined dark palette – maps to semantic tokens above */
+  /* Refined dark palette - maps to semantic tokens above */
   --color-dark-50: #e4e4e7;
   --color-dark-100: #c4c4cc;
   --color-dark-200: #a0a0ab;

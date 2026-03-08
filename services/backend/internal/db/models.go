@@ -52,6 +52,15 @@ type SourceJournal struct {
 	ModifiedAt  time.Time
 }
 
+type SourceJournalTopic struct {
+	ID             int32
+	JournalID      int32
+	TopicName      string
+	Confidence     string
+	MlModelVersion string
+	CreatedAt      sql.NullTime
+}
+
 type SourceRuntimeConfig struct {
 	ID          int32
 	Key         string

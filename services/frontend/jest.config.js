@@ -27,7 +27,19 @@ const customJestConfig = {
     "types/**/*.{js,jsx,ts,tsx}",
     "actions/**/*.{js,jsx,ts,tsx}",
     "!**/*.d.ts",
+    "!**/jest.setup.js",
   ],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "text-summary", "lcov"],
+  // Fail the build if coverage drops below these thresholds
+  coverageThreshold: {
+    global: {
+      statements: 70,
+      branches: 65,
+      functions: 70,
+      lines: 70,
+    },
+  },
 };
 
 module.exports = createJestConfig(customJestConfig);

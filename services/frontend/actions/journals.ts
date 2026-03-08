@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { BACKEND_URL } from "@/lib/config";
 import { ROUTES } from "@/lib/routes";
+import { MOOD_MIN, MOOD_MAX } from "@/lib/utils/moodMapping";
 
 export interface CreateJournalInput {
   journalText: string;
@@ -37,6 +38,14 @@ export async function createJournal(
       return { success: false, error: "Journal text is required" };
     }
 
+    const mood = Number(moodScore);
+    if (!Number.isInteger(mood) || mood < MOOD_MIN || mood > MOOD_MAX) {
+      return {
+        success: false,
+        error: `Mood must be between ${MOOD_MIN} and ${MOOD_MAX}`,
+      };
+    }
+
     const response = await fetch(`${BACKEND_URL}/v1/journals`, {
       method: "POST",
       headers: {
@@ -45,7 +54,7 @@ export async function createJournal(
       body: JSON.stringify({
         user_id: session.user.id,
         journal_text: journalText,
-        user_mood: moodScore?.toString() || undefined,
+        user_mood: String(mood),
       }),
     });
 

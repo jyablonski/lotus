@@ -34,17 +34,16 @@ describe("JournalEntryCard", () => {
     expect(dateElement).toBeInTheDocument();
   });
 
-  it("renders mood badge with emoji and label", () => {
+  it("renders mood badge with label (1-10 scale)", () => {
     render(<JournalEntryCard entry={shortEntry} timezone="UTC" />);
-    // Happy mood: emoji 😊, label "Happy"
-    expect(screen.getByText("😊")).toBeInTheDocument();
-    expect(screen.getByText("Happy")).toBeInTheDocument();
+    // userMood 7 -> badge "Mood 7"
+    expect(screen.getByText("Mood 7")).toBeInTheDocument();
   });
 
-  it("renders sad mood correctly", () => {
+  it("renders sad mood correctly (low score)", () => {
     render(<JournalEntryCard entry={longEntry} timezone="UTC" />);
-    expect(screen.getByText("😢")).toBeInTheDocument();
-    expect(screen.getByText("Sad")).toBeInTheDocument();
+    // userMood 3 -> badge "Mood 3"
+    expect(screen.getByText("Mood 3")).toBeInTheDocument();
   });
 
   describe("text truncation", () => {

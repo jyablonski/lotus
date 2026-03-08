@@ -10,9 +10,15 @@ import { formatEntryDate } from "@/lib/utils/datetime";
 interface JournalEntryCardProps {
   entry: JournalEntry;
   timezone: string;
+  /** When true, show topic tags (gated by frontend_show_tags). */
+  showTags?: boolean;
 }
 
-export function JournalEntryCard({ entry, timezone }: JournalEntryCardProps) {
+export function JournalEntryCard({
+  entry,
+  timezone,
+  showTags = false,
+}: JournalEntryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const formattedDate = formatEntryDate(entry.createdAt, timezone);
@@ -34,10 +40,9 @@ export function JournalEntryCard({ entry, timezone }: JournalEntryCardProps) {
             <p className="text-sm text-dark-400">{formattedDate}</p>
           </div>
           <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full ${moodConfig.color}`}
+            className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${moodConfig.color}`}
           >
-            <span className="text-sm leading-none">{moodConfig.emoji}</span>
-            <span>{moodConfig.label}</span>
+            Mood {moodConfig.label}
           </span>
         </div>
 
@@ -46,6 +51,19 @@ export function JournalEntryCard({ entry, timezone }: JournalEntryCardProps) {
             {displayText}
           </p>
         </div>
+
+        {showTags && entry.topicNames && entry.topicNames.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Topics">
+            {entry.topicNames.map((name) => (
+              <span
+                key={name}
+                className="inline-flex items-center rounded-md bg-dark-700 px-2.5 py-1 text-xs font-medium text-dark-200 ring-1 ring-dark-600"
+              >
+                {name.replace(/_/g, " ")}
+              </span>
+            ))}
+          </div>
+        )}
 
         {shouldTruncate && (
           <div className="mt-4 pt-4 border-t border-dark-600">

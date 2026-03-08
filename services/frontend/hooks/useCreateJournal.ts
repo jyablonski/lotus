@@ -2,13 +2,13 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { createJournal } from "@/actions/journals";
-import { moodToInt } from "@/lib/utils/moodMapping";
+import { MOOD_DEFAULT } from "@/lib/utils/moodMapping";
 import { trackEvent, getTimeOfDay, countWords } from "@/lib/analytics";
 import { ROUTES } from "@/lib/routes";
 
 export function useCreateJournal() {
   const [entry, setEntry] = useState("");
-  const [mood, setMood] = useState("neutral");
+  const [mood, setMood] = useState(MOOD_DEFAULT);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -25,7 +25,7 @@ export function useCreateJournal() {
 
   const resetForm = () => {
     setEntry("");
-    setMood("neutral");
+    setMood(MOOD_DEFAULT);
     setSuccess(false);
     setError(null);
     editorOpenedAt.current = Date.now();
@@ -89,7 +89,7 @@ export function useCreateJournal() {
       try {
         const result = await createJournal({
           journalText: entry,
-          moodScore: moodToInt(mood),
+          moodScore: mood,
         });
 
         if (result.success) {

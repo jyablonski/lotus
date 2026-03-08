@@ -108,28 +108,59 @@ async function createUserInBackend(
   }
 }
 
-async function fetchBackendUser(email: string): Promise<BackendUser | null> {
-  try {
-    const response = await fetch(
-      `${BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
-    );
+// Short TTL cache to avoid multiple GetUser calls per page load when
+// layout, page, Navbar, etc. each call auth() and the JWT callback runs.
+const USER_CACHE_TTL_MS = 2000; // 2 seconds
+const userCache = new Map<string, { user: BackendUser; until: number }>();
 
-    if (!response.ok) {
-      if (response.status === 404) return null; // User not found — expected
-      authLog("error", "Failed to fetch user from backend", {
-        status: response.status,
+// Coalesce in-flight requests: concurrent callers for the same email
+// share one backend request instead of each firing their own.
+const inFlight = new Map<string, Promise<BackendUser | null>>();
+
+async function fetchBackendUser(email: string): Promise<BackendUser | null> {
+  const now = Date.now();
+  const hit = userCache.get(email);
+  if (hit && hit.until > now) {
+    return hit.user;
+  }
+
+  let promise = inFlight.get(email);
+  if (promise) {
+    return promise;
+  }
+
+  promise = (async () => {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) return null; // User not found — expected
+        authLog("error", "Failed to fetch user from backend", {
+          status: response.status,
+        });
+        return null;
+      }
+
+      const data: BackendUserResponse = await response.json();
+      const user = parseBackendUser(data);
+      if (user) {
+        userCache.set(email, { user, until: Date.now() + USER_CACHE_TTL_MS });
+      }
+      return user;
+    } catch (error) {
+      authLog("error", "Network error fetching user from backend", {
+        error: error instanceof Error ? error.message : String(error),
       });
       return null;
+    } finally {
+      inFlight.delete(email);
     }
+  })();
 
-    const data: BackendUserResponse = await response.json();
-    return parseBackendUser(data);
-  } catch (error) {
-    authLog("error", "Network error fetching user from backend", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
-  }
+  inFlight.set(email, promise);
+  return promise;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,6 +265,12 @@ const magicLinkAdapter: Adapter = {
 // NextAuth config
 // ---------------------------------------------------------------------------
 
+/** Clears the backend-user cache and in-flight map. Used by tests to avoid cross-test pollution. */
+export function __clearBackendUserCacheForTests(): void {
+  userCache.clear();
+  inFlight.clear();
+}
+
 export const authConfig: NextAuthConfig = {
   adapter: magicLinkAdapter,
   // Keep using JWT strategy — the adapter is only needed for verification
@@ -319,7 +356,18 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
+      // When client calls session.update(), trigger is "update" and session
+      // contains the new data. Use it to refresh timezone without re-login.
+      if (trigger === "update" && session) {
+        const newTimezone =
+          (session as { timezone?: string }).timezone ??
+          (session as { user?: { timezone?: string } }).user?.timezone;
+        if (newTimezone !== undefined) {
+          token.timezone = newTimezone;
+        }
+      }
+
       // On initial sign-in the `user` object is populated.
       if (user) {
         if (user.backendId) {
@@ -375,19 +423,10 @@ export const authConfig: NextAuthConfig = {
         }
       }
 
-      // Always refresh role and createdAt from the backend so that
-      // admin promotions (or demotions) take effect without requiring
-      // a new sign-in, and createdAt is always accurate.
-      if (token.backendId && email) {
-        const backendUser = await fetchBackendUser(email);
-        if (backendUser) {
-          token.role = backendUser.role;
-          token.timezone = backendUser.timezone;
-          if (backendUser.createdAt) {
-            token.createdAt = backendUser.createdAt;
-          }
-        }
-      }
+      // Rely on the JWT for role, timezone, createdAt after login. No backend
+      // call here — best practice for JWT auth. Role/timezone changes (e.g.
+      // admin promotion) take effect on next sign-in, or add a "Refresh session"
+      // flow if you need them without re-login.
 
       return token;
     },

@@ -39,7 +39,8 @@ export const LoggedInDashboard = ({
   const entriesLast30Days = analytics?.totalJournals30d ?? 0;
   const currentStreak = analytics?.dailyStreak ?? 0;
   const activeDays = analytics?.activeDays ?? 0;
-  const avgMood = analytics?.avgMoodScore30d ?? analytics?.avgMoodScore ?? 0;
+  // Use all-time avg mood so it matches profile page (profile uses calculateAverageMood over all journals)
+  const avgMood = analytics?.avgMoodScore ?? 0;
   const avgMoodRounded = avgMood ? Math.round(avgMood * 10) / 10 : 0;
   const positivePct = analytics?.positivePercentage ?? null;
   const daysSinceLastJournal = analytics?.daysSinceLastJournal ?? null;
@@ -133,7 +134,7 @@ export const LoggedInDashboard = ({
             icon={<BarChart3 size={24} className="text-lotus-400" />}
             trend={
               avgMoodRounded > 0
-                ? `Avg mood: ${avgMoodRounded}/8`
+                ? `Avg mood: ${avgMoodRounded}/10`
                 : "No data yet"
             }
             iconContainerClassName="p-2 bg-lotus-500/10 rounded-lg"
@@ -285,7 +286,7 @@ export const LoggedInDashboard = ({
                     <div className="flex justify-between">
                       <span className="text-muted-dark">Avg mood:</span>
                       <span className="font-medium text-primary-dark">
-                        {avgMoodRounded}/8
+                        {avgMoodRounded}/10
                       </span>
                     </div>
                   )}

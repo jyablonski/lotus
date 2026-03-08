@@ -3,17 +3,17 @@ import { CreateJournalForm } from "@/components/journal/CreateJournalForm";
 
 // Mock child components since they're tested separately
 jest.mock("@/components/journal/MoodSelector", () => ({
-  MoodSelector: ({
-    selectedMood,
-    onMoodChange,
+  MoodSlider: ({
+    value,
+    onValueChange,
   }: {
-    selectedMood: string;
-    onMoodChange: (mood: string) => void;
+    value: number;
+    onValueChange: (value: number) => void;
   }) => (
-    <div data-testid="mood-selector">
-      <span data-testid="selected-mood">{selectedMood}</span>
-      <button type="button" onClick={() => onMoodChange("happy")}>
-        Select Happy
+    <div data-testid="mood-slider">
+      <span data-testid="mood-value">{value}</span>
+      <button type="button" onClick={() => onValueChange(7)}>
+        Set 7
       </button>
     </div>
   ),
@@ -41,7 +41,7 @@ describe("CreateJournalForm", () => {
   const defaultProps = {
     entry: "",
     setEntry: jest.fn(),
-    mood: "",
+    mood: 5,
     setMood: jest.fn(),
     onSubmit: jest.fn(),
     isSubmitting: false,
@@ -52,9 +52,9 @@ describe("CreateJournalForm", () => {
     jest.clearAllMocks();
   });
 
-  it("renders MoodSelector", () => {
+  it("renders MoodSlider", () => {
     render(<CreateJournalForm {...defaultProps} />);
-    expect(screen.getByTestId("mood-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("mood-slider")).toBeInTheDocument();
   });
 
   it("renders JournalTextEditor", () => {
@@ -76,12 +76,7 @@ describe("CreateJournalForm", () => {
 
   describe("submit button disabled states", () => {
     it("is disabled when entry is empty", () => {
-      render(<CreateJournalForm {...defaultProps} entry="" mood="happy" />);
-      expect(screen.getByRole("button", { name: "Save Entry" })).toBeDisabled();
-    });
-
-    it("is disabled when mood is empty", () => {
-      render(<CreateJournalForm {...defaultProps} entry="Some text" mood="" />);
+      render(<CreateJournalForm {...defaultProps} entry="" />);
       expect(screen.getByRole("button", { name: "Save Entry" })).toBeDisabled();
     });
 
@@ -90,16 +85,16 @@ describe("CreateJournalForm", () => {
         <CreateJournalForm
           {...defaultProps}
           entry="Some text"
-          mood="happy"
+          mood={7}
           isSubmitting={true}
         />,
       );
       expect(screen.getByRole("button", { name: "Saving..." })).toBeDisabled();
     });
 
-    it("is enabled when entry and mood are provided", () => {
+    it("is enabled when entry is provided", () => {
       render(
-        <CreateJournalForm {...defaultProps} entry="Some text" mood="happy" />,
+        <CreateJournalForm {...defaultProps} entry="Some text" mood={7} />,
       );
       expect(
         screen.getByRole("button", { name: "Save Entry" }),
@@ -107,7 +102,7 @@ describe("CreateJournalForm", () => {
     });
 
     it("is disabled when entry is whitespace only", () => {
-      render(<CreateJournalForm {...defaultProps} entry="   " mood="happy" />);
+      render(<CreateJournalForm {...defaultProps} entry="   " mood={7} />);
       expect(screen.getByRole("button", { name: "Save Entry" })).toBeDisabled();
     });
   });
@@ -117,7 +112,7 @@ describe("CreateJournalForm", () => {
       <CreateJournalForm
         {...defaultProps}
         entry="text"
-        mood="happy"
+        mood={7}
         isSubmitting={true}
       />,
     );
@@ -144,7 +139,7 @@ describe("CreateJournalForm", () => {
       <CreateJournalForm
         {...defaultProps}
         entry="Some text"
-        mood="happy"
+        mood={7}
         onSubmit={onSubmit}
       />,
     );
@@ -152,20 +147,20 @@ describe("CreateJournalForm", () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  it("calls setEntry and setMood with empty values on Clear", () => {
+  it("calls setEntry and setMood(5) on Clear", () => {
     const setEntry = jest.fn();
     const setMood = jest.fn();
     render(
       <CreateJournalForm
         {...defaultProps}
         entry="text"
-        mood="happy"
+        mood={7}
         setEntry={setEntry}
         setMood={setMood}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(setEntry).toHaveBeenCalledWith("");
-    expect(setMood).toHaveBeenCalledWith("");
+    expect(setMood).toHaveBeenCalledWith(5);
   });
 });

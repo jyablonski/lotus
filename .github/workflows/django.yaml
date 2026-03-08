@@ -12,8 +12,12 @@ on:
       - "services/django/**"
       - ".github/workflows/django.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  UV_VERSION: "0.9.5"
+  UV_VERSION: "0.10.9"
   PYTHON_VERSION: "3.13"
 
 jobs:

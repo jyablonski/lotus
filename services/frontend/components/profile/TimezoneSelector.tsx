@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { updateTimezone } from "@/actions/user";
 
 const TIMEZONE_OPTIONS = [
@@ -31,6 +32,7 @@ interface TimezoneSelectorProps {
 }
 
 export function TimezoneSelector({ currentTimezone }: TimezoneSelectorProps) {
+  const { update: updateSession } = useSession();
   const [timezone, setTimezone] = useState(currentTimezone);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -43,15 +45,17 @@ export function TimezoneSelector({ currentTimezone }: TimezoneSelectorProps) {
 
       const result = await updateTimezone(newTimezone);
 
-      setSaving(false);
       if (result.success) {
-        setMessage("Timezone updated. Refresh to see changes.");
+        const newTz = result.timezone ?? newTimezone;
+        await updateSession({ timezone: newTz });
+        setMessage("Timezone updated.");
       } else {
         setMessage(result.error || "Failed to update timezone");
         setTimezone(currentTimezone);
       }
+      setSaving(false);
     },
-    [currentTimezone],
+    [currentTimezone, updateSession],
   );
 
   // Auto-detect: if timezone is UTC, check if browser has a different one

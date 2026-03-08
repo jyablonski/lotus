@@ -15,6 +15,8 @@ jest.mock("@/components/journal/JournalFilters", () => ({
     setSearchTerm,
     selectedMood,
     setSelectedMood,
+    selectedTag = "all",
+    setSelectedTag,
     filteredCount,
     onClearFilters,
   }: {
@@ -22,15 +24,21 @@ jest.mock("@/components/journal/JournalFilters", () => ({
     setSearchTerm: (t: string) => void;
     selectedMood: string;
     setSelectedMood: (m: string) => void;
+    selectedTag?: string;
+    setSelectedTag?: (t: string) => void;
     filteredCount: number;
     onClearFilters?: () => void;
   }) => (
     <div data-testid="journal-filters">
       <span data-testid="search-term">{searchTerm}</span>
       <span data-testid="selected-mood">{selectedMood}</span>
+      <span data-testid="selected-tag">{selectedTag}</span>
       <span data-testid="filtered-count">{filteredCount}</span>
       <button onClick={() => setSearchTerm("Journal entry")}>Set Search</button>
-      <button onClick={() => setSelectedMood("happy")}>Set Mood</button>
+      <button onClick={() => setSelectedMood("7")}>Set Mood</button>
+      {setSelectedTag && (
+        <button onClick={() => setSelectedTag("work")}>Set Tag</button>
+      )}
       {onClearFilters && (
         <button onClick={onClearFilters}>Clear Filters</button>
       )}
@@ -213,21 +221,26 @@ describe("JournalHomeClient", () => {
       expect(screen.getByText("Clear Filters")).toBeInTheDocument();
     });
 
-    it("resets search and mood when clear filters is clicked", () => {
+    it("resets search, mood, and tag when clear filters is clicked", () => {
+      const entriesWithTags = makeEntries(3).map((e, i) =>
+        i === 0 ? { ...e, topicNames: ["work"] as string[] } : e,
+      );
       render(
         <JournalHomeClient
-          journals={makeEntries(5)}
-          totalCount={5}
+          journals={entriesWithTags}
+          totalCount={3}
           timezone="UTC"
+          showTags={true}
         />,
       );
-      // Activate filters
       fireEvent.click(screen.getByText("Set Search"));
       fireEvent.click(screen.getByText("Set Mood"));
-      // Clear
+      fireEvent.click(screen.getByText("Set Tag"));
+      expect(screen.getByTestId("selected-tag")).toHaveTextContent("work");
       fireEvent.click(screen.getByText("Clear Filters"));
       expect(screen.getByTestId("search-term")).toHaveTextContent("");
       expect(screen.getByTestId("selected-mood")).toHaveTextContent("all");
+      expect(screen.getByTestId("selected-tag")).toHaveTextContent("all");
     });
   });
 });

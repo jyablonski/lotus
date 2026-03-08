@@ -7,7 +7,7 @@ interface JournalTextEditorProps {
 export function JournalTextEditor({
   value,
   onChange,
-  placeholder = "What's on your mind today? Share your thoughts, experiences, or anything you'd like to remember...",
+  placeholder = "What's on your mind today? Share your thoughts, experiences, or anything you'd like to remember",
 }: JournalTextEditorProps) {
   const wordCount = value
     .trim()

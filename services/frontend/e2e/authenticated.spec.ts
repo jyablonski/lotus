@@ -120,11 +120,14 @@ test.describe("Authenticated: Journal Create", () => {
     await expect(page.getByPlaceholder(/what's on your mind/i)).toBeVisible();
   });
 
-  test("journal create page shows mood selector", async ({ page }) => {
+  test("journal create page shows mood slider", async ({ page }) => {
     await page.goto("/journal/create");
 
-    // Mood selector buttons (at least one mood option should be visible)
-    await expect(page.getByText(/happy/i)).toBeVisible();
+    // Mood is a 1-10 slider; label and range input should be visible
+    await expect(
+      page.getByText(/how are you feeling\? \(1-10\)/i),
+    ).toBeVisible();
+    await expect(page.getByRole("slider")).toBeVisible();
   });
 });
 

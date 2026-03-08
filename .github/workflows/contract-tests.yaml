@@ -17,6 +17,10 @@ on:
       - "services/analyzer/**"
       - ".github/workflows/contract-tests.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # workflow triggers:
 # 1. PR title contains "contract" — e.g. "Add contract tests for analyzer"
 # 2. Any push to main that touches service paths
@@ -68,13 +72,6 @@ jobs:
         working-directory: services/frontend
         run: npm run test:contract
 
-      - name: Upload pact files
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-pacts
-          path: services/frontend/pacts/
-          retention-days: 1
-
   backend-consumer:
     name: Backend Consumer Contract Tests
     runs-on: ubuntu-latest
@@ -105,10 +102,3 @@ jobs:
       - name: Run contract tests
         working-directory: services/backend
         run: go test -tags=contract ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
-
-      - name: Upload pact files
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-pacts
-          path: services/backend/pacts/
-          retention-days: 1

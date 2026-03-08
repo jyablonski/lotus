@@ -28,6 +28,7 @@ message JournalEntry {
   string journal_text = 3;
   string user_mood = 4;
   string created_at = 5;
+  repeated string topic_names = 6;  // OpenAI-generated topic tags (async, may be empty)
 }
 
 message GetJournalsResponse {
