@@ -11,6 +11,13 @@ jobs:
   frontend-consumer:
     name: Frontend Consumer Contract Tests
     runs-on: ubuntu-latest
+    if: >-
+      contains(github.event.pull_request.title, 'contract') ||
+      github.event_name == 'push' ||
+      contains(
+        join(github.event.pull_request.labels.*.name, ','),
+        'contract-tests'
+      )
 
     steps:
       - name: Checkout code
@@ -45,6 +52,13 @@ jobs:
   backend-consumer:
     name: Backend Consumer Contract Tests
     runs-on: ubuntu-latest
+    if: >-
+      contains(github.event.pull_request.title, 'contract') ||
+      github.event_name == 'push' ||
+      contains(
+        join(github.event.pull_request.labels.*.name, ','),
+        'contract-tests'
+      )
 
     steps:
       - name: Checkout code
@@ -69,7 +83,7 @@ jobs:
 
       - name: Run contract tests
         working-directory: services/backend
-        run: go test ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
+        run: go test -tags=contract ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
 
       - name: Upload pact files
         uses: actions/upload-artifact@v4

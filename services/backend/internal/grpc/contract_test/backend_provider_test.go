@@ -1,3 +1,5 @@
+//go:build contract
+
 package contract_test
 
 import (
