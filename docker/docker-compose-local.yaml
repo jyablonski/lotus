@@ -54,7 +54,9 @@ services:
     restart: unless-stopped
 
   pact-broker:
+    profiles: ["pact"]
     image: pactfoundation/pact-broker:latest
+    container_name: pact-broker
     ports:
       - "9292:9292"
     environment:
@@ -63,9 +65,11 @@ services:
       PACT_BROKER_BASIC_AUTH_PASSWORD: "pact"
       PACT_BROKER_LOG_LEVEL: "INFO"
     depends_on:
-      - postgres
-    profiles:
-      - pact
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
 
   frontend:
     profiles: ["frontend"]
