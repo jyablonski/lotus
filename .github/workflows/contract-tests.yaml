@@ -10,6 +10,7 @@ on:
       - "services/analyzer/**"
       - ".github/workflows/contract-tests.yaml"
   pull_request:
+    types: [opened, synchronize, labeled]
     paths:
       - "services/frontend/**"
       - "services/backend/**"
