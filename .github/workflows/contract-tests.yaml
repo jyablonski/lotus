@@ -17,6 +17,10 @@ on:
       - "services/analyzer/**"
       - ".github/workflows/contract-tests.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # workflow triggers:
 # 1. PR title contains "contract" — e.g. "Add contract tests for analyzer"
 # 2. Any push to main that touches service paths

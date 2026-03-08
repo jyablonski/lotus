@@ -12,6 +12,10 @@ on:
       - "services/experiments/**"
       - ".github/workflows/experiments.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   UV_VERSION: "0.8.13"
   PYTHON_VERSION: "3.13"
