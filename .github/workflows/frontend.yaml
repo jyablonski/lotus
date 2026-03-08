@@ -1,9 +1,16 @@
 name: Frontend CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/frontend/**"
+      - ".github/workflows/frontend.yaml"
   pull_request:
     paths:
       - "services/frontend/**"
+      - ".github/workflows/frontend.yaml"
 
 jobs:
   frontend-pipeline:

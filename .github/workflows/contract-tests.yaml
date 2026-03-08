@@ -1,28 +1,49 @@
 name: Contract Tests
 
 on:
-  pull_request:
+  push:
+    branches:
+      - main
     paths:
       - "services/frontend/**"
       - "services/backend/**"
       - "services/analyzer/**"
+      - ".github/workflows/contract-tests.yaml"
+  pull_request:
+    types: [opened, synchronize, labeled]
+    paths:
+      - "services/frontend/**"
+      - "services/backend/**"
+      - "services/analyzer/**"
+      - ".github/workflows/contract-tests.yaml"
 
 # workflow triggers:
 # 1. PR title contains "contract" — e.g. "Add contract tests for analyzer"
-# 2. Any push to main — every merge/direct push, regardless of content
+# 2. Any push to main that touches service paths
 # 3. PR has the contract-tests label
 
 jobs:
+  should-run:
+    name: Check Contract Test Triggers
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]] ||
+             [[ "${{ contains(github.event.pull_request.title, 'contract') }}" == "true" ]] ||
+             [[ "${{ contains(join(github.event.pull_request.labels.*.name, ','), 'contract-tests') }}" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   frontend-consumer:
     name: Frontend Consumer Contract Tests
     runs-on: ubuntu-latest
-    if: >-
-      contains(github.event.pull_request.title, 'contract') ||
-      github.event_name == 'push' ||
-      contains(
-        join(github.event.pull_request.labels.*.name, ','),
-        'contract-tests'
-      )
+    needs: should-run
+    if: needs.should-run.outputs.run == 'true'
 
     steps:
       - name: Checkout code
@@ -57,13 +78,8 @@ jobs:
   backend-consumer:
     name: Backend Consumer Contract Tests
     runs-on: ubuntu-latest
-    if: >-
-      contains(github.event.pull_request.title, 'contract') ||
-      github.event_name == 'push' ||
-      contains(
-        join(github.event.pull_request.labels.*.name, ','),
-        'contract-tests'
-      )
+    needs: should-run
+    if: needs.should-run.outputs.run == 'true'
 
     steps:
       - name: Checkout code

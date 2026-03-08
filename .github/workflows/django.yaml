@@ -1,6 +1,12 @@
 name: Django CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/django/**"
+      - ".github/workflows/django.yaml"
   pull_request:
     paths:
       - "services/django/**"

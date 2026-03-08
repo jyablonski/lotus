@@ -1,9 +1,16 @@
 name: Experiments CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/experiments/**"
+      - ".github/workflows/experiments.yaml"
   pull_request:
     paths:
       - "services/experiments/**"
+      - ".github/workflows/experiments.yaml"
 
 env:
   UV_VERSION: "0.8.13"
