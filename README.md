@@ -23,13 +23,13 @@ The monorepo is organized into three main directories:
 **Service URLs:**
 
 - Frontend: http://localhost:3000
-- Backend REST API Gateway: http://localhost:8080
+- Backend REST API Gateway Service: http://localhost:8080
 - Backend gRPC Service: http://localhost:50051
 - Analyzer REST API Service: http://localhost:8083
 - Django Admin: http://localhost:8000/admin/
 - MLFlow UI: http://localhost:5000
 - Dagster UI: http://localhost:3001
-- Tilt UI: http://localhost:10350 (when using `make tilt-up`)
+- Tilt UI: http://localhost:10350
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
 - Redis Insight: http://localhost:5540
@@ -134,5 +134,25 @@ graph LR
 
 - **dbt** - Data transformation and modeling tool to structure and prepare data for analysis and reporting
 - **Dagster** - Orchestration tool to manage and schedule data workflows and pipelines
-  - Preferred over Airflow for modern features and better integration with dbt
-- **Airflow** - Legacy orchestration tool for managing data workflows
+
+## Testing
+
+The project uses a multi-layered testing strategy to ensure correctness at every level, from individual functions to cross-service boundaries.
+
+**Unit & Integration Tests** — Each service has its own unit and integration tests that run as part of its dedicated CI/CD workflow. These form the foundation of the test suite and catch the majority of bugs with fast feedback loops.
+
+**Contract Tests** — Consumer-driven contract tests using [Pact](https://pact.io/) verify that services agree on the shape of data exchanged between them. Consumer services (frontend, backend) generate pact files defining their expectations, and provider services verify they satisfy those contracts. These run in a dedicated workflow triggered by changes to any service involved in a contract, or by adding the `contract-tests` label to a PR.
+
+**End-to-End Tests** — Playwright-based E2E tests run against the frontend to verify that complete user flows work as expected across the full stack.
+
+**Load Tests** — [k6](https://k6.io/) load tests target the backend service to validate performance characteristics and ensure the system holds up under concurrent usage.
+
+## CI / CD
+
+Each service has a dedicated GitHub Actions workflow file in `.github/workflows/`. Workflows are path-scoped so they only trigger when relevant files change, keeping CI fast and focused.
+
+Workflows trigger in two scenarios: on pull requests for pre-merge validation, and on pushes to `main` (i.e. after a PR merge) to verify the post-merge state. Each workflow includes its own workflow file in the path filter so changes to the pipeline itself are also validated.
+
+Sparse checkout is used to only clone the files each workflow needs rather than the full monorepo, reducing checkout time and keeping jobs lean.
+
+For services that require integration dependencies like PostgreSQL or MLflow, Docker Compose is used via Makefile targets (e.g. `make ci-analyzer-up`) to spin up supporting infrastructure before tests run.

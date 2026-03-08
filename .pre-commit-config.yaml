@@ -70,6 +70,4 @@ repos:
     rev: v0.14.10
     hooks:
       - id: ruff-check
-        exclude: ^services/airflow/
       - id: ruff-format
-        exclude: ^services/airflow/

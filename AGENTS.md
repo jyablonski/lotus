@@ -118,7 +118,7 @@ Each service has its own environment configuration. Common patterns:
 Configured in `.pre-commit-config.yaml`:
 
 - **Go**: `go-fmt` for formatting
-- **Python**: `ruff` for linting and formatting (excludes `services/airflow/`)
+- **Python**: `ruff` for linting and formatting
 - **Frontend**: `prettier` for formatting
 - **YAML**: `yamllint` for validation
 - **Shell**: `shellcheck` for script validation
@@ -243,8 +243,6 @@ Before making changes, familiarize yourself with:
 
 ## Notes
 
-- **Airflow** is a legacy service and is excluded from most tooling (ruff, etc.)
-- **Dagster** is the preferred orchestration tool over Airflow
 - All Python services use **uv** for dependency management
 - Services use **Docker** for containerization
 - Development uses **hot-reloading** where possible (Air for Go, Next.js dev server, etc.)
