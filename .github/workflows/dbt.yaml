@@ -1,6 +1,11 @@
 name: dbt CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/dbt/**"
   pull_request:
     paths:
       - "services/dbt/**"

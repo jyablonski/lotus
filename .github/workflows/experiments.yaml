@@ -1,6 +1,11 @@
 name: Experiments CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/experiments/**"
   pull_request:
     paths:
       - "services/experiments/**"

@@ -1,6 +1,12 @@
 name: Analyzer CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/analyzer/**"
+      - "services/experiments/**"
   pull_request:
     paths:
       - "services/analyzer/**"

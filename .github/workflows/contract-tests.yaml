@@ -1,6 +1,13 @@
 name: Contract Tests
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/frontend/**"
+      - "services/backend/**"
+      - "services/analyzer/**"
   pull_request:
     paths:
       - "services/frontend/**"

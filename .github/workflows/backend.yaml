@@ -1,6 +1,11 @@
 name: Backend CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/backend/**"
   pull_request:
     paths:
       - "services/backend/**"

@@ -1,6 +1,11 @@
 name: Frontend CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/frontend/**"
   pull_request:
     paths:
       - "services/frontend/**"

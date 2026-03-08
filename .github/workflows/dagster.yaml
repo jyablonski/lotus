@@ -1,6 +1,11 @@
 name: Dagster CI / CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/dagster/**"
   pull_request:
     paths:
       - "services/dagster/**"
