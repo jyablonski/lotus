@@ -16,15 +16,13 @@ describe("ProfileInsights", () => {
   it("renders average mood section", () => {
     render(<ProfileInsights {...defaultProps} />);
     expect(screen.getByText("Average Mood")).toBeInTheDocument();
-    expect(screen.getByText("7/8")).toBeInTheDocument();
+    expect(screen.getByText("7/10")).toBeInTheDocument();
   });
 
-  it("renders mood emoji for average mood", () => {
+  it("renders mood badge for average mood (1-10 scale)", () => {
     render(<ProfileInsights {...defaultProps} />);
-    // getMoodConfigByInt(7) = Happy 😊 — appears twice (mood section + Positive category)
-    const emojis = screen.getAllByText("😊");
-    expect(emojis.length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Happy")).toBeInTheDocument();
+    // Badge shows mood label (number); exact match avoids "7/10"
+    expect(screen.getByText("7", { exact: true })).toBeInTheDocument();
   });
 
   it("shows 'No data' when averageMood is 0", () => {

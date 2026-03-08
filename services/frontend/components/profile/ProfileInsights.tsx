@@ -35,13 +35,16 @@ export function ProfileInsights({
           <div>
             <p className="text-sm font-medium text-dark-400">Average Mood</p>
             <p className="text-lg font-semibold text-dark-50">
-              {averageMood > 0 ? `${averageMood}/8` : "No data"}
+              {averageMood > 0 ? `${averageMood}/10` : "No data"}
             </p>
           </div>
           {averageMood > 0 && (
             <div className="text-right">
-              <div className="text-2xl">{moodConfig.emoji}</div>
-              <p className="text-sm text-dark-400">{moodConfig.label}</p>
+              <span
+                className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full ${moodConfig.color}`}
+              >
+                {moodConfig.label}
+              </span>
             </div>
           )}
         </div>

@@ -141,6 +141,27 @@ func TestJournalServer_CreateJournal_InvalidMoodScore(t *testing.T) {
 	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
 }
 
+func TestJournalServer_CreateJournal_MoodScoreOutOfRange(t *testing.T) {
+	userID := uuid.New()
+	mockQuerier := &mocks.QuerierMock{}
+	mockHTTPClient := noopHTTPClient()
+
+	server := &internalgrpc.JournalServer{}
+
+	for _, mood := range []string{"0", "11", "-1", "99"} {
+		req := &pb.CreateJournalRequest{
+			UserId:      userID.String(),
+			JournalText: "Test",
+			UserMood:    mood,
+		}
+		resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
+		require.Error(t, err, "mood %q should be rejected", mood)
+		require.Nil(t, resp)
+		assert.ErrorIs(t, err, internalgrpc.ErrInvalidMoodScore)
+	}
+	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
+}
+
 func TestJournalServer_CreateJournal_DBError(t *testing.T) {
 	// Arrange
 	userID := uuid.New()
@@ -202,6 +223,9 @@ func TestJournalServer_GetJournals_Success(t *testing.T) {
 			assert.Equal(t, userID, arg.UserID)
 			return journals, nil
 		},
+		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+			return nil, nil
+		},
 	}
 
 	mockHTTPClient := noopHTTPClient()
@@ -227,6 +251,42 @@ func TestJournalServer_GetJournals_Success(t *testing.T) {
 	assert.Equal(t, "1", resp.Journals[0].JournalId)
 	assert.Equal(t, "First journal entry", resp.Journals[0].JournalText)
 	assert.Equal(t, "7", resp.Journals[0].UserMood)
+}
+
+func TestJournalServer_GetJournals_WithTopics(t *testing.T) {
+	userID := uuid.New()
+	now := time.Now()
+	journals := []db.SourceJournal{
+		{ID: 1, UserID: userID, JournalText: "Entry one", MoodScore: sql.NullInt32{Int32: 5, Valid: true}, CreatedAt: now, ModifiedAt: now},
+		{ID: 2, UserID: userID, JournalText: "Entry two", MoodScore: sql.NullInt32{Int32: 6, Valid: true}, CreatedAt: now, ModifiedAt: now},
+	}
+	topics := []db.GetTopicsByJournalIdsRow{
+		{JournalID: 1, TopicName: "productivity"},
+		{JournalID: 1, TopicName: "goals"},
+		{JournalID: 2, TopicName: "reflection"},
+	}
+
+	mockQuerier := &mocks.QuerierMock{
+		GetJournalCountByUserIdFunc: func(ctx context.Context, uid uuid.UUID) (int64, error) {
+			return 2, nil
+		},
+		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
+			return journals, nil
+		},
+		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+			assert.ElementsMatch(t, []int32{1, 2}, ids)
+			return topics, nil
+		},
+	}
+
+	resp, err := (&internalgrpc.JournalServer{}).GetJournals(
+		journalTestCtx(mockQuerier, noopHTTPClient()),
+		&pb.GetJournalsRequest{UserId: userID.String(), Limit: 10, Offset: 0},
+	)
+	require.NoError(t, err)
+	require.Len(t, resp.Journals, 2)
+	assert.Equal(t, []string{"productivity", "goals"}, resp.Journals[0].TopicNames)
+	assert.Equal(t, []string{"reflection"}, resp.Journals[1].TopicNames)
 }
 
 func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
@@ -255,6 +315,9 @@ func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
 			assert.Equal(t, int32(10), arg.Limit)
 			assert.Equal(t, int32(0), arg.Offset)
 			return journals, nil
+		},
+		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+			return nil, nil
 		},
 	}
 
@@ -291,6 +354,9 @@ func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
 			assert.Equal(t, int32(50), arg.Limit)
 			return []db.SourceJournal{}, nil
 		},
+		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+			return nil, nil
+		},
 	}
 
 	mockHTTPClient := noopHTTPClient()
@@ -322,6 +388,9 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 			// Verify max limit is capped at 100
 			assert.Equal(t, int32(100), arg.Limit)
 			return []db.SourceJournal{}, nil
+		},
+		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+			return nil, nil
 		},
 	}
 

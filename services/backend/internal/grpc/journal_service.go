@@ -42,10 +42,13 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
-	// parse mood_score from string to integer
+	// parse mood_score from string to integer (1-10 scale)
 	moodScore, err := strconv.Atoi(req.UserMood)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidMoodScore, err)
+	}
+	if moodScore < 1 || moodScore > 10 {
+		return nil, fmt.Errorf("%w: must be 1-10, got %d", ErrInvalidMoodScore, moodScore)
 	}
 
 	// Extract deps after input validation
@@ -87,7 +90,7 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 	// Extract deps after input validation
 	dbq := inject.DBFrom(ctx)
 
-	// set default pagination values
+	// set default pagination valuesba
 	limit := req.Limit
 	if limit <= 0 {
 		limit = 50 // reasonable default
@@ -118,16 +121,35 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 		return nil, fmt.Errorf("failed to fetch journals: %w", err)
 	}
 
+	// Fetch topics for these journals (async-populated by analyzer; may be empty)
+	journalIDs := make([]int32, 0, len(journals))
+	for _, j := range journals {
+		journalIDs = append(journalIDs, j.ID)
+	}
+	topicsByJournal := make(map[int32][]string)
+	if len(journalIDs) > 0 {
+		topicRows, topicErr := dbq.GetTopicsByJournalIds(ctx, journalIDs)
+		if topicErr == nil {
+			for _, row := range topicRows {
+				topicsByJournal[row.JournalID] = append(topicsByJournal[row.JournalID], row.TopicName)
+			}
+		}
+	}
+
 	// prepare journal entries for response
 	var journalEntries []*pb.JournalEntry
 	for _, j := range journals {
-		journalEntries = append(journalEntries, &pb.JournalEntry{
+		entry := &pb.JournalEntry{
 			JournalId:   strconv.Itoa(int(j.ID)),          // Integer journal_id as string
 			UserId:      j.UserID.String(),                // UUID user_id as string
 			JournalText: j.JournalText,                    // Journal text
 			UserMood:    int32ToString(j.MoodScore.Int32), // Convert mood score to string
 			CreatedAt:   j.CreatedAt.Format(time.RFC3339), // Convert to RFC3339 string
-		})
+		}
+		if names := topicsByJournal[j.ID]; len(names) > 0 {
+			entry.TopicNames = names
+		}
+		journalEntries = append(journalEntries, entry)
 	}
 
 	// calculate if there are more results

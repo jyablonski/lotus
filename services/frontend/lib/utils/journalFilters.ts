@@ -1,9 +1,5 @@
 import { JournalEntry } from "@/types/journal";
-import {
-  intToMood,
-  getMoodConfigByInt,
-  type MoodOption,
-} from "@/lib/utils/moodMapping";
+import { type MoodOption } from "@/lib/utils/moodMapping";
 
 export type { MoodOption };
 
@@ -19,8 +15,7 @@ export function filterJournalsBySearch(
 }
 
 /**
- * Filter journals by mood
- * Mood scores: excited=8, happy=7, content=6, neutral=5, tired=4, sad=3, anxious=2, angry=1
+ * Filter journals by mood (1-10 scale).
  */
 export function filterJournalsByMood(
   journals: JournalEntry[],
@@ -28,17 +23,31 @@ export function filterJournalsByMood(
 ): JournalEntry[] {
   if (selectedMood === "all") return journals;
 
-  return journals.filter((journal) => {
-    // userMood is already a number, no need to parseInt
-    const journalMoodKey = intToMood(journal.userMood);
-    return journalMoodKey === selectedMood;
-  });
+  const moodNum = parseInt(selectedMood, 10);
+  if (Number.isNaN(moodNum)) return journals;
+
+  return journals.filter((journal) => journal.userMood === moodNum);
+}
+
+/**
+ * Filter journals by topic tag (entry must have the selected topic in topicNames).
+ */
+export function filterJournalsByTag(
+  journals: JournalEntry[],
+  selectedTag: string,
+): JournalEntry[] {
+  if (selectedTag === "all") return journals;
+
+  return journals.filter(
+    (journal) => journal.topicNames?.includes(selectedTag) ?? false,
+  );
 }
 
 export function filterJournals(
   journals: JournalEntry[],
   searchTerm: string,
   selectedMood: string,
+  selectedTag: string = "all",
 ): JournalEntry[] {
   let filtered = journals;
 
@@ -48,25 +57,32 @@ export function filterJournals(
   // Apply mood filter
   filtered = filterJournalsByMood(filtered, selectedMood);
 
+  // Apply tag filter
+  filtered = filterJournalsByTag(filtered, selectedTag);
+
   return filtered;
+}
+
+/**
+ * Get unique topic names from journals (for tag filter dropdown).
+ * Returns sorted array of tag strings; use as-is for filtering (e.g. with underscores).
+ */
+export function getUniqueTagsFromJournals(journals: JournalEntry[]): string[] {
+  const set = new Set<string>();
+  for (const j of journals) {
+    for (const tag of j.topicNames ?? []) {
+      set.add(tag);
+    }
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 export function getUniqueMoodsFromJournals(
   journals: JournalEntry[],
 ): MoodOption[] {
-  // userMood is already a number, no need to parseInt
   const moodInts = Array.from(new Set(journals.map((j) => j.userMood)));
 
   return moodInts
-    .map((moodInt) => {
-      const moodKey = intToMood(moodInt);
-      const config = getMoodConfigByInt(moodInt);
-      return {
-        key: moodKey,
-        label: config.label,
-        emoji: config.emoji,
-        color: config.color,
-      };
-    })
-    .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically
+    .map((n) => ({ key: String(n), label: String(n) }))
+    .sort((a, b) => Number(a.key) - Number(b.key));
 }

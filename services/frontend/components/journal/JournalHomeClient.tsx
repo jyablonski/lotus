@@ -10,6 +10,7 @@ import { JournalEntry } from "@/types/journal";
 import {
   filterJournals,
   getUniqueMoodsFromJournals,
+  getUniqueTagsFromJournals,
 } from "@/lib/utils/journalFilters";
 import { trackEvent } from "@/lib/analytics";
 
@@ -17,16 +18,20 @@ interface JournalHomeClientProps {
   journals: JournalEntry[];
   totalCount: number;
   timezone: string;
+  /** When true, show OpenAI topic tags on each entry (gated by frontend_show_tags). */
+  showTags?: boolean;
 }
 
 export function JournalHomeClient({
   journals,
   totalCount,
   timezone,
+  showTags = false,
 }: JournalHomeClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMood, setSelectedMood] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
   const itemsPerPage = 10;
 
   // §3c: entries_browsed — fire once when the browse page is viewed
@@ -41,17 +46,23 @@ export function JournalHomeClient({
   // §3c: search_used — fire when the user stops typing (debounce 800ms)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Extract unique moods from journals using existing utility
-  const uniqueMoods = useMemo(() => {
-    return getUniqueMoodsFromJournals(journals);
-  }, [journals]);
+  // Extract unique moods and tags from journals
+  const uniqueMoods = useMemo(
+    () => getUniqueMoodsFromJournals(journals),
+    [journals],
+  );
+  const uniqueTags = useMemo(
+    () => getUniqueTagsFromJournals(journals),
+    [journals],
+  );
 
-  // Filter journals based on search term and mood using existing utility
+  // Filter journals by search, mood, and tag
   const filteredJournals = useMemo(() => {
-    return filterJournals(journals, searchTerm, selectedMood);
-  }, [journals, searchTerm, selectedMood]);
+    return filterJournals(journals, searchTerm, selectedMood, selectedTag);
+  }, [journals, searchTerm, selectedMood, selectedTag]);
 
-  const hasActiveFilters = searchTerm.trim() !== "" || selectedMood !== "all";
+  const hasActiveFilters =
+    searchTerm.trim() !== "" || selectedMood !== "all" || selectedTag !== "all";
 
   // Paginate filtered results
   const paginatedJournals = useMemo(() => {
@@ -85,9 +96,15 @@ export function JournalHomeClient({
     setCurrentPage(1);
   }, []);
 
+  const handleTagChange = useCallback((tag: string) => {
+    setSelectedTag(tag);
+    setCurrentPage(1);
+  }, []);
+
   const handleClearFilters = useCallback(() => {
     setSearchTerm("");
     setSelectedMood("all");
+    setSelectedTag("all");
     setCurrentPage(1);
   }, []);
 
@@ -109,13 +126,21 @@ export function JournalHomeClient({
           totalEntries={totalCount}
           filteredCount={filteredJournals.length}
           onClearFilters={hasActiveFilters ? handleClearFilters : undefined}
+          showTagFilter={showTags}
+          selectedTag={selectedTag}
+          setSelectedTag={handleTagChange}
+          uniqueTags={uniqueTags}
         />
 
         {paginatedJournals.length === 0 ? (
           <JournalEmptyState hasEntries={totalCount > 0} />
         ) : (
           <>
-            <JournalList entries={paginatedJournals} timezone={timezone} />
+            <JournalList
+              entries={paginatedJournals}
+              timezone={timezone}
+              showTags={showTags}
+            />
 
             {totalPages > 1 && (
               <JournalPagination

@@ -19,9 +19,9 @@ export interface JournalsResponse {
  */
 export async function fetchJournalsForUser(
   userId: string,
-  options?: { limit?: number; offset?: number },
+  options?: { limit?: number; offset?: number; cache?: RequestCache },
 ): Promise<JournalsResponse> {
-  const { limit = 10, offset = 0 } = options ?? {};
+  const { limit = 10, offset = 0, cache } = options ?? {};
 
   try {
     const response = await fetch(
@@ -31,7 +31,9 @@ export async function fetchJournalsForUser(
         headers: {
           "Content-Type": "application/json",
         },
-        next: { revalidate: 30 },
+        ...(cache === "no-store"
+          ? { cache: "no-store" as RequestCache }
+          : { next: { revalidate: 30 } }),
       },
     );
 
@@ -69,11 +71,15 @@ export async function fetchRecentJournals(
 }
 
 /**
- * Fetch all journals for a user (for calendar/profile views).
- * Reuses fetchJournalsForUser with a large limit.
+ * Fetch all journals for a user (for journal home, calendar, profile views).
+ * Uses uncached fetch so topic tags and list are always up to date.
  */
 export async function fetchAllJournalsForUser(
   userId: string,
 ): Promise<JournalsResponse> {
-  return fetchJournalsForUser(userId, { limit: 1000, offset: 0 });
+  return fetchJournalsForUser(userId, {
+    limit: 1000,
+    offset: 0,
+    cache: "no-store",
+  });
 }

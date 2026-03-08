@@ -33,7 +33,7 @@ describe("useCreateJournal", () => {
     const { result } = renderHook(() => useCreateJournal());
 
     expect(result.current.entry).toBe("");
-    expect(result.current.mood).toBe("neutral");
+    expect(result.current.mood).toBe(5);
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.success).toBe(false);
     expect(result.current.error).toBeNull();
@@ -44,11 +44,11 @@ describe("useCreateJournal", () => {
 
     act(() => {
       result.current.setEntry("Hello world");
-      result.current.setMood("happy");
+      result.current.setMood(7);
     });
 
     expect(result.current.entry).toBe("Hello world");
-    expect(result.current.mood).toBe("happy");
+    expect(result.current.mood).toBe(7);
   });
 
   test("sets error when submitting empty entry", async () => {
@@ -91,7 +91,7 @@ describe("useCreateJournal", () => {
 
     act(() => {
       result.current.setEntry("My journal entry");
-      result.current.setMood("happy");
+      result.current.setMood(7);
     });
 
     await act(async () => {
@@ -103,7 +103,7 @@ describe("useCreateJournal", () => {
     await waitFor(() => {
       expect(mockCreateJournal).toHaveBeenCalledWith({
         journalText: "My journal entry",
-        moodScore: 7, // happy = 7
+        moodScore: 7,
       });
     });
   });
@@ -178,7 +178,7 @@ describe("useCreateJournal", () => {
 
     act(() => {
       result.current.setEntry("Some text");
-      result.current.setMood("excited");
+      result.current.setMood(8);
     });
 
     act(() => {
@@ -186,7 +186,7 @@ describe("useCreateJournal", () => {
     });
 
     expect(result.current.entry).toBe("");
-    expect(result.current.mood).toBe("neutral");
+    expect(result.current.mood).toBe(5);
     expect(result.current.success).toBe(false);
     expect(result.current.error).toBeNull();
   });

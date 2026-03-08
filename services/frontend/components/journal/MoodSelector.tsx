@@ -1,41 +1,34 @@
-import { getAllMoodOptions } from "@/lib/utils/moodMapping";
-
-interface MoodSelectorProps {
-  selectedMood: string;
-  onMoodChange: (mood: string) => void;
+interface MoodSliderProps {
+  value: number;
+  onValueChange: (value: number) => void;
+  min?: number;
+  max?: number;
 }
 
-export function MoodSelector({
-  selectedMood,
-  onMoodChange,
-}: MoodSelectorProps) {
-  const moods = getAllMoodOptions();
-
+export function MoodSlider({
+  value,
+  onValueChange,
+  min = 1,
+  max = 10,
+}: MoodSliderProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-dark-200 mb-3">
-        How are you feeling?
+        How are you feeling? (1–10)
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {moods.map((mood) => (
-          <button
-            key={mood.key}
-            type="button"
-            onClick={() => onMoodChange(mood.key)}
-            className={`
-              p-3 rounded-lg border-2 transition-all duration-200 text-center
-              ${
-                selectedMood === mood.key
-                  ? `${mood.color} border-opacity-100 shadow-md scale-105`
-                  : "bg-dark-800/50 border-dark-600 hover:bg-dark-700/50 text-dark-200"
-              }
-            `}
-          >
-            <div className="text-2xl mb-1">{mood.emoji}</div>
-            <div className="text-xs font-medium">{mood.label}</div>
-          </button>
-        ))}
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-dark-400 w-6">{min}</span>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onValueChange(parseInt(e.target.value, 10))}
+          className="flex-1 h-3 rounded-lg appearance-none cursor-pointer bg-dark-600 accent-lotus-500"
+        />
+        <span className="text-sm text-dark-400 w-6">{max}</span>
       </div>
+      <p className="text-sm text-dark-400 mt-1">Mood: {value}</p>
     </div>
   );
 }

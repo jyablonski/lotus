@@ -50,6 +50,9 @@ var _ db.Querier = &QuerierMock{}
 //			GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
 //				panic("mock out the GetRuntimeConfigByKey method")
 //			},
+//			GetTopicsByJournalIdsFunc: func(ctx context.Context, dollar_1 []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+//				panic("mock out the GetTopicsByJournalIds method")
+//			},
 //			GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
 //				panic("mock out the GetUserByEmail method")
 //			},
@@ -101,6 +104,9 @@ type QuerierMock struct {
 
 	// GetRuntimeConfigByKeyFunc mocks the GetRuntimeConfigByKey method.
 	GetRuntimeConfigByKeyFunc func(ctx context.Context, key string) (db.SourceRuntimeConfig, error)
+
+	// GetTopicsByJournalIdsFunc mocks the GetTopicsByJournalIds method.
+	GetTopicsByJournalIdsFunc func(ctx context.Context, dollar_1 []int32) ([]db.GetTopicsByJournalIdsRow, error)
 
 	// GetUserByEmailFunc mocks the GetUserByEmail method.
 	GetUserByEmailFunc func(ctx context.Context, email string) (db.SourceUser, error)
@@ -187,6 +193,13 @@ type QuerierMock struct {
 			// Key is the key argument value.
 			Key string
 		}
+		// GetTopicsByJournalIds holds details about calls to the GetTopicsByJournalIds method.
+		GetTopicsByJournalIds []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Dollar_1 is the dollar_1 argument value.
+			Dollar_1 []int32
+		}
 		// GetUserByEmail holds details about calls to the GetUserByEmail method.
 		GetUserByEmail []struct {
 			// Ctx is the ctx argument value.
@@ -233,6 +246,7 @@ type QuerierMock struct {
 	lockGetJournalsByUserId           sync.RWMutex
 	lockGetJournalsByUserIdPaginated  sync.RWMutex
 	lockGetRuntimeConfigByKey         sync.RWMutex
+	lockGetTopicsByJournalIds         sync.RWMutex
 	lockGetUserByEmail                sync.RWMutex
 	lockGetUserById                   sync.RWMutex
 	lockGetUserJournalSummaryByUserId sync.RWMutex
@@ -593,6 +607,42 @@ func (mock *QuerierMock) GetRuntimeConfigByKeyCalls() []struct {
 	mock.lockGetRuntimeConfigByKey.RLock()
 	calls = mock.calls.GetRuntimeConfigByKey
 	mock.lockGetRuntimeConfigByKey.RUnlock()
+	return calls
+}
+
+// GetTopicsByJournalIds calls GetTopicsByJournalIdsFunc.
+func (mock *QuerierMock) GetTopicsByJournalIds(ctx context.Context, dollar_1 []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+	if mock.GetTopicsByJournalIdsFunc == nil {
+		panic("QuerierMock.GetTopicsByJournalIdsFunc: method is nil but Querier.GetTopicsByJournalIds was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		Dollar_1 []int32
+	}{
+		Ctx:      ctx,
+		Dollar_1: dollar_1,
+	}
+	mock.lockGetTopicsByJournalIds.Lock()
+	mock.calls.GetTopicsByJournalIds = append(mock.calls.GetTopicsByJournalIds, callInfo)
+	mock.lockGetTopicsByJournalIds.Unlock()
+	return mock.GetTopicsByJournalIdsFunc(ctx, dollar_1)
+}
+
+// GetTopicsByJournalIdsCalls gets all the calls that were made to GetTopicsByJournalIds.
+// Check the length with:
+//
+//	len(mockedQuerier.GetTopicsByJournalIdsCalls())
+func (mock *QuerierMock) GetTopicsByJournalIdsCalls() []struct {
+	Ctx      context.Context
+	Dollar_1 []int32
+} {
+	var calls []struct {
+		Ctx      context.Context
+		Dollar_1 []int32
+	}
+	mock.lockGetTopicsByJournalIds.RLock()
+	calls = mock.calls.GetTopicsByJournalIds
+	mock.lockGetTopicsByJournalIds.RUnlock()
 	return calls
 }
 

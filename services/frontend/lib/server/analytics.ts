@@ -46,10 +46,10 @@ function computeAnalyticsFromJournals(
   const negativeEntries = moodScores.filter((m) => m < 4).length;
   const neutralEntries = moodScores.filter((m) => m >= 4 && m < 7).length;
 
-  // Avg sentiment as a normalized -1..1 score based on mood:
-  // Map mood 1-8 to roughly -1..1 range: (mood - 4.5) / 3.5
+  // Avg sentiment as a normalized -1..1 score based on mood (1-10 scale):
+  // (mood - 5.5) / 4.5 maps 1 -> -1, 10 -> 1
   const avgSentimentScore =
-    moodScores.reduce((sum, m) => sum + (m - 4.5) / 3.5, 0) / moodScores.length;
+    moodScores.reduce((sum, m) => sum + (m - 5.5) / 4.5, 0) / moodScores.length;
 
   // Content metrics
   const avgJournalLength =

@@ -1,8 +1,10 @@
 import {
   filterJournalsBySearch,
   filterJournalsByMood,
+  filterJournalsByTag,
   filterJournals,
   getUniqueMoodsFromJournals,
+  getUniqueTagsFromJournals,
 } from "@/lib/utils/journalFilters";
 import { JournalEntry } from "@/types/journal";
 
@@ -82,28 +84,73 @@ describe("journalFilters", () => {
       expect(filterJournalsByMood(sampleEntries, "all")).toHaveLength(5);
     });
 
-    test("filters by mood key", () => {
-      // happy = value 7
-      const result = filterJournalsByMood(sampleEntries, "happy");
+    test("filters by mood number (1-10 scale)", () => {
+      const result = filterJournalsByMood(sampleEntries, "7");
       expect(result).toHaveLength(1);
       expect(result[0].userMood).toBe(7);
     });
 
     test("returns empty when mood has no entries", () => {
-      // anxious = value 2, not present
-      expect(filterJournalsByMood(sampleEntries, "anxious")).toHaveLength(0);
+      expect(filterJournalsByMood(sampleEntries, "2")).toHaveLength(0);
     });
 
-    test("filters excited (value 8)", () => {
-      const result = filterJournalsByMood(sampleEntries, "excited");
+    test("filters mood 8", () => {
+      const result = filterJournalsByMood(sampleEntries, "8");
       expect(result).toHaveLength(1);
       expect(result[0].journalId).toBe("3");
     });
 
-    test("filters angry (value 1)", () => {
-      const result = filterJournalsByMood(sampleEntries, "angry");
+    test("filters mood 1", () => {
+      const result = filterJournalsByMood(sampleEntries, "1");
       expect(result).toHaveLength(1);
       expect(result[0].journalId).toBe("4");
+    });
+  });
+
+  // ── filterJournalsByTag ───────────────────────────────────────────────
+
+  describe("filterJournalsByTag", () => {
+    const entriesWithTags: JournalEntry[] = [
+      makeEntry({
+        journalId: "1",
+        journalText: "a",
+        userMood: 5,
+        topicNames: ["work", "goals"],
+      }),
+      makeEntry({
+        journalId: "2",
+        journalText: "b",
+        userMood: 5,
+        topicNames: ["work"],
+      }),
+      makeEntry({
+        journalId: "3",
+        journalText: "c",
+        userMood: 5,
+        topicNames: ["goals"],
+      }),
+      makeEntry({ journalId: "4", journalText: "d", userMood: 5 }),
+    ];
+
+    test('returns all journals when selectedTag is "all"', () => {
+      expect(filterJournalsByTag(entriesWithTags, "all")).toHaveLength(4);
+    });
+
+    test("filters by topic name", () => {
+      const result = filterJournalsByTag(entriesWithTags, "work");
+      expect(result).toHaveLength(2);
+      expect(result.map((e) => e.journalId)).toEqual(["1", "2"]);
+    });
+
+    test("returns empty when no entry has the tag", () => {
+      expect(filterJournalsByTag(entriesWithTags, "unknown")).toHaveLength(0);
+    });
+
+    test("excludes entries with no topicNames", () => {
+      const result = filterJournalsByTag(entriesWithTags, "goals");
+      expect(result).toHaveLength(2);
+      expect(result[0].journalId).toBe("1");
+      expect(result[1].journalId).toBe("3");
     });
   });
 
@@ -111,8 +158,8 @@ describe("journalFilters", () => {
 
   describe("filterJournals", () => {
     test("applies both search and mood filters", () => {
-      // Search for "day" (matches entries 1 and 5) + mood "happy" (value 7, entry 1)
-      const result = filterJournals(sampleEntries, "day", "happy");
+      // Search for "day" (matches entries 1 and 5) + mood 7 (entry 1)
+      const result = filterJournals(sampleEntries, "day", "7");
       expect(result).toHaveLength(1);
       expect(result[0].journalId).toBe("1");
     });
@@ -122,8 +169,75 @@ describe("journalFilters", () => {
     });
 
     test("returns empty when filters are incompatible", () => {
-      // Search for "excited" (entry 3, mood 8) but filter mood to "angry" (value 1)
-      expect(filterJournals(sampleEntries, "excited", "angry")).toHaveLength(0);
+      // Search for "excited" (entry 3, mood 8) but filter mood to 1
+      expect(filterJournals(sampleEntries, "excited", "1")).toHaveLength(0);
+    });
+
+    test("applies tag filter when selectedTag provided", () => {
+      const withTags = [
+        makeEntry({
+          journalId: "1",
+          journalText: "a",
+          userMood: 5,
+          topicNames: ["focus"],
+        }),
+        makeEntry({
+          journalId: "2",
+          journalText: "b",
+          userMood: 5,
+          topicNames: ["focus", "goals"],
+        }),
+      ];
+      expect(filterJournals(withTags, "", "all", "all")).toHaveLength(2);
+      expect(filterJournals(withTags, "", "all", "focus")).toHaveLength(2);
+      expect(filterJournals(withTags, "", "all", "goals")).toHaveLength(1);
+      expect(filterJournals(withTags, "", "all", "goals")[0].journalId).toBe(
+        "2",
+      );
+    });
+  });
+
+  // ── getUniqueTagsFromJournals ─────────────────────────────────────────
+
+  describe("getUniqueTagsFromJournals", () => {
+    test("returns empty array when no journals have topics", () => {
+      expect(getUniqueTagsFromJournals(sampleEntries)).toHaveLength(0);
+    });
+
+    test("returns unique tags sorted alphabetically", () => {
+      const entries = [
+        makeEntry({
+          journalId: "1",
+          journalText: "a",
+          userMood: 5,
+          topicNames: ["work", "goals"],
+        }),
+        makeEntry({
+          journalId: "2",
+          journalText: "b",
+          userMood: 5,
+          topicNames: ["work"],
+        }),
+      ];
+      expect(getUniqueTagsFromJournals(entries)).toEqual(["goals", "work"]);
+    });
+
+    test("deduplicates tags across entries", () => {
+      const entries = [
+        makeEntry({
+          journalId: "1",
+          journalText: "a",
+          userMood: 5,
+          topicNames: ["focus"],
+        }),
+        makeEntry({
+          journalId: "2",
+          journalText: "b",
+          userMood: 5,
+          topicNames: ["focus"],
+        }),
+      ];
+      expect(getUniqueTagsFromJournals(entries)).toEqual(["focus"]);
     });
   });
 
@@ -134,26 +248,20 @@ describe("journalFilters", () => {
       expect(getUniqueMoodsFromJournals([])).toHaveLength(0);
     });
 
-    test("extracts unique moods sorted alphabetically", () => {
+    test("extracts unique moods sorted by number (1-10 scale)", () => {
       const moods = getUniqueMoodsFromJournals(sampleEntries);
-      // Moods present: happy(7), tired(4), excited(8), angry(1), neutral(5)
-      // Alphabetical: Angry, Excited, Happy, Neutral, Tired
+      // Moods present: 1, 4, 5, 7, 8
       expect(moods).toHaveLength(5);
-      expect(moods[0].label).toBe("Angry");
-      expect(moods[4].label).toBe("Tired");
+      expect(moods[0]).toEqual({ key: "1", label: "1" });
+      expect(moods[4]).toEqual({ key: "8", label: "8" });
     });
 
-    test("each mood has key, label, and emoji", () => {
+    test("each mood has key and label as string number", () => {
       const moods = getUniqueMoodsFromJournals([
         makeEntry({ journalText: "test", userMood: 7 }),
       ]);
       expect(moods).toHaveLength(1);
-      expect(moods[0]).toEqual({
-        key: "happy",
-        label: "Happy",
-        emoji: "😊",
-        color: "bg-green-500/20 text-green-300 border-green-500/30",
-      });
+      expect(moods[0]).toEqual({ key: "7", label: "7" });
     });
 
     test("deduplicates same mood values", () => {
@@ -163,6 +271,10 @@ describe("journalFilters", () => {
         makeEntry({ journalId: "3", journalText: "c", userMood: 5 }),
       ];
       expect(getUniqueMoodsFromJournals(entries)).toHaveLength(1);
+      expect(getUniqueMoodsFromJournals(entries)[0]).toEqual({
+        key: "5",
+        label: "5",
+      });
     });
   });
 });

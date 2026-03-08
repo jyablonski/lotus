@@ -1,6 +1,6 @@
 # Frontend
 
-Next.js 15 frontend for the Lotus journal application, built with React 19, TypeScript, and Tailwind CSS 4. Provides a dark-themed journal interface with calendar views, mood tracking (8-point scale), and analytics.
+Next.js 15 frontend for the Lotus journal application, built with React 19, TypeScript, and Tailwind CSS 4. Provides a dark-themed journal interface with calendar views, mood tracking (1-10 scale), and analytics.
 
 ## How It Works
 

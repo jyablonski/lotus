@@ -5,6 +5,7 @@ import { BACKEND_URL } from "@/lib/config";
 
 export interface UpdateTimezoneResult {
   success: boolean;
+  timezone?: string;
   error?: string;
 }
 
@@ -40,7 +41,7 @@ export async function updateTimezone(
       };
     }
 
-    return { success: true };
+    return { success: true, timezone };
   } catch (error) {
     console.error("Error updating timezone:", error);
     return {

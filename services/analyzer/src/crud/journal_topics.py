@@ -15,12 +15,14 @@ def create_or_update_topics(
         # Delete existing topics for this journal
         db.query(JournalTopics).filter(JournalTopics.journal_id == journal_id).delete()
 
-        # Create new topic records
+        # Create new topic records (topic_name stored lowercase for consistency)
         topic_records = []
         for topic in topics:
+            # always lowercase the topic name for standardization.
+            topic_name = str(topic["topic_name"]).strip().lower()
             topic_record = JournalTopics(
                 journal_id=journal_id,
-                topic_name=topic["topic_name"],
+                topic_name=topic_name,
                 confidence=float(topic["confidence"]),
                 ml_model_version=topic["ml_model_version"],
             )
