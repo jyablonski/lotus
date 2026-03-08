@@ -17,7 +17,7 @@ export function CalendarGrid({
 
     const moodConfig = getMoodConfigByInt(Math.round(avgMood));
     return {
-      emoji: moodConfig.emoji,
+      label: moodConfig.label,
       color:
         avgMood >= 7
           ? "bg-green-500/20"
@@ -81,12 +81,12 @@ export function CalendarGrid({
                     {day.entryCount === 1 ? "entry" : "entries"}
                   </div>
 
-                  {/* Mood indicator */}
+                  {/* Mood indicator (1-10 scale) */}
                   {moodIndicator && (
                     <div
                       className={`inline-block px-2 py-1 rounded-full text-xs ${moodIndicator.color}`}
                     >
-                      {moodIndicator.emoji}
+                      {moodIndicator.label}
                     </div>
                   )}
                 </div>

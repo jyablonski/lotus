@@ -265,6 +265,12 @@ const magicLinkAdapter: Adapter = {
 // NextAuth config
 // ---------------------------------------------------------------------------
 
+/** Clears the backend-user cache and in-flight map. Used by tests to avoid cross-test pollution. */
+export function __clearBackendUserCacheForTests(): void {
+  userCache.clear();
+  inFlight.clear();
+}
+
 export const authConfig: NextAuthConfig = {
   adapter: magicLinkAdapter,
   // Keep using JWT strategy — the adapter is only needed for verification

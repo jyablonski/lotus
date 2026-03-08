@@ -82,16 +82,17 @@ describe("CalendarGrid", () => {
     expect(screen.getByText("1 entry")).toBeInTheDocument();
   });
 
-  it("shows mood emoji for days with entries", () => {
+  it("shows mood label for days with entries (1-10 scale)", () => {
     const days = makeCalendarDays();
     days[5] = makeDay({
       ...days[5],
       entryCount: 2,
-      avgMood: 7, // happy
+      avgMood: 7,
     });
     render(<CalendarGrid calendarDays={days} onDateSelect={jest.fn()} />);
-    // getMoodConfigByInt(7) returns Happy with emoji 😊
-    expect(screen.getByText("😊")).toBeInTheDocument();
+    // Day 6 button shows date "6" and "2 entries" and mood badge "7"
+    const dayCell = screen.getByRole("button", { name: /2 entries/ });
+    expect(dayCell).toHaveTextContent("7");
   });
 
   it("applies today styling for today's date", () => {

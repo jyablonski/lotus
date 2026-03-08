@@ -32,7 +32,7 @@ jest.mock("next-auth/providers/resend", () => ({
 
 // Now we can import authConfig -- NextAuth() is mocked so it won't
 // try to initialize the full auth system
-import { authConfig } from "@/auth";
+import { authConfig, __clearBackendUserCacheForTests } from "@/auth";
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -42,6 +42,8 @@ global.fetch = mockFetch;
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   jest.clearAllMocks();
+  mockFetch.mockReset(); // clear implementation queue so no leftover mockResolvedValueOnce from previous tests
+  __clearBackendUserCacheForTests();
   jest.spyOn(console, "error").mockImplementation(() => {});
   jest.spyOn(console, "log").mockImplementation(() => {});
 });
@@ -224,17 +226,7 @@ describe("jwt callback", () => {
   });
 
   test("preserves existing token when no user (subsequent requests)", async () => {
-    // The always-refresh block fetches backend user to refresh role + createdAt + timezone
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        userId: "existing-id",
-        createdAt: "2025-01-01",
-        role: "Consumer",
-        timezone: "America/Chicago",
-      }),
-    });
-
+    // Token already has backendId; we do not fetch (rely on JWT after login).
     const result = await jwt({
       token: {
         backendId: "existing-id",
@@ -246,6 +238,7 @@ describe("jwt callback", () => {
 
     expect(result.backendId).toBe("existing-id");
     expect(result.createdAt).toBe("2025-01-01");
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("does not overwrite token when user has no backendId", async () => {
@@ -402,18 +395,7 @@ describe("jwt callback – magic link fallback paths", () => {
 
   test("looks up backend user by email when backendId is still missing", async () => {
     // Scenario: token has email but no backendId (user object had neither
-    // backendId nor a useful id)
-    // First call: initial lookup sets backendId
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        userId: "looked-up-id",
-        createdAt: "2025-07-01T00:00:00Z",
-        role: "Consumer",
-        timezone: "Asia/Tokyo",
-      }),
-    });
-    // Second call: always-refresh-role lookup
+    // backendId nor a useful id). JWT callback does one lookup; no refresh fetch.
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -431,8 +413,7 @@ describe("jwt callback – magic link fallback paths", () => {
 
     expect(result.backendId).toBe("looked-up-id");
     expect(result.createdAt).toBe("2025-07-01T00:00:00Z");
-    // 1 initial lookup + 1 role refresh = 2
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   test("creates user in backend when email lookup returns null", async () => {
@@ -492,30 +473,15 @@ describe("jwt callback – magic link fallback paths", () => {
     expect(result.backendId).toBeUndefined();
   });
 
-  test("refreshes role and createdAt from backend when backendId is already on the token", async () => {
-    // The jwt callback now always refreshes role, createdAt, and timezone from the backend,
-    // so even when backendId is already set, one fetch is made.
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        userId: "already-set",
-        createdAt: "2024-06-15T00:00:00Z",
-        role: "Admin",
-        timezone: "Europe/Paris",
-      }),
-    });
-
+  test("does not fetch when backendId is already on the token", async () => {
+    // We rely on JWT after login; no backend refresh when backendId is already set.
     const result = await jwt({
       token: { backendId: "already-set", email: "skip@example.com" },
       user: undefined,
     } as never);
 
     expect(result.backendId).toBe("already-set");
-    expect(result.role).toBe("Admin");
-    expect(result.createdAt).toBe("2024-06-15T00:00:00Z");
-    expect(result.timezone).toBe("Europe/Paris");
-    // 1 role-refresh fetch
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
 
