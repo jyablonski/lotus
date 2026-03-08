@@ -7,6 +7,11 @@ on:
       - "services/backend/**"
       - "services/analyzer/**"
 
+# workflow triggers:
+# 1. PR title contains "contract" — e.g. "Add contract tests for analyzer"
+# 2. Any push to main — every merge/direct push, regardless of content
+# 3. PR has the contract-tests label
+
 jobs:
   frontend-consumer:
     name: Frontend Consumer Contract Tests
