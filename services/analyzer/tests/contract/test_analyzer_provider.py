@@ -18,7 +18,7 @@ from pathlib import Path
 from pact import Verifier
 import pytest
 
-PACT_DIR = Path(__file__).resolve().parents[4] / "backend" / "pacts"
+PACT_DIR = Path(__file__).resolve().parents[3] / "backend" / "pacts"
 PACT_FILE = PACT_DIR / "LotusBackend-LotusAnalyzer.json"
 
 
