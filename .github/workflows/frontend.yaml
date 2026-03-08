@@ -38,9 +38,16 @@ jobs:
         working-directory: services/frontend
         run: npm install
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: services/frontend
-        run: npm run test:ci
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: services/frontend/coverage/
+          retention-days: 7
 
       - name: Build project
         working-directory: services/frontend
