@@ -4,12 +4,12 @@ import { defineConfig, devices } from "@playwright/test";
  * Playwright configuration for Lotus frontend e2e tests.
  *
  * Usage:
- *   npm run test:e2e          – run against an already-running frontend (default: http://localhost:3000)
- *   npm run test:e2e:ci       – same, intended for CI (headless by default)
+ *   npm run test:e2e          - run against an already-running frontend (default: http://localhost:3000)
+ *   npm run test:e2e:ci       - same, intended for CI (headless by default)
  *
  * Environment variables:
- *   BASE_URL        – frontend URL (default: http://localhost:3000)
- *   AUTH_SECRET     – NextAuth secret, required for authenticated test sessions
+ *   BASE_URL        - frontend URL (default: http://localhost:3000)
+ *   AUTH_SECRET     - NextAuth secret, required for authenticated test sessions
  */
 export default defineConfig({
   testDir: "./e2e",

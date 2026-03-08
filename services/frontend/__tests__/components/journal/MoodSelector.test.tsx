@@ -5,7 +5,7 @@ describe("MoodSlider", () => {
   it("renders label and value", () => {
     render(<MoodSlider value={5} onValueChange={jest.fn()} />);
     expect(
-      screen.getByText(/How are you feeling\? \(1–10\)/),
+      screen.getByText(/How are you feeling\? \(1-10\)/),
     ).toBeInTheDocument();
     expect(screen.getByText("Mood: 5")).toBeInTheDocument();
   });

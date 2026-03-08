@@ -55,21 +55,21 @@ describe("getTimeOfDay", () => {
   });
 
   const cases: [number, "morning" | "afternoon" | "evening" | "night"][] = [
-    // Night: 21–04
+    // Night: 21-04
     [0, "night"],
     [3, "night"],
     [4, "night"],
     [21, "night"],
     [23, "night"],
-    // Morning: 05–11
+    // Morning: 05-11
     [5, "morning"],
     [8, "morning"],
     [11, "morning"],
-    // Afternoon: 12–16
+    // Afternoon: 12-16
     [12, "afternoon"],
     [14, "afternoon"],
     [16, "afternoon"],
-    // Evening: 17–20
+    // Evening: 17-20
     [17, "evening"],
     [19, "evening"],
     [20, "evening"],

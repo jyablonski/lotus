@@ -26,10 +26,10 @@ export function trackEvent(name: string, params: GtagEventParams = {}): void {
 /**
  * Return the GA4 "time of day" bucket for the current local hour.
  *
- *   morning   = 05:00 – 11:59
- *   afternoon = 12:00 – 16:59
- *   evening   = 17:00 – 20:59
- *   night     = 21:00 – 04:59
+ *   morning   = 05:00 - 11:59
+ *   afternoon = 12:00 - 16:59
+ *   evening   = 17:00 - 20:59
+ *   night     = 21:00 - 04:59
  */
 export function getTimeOfDay(): "morning" | "afternoon" | "evening" | "night" {
   const hour = new Date().getHours();

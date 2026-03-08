@@ -295,9 +295,9 @@ describe("session callback", () => {
 });
 
 // ---------------------------------------------------------------------------
-// signIn callback – magic link (email) provider
+// signIn callback - magic link (email) provider
 // ---------------------------------------------------------------------------
-describe("signIn callback – magic link (email provider)", () => {
+describe("signIn callback - magic link (email provider)", () => {
   const signIn = callbacks.signIn!;
 
   test("allows phase-1 email send when user has no id yet", async () => {
@@ -377,9 +377,9 @@ describe("signIn callback – magic link (email provider)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// jwt callback – magic link fallback paths
+// jwt callback - magic link fallback paths
 // ---------------------------------------------------------------------------
-describe("jwt callback – magic link fallback paths", () => {
+describe("jwt callback - magic link fallback paths", () => {
   const jwt = callbacks.jwt!;
 
   test("falls back to user.id when user.backendId is missing (adapter user)", async () => {
@@ -486,7 +486,7 @@ describe("jwt callback – magic link fallback paths", () => {
 });
 
 // ---------------------------------------------------------------------------
-// authConfig – structural assertions
+// authConfig - structural assertions
 // ---------------------------------------------------------------------------
 describe("authConfig structure", () => {
   test("uses JWT session strategy", () => {

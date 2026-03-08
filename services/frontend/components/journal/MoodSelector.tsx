@@ -14,7 +14,7 @@ export function MoodSlider({
   return (
     <div>
       <label className="block text-sm font-medium text-dark-200 mb-3">
-        How are you feeling? (1–10)
+        How are you feeling? (1-10)
       </label>
       <div className="flex items-center gap-4">
         <span className="text-sm text-dark-400 w-6">{min}</span>
