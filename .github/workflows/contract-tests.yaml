@@ -1,0 +1,77 @@
+name: Contract Tests
+
+on:
+  pull_request:
+    paths:
+      - "services/frontend/**"
+      - "services/backend/**"
+      - "services/analyzer/**"
+
+jobs:
+  frontend-consumer:
+    name: Frontend Consumer Contract Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            services/frontend/**
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: Run contract tests
+        working-directory: services/frontend
+        run: npm run test:contract
+
+      - name: Upload pact files
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-pacts
+          path: services/frontend/pacts/
+          retention-days: 1
+
+  backend-consumer:
+    name: Backend Consumer Contract Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            services/backend/**
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: |
+            services/backend/go.sum
+
+      - name: Install Pact FFI
+        working-directory: services/backend
+        run: go run github.com/pact-foundation/pact-go/v2/installer
+
+      - name: Run contract tests
+        working-directory: services/backend
+        run: go test ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
+
+      - name: Upload pact files
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-pacts
+          path: services/backend/pacts/
+          retention-days: 1
