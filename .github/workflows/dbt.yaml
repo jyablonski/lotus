@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "services/dbt/**"
+      - ".github/workflows/dbt.yaml"
   pull_request:
     paths:
       - "services/dbt/**"

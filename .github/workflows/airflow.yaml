@@ -6,9 +6,11 @@ on:
       - main
     paths:
       - "services/airflow/**"
+      - ".github/workflows/airflow.yaml"
   pull_request:
     paths:
       - "services/airflow/**"
+      - ".github/workflows/airflow.yaml"
 
 env:
   ASRTO_CLI_VERSION: "v1.36.0"

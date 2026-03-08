@@ -7,10 +7,12 @@ on:
     paths:
       - "services/analyzer/**"
       - "services/experiments/**"
+      - ".github/workflows/analyzer.yaml"
   pull_request:
     paths:
       - "services/analyzer/**"
       - "services/experiments/**"
+      - ".github/workflows/analyzer.yaml"
 
 env:
   UV_VERSION: "0.8.13"

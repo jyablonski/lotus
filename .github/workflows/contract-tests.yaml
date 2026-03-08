@@ -8,11 +8,13 @@ on:
       - "services/frontend/**"
       - "services/backend/**"
       - "services/analyzer/**"
+      - ".github/workflows/contract-tests.yaml"
   pull_request:
     paths:
       - "services/frontend/**"
       - "services/backend/**"
       - "services/analyzer/**"
+      - ".github/workflows/contract-tests.yaml"
 
 # workflow triggers:
 # 1. PR title contains "contract" — e.g. "Add contract tests for analyzer"

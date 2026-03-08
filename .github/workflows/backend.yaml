@@ -6,9 +6,11 @@ on:
       - main
     paths:
       - "services/backend/**"
+      - ".github/workflows/backend.yaml"
   pull_request:
     paths:
       - "services/backend/**"
+      - ".github/workflows/backend.yaml"
 
 jobs:
   backend-pipeline:

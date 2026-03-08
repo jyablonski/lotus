@@ -6,9 +6,11 @@ on:
       - main
     paths:
       - "services/dagster/**"
+      - ".github/workflows/dagster.yaml"
   pull_request:
     paths:
       - "services/dagster/**"
+      - ".github/workflows/dagster.yaml"
 
 env:
   UV_VERSION: "0.9.5"
