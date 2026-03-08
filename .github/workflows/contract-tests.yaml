@@ -63,7 +63,9 @@ jobs:
 
       - name: Install Pact FFI
         working-directory: services/backend
-        run: go run github.com/pact-foundation/pact-go/v2/installer
+        run: |
+          go install github.com/pact-foundation/pact-go/v2@v2.4.2
+          sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install --libDir /usr/local/lib
 
       - name: Run contract tests
         working-directory: services/backend
