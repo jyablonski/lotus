@@ -142,7 +142,6 @@ E2E tests do not run on every PR. To trigger them, add the `e2e` label to your p
 1. Starts the full stack via `docker compose -f docker/docker-compose-e2e.yaml`
 2. Waits for the frontend to be healthy
 3. Installs Playwright and runs all e2e tests
-4. Uploads the Playwright report as a CI artifact
 
 ## Development
 
