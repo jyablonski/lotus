@@ -20,10 +20,6 @@ infrastructure:
       - any-glob-to-any-file: "docker/**"
       - any-glob-to-any-file: ".github/**"
 
-airflow:
-  - changed-files:
-      - any-glob-to-any-file: "services/airflow/**"
-
 dagster:
   - changed-files:
       - any-glob-to-any-file: "services/dagster/**"
