@@ -15,11 +15,10 @@ Go gRPC service with HTTP gateway for core application logic, CRUD operations, a
 
 ### Service Structure
 
-The backend runs **three servers** concurrently:
+The backend runs **two servers** concurrently:
 
 1. **gRPC Server** (`:50051`) - Core gRPC service
-2. **HTTP Server** (`:8081`) - Legacy HTTP endpoints (deprecated)
-3. **gRPC-Gateway** (`:8080`) - HTTP gateway that translates HTTP → gRPC
+2. **gRPC-Gateway** (`:8080`) - HTTP gateway that translates HTTP → gRPC
 
 ### Code Generation
 
@@ -48,31 +47,37 @@ The service uses **code generation** for type safety:
 
 ```
 internal/
-├── main.go                    # Entry point, starts all three servers
+├── main.go                    # Entry point, starts gRPC and gateway servers
+├── inject/                    # Context-based dependency injection
+│   └── inject.go              # WithX/From helpers for DB, Logger, HTTPClient, AnalyzerURL
 ├── grpc/                      # gRPC service implementations
-│   ├── server.go              # gRPC server setup and interceptors
+│   ├── server.go              # Service registration and gateway setup
 │   ├── interfaces.go          # Interface definitions (HTTPClient)
 │   ├── user_service.go        # User service implementation
 │   ├── journal_service.go     # Journal service implementation
-│   └── analytics_service.go   # Analytics service implementation
-├── http/                      # Legacy HTTP handlers (deprecated)
-│   ├── server.go
-│   └── user_handler.go
+│   ├── analytics_service.go   # Analytics service implementation
+│   ├── util_service.go        # Util service implementation
+│   └── featureflag_service.go # Feature flag service implementation
 ├── db/                        # sqlc-generated database code
 │   ├── db.go                  # Database connection
 │   ├── querier.go             # Querier interface (generated)
 │   ├── models.go              # Generated models
 │   ├── users.sql.go           # Generated user queries
 │   ├── journals.sql.go        # Generated journal queries
-│   └── analytics.sql.go       # Generated analytics queries
+│   ├── journal_topics.sql.go  # Generated journal topics queries
+│   ├── analytics.sql.go       # Generated analytics queries
+│   ├── feature_flags.sql.go   # Generated feature flag queries
+│   └── runtime_config.sql.go  # Generated runtime config queries
 ├── mocks/                     # moq-generated mock implementations
 │   ├── querier_mock.go        # Mock for db.Querier
-│   └── http_client_mock.go    # Mock for grpc.HTTPClient
+│   └── http_client_mock.go    # Mock for grpc.HTTPClient (external HTTP calls)
 ├── pb/                        # buf-generated protobuf code
 │   └── proto/
 │       ├── user/              # User service proto definitions
 │       ├── journal/           # Journal service proto definitions
-│       └── analytics/         # Analytics service proto definitions
+│       ├── analytics/         # Analytics service proto definitions
+│       ├── util/              # Util service proto definitions
+│       └── featureflag/       # Feature flag service proto definitions
 ├── sql/                       # SQL queries (input for sqlc)
 │   ├── queries/               # SQL query files
 │   └── schema/                # Database schema migrations
@@ -83,22 +88,23 @@ internal/
 
 ### gRPC Service Implementation
 
-Each gRPC service follows this pattern:
+Services use **context-based dependency injection** via the `inject` package. Dependencies (DB, Logger, HTTPClient, AnalyzerURL) are populated by an interceptor in `main.go` and extracted in handlers:
 
 ```go
-type ServiceServer struct {
-    pb.UnimplementedServiceServer
-    DB     db.Querier   // Interface, not concrete *db.Queries
-    Logger *slog.Logger
-    // ... other dependencies
+type UserServer struct {
+    pb.UnimplementedUserServiceServer
 }
 
-func (s *ServiceServer) Method(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-    // Implementation
+func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+    logger := inject.LoggerFrom(ctx)
+    dbq := inject.DBFrom(ctx)
+    // Use dbq and logger in implementation
 }
 ```
 
-Services use interfaces for dependencies to enable mocking in tests.
+- Services are empty structs; dependencies come from `context.Context`
+- Use `inject.DBFrom(ctx)`, `inject.LoggerFrom(ctx)`, `inject.HTTPClientFrom(ctx)`, `inject.AnalyzerURLFrom(ctx)` in handlers
+- Tests build a context with `inject.WithDB(ctx, mockQuerier)` and `inject.WithLogger(ctx, logger)` via `testCtx()`
 
 ### Logging
 
@@ -121,7 +127,7 @@ Services use interfaces for dependencies to enable mocking in tests.
 
 - Use **sqlc-generated** queries from `internal/db`
 - Never write raw SQL in Go code - use sqlc queries
-- Database connection is passed to services via `*db.Queries`
+- Database access is obtained via `inject.DBFrom(ctx)` (returns `db.Querier`)
 - Use `context.Context` for all database operations
 
 ### External Service Communication
@@ -161,7 +167,7 @@ go test -v ./internal/grpc -run TestUserService
 The codebase uses [moq](https://github.com/matryer/moq) for generating mock implementations. Generated mocks are in `internal/mocks/`:
 
 - `QuerierMock` - Mock for `db.Querier` (database operations)
-- `HTTPClientMock` - Mock for `grpc.HTTPClient` (external HTTP calls)
+- `HTTPClientMock` - Mock for `grpc.HTTPClient` (external HTTP calls; satisfies `inject.HTTPDoer` via structural typing)
 
 Example test using mocks:
 
@@ -175,28 +181,29 @@ import (
     "github.com/google/uuid"
     "github.com/jyablonski/lotus/internal/db"
     internalgrpc "github.com/jyablonski/lotus/internal/grpc"
+    "github.com/jyablonski/lotus/internal/inject"
     "github.com/jyablonski/lotus/internal/mocks"
     "github.com/stretchr/testify/assert"
 )
 
+func testCtx(mock db.Querier) context.Context {
+    ctx := context.Background()
+    ctx = inject.WithDB(ctx, mock)
+    ctx = inject.WithLogger(ctx, newTestLogger())
+    return ctx
+}
+
 func TestUserServer_GetUser_Success(t *testing.T) {
-    // Configure mock behavior
     mockQuerier := &mocks.QuerierMock{
         GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
-            return db.SourceUser{
-                ID:    uuid.New(),
-                Email: email,
-            }, nil
+            return db.SourceUser{ID: uuid.New(), Email: email}, nil
         },
     }
 
-    // Create service with mock
-    server := internalgrpc.UserService(mockQuerier, newTestLogger())
+    server := &internalgrpc.UserServer{}
+    resp, err := server.GetUser(testCtx(mockQuerier), req)
 
-    // Test the service
-    resp, err := server.GetUser(context.Background(), req)
-
-    // Verify mock was called
+    assert.NoError(t, err)
     assert.Len(t, mockQuerier.GetUserByEmailCalls(), 1)
 }
 ```
@@ -211,7 +218,7 @@ make moq-generate
 ./scripts/moq-generate.sh
 ```
 
-Mocks are automatically regenerated via pre-commit hook when `internal/db/querier.go` or `internal/grpc/interfaces.go` change.
+Mocks are automatically regenerated via pre-commit hook when `internal/db/querier.go` or `internal/grpc/interfaces.go` change (see `.pre-commit-config.yaml`).
 
 ### Test Patterns
 
@@ -256,11 +263,10 @@ Before making changes:
 
 1. Define proto file in `proto/{service_name}/{service_name}.proto`
 2. Run `make buf-generate` to generate Go code
-3. Create service implementation in `internal/grpc/{service_name}_service.go`
-4. Register service in `internal/grpc/server.go`
-5. Register gateway handler in `internal/main.go`
-6. Add SQL queries in `internal/sql/queries/` if needed
-7. Run `make sqlc-generate` if SQL changed
+3. Create service implementation in `internal/grpc/{service_name}_service.go` (use `inject` for dependencies)
+4. Register service in `internal/grpc/server.go` (`RegisterServices` and `RegisterGateway`)
+5. Add SQL queries in `internal/sql/queries/` if needed
+6. Run `make sqlc-generate` if SQL changed
 
 ### Adding a New Database Query
 
@@ -303,5 +309,4 @@ Before making changes:
 
 - Uses `Dockerfile.dev` for development (with Air)
 - Uses `Dockerfile` for production builds
-- Ports exposed: 8080 (gateway), 8081 (legacy HTTP), 50051 (gRPC)
-- Health check endpoint: `:8081/health`
+- Ports exposed: 8080 (gRPC-Gateway), 50051 (gRPC)
