@@ -10,7 +10,7 @@ Next.js 15 frontend application with React 19, TypeScript, and Tailwind CSS for 
 - **Styling**: Tailwind CSS 4.1.4
 - **UI Components**: shadcn/ui (via components.json)
 - **Authentication**: NextAuth.js 5.0 (beta)
-- **Testing**: Jest with React Testing Library
+- **Testing**: Jest with React Testing Library, Playwright for E2E
 - **Package Manager**: npm 11.2.0
 
 ## Architecture Patterns
@@ -41,38 +41,43 @@ Next.js 15 uses the **App Router** architecture:
 
 ```
 app/                          # Next.js App Router
-├── (auth)/                   # Auth route group
-│   └── signin/
-├── (dashboard)/              # Dashboard route group
-│   ├── dashboard/
-│   ├── journals/
-│   └── analytics/
+├── (root)/                   # Main route group
+│   ├── journal/              # Journal routes (home, calendar, create)
+│   ├── profile/              # User profile
+│   ├── admin/                # Admin page
+│   └── layout.tsx
+├── signin/                   # Sign-in page
+├── verify-request/           # Email verification
 ├── api/                      # API route handlers
-│   └── auth/
+│   ├── auth/                 # NextAuth [...nextauth]
+│   └── v1/                   # Versioned API (e.g. sync-user-records)
 ├── layout.tsx                # Root layout
 ├── page.tsx                  # Home page
 └── globals.css               # Global styles
 
 components/                   # React components
 ├── ui/                       # shadcn/ui components
-│   ├── Card.tsx
-│   └── ...
+├── dashboard/                # Dashboard-specific components
 └── ...                       # Custom components
 
 actions/                      # Server Actions
-├── index.ts
-└── journals.ts
+├── index.ts                  # Re-exports
+├── journals.ts               # Journal mutations
+└── user.ts                   # User mutations (e.g. updateTimezone)
 
 lib/                          # Utility libraries
 ├── api/                      # API client
 ├── server/                   # Server-side utilities
 │   ├── analytics.ts
 │   ├── journals.ts
-│   └── profile.ts
-└── utils/                    # Client utilities
-    ├── calendar.ts
-    ├── dashboard.ts
-    └── ...
+│   ├── profile.ts
+│   └── featureFlags.ts
+├── utils/                    # Client utilities
+│   ├── calendar.ts
+│   ├── dashboard.ts
+│   ├── moodMapping.ts
+│   └── ...
+└── analytics.ts              # Analytics helpers
 
 hooks/                        # Custom React hooks
 ├── useJournal.ts
@@ -81,9 +86,6 @@ hooks/                        # Custom React hooks
 types/                        # TypeScript types
 ├── analytics.ts
 └── journal.ts
-
-utils/                        # Utility functions
-└── moodMapping.ts
 ```
 
 ## Key Patterns
@@ -91,10 +93,10 @@ utils/                        # Utility functions
 ### Server Component
 
 ```tsx
-// app/dashboard/page.tsx (Server Component)
+// app/(root)/journal/home/page.tsx (Server Component)
 import { getJournals } from "@/lib/server/journals";
 
-export default async function DashboardPage() {
+export default async function JournalHomePage() {
   const journals = await getJournals();
 
   return <div>{/* Render journals */}</div>;
@@ -143,13 +145,16 @@ export function JournalForm() {
 ### API Route Handler
 
 ```tsx
-// app/api/journals/route.ts
-import { NextResponse } from "next/server";
+// app/api/v1/sync-user-records/route.ts (versioned API)
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
-  const data = await fetchData();
-  return NextResponse.json(data);
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  // Validate, process, return
+  return NextResponse.json({ ok: true });
 }
+
+// app/api/auth/[...nextauth]/route.ts (NextAuth)
 ```
 
 ## Testing
@@ -163,7 +168,7 @@ export async function GET() {
 ### Running Tests
 
 ```bash
-# Run tests
+# Run unit tests
 npm test
 
 # Watch mode
@@ -171,6 +176,9 @@ npm run test:watch
 
 # CI mode
 npm run test:ci
+
+# E2E tests (Playwright)
+npm run test:e2e
 ```
 
 ### Test Patterns
@@ -254,10 +262,11 @@ Before making changes:
 
 ### Adding API Route
 
-1. Create route file: `app/api/{route}/route.ts`
+1. Create route file: `app/api/{route}/route.ts` (or `app/api/v1/{route}/route.ts` for versioned endpoints)
 2. Export HTTP methods: `GET`, `POST`, etc.
 3. Use `NextResponse` for responses
 4. Handle errors with try/catch
+5. Use Zod for request validation when accepting JSON bodies
 
 ### Styling Components
 

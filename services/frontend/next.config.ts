@@ -10,7 +10,14 @@ if (ga4Id) {
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ["avatars.githubusercontent.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+        pathname: "/**",
+        port: "",
+      },
+    ],
   },
   env: {
     // Expose GA4 measurement ID to the browser.
