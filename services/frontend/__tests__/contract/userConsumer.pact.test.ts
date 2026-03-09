@@ -1,5 +1,4 @@
-import { MatchersV3 } from "@pact-foundation/pact";
-import { createPact } from "./pactSetup";
+import { MatchersV3, createPact } from "./pactSetup";
 
 const { like } = MatchersV3;
 
