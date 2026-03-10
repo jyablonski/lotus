@@ -241,7 +241,7 @@ export const LoggedInDashboard = ({
                   </div>
                 </Link>
                 <Link
-                  href={ROUTES.profile}
+                  href={ROUTES.profileSettings}
                   className="nav-link flex items-center space-x-3 p-3 rounded-lg"
                 >
                   <User size={20} className="text-muted-dark" />
