@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlusCircle, BarChart3, Calendar } from "lucide-react";
+import { PlusCircle, BarChart3, Calendar, Settings } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Logout } from "@/components/auth/LogoutButton";
 import { ROUTES } from "@/lib/routes";
@@ -29,6 +29,13 @@ export function ProfileActions() {
           <button className="action-item">
             <Calendar size={20} className="text-dark-400" />
             <span className="text-dark-200">Calendar View</span>
+          </button>
+        </Link>
+
+        <Link href={ROUTES.profileSettings} className="block">
+          <button className="action-item">
+            <Settings size={20} className="text-dark-400" />
+            <span className="text-dark-200">Settings</span>
           </button>
         </Link>
 

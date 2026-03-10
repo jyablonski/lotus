@@ -43,9 +43,19 @@ export function CreateJournalForm({
             <button
               type="submit"
               disabled={isSubmitting || !entry.trim()}
-              className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none inline-flex items-center justify-center gap-2"
             >
-              {isSubmitting ? "Saving..." : "Save Entry"}
+              {isSubmitting ? (
+                <>
+                  <span
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    aria-hidden
+                  />
+                  Saving...
+                </>
+              ) : (
+                "Save Entry"
+              )}
             </button>
 
             <button

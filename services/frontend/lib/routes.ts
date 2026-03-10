@@ -12,7 +12,9 @@ export const ROUTES = {
     calendar: "/journal/calendar",
   },
   profile: "/profile",
+  profileSettings: "/profile/settings",
   admin: "/admin",
+  errorDemo: "/error-demo",
 } as const;
 
 /** Helper to build a journal detail route (currently unused, placeholder for future). */

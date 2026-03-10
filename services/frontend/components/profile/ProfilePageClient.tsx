@@ -5,8 +5,6 @@ import { ProfileHeader } from "./ProfileHeader";
 import { ProfileStats } from "./ProfileStats";
 import { ProfileInsights } from "./ProfileInsights";
 import { ProfileActions } from "./ProfileActions";
-import { TimezoneSelector } from "./TimezoneSelector";
-import { Card, CardContent } from "@/components/ui/Card";
 import { trackEvent } from "@/lib/analytics";
 import type { ProfileStats as ProfileStatsType } from "@/lib/server/profile";
 
@@ -86,16 +84,6 @@ export function ProfilePageClient({
           />
 
           <ProfileActions />
-        </div>
-
-        {/* Settings Section */}
-        <div>
-          <h2 className="heading-2 mb-6">Settings</h2>
-          <Card>
-            <CardContent className="p-6">
-              <TimezoneSelector currentTimezone={timezone} />
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
