@@ -21,6 +21,9 @@ services:
     redis: true
     redisinsight: true
     mlflow: true
+    # Observability stack: Jaeger UI :16686, Prometheus :9090, Grafana :3002
+    # Set to true to start Jaeger, Prometheus, and Grafana alongside the app.
+    observability: true
 
 options:
   # Use shared database (postgres) for all services

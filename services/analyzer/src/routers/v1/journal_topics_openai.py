@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from opentelemetry import trace
 from sqlalchemy.orm import Session
 
 from src.clients.openai_topic_client import OpenAITopicClient
@@ -11,6 +12,7 @@ from src.dependencies import get_db, get_openai_topic_client
 from src.schemas.openai_topics import AnalysisRequest
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 router = APIRouter()
 
 
@@ -32,7 +34,12 @@ async def extract_journal_topics(
         request = AnalysisRequest(text=journal.journal_text, max_topics=max_topics)
 
         # Extract topics from the journal content
-        analysis = await topic_client.analyze_topics(request=request)
+        with tracer.start_as_current_span("openai.topics.analyze") as span:
+            span.set_attribute("journal.id", journal_id)
+            span.set_attribute("openai.model", settings.default_model)
+            span.set_attribute("openai.max_topics", max_topics)
+            analysis = await topic_client.analyze_topics(request=request)
+            span.set_attribute("topics.count", len(analysis.topics))
 
         # Convert to format expected by your database layer
         topics = [

@@ -20,20 +20,34 @@ The monorepo is organized into three main directories:
   - Service-specific dependencies and build configurations
 - `.github/workflows` - Contains CI/CD workflow files, with each service having its own dedicated workflow file for automated testing (and in a future state - build & deployment)
 
-**Service URLs:**
+**Application Services:**
 
-- Frontend: http://localhost:3000
-- Backend REST API Gateway Service: http://localhost:8080
-- Backend gRPC Service: http://localhost:50051
-- Analyzer REST API Service: http://localhost:8083
-- Django Admin: http://localhost:8000/admin/
-- MLFlow UI: http://localhost:5000
-- Dagster UI: http://localhost:3001
-- Tilt UI: http://localhost:10350
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
-- Redis Insight: http://localhost:5540
-  - Database Connection: `redis://redis:6379/0`
+| Service                  | URL                          |
+| ------------------------ | ---------------------------- |
+| Frontend                 | http://localhost:3000        |
+| Backend REST API Gateway | http://localhost:8080        |
+| Backend gRPC             | http://localhost:50051       |
+| Analyzer REST API        | http://localhost:8083        |
+| Django Admin             | http://localhost:8000/admin/ |
+| Tilt UI                  | http://localhost:10350       |
+
+**Data Services:**
+
+| Service       | URL / Connection                                           |
+| ------------- | ---------------------------------------------------------- |
+| PostgreSQL    | `localhost:5432`                                           |
+| Redis         | `localhost:6379`                                           |
+| Redis Insight | http://localhost:5540 (connection: `redis://redis:6379/0`) |
+| MLflow UI     | http://localhost:5000                                      |
+| Dagster UI    | http://localhost:3001                                      |
+
+**Observability**:
+
+| Service    | URL                    | Purpose                                                                             |
+| ---------- | ---------------------- | ----------------------------------------------------------------------------------- |
+| Jaeger     | http://localhost:16686 | Distributed traces (backend, frontend, analyzer)                                    |
+| Prometheus | http://localhost:9090  | Metrics scraping (backend `/metrics`, frontend `/api/metrics`, analyzer `/metrics`) |
+| Grafana    | http://localhost:3002  | Dashboards — login: `admin` / `admin`                                               |
 
 ## Running the App
 

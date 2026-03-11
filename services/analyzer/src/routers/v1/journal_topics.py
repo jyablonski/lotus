@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from opentelemetry import trace
 from sqlalchemy.orm import Session
 
 from src.clients.ml_topic_client import TopicClient
@@ -9,6 +10,7 @@ from src.crud.journals import get_journal_by_id
 from src.dependencies import get_db, get_topic_client
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 router = APIRouter()
 
 
@@ -30,7 +32,11 @@ def extract_journal_topics(
             raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
 
         # Extract topics from the journal content (includes model version)
-        topics = topic_client.extract_topics(journal.journal_text)
+        with tracer.start_as_current_span("topics.extract") as span:
+            span.set_attribute("journal.id", journal_id)
+            span.set_attribute("model.version", topic_client.model_version or "")
+            topics = topic_client.extract_topics(journal.journal_text)
+            span.set_attribute("topics.count", len(topics))
 
         # Store topics in database
         create_or_update_topics(db, journal_id, topics)

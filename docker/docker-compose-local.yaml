@@ -93,9 +93,12 @@ services:
       - AUTH_TRUST_HOST=true
       - AUTH_RESEND_KEY=${AUTH_RESEND_KEY}
       - GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}
+      - REDIS_URL=redis://redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     depends_on:
       - backend
       - postgres
+      - redis
 
   backend:
     profiles: ["backend"]
@@ -116,6 +119,7 @@ services:
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
       - ANALYZER_BASE_URL=http://analyzer:8083
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     working_dir: /app
     command: ["air", "-c", ".air.toml"]
 
@@ -138,6 +142,7 @@ services:
       - ENABLE_V1_ROUTER=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GIT_PYTHON_REFRESH=quiet
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     depends_on:
       - postgres
       - mlflow
@@ -306,6 +311,48 @@ services:
       dagster_base:
         condition: service_started
 
+  # ── Observability stack (OTel / Jaeger / Prometheus / Grafana) ──────────────
+  jaeger:
+    profiles: ["observability"]
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - default
+
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - default
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ${PWD}/docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ${PWD}/docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - default
+
 networks:
   default:
     name: lotus_default
@@ -316,3 +363,4 @@ volumes:
   redis_data:
   redisinsight_data:
   dagster_io_storage:
+  grafana_data:

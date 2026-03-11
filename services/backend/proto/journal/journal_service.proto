@@ -22,5 +22,9 @@ service JournalService {
     };
   }
 
-  rpc TriggerJournalAnalysis(TriggerAnalysisRequest) returns (TriggerAnalysisResponse);
+  rpc TriggerJournalAnalysis(TriggerAnalysisRequest) returns (TriggerAnalysisResponse) {
+    option (google.api.http) = {
+      post: "/v1/journals/{journal_id}/analysis"
+    };
+  }
 }

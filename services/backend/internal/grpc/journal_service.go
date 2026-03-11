@@ -17,6 +17,8 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
+	"github.com/jyablonski/lotus/internal/utils"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -72,8 +74,10 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 	journalID := strconv.Itoa(int(journal.ID))
 
 	// Trigger async sentiment + topic analysis after journal is created (don't wait for completion).
-	// Capture deps into local variables before spawning the goroutine.
-	go triggerAnalysis(httpClient, analyzerURL, logger, int(journal.ID))
+	// Extract the span context now (before the request ctx is cancelled) so the goroutine
+	// can propagate the trace ID to the analyzer even though it runs on a fresh context.
+	spanCtx := trace.SpanContextFromContext(ctx)
+	go triggerAnalysis(httpClient, analyzerURL, logger, int(journal.ID), spanCtx)
 
 	return &pb.CreateJournalResponse{
 		JournalId: journalID,
@@ -182,8 +186,9 @@ func (s *JournalServer) TriggerJournalAnalysis(ctx context.Context, req *pb.Trig
 		return nil, fmt.Errorf("%w: %w", ErrJournalNotFound, err)
 	}
 
-	// Trigger analysis in background
-	go triggerAnalysis(httpClient, analyzerURL, logger, int(journal.ID))
+	// Trigger analysis in background, carrying the current trace context.
+	spanCtx := trace.SpanContextFromContext(ctx)
+	go triggerAnalysis(httpClient, analyzerURL, logger, int(journal.ID), spanCtx)
 
 	return &pb.TriggerAnalysisResponse{
 		Success: true,
@@ -194,14 +199,27 @@ func (s *JournalServer) TriggerJournalAnalysis(ctx context.Context, req *pb.Trig
 // triggerAnalysis sends async requests to the analyzer service.
 // It is a standalone function that receives all dependencies as arguments
 // so it can safely run in a goroutine after the request context is gone.
-func triggerAnalysis(client inject.HTTPDoer, analyzerURL string, logger *slog.Logger, journalID int) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// parentSpanCtx carries the trace ID from the originating gRPC request so that
+// the analyzer spans appear as children in the same Jaeger trace.
+func triggerAnalysis(client inject.HTTPDoer, analyzerURL string, logger *slog.Logger, journalID int, parentSpanCtx trace.SpanContext) {
+	// Build a fresh background context (won't be cancelled when the RPC ends) but
+	// attach the parent span context so otelhttp propagates traceparent to the analyzer.
+	baseCtx := context.Background()
+	if parentSpanCtx.IsValid() {
+		baseCtx = trace.ContextWithRemoteSpanContext(baseCtx, parentSpanCtx)
+	}
+	ctx, cancel := context.WithTimeout(baseCtx, 30*time.Second)
 	defer cancel()
 
-	// Trigger sentiment analysis
-	if err := callAnalysisEndpoint(ctx, client, analyzerURL, journalID, "sentiment"); err != nil {
-		logger.Error("Failed to trigger sentiment analysis",
+	const maxAttempts = 3
+
+	// Trigger sentiment analysis (with retry)
+	if err := utils.RetryWithBackoff(ctx, maxAttempts, func() error {
+		return callAnalysisEndpoint(ctx, client, analyzerURL, journalID, "sentiment")
+	}); err != nil {
+		logger.Error("Failed to trigger sentiment analysis after retries",
 			"journal_id", journalID,
+			"attempts", maxAttempts,
 			"error", err,
 		)
 	} else {
@@ -210,10 +228,13 @@ func triggerAnalysis(client inject.HTTPDoer, analyzerURL string, logger *slog.Lo
 		)
 	}
 
-	// Trigger topic classification
-	if err := callAnalysisEndpoint(ctx, client, analyzerURL, journalID, "topics"); err != nil {
-		logger.Error("Failed to trigger topic classification",
+	// Trigger topic classification (with retry)
+	if err := utils.RetryWithBackoff(ctx, maxAttempts, func() error {
+		return callAnalysisEndpoint(ctx, client, analyzerURL, journalID, "topics")
+	}); err != nil {
+		logger.Error("Failed to trigger topic classification after retries",
 			"journal_id", journalID,
+			"attempts", maxAttempts,
 			"error", err,
 		)
 	} else {

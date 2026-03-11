@@ -1,17 +1,11 @@
 meta {
   name: Trigger Journal Analysis
   type: http
-  seq: 3
+  seq: 5
 }
 
 post {
-  url: {{backend_url}}/journal.JournalService/TriggerJournalAnalysis
-  body: json
+  url: {{backend_url}}/v1/journals/{{journal_id}}/analysis
+  body: none
   auth: none
-}
-
-body:json {
-{
-  "journalId": "string"
-}
 }

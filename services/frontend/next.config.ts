@@ -8,7 +8,13 @@ if (ga4Id) {
 }
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // OTel instrumentation packages use native Node.js internals and cannot be
+  // bundled by webpack. Tell Next.js to resolve them at runtime instead.
+  serverExternalPackages: [
+    "@opentelemetry/sdk-node",
+    "@opentelemetry/instrumentation",
+    "@opentelemetry/instrumentation-undici",
+  ],
   images: {
     remotePatterns: [
       {

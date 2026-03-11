@@ -101,12 +101,18 @@ func request_JournalService_TriggerJournalAnalysis_0(ctx context.Context, marsha
 	var (
 		protoReq TriggerAnalysisRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["journal_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "journal_id")
+	}
+	protoReq.JournalId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "journal_id", err)
 	}
 	msg, err := client.TriggerJournalAnalysis(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -116,9 +122,15 @@ func local_request_JournalService_TriggerJournalAnalysis_0(ctx context.Context, 
 	var (
 		protoReq TriggerAnalysisRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok := pathParams["journal_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "journal_id")
+	}
+	protoReq.JournalId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "journal_id", err)
 	}
 	msg, err := server.TriggerJournalAnalysis(ctx, &protoReq)
 	return msg, metadata, err
@@ -176,7 +188,7 @@ func RegisterJournalServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/journal.JournalService/TriggerJournalAnalysis", runtime.WithHTTPPathPattern("/journal.JournalService/TriggerJournalAnalysis"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/journal.JournalService/TriggerJournalAnalysis", runtime.WithHTTPPathPattern("/v1/journals/{journal_id}/analysis"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -268,7 +280,7 @@ func RegisterJournalServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/journal.JournalService/TriggerJournalAnalysis", runtime.WithHTTPPathPattern("/journal.JournalService/TriggerJournalAnalysis"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/journal.JournalService/TriggerJournalAnalysis", runtime.WithHTTPPathPattern("/v1/journals/{journal_id}/analysis"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -287,7 +299,7 @@ func RegisterJournalServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 var (
 	pattern_JournalService_CreateJournal_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "journals"}, ""))
 	pattern_JournalService_GetJournals_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "journals"}, ""))
-	pattern_JournalService_TriggerJournalAnalysis_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"journal.JournalService", "TriggerJournalAnalysis"}, ""))
+	pattern_JournalService_TriggerJournalAnalysis_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "journals", "journal_id", "analysis"}, ""))
 )
 
 var (
