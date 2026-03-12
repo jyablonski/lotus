@@ -13,6 +13,7 @@ export const ROUTES = {
   },
   profile: "/profile",
   profileSettings: "/profile/settings",
+  profileCsgodouble: "/profile/csgodouble",
   admin: "/admin",
   errorDemo: "/error-demo",
 } as const;

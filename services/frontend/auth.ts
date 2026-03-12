@@ -397,6 +397,19 @@ export const authConfig: NextAuthConfig = {
         if (user.name) {
           token.name = user.name;
         }
+
+        // NextAuth may pass a fresh OAuth profile to jwt() that doesn't include
+        // our signIn mutations (backendId, role, etc.). Ensure role is set
+        // from the backend when we have email so Admin users get the correct role.
+        if (!token.role && user.email) {
+          const backendUser = await fetchBackendUser(user.email);
+          if (backendUser) {
+            token.role = backendUser.role;
+            if (!token.backendId) token.backendId = backendUser.userId;
+            if (!token.createdAt) token.createdAt = backendUser.createdAt;
+            if (!token.timezone) token.timezone = backendUser.timezone;
+          }
+        }
       }
 
       const email = (token.email as string) || undefined;
