@@ -80,20 +80,20 @@ describe("POST /api/v1/csgodouble/roll", () => {
     expect(json.result).toBe(13);
     expect(json.nextRollAt).toBeGreaterThanOrEqual(Date.now());
     expect(json.history).toEqual([13, 10, 5]);
-    expect(mockRandomInt).toHaveBeenCalledWith(0, 29);
+    expect(mockRandomInt).toHaveBeenCalledWith(0, 15);
     expect(mockExec).toHaveBeenCalled();
   });
 
-  it("returns result in range 0..28", async () => {
+  it("returns result in range 0..14", async () => {
     mockRandomInt.mockReturnValue(0);
     const res = await POST();
     const json = await res.json();
     expect(json.result).toBe(0);
 
-    mockRandomInt.mockReturnValue(28);
+    mockRandomInt.mockReturnValue(14);
     const res2 = await POST();
     const json2 = await res2.json();
-    expect(json2.result).toBe(28);
+    expect(json2.result).toBe(14);
   });
 
   it("caps history at 10 entries", async () => {
