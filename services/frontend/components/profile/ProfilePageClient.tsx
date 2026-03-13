@@ -83,7 +83,7 @@ export function ProfilePageClient({
             favoriteModCategory={favoriteModCategory}
           />
 
-          <ProfileActions />
+          <ProfileActions isAdmin={isAdmin} />
         </div>
       </div>
     </div>

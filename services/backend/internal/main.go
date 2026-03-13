@@ -7,19 +7,24 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	"database/sql"
+
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/jyablonski/lotus/internal/db"
 	grpcSrv "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
-
-	"database/sql"
 
 	_ "github.com/lib/pq"
 )
@@ -39,6 +44,57 @@ func allowCORS(origin string, h http.Handler) http.Handler {
 	})
 }
 
+// rateLimitMiddleware enforces a per-IP token-bucket rate limit.
+// rps is the sustained request rate; burst is the maximum burst size.
+// Stale limiters (no activity for 10 minutes) are pruned every 5 minutes.
+func rateLimitMiddleware(rps float64, burst int, h http.Handler) http.Handler {
+	type entry struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+
+	var mu sync.Mutex
+	limiters := make(map[string]*entry)
+
+	// Prune stale entries in the background.
+	go func() {
+		for range time.Tick(5 * time.Minute) {
+			mu.Lock()
+			for ip, e := range limiters {
+				if time.Since(e.lastSeen) > 10*time.Minute {
+					delete(limiters, ip)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
+
+	getLimiter := func(ip string) *rate.Limiter {
+		mu.Lock()
+		defer mu.Unlock()
+		e, ok := limiters[ip]
+		if !ok {
+			e = &entry{limiter: rate.NewLimiter(rate.Limit(rps), burst)}
+			limiters[ip] = e
+		}
+		e.lastSeen = time.Now()
+		return e.limiter
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			ip = forwarded
+		}
+		if !getLimiter(ip).Allow() {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
 func initLogger() *slog.Logger {
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
@@ -51,6 +107,21 @@ func initLogger() *slog.Logger {
 func main() {
 	logger := initLogger()
 	logger.Info("Starting Lotus Backend Service")
+
+	// ── OpenTelemetry ──────────────────────────────────────────────────
+	otelCtx := context.Background()
+	shutdownTracer, err := initTracer(otelCtx)
+	if err != nil {
+		logger.Warn("Failed to initialize tracer; continuing without tracing", "error", err)
+	} else {
+		defer shutdownTracer(otelCtx) //nolint:errcheck
+	}
+	shutdownMeter, err := initMeter()
+	if err != nil {
+		logger.Warn("Failed to initialize meter; continuing without metrics", "error", err)
+	} else {
+		defer shutdownMeter(otelCtx) //nolint:errcheck
+	}
 
 	// ── Required environment ───────────────────────────────────────────
 	connStr := os.Getenv("DB_CONN")
@@ -85,10 +156,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	dbConn.SetMaxOpenConns(25)
+	dbConn.SetMaxIdleConns(5)
+	dbConn.SetConnMaxLifetime(5 * time.Minute)
+	dbConn.SetConnMaxIdleTime(1 * time.Minute)
+
 	queries := db.New(dbConn)
 
 	// ── Shared HTTP client for outbound calls ──────────────────────────
-	httpClient := &http.Client{Timeout: 10 * time.Second}
+	// otelhttp.NewTransport injects W3C TraceContext headers so calls to the
+	// analyzer appear as child spans in the same Jaeger trace.
+	httpClient := &http.Client{
+		Timeout:   10 * time.Second,
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
 
 	// ── Injector interceptor ───────────────────────────────────────────
 	// Populates every incoming gRPC request context with all dependencies.
@@ -107,22 +188,31 @@ func main() {
 
 	// ── gRPC server ────────────────────────────────────────────────────
 	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(injector, grpcSrv.LoggingInterceptor(logger)),
 	)
 	grpcSrv.RegisterServices(grpcServer)
 
 	// ── gRPC-Gateway (HTTP) ────────────────────────────────────────────
 	gwMux := runtime.NewServeMux()
-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	dialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	}
 
 	if err := grpcSrv.RegisterGateway(context.Background(), gwMux, "localhost:50051", dialOpts); err != nil {
 		logger.Error("Failed to register gRPC-Gateway handlers", "error", err)
 		os.Exit(1)
 	}
 
+	rootMux := http.NewServeMux()
+	registerDocsHandlers(rootMux, logger)
+	rootMux.Handle("/metrics", promhttp.Handler())
+	rootMux.Handle("/", gwMux)
+
 	httpServer := &http.Server{
 		Addr:    ":8080",
-		Handler: allowCORS(corsOrigin, gwMux),
+		Handler: rateLimitMiddleware(20, 40, allowCORS(corsOrigin, otelhttp.NewHandler(rootMux, "http"))),
 	}
 
 	// ── Graceful shutdown context ──────────────────────────────────────

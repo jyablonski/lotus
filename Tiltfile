@@ -84,6 +84,10 @@ for service, is_enabled in enabled_services.items():
     if is_enabled:
         profiles.append(service)
 
+# Add infrastructure profiles that require a docker-compose profile to activate
+if infra_config.get("observability", False):
+    profiles.append("observability")
+
 # Load Docker Compose configuration with profiles
 docker_compose(
     ["docker/docker-compose-local.yaml", "docker/docker-compose-tilt.yaml"],
@@ -105,6 +109,12 @@ if infra_config.get("redis", True):
     dc_resource("redis", labels=["infrastructure"])
 if infra_config.get("redisinsight", True):
     dc_resource("redisinsight", resource_deps=["redis"], labels=["infrastructure"])
+
+# Observability stack: Jaeger (traces), Prometheus (metrics), Grafana (dashboards)
+if infra_config.get("observability", False):
+    dc_resource("jaeger", labels=["observability"])
+    dc_resource("prometheus", labels=["observability"])
+    dc_resource("grafana", resource_deps=["prometheus"], labels=["observability"])
 
 # Suppress warnings for intermediate base images used for caching
 update_settings(

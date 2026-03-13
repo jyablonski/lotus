@@ -1,10 +1,20 @@
 "use server";
 
 import { auth } from "@/auth";
+import { context, propagation } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
 import { BACKEND_URL } from "@/lib/config";
 import { ROUTES } from "@/lib/routes";
 import { MOOD_MIN, MOOD_MAX } from "@/lib/utils/moodMapping";
+
+/** Inject W3C traceparent/tracestate from the active OTel span into a headers object. */
+function withTraceHeaders(
+  base: Record<string, string>,
+): Record<string, string> {
+  const headers = { ...base };
+  propagation.inject(context.active(), headers);
+  return headers;
+}
 
 export interface CreateJournalInput {
   journalText: string;
@@ -48,9 +58,7 @@ export async function createJournal(
 
     const response = await fetch(`${BACKEND_URL}/v1/journals`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: withTraceHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         user_id: session.user.id,
         journal_text: journalText,
@@ -74,7 +82,10 @@ export async function createJournal(
     try {
       const countResp = await fetch(
         `${BACKEND_URL}/v1/journals?user_id=${session.user.id}&limit=1&offset=0`,
-        { method: "GET", headers: { "Content-Type": "application/json" } },
+        {
+          method: "GET",
+          headers: withTraceHeaders({ "Content-Type": "application/json" }),
+        },
       );
       if (countResp.ok) {
         const countData = await countResp.json();

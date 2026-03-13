@@ -1,8 +1,24 @@
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from opentelemetry import (
+    metrics as otel_metrics,
+    trace,
+)
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry.propagators.composite import CompositeHTTPPropagator
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 
 from src.dependencies import get_sentiment_client, get_topic_client
 from src.logger import setup_logging
@@ -10,6 +26,23 @@ from src.routers.v1 import v1_router
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+_service_resource = Resource({"service.name": "lotus-analyzer"})
+
+
+def _init_tracer() -> None:
+    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
+    provider = TracerProvider(resource=_service_resource)
+    provider.add_span_processor(
+        BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces"))
+    )
+    trace.set_tracer_provider(provider)
+
+
+def _init_meter() -> None:
+    reader = PrometheusMetricReader()
+    provider = MeterProvider(metric_readers=[reader], resource=_service_resource)
+    otel_metrics.set_meter_provider(provider)
 
 
 @asynccontextmanager
@@ -39,7 +72,15 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
 
 
+_init_tracer()
+_init_meter()
+
+# W3C TraceContext so incoming traceparent headers from the Go backend are
+# extracted and the analyzer's spans appear as children in the same Jaeger trace.
+set_global_textmap(CompositeHTTPPropagator([TraceContextTextMapPropagator()]))
+
 app = FastAPI(lifespan=lifespan)
+FastAPIInstrumentor.instrument_app(app)
 
 app.include_router(v1_router, prefix="/v1")
 
@@ -48,6 +89,11 @@ app.include_router(v1_router, prefix="/v1")
 
 # if os.getenv("ENABLE_EXPERIMENTAL_ROUTER", "false").lower() == "true":
 #     app.include_router(experimental_router, prefix="/experimental")
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/")

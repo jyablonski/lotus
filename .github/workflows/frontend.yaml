@@ -46,6 +46,10 @@ jobs:
         working-directory: services/frontend
         run: npm run test:coverage
 
+      - name: Run contract tests
+        working-directory: services/frontend
+        run: npm run test:contract
+
       - name: Build project
         working-directory: services/frontend
         run: npm run build

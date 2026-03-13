@@ -38,6 +38,12 @@ jobs:
           cache-dependency-path: |
             services/backend/go.sum
 
+      - name: Install Pact FFI
+        working-directory: services/backend
+        run: |
+          go install github.com/pact-foundation/pact-go/v2@v2.4.2
+          sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install --libDir /usr/local/lib
+
       - name: Start Postgres
         run: make start-postgres
 
@@ -45,6 +51,10 @@ jobs:
         working-directory: services/backend
         run: |
           go tool gotestsum --format testdox -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/utils
+
+      - name: Run contract tests
+        working-directory: services/backend
+        run: go test -tags=contract ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
 
       - name: Stop Postgres
         if: always()

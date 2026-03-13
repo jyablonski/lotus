@@ -6,21 +6,22 @@
 
 services:
   enabled:
-    # Core application services
+    # core application services
     frontend: true
     backend: true
     analyzer: true
     django_admin: true
 
-    # dagster services
+    # data services
     dagster: true
 
-  # Infrastructure services (always enabled if any service depends on them)
+  # infrastructure services
   infrastructure:
     postgres: true
     redis: true
     redisinsight: true
     mlflow: true
+    observability: true
 
 options:
   # Use shared database (postgres) for all services

@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from opentelemetry import trace
 from sqlalchemy.orm import Session
 
 from src.clients.ml_sentiment_client import SentimentClient
@@ -25,6 +26,7 @@ from src.schemas.sentiments import (
 )
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 router = APIRouter()
 
 
@@ -42,7 +44,11 @@ def analyze_journal_sentiment(
         raise HTTPException(status_code=404, detail="Journal entry not found")
 
     try:
-        analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
+        with tracer.start_as_current_span("sentiment.predict") as span:
+            span.set_attribute("journal.id", journal_id)
+            analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
+            span.set_attribute("sentiment.label", analysis_result.get("label", ""))
+            span.set_attribute("sentiment.score", float(analysis_result.get("score", 0)))
     except Exception as e:
         logger.error(f"Sentiment analysis failed for journal {journal_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Sentiment analysis failed: {e!s}") from None
@@ -154,7 +160,11 @@ def analyze_journals_sentiment_batch(
     for journal in journals:
         try:
             # Run sentiment analysis
-            analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
+            with tracer.start_as_current_span("sentiment.predict") as span:
+                span.set_attribute("journal.id", journal.id)
+                analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
+                span.set_attribute("sentiment.label", analysis_result.get("label", ""))
+                span.set_attribute("sentiment.score", float(analysis_result.get("score", 0)))
 
             # Store result
             sentiment_record = create_or_update_sentiment(

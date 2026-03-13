@@ -1,16 +1,34 @@
 import Link from "next/link";
-import { PlusCircle, BarChart3, Calendar, Settings } from "lucide-react";
+import {
+  PlusCircle,
+  BarChart3,
+  Calendar,
+  Settings,
+  Gamepad2,
+} from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Logout } from "@/components/auth/LogoutButton";
 import { ROUTES } from "@/lib/routes";
 
-export function ProfileActions() {
+interface ProfileActionsProps {
+  isAdmin?: boolean;
+}
+
+export function ProfileActions({ isAdmin = false }: ProfileActionsProps) {
   return (
     <Card>
       <CardHeader>
         <h2 className="text-xl font-semibold text-dark-50">Quick Actions</h2>
       </CardHeader>
       <CardContent className="space-y-3">
+        {isAdmin && (
+          <Link href={ROUTES.profileCsgodouble} className="block">
+            <button className="action-item">
+              <Gamepad2 size={20} className="text-lotus-400" />
+              <span className="text-lotus-300 font-medium">CSGO Double</span>
+            </button>
+          </Link>
+        )}
         <Link href={ROUTES.journal.create} className="block">
           <button className="action-item-primary">
             <PlusCircle size={20} className="text-lotus-400" />

@@ -9,6 +9,7 @@ import type {
 } from "@auth/core/adapters";
 import { BACKEND_URL } from "@/lib/config";
 import { ROUTES } from "@/lib/routes";
+import { redis } from "@/lib/server/redis";
 
 // ---------------------------------------------------------------------------
 // Types for backend responses
@@ -169,23 +170,12 @@ async function fetchBackendUser(email: string): Promise<BackendUser | null> {
 // NextAuth's email provider requires: getUserByEmail, createUser,
 // createVerificationToken, and useVerificationToken.
 //
-// User CRUD is delegated to the Go backend via HTTP.  Verification tokens are
-// stored in-memory (swap for Redis / DB in production at scale).
-//
-// The token Map is attached to globalThis so it survives Next.js hot reloads
-// and is shared across middleware / RSC / route-handler bundles.
+// User CRUD is delegated to the Go backend via HTTP. Verification tokens are
+// stored in Redis so they survive container restarts and work across replicas.
 // ---------------------------------------------------------------------------
 
-const globalForTokens = globalThis as unknown as {
-  __verificationTokens?: Map<string, VerificationToken>;
-};
-if (!globalForTokens.__verificationTokens) {
-  globalForTokens.__verificationTokens = new Map<string, VerificationToken>();
-}
-const verificationTokens = globalForTokens.__verificationTokens;
-
 function tokenKey(identifier: string, token: string) {
-  return `${identifier}:${token}`;
+  return `nextauth:vtoken:${identifier}:${token}`;
 }
 
 function toAdapterUser(
@@ -238,15 +228,18 @@ const magicLinkAdapter: Adapter = {
     return undefined;
   },
 
-  // -- Verification token methods (in-memory) -------------------------------
+  // -- Verification token methods (Redis) -----------------------------------
 
-  createVerificationToken(verificationToken: VerificationToken) {
+  async createVerificationToken(verificationToken: VerificationToken) {
     const key = tokenKey(verificationToken.identifier, verificationToken.token);
-    verificationTokens.set(key, verificationToken);
+    const ttlSeconds = Math.ceil(
+      (new Date(verificationToken.expires).getTime() - Date.now()) / 1000,
+    );
+    await redis.set(key, JSON.stringify(verificationToken), "EX", ttlSeconds);
     return verificationToken;
   },
 
-  useVerificationToken({
+  async useVerificationToken({
     identifier,
     token,
   }: {
@@ -254,10 +247,11 @@ const magicLinkAdapter: Adapter = {
     token: string;
   }) {
     const key = tokenKey(identifier, token);
-    const storedToken = verificationTokens.get(key);
-    if (!storedToken) return null;
-    verificationTokens.delete(key);
-    return storedToken;
+    const raw = await redis.get(key);
+    if (!raw) return null;
+    await redis.del(key);
+    const stored = JSON.parse(raw) as VerificationToken;
+    return { ...stored, expires: new Date(stored.expires) };
   },
 };
 
@@ -312,8 +306,17 @@ export const authConfig: NextAuthConfig = {
       // return true to let the email be sent.
       const isEmailProvider = account?.provider === "resend";
 
-      // Phase-1 of email sign-in: just allow the email to be sent.
+      // Phase-1 of email sign-in: enforce a per-email cooldown, then allow.
       if (isEmailProvider && !user.id) {
+        const cooldownKey = `nextauth:signin-cooldown:${user.email}`;
+        const inCooldown = await redis.get(cooldownKey);
+        if (inCooldown) {
+          authLog("warn", "Magic-link sign-in rate limited", {
+            email: user.email,
+          });
+          return false;
+        }
+        await redis.set(cooldownKey, "1", "EX", 60);
         return true;
       }
 
@@ -393,6 +396,19 @@ export const authConfig: NextAuthConfig = {
         // Persist the name (only OAuth providers like GitHub supply one).
         if (user.name) {
           token.name = user.name;
+        }
+
+        // NextAuth may pass a fresh OAuth profile to jwt() that doesn't include
+        // our signIn mutations (backendId, role, etc.). Ensure role is set
+        // from the backend when we have email so Admin users get the correct role.
+        if (!token.role && user.email) {
+          const backendUser = await fetchBackendUser(user.email);
+          if (backendUser) {
+            token.role = backendUser.role;
+            if (!token.backendId) token.backendId = backendUser.userId;
+            if (!token.createdAt) token.createdAt = backendUser.createdAt;
+            if (!token.timezone) token.timezone = backendUser.timezone;
+          }
         }
       }
 

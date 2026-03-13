@@ -30,6 +30,14 @@ jest.mock("next-auth/providers/resend", () => ({
   default: jest.fn().mockReturnValue({ id: "resend", name: "Resend" }),
 }));
 
+jest.mock("@/lib/server/redis", () => ({
+  redis: {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue("OK"),
+    del: jest.fn().mockResolvedValue(1),
+  },
+}));
+
 // Now we can import authConfig -- NextAuth() is mocked so it won't
 // try to initialize the full auth system
 import { authConfig, __clearBackendUserCacheForTests } from "@/auth";

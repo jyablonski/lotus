@@ -1,6 +1,6 @@
 [build]
 # Use the same build command a Dockerfile
-cmd = "go build -o lotus ./internal/main.go"
+cmd = "go build -o lotus ./internal/"
 bin = "lotus"
 # Optional: prevent rebuilds on vendor/ or hidden folders
 exclude_dir = ["vendor", ".git", "tmp"]
