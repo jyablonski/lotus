@@ -33,21 +33,21 @@ The monorepo is organized into three main directories:
 
 **Data Services:**
 
-| Service       | URL / Connection                                           |
-| ------------- | ---------------------------------------------------------- |
-| PostgreSQL    | `localhost:5432`                                           |
-| Redis         | `localhost:6379`                                           |
-| Redis Insight | http://localhost:5540 (connection: `redis://redis:6379/0`) |
-| MLflow UI     | http://localhost:5000                                      |
-| Dagster UI    | http://localhost:3001                                      |
+| Service    | URL                   |
+| ---------- | --------------------- |
+| MLflow UI  | http://localhost:5000 |
+| Dagster UI | http://localhost:3001 |
 
-**Observability**:
+**Infrastructure & Observability:**
 
-| Service    | URL                    | Purpose                                                                             |
-| ---------- | ---------------------- | ----------------------------------------------------------------------------------- |
-| Jaeger     | http://localhost:16686 | Distributed traces (backend, frontend, analyzer)                                    |
-| Prometheus | http://localhost:9090  | Metrics scraping (backend `/metrics`, frontend `/api/metrics`, analyzer `/metrics`) |
-| Grafana    | http://localhost:3002  | Dashboards — login: `admin` / `admin`                                               |
+| Service       | URL / Connection                                           | Purpose                                                                             |
+| ------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| PostgreSQL    | `localhost:5432`                                           | Primary database                                                                    |
+| Redis         | `localhost:6379`                                           | Caching                                                                             |
+| Redis Insight | http://localhost:5540 (connection: `redis://redis:6379/0`) | Redis UI                                                                            |
+| Jaeger        | http://localhost:16686                                     | Distributed traces (backend, frontend, analyzer)                                    |
+| Prometheus    | http://localhost:9090                                      | Metrics scraping (backend `/metrics`, frontend `/api/metrics`, analyzer `/metrics`) |
+| Grafana       | http://localhost:3002                                      | Dashboards — login: `admin` / `admin`                                               |
 
 ## Running the App
 
