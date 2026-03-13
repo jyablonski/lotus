@@ -195,7 +195,10 @@ func main() {
 
 	// ── gRPC-Gateway (HTTP) ────────────────────────────────────────────
 	gwMux := runtime.NewServeMux()
-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	dialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	}
 
 	if err := grpcSrv.RegisterGateway(context.Background(), gwMux, "localhost:50051", dialOpts); err != nil {
 		logger.Error("Failed to register gRPC-Gateway handlers", "error", err)
