@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type GoldUserJournalSummary struct {
@@ -50,6 +51,27 @@ type SourceJournal struct {
 	MoodScore   sql.NullInt32
 	CreatedAt   time.Time
 	ModifiedAt  time.Time
+}
+
+type SourceJournalDetail struct {
+	JournalID      int32
+	SentimentScore sql.NullFloat64
+	MoodLabel      sql.NullString
+	Keywords       []string
+	CreatedAt      time.Time
+	ModifiedAt     time.Time
+}
+
+type SourceJournalSentiment struct {
+	ID              int32
+	JournalID       sql.NullInt32
+	Sentiment       string
+	Confidence      string
+	ConfidenceLevel string
+	IsReliable      bool
+	MlModelVersion  string
+	CreatedAt       sql.NullTime
+	AllScores       pqtype.NullRawMessage
 }
 
 type SourceJournalTopic struct {
