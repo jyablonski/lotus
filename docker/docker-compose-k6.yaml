@@ -1,0 +1,59 @@
+# Minimal stack for k6 smoke tests in backend CI.
+# Postgres + backend only (no Django). Used when sparse checkout excludes services/django.
+#
+# Usage:
+#   docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --build --wait postgres backend
+#   docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
+#   docker compose -f docker/docker-compose-k6.yaml --profile load-test down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: k6-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ../services/backend
+      dockerfile: Dockerfile
+    container_name: k6-backend
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - ANALYZER_BASE_URL=http://localhost:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-runner
+    profiles:
+      - load-test
+    volumes:
+      - ../services/backend/load-tests/scripts:/scripts
+      - ../services/backend/load-tests/lib:/lib
+      - ../services/backend/load-tests/third_party:/third_party
+      - ../services/backend/proto:/proto
+    environment:
+      - BASE_URL=http://backend:8080
+      - GRPC_ADDR=backend:50051
+      - PROTO_ROOT=/
+      - THIRD_PARTY_ROOT=/third_party
+    depends_on:
+      backend:
+        condition: service_started
