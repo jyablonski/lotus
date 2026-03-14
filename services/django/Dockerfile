@@ -1,53 +1,49 @@
 FROM python:3.13-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    PATH="/.venv/bin:/root/.cargo/bin:$PATH" \
+    PATH="/app/.venv/bin:$PATH" \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=3.13
+    UV_LINK_MODE=copy
 
-# install OS-level deps once in base (so we don't repeat in each stage)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# -------------------------------
-# Stage: Install Python deps
-# -------------------------------
-FROM base AS python-deps
+# ─── deps ──────────────────────────────────────────────────────────────────────
+FROM base AS deps
 
 ARG INSTALL_DEV_DEPENDENCIES=false
 
-COPY pyproject.toml uv.lock ./
+WORKDIR /app
 
-RUN pip install uv==0.9.18 && \
-    if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
-    uv sync --frozen --no-install-project; \
+# Regular COPY (not --link) to avoid opaque whiteout on /bin/ hiding /bin/sh
+COPY --from=ghcr.io/astral-sh/uv:0.9.18 /uv /bin/uv
+COPY --link pyproject.toml uv.lock ./
+
+RUN if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
+        uv sync --locked --no-install-project; \
     else \
-    uv sync --frozen --no-dev --no-install-project; \
+        uv sync --locked --no-dev --no-install-project; \
     fi
 
-
-# -------------------------------
-# Stage: Runtime
-# -------------------------------
+# ─── runtime ───────────────────────────────────────────────────────────────────
 FROM base AS runtime
 
-COPY --from=python-deps ./.venv ./.venv
+WORKDIR /app
 
 RUN useradd --create-home appuser
-WORKDIR /app
+
+COPY --link --from=deps /app/.venv /app/.venv
+
 USER appuser
 
-COPY manage.py ./
-COPY lotus_admin/ ./lotus_admin/
-COPY core/ ./core/
-COPY entrypoint.sh ./
-
-USER root
-USER appuser
+COPY --link manage.py ./
+COPY --link lotus_admin/ ./lotus_admin/
+COPY --link core/ ./core/
+COPY --link entrypoint.sh ./
 
 EXPOSE 8000
 

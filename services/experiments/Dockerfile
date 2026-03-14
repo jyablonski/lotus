@@ -1,37 +1,33 @@
 FROM python:3.13-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    PATH="/.venv/bin:/root/.cargo/bin:$PATH" \
+    PATH="/app/.venv/bin:$PATH" \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=3.13
+    UV_LINK_MODE=copy
 
-# install OS-level deps once in base
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# -------------------------------
-# Stage: Install Python deps
-# -------------------------------
-FROM base AS python-deps
+# ─── deps ──────────────────────────────────────────────────────────────────────
+FROM base AS deps
 
-COPY pyproject.toml uv.lock ./
+WORKDIR /app
 
-RUN pip install uv==0.9.18 && \
-    uv sync --frozen --no-dev --no-install-project
+# Regular COPY (not --link) to avoid opaque whiteout on /bin/ hiding /bin/sh
+COPY --from=ghcr.io/astral-sh/uv:0.9.18 /uv /bin/uv
+COPY --link pyproject.toml uv.lock ./
 
-# -------------------------------
-# Stage: Runtime
-# -------------------------------
+RUN uv sync --locked --no-dev --no-install-project
+
+# ─── runtime ───────────────────────────────────────────────────────────────────
 FROM base AS runtime
 
-COPY --from=python-deps ./.venv ./.venv
-
-# Run as root to avoid permission issues with mounted volumes
 WORKDIR /mlflow
 
-# Create directories for artifacts and data
+COPY --link --from=deps /app/.venv /app/.venv
+
 RUN mkdir -p /mlflow/artifacts /mlflow/mlruns
 
 EXPOSE 5000

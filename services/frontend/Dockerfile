@@ -3,7 +3,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 # Only copy package files and install dependencies
-COPY package.json package-lock.json ./
+COPY --link package.json package-lock.json ./
 RUN npm install
 
 # Don't copy source code - let volume mount handle it
