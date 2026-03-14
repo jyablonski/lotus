@@ -1,6 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { CsgodoubleGame } from "@/components/profile/CsgodoubleGame";
 
+jest.mock("@/auth", () => ({
+  auth: async () => ({ user: { id: "test-user-id" }, expires: "2099-01-01" }),
+}));
+
 describe("CsgodoubleGame", () => {
   const mockFetch = jest.fn();
 

@@ -41,7 +41,7 @@ describe("fetchFeatureFlags", () => {
     );
   });
 
-  it("appends user_role query param when provided", async () => {
+  it("appends userRole query param when provided (camelCase for gRPC-Gateway)", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ flags: [] }),
@@ -50,7 +50,7 @@ describe("fetchFeatureFlags", () => {
     await fetchFeatureFlags("Admin");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("user_role=Admin"),
+      expect.stringContaining("userRole=Admin"),
       expect.any(Object),
     );
   });

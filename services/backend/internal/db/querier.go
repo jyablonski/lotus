@@ -24,9 +24,13 @@ type Querier interface {
 	GetTopicsByJournalIds(ctx context.Context, dollar_1 []int32) ([]GetTopicsByJournalIdsRow, error)
 	GetUserByEmail(ctx context.Context, email string) (SourceUser, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (SourceUser, error)
+	GetUserGameBalance(ctx context.Context, userID uuid.UUID) (SourceUserGameBalance, error)
+	GetUserGameBets(ctx context.Context, arg GetUserGameBetsParams) ([]SourceUserGameBet, error)
 	GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (GoldUserJournalSummary, error)
+	InsertUserGameBet(ctx context.Context, arg InsertUserGameBetParams) (SourceUserGameBet, error)
 	UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (SourceUser, error)
 	UpsertRuntimeConfigValue(ctx context.Context, arg UpsertRuntimeConfigValueParams) (SourceRuntimeConfig, error)
+	UpsertUserGameBalance(ctx context.Context, arg UpsertUserGameBalanceParams) (SourceUserGameBalance, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -1,22 +1,73 @@
-import { randomInt } from "node:crypto";
+import { randomInt, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { redis } from "@/lib/server/redis";
-
-const KEY_NEXT_ROLL = "csgodouble:next_roll_at";
-const KEY_HISTORY = "csgodouble:history";
-const ROLL_INTERVAL_MS = 45_000;
-// Client spends ~12s displaying the spin (10s) + win reveal (2s) before showing the
-// next countdown. Add this buffer so the countdown starts at ~45s after the reveal.
-const DISPLAY_BUFFER_MS = 12_000;
-const HISTORY_LENGTH = 10;
-const GRACE_MS = 2000; // allow roll up to 2s before nextRollAt (clock skew)
+import {
+  KEY_NEXT_ROLL,
+  KEY_HISTORY,
+  KEY_ROLL_LOCK,
+  ROLL_INTERVAL_MS,
+  DISPLAY_BUFFER_MS,
+  HISTORY_LENGTH,
+  GRACE_MS,
+  LOCK_TTL_MS,
+} from "@/lib/csgodouble/constants";
 
 /** Uniform random 0..14 (crypto RNG; each number has 1/15 chance). */
 function roll(): number {
   return randomInt(0, 15);
 }
 
+/**
+ * Atomically release a Redis lock only if we still own it.
+ * Prevents releasing a lock acquired by a different request after TTL expiry.
+ */
+const UNLOCK_SCRIPT = `
+  if redis.call("get", KEYS[1]) == ARGV[1] then
+    return redis.call("del", KEYS[1])
+  else
+    return 0
+  end
+`;
+
 export async function POST() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Acquire a distributed lock to serialise concurrent roll requests.
+  // SET NX PX is atomic — only one request wins.
+  const lockToken = randomBytes(16).toString("hex");
+  const acquired = await redis.set(
+    KEY_ROLL_LOCK,
+    lockToken,
+    "PX",
+    LOCK_TTL_MS,
+    "NX",
+  );
+
+  if (!acquired) {
+    // Another roll is already in progress — return current state so the
+    // client can sync its countdown to the upcoming nextRollAt.
+    const nextRollAtStr = await redis.get(KEY_NEXT_ROLL);
+    const historyStr = await redis.get(KEY_HISTORY);
+    let history: number[] = [];
+    try {
+      history = historyStr ? JSON.parse(historyStr) : [];
+    } catch {
+      history = [];
+    }
+    return NextResponse.json(
+      {
+        error: "Roll already in progress",
+        nextRollAt: nextRollAtStr ? parseInt(nextRollAtStr, 10) : null,
+        history,
+      },
+      { status: 429 },
+    );
+  }
+
   try {
     const now = Date.now();
     const nextRollAtStr = await redis.get(KEY_NEXT_ROLL);
@@ -30,8 +81,15 @@ export async function POST() {
     }
 
     const result = roll();
+
     const historyStr = await redis.get(KEY_HISTORY);
-    const history: number[] = historyStr ? JSON.parse(historyStr) : [];
+    let history: number[] = [];
+    try {
+      history = historyStr ? JSON.parse(historyStr) : [];
+    } catch {
+      history = [];
+    }
+
     const newHistory = [result, ...history].slice(0, HISTORY_LENGTH);
     const newNextRollAt = now + ROLL_INTERVAL_MS + DISPLAY_BUFFER_MS;
 
@@ -49,5 +107,10 @@ export async function POST() {
   } catch (error) {
     console.error("[csgodouble/roll]", error);
     return NextResponse.json({ error: "Failed to roll" }, { status: 500 });
+  } finally {
+    // Always release the lock, even on error, using the safe Lua script.
+    await redis.eval(UNLOCK_SCRIPT, 1, KEY_ROLL_LOCK, lockToken).catch(() => {
+      // Non-fatal: lock will expire via TTL if this fails.
+    });
   }
 }

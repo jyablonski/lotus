@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { ROLL_INTERVAL_MS } from "@/lib/csgodouble/constants";
+import {
+  getGameBalance,
+  updateGameBalance,
+  recordBets,
+  getBetHistory,
+  BetRecord,
+} from "@/actions/game";
 
-const ROLL_INTERVAL_MS = 45_000;
 const SPIN_DURATION_MS = 10_000;
 const WIN_REVEAL_MS = 2_000;
 const INITIAL_BALANCE = 100;
@@ -56,6 +63,7 @@ function easeOutCubic(t: number): number {
 }
 
 type Zone = "1-7" | "0" | "8-14";
+type BetEntry = { id: string; player: string; amount: number };
 
 const PAYOUT: Record<Zone, number> = {
   "1-7": 2,
@@ -92,26 +100,41 @@ export function CsgodoubleGame() {
   const [currentRoll, setCurrentRoll] = useState<number | null>(null);
   const [betInput, setBetInput] = useState("");
   const [lastBetAmount, setLastBetAmount] = useState(0);
-  const [bets, setBets] = useState<Record<Zone, number>>({
-    "1-7": 0,
-    "0": 0,
-    "8-14": 0,
+  const [betEntries, setBetEntries] = useState<Record<Zone, BetEntry[]>>({
+    "1-7": [],
+    "0": [],
+    "8-14": [],
   });
   const [isSpinning, setIsSpinning] = useState(false);
   // Continuous virtual position — persists between spins for smooth transitions
   const [spinPosition, setSpinPosition] = useState(VIRTUAL_INITIAL);
   const [showWinReveal, setShowWinReveal] = useState(false);
   const [winDelta, setWinDelta] = useState<number | null>(null);
+  const [betHistory, setBetHistory] = useState<BetRecord[]>([]);
+  const [showHistory, setShowHistory] = useState(true);
+
+  // Derive bet totals from entries
+  const bets: Record<Zone, number> = {
+    "1-7": betEntries["1-7"].reduce((s, e) => s + e.amount, 0),
+    "0": betEntries["0"].reduce((s, e) => s + e.amount, 0),
+    "8-14": betEntries["8-14"].reduce((s, e) => s + e.amount, 0),
+  };
 
   const spinStartRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const winRevealTimeoutRef = useRef<number | null>(null);
+  // Guards against duplicate POST /roll requests when the interval fires
+  // multiple ticks before the first response returns.
+  const isRollingRef = useRef(false);
   const pendingServerStateRef = useRef<{
     nextRollAt: number;
     history: number[];
   } | null>(null);
   const betsRef = useRef(bets);
   betsRef.current = bets;
+  // Mirrors balance so resolveRoll can read the current value without capturing stale state
+  const balanceRef = useRef(balance);
+  balanceRef.current = balance;
   // Always-current spinPosition so startSpin closure reads the live value
   const spinPositionRef = useRef(spinPosition);
   spinPositionRef.current = spinPosition;
@@ -129,8 +152,44 @@ export function CsgodoubleGame() {
     if (zone === "0") payout = b["0"] * PAYOUT["0"];
     if (zone === "8-14") payout = b["8-14"] * PAYOUT["8-14"];
     if (totalBet > 0) setWinDelta(payout - totalBet);
-    setBalance((prev) => prev + payout);
-    setBets({ "1-7": 0, "0": 0, "8-14": 0 });
+    const newBalance = balanceRef.current + payout;
+    setBalance(newBalance);
+    updateGameBalance(newBalance).catch(() => {});
+
+    // Record each zone that had a bet placed.
+    const entries = (["1-7", "0", "8-14"] as Zone[])
+      .filter((z) => b[z] > 0)
+      .map((z) => ({
+        zone: z,
+        amount: b[z],
+        roll_result: result, // grpc-gateway accepts snake_case on ingress
+        payout: z === zone ? b[z] * PAYOUT[z] : 0,
+      }));
+    if (entries.length > 0) {
+      recordBets(entries)
+        .then(() => getBetHistory(20, 0))
+        .then((res) => {
+          if (res.success && res.bets) setBetHistory(res.bets);
+        })
+        .catch(() => {});
+    }
+
+    setBetEntries({ "1-7": [], "0": [], "8-14": [] });
+    setBetInput("");
+  }, []);
+
+  // Load persisted balance and bet history from the backend on mount.
+  useEffect(() => {
+    getGameBalance().then((result) => {
+      if (result.success && result.balance != null) {
+        setBalance(result.balance);
+      }
+    });
+    getBetHistory(20, 0).then((result) => {
+      if (result.success && result.bets) {
+        setBetHistory(result.bets);
+      }
+    });
   }, []);
 
   // Fetch server state on mount
@@ -228,6 +287,8 @@ export function CsgodoubleGame() {
       setCountdown(Math.max(0, remaining));
 
       if (remaining <= 0) {
+        if (isRollingRef.current) return;
+        isRollingRef.current = true;
         setServerNextRollAt(null);
         fetch(`${STATE_API}/roll`, { method: "POST" })
           .then((res) => {
@@ -261,7 +322,11 @@ export function CsgodoubleGame() {
             },
           )
           .catch(() => {
+            pendingServerStateRef.current = null;
             setServerNextRollAt(Date.now() + ROLL_INTERVAL_MS);
+          })
+          .finally(() => {
+            isRollingRef.current = false;
           });
       }
     }, 100);
@@ -274,14 +339,20 @@ export function CsgodoubleGame() {
     const amount = Math.min(betAmount, balance - totalPlaced);
     if (amount <= 0) return;
     setBalance((b) => b - amount);
-    setBets((prev) => ({ ...prev, [zone]: prev[zone] + amount }));
+    setBetEntries((prev) => ({
+      ...prev,
+      [zone]: [
+        ...prev[zone],
+        { id: crypto.randomUUID(), player: "You", amount },
+      ],
+    }));
     setLastBetAmount(amount);
   };
 
   const clearBets = () => {
     if (isSpinning) return;
     setBalance((b) => b + totalPlaced);
-    setBets({ "1-7": 0, "0": 0, "8-14": 0 });
+    setBetEntries({ "1-7": [], "0": [], "8-14": [] });
   };
 
   // Virtual strip: render a window of VISIBLE_HALF cells on each side of spinPosition
@@ -294,6 +365,33 @@ export function CsgodoubleGame() {
   const countdownPct = serverNextRollAt
     ? Math.min(100, (countdown / (ROLL_INTERVAL_MS / 1000)) * 100)
     : 0;
+
+  const zones = [
+    {
+      zone: "1-7" as Zone,
+      label: "1 to 7",
+      multiplier: "2x",
+      btnClass:
+        "bg-red-600/90 text-white hover:bg-red-500 disabled:hover:bg-red-600/90",
+      listClass: "border-red-900/40 bg-red-950/20",
+    },
+    {
+      zone: "0" as Zone,
+      label: "0",
+      multiplier: "14x",
+      btnClass:
+        "bg-emerald-600/90 text-white hover:bg-emerald-500 disabled:hover:bg-emerald-600/90",
+      listClass: "border-emerald-900/40 bg-emerald-950/20",
+    },
+    {
+      zone: "8-14" as Zone,
+      label: "8 to 14",
+      multiplier: "2x",
+      btnClass:
+        "bg-zinc-900 text-zinc-100 hover:bg-zinc-800 disabled:hover:bg-zinc-900 border border-zinc-700",
+      listClass: "border-zinc-700/40 bg-zinc-900/40",
+    },
+  ] as const;
 
   return (
     <div className="space-y-4">
@@ -388,7 +486,7 @@ export function CsgodoubleGame() {
               return (
                 <div
                   key={virtualIndex}
-                  className={`flex flex-shrink-0 items-center justify-center rounded text-sm font-bold ${cellColor(n)}`}
+                  className={`flex flex-shrink-0 items-start justify-start rounded p-1 text-sm font-bold ${cellColor(n)}`}
                   style={{
                     width: `${CELL_STEP_REM - 0.125}rem`,
                     height: `${CELL_STEP_REM - 0.125}rem`,
@@ -504,42 +602,57 @@ export function CsgodoubleGame() {
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {(
-            [
-              {
-                zone: "1-7" as Zone,
-                label: "1 to 7",
-                multiplier: "2x",
-                className:
-                  "bg-red-600/90 text-white hover:bg-red-500 disabled:hover:bg-red-600/90",
-              },
-              {
-                zone: "0" as Zone,
-                label: "0",
-                multiplier: "14x",
-                className:
-                  "bg-emerald-600/90 text-white hover:bg-emerald-500 disabled:hover:bg-emerald-600/90",
-              },
-              {
-                zone: "8-14" as Zone,
-                label: "8 to 14",
-                multiplier: "2x",
-                className:
-                  "bg-zinc-900 text-zinc-100 hover:bg-zinc-800 disabled:hover:bg-zinc-900 border border-zinc-700",
-              },
-            ] as const
-          ).map(({ zone, label, multiplier, className }) => (
-            <button
+          {zones.map(({ zone, label, multiplier, btnClass, listClass }) => (
+            <div
               key={zone}
-              type="button"
-              onClick={() => placeBet(zone)}
-              disabled={!canBet}
-              className={`flex flex-col items-center justify-center rounded-xl p-6 font-bold transition disabled:opacity-50 ${className}`}
+              className="flex flex-col overflow-hidden rounded-xl"
             >
-              <span>{label}</span>
-              <span className="mt-1 text-sm opacity-90">{multiplier}</span>
-              <span className="mt-2 text-sm">Your bet: ${bets[zone]}</span>
-            </button>
+              {/* Clickable bet area */}
+              <button
+                type="button"
+                onClick={() => placeBet(zone)}
+                disabled={!canBet}
+                className={`flex flex-col items-center justify-center rounded-t-xl p-5 font-bold transition disabled:opacity-50 ${btnClass}`}
+              >
+                <span className="text-lg">{label}</span>
+                <span className="mt-0.5 text-sm opacity-90">{multiplier}</span>
+                <span className="mt-2 text-sm font-semibold">
+                  Your bet: ${bets[zone]}
+                </span>
+              </button>
+
+              {/* Bet list */}
+              <div
+                className={`min-h-[5rem] rounded-b-xl border border-t-0 p-3 ${listClass}`}
+              >
+                <p className="mb-2 text-xs font-medium text-dark-400">
+                  Total bet:{" "}
+                  <span className="text-dark-200">${bets[zone]}</span>
+                </p>
+                {betEntries[zone].length > 0 ? (
+                  <div className="max-h-36 space-y-1.5 overflow-y-auto">
+                    {betEntries[zone].map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-dark-600 text-xs font-bold text-dark-200">
+                            {entry.player[0].toUpperCase()}
+                          </div>
+                          <span className="text-dark-300">{entry.player}</span>
+                        </div>
+                        <span className="font-semibold text-dark-50">
+                          ${entry.amount}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs italic text-dark-600">No bets yet</p>
+                )}
+              </div>
+            </div>
           ))}
         </div>
 
@@ -547,6 +660,84 @@ export function CsgodoubleGame() {
           Total placed this round: ${totalPlaced}
         </p>
       </div>
+
+      {/* Bet History */}
+      {betHistory.length > 0 && (
+        <div className="mt-6 rounded-lg border border-dark-700 bg-dark-900 p-4">
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            className="flex w-full items-center justify-between text-sm font-semibold text-dark-200 hover:text-dark-50"
+          >
+            <span>Your Bet History</span>
+            <span className="text-dark-500">{showHistory ? "▲" : "▼"}</span>
+          </button>
+
+          {showHistory && (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-xs text-dark-300">
+                <thead>
+                  <tr className="border-b border-dark-700 text-dark-500">
+                    <th className="pb-2 text-left">Zone</th>
+                    <th className="pb-2 text-right">Amount</th>
+                    <th className="pb-2 text-right">Roll</th>
+                    <th className="pb-2 text-right">Payout</th>
+                    <th className="pb-2 text-right">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {betHistory.map((row) => (
+                    <tr key={row.id} className="border-b border-dark-800">
+                      <td className="py-1.5">
+                        <span
+                          className={
+                            row.zone === "0"
+                              ? "font-semibold text-green-400"
+                              : row.zone === "1-7"
+                                ? "font-semibold text-red-400"
+                                : "font-semibold text-dark-200"
+                          }
+                        >
+                          {row.zone === "0"
+                            ? "Green"
+                            : row.zone === "1-7"
+                              ? "Red"
+                              : "Black"}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-right">${row.amount}</td>
+                      <td className="py-1.5 text-right">{row.rollResult}</td>
+                      <td
+                        className={`py-1.5 text-right font-semibold ${row.payout > 0 ? "text-green-400" : "text-red-400"}`}
+                      >
+                        {row.payout > 0 ? `+$${row.payout}` : `-$${row.amount}`}
+                      </td>
+                      <td className="py-1.5 text-right text-dark-500">
+                        {(() => {
+                          const d = new Date(row.createdAt);
+                          const isToday =
+                            d.toDateString() === new Date().toDateString();
+                          return isToday
+                            ? d.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                              })
+                            : d.toLocaleString([], {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+                        })()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

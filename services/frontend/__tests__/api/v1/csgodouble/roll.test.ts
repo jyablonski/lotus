@@ -7,6 +7,12 @@
 const mockRandomInt = jest.fn().mockReturnValue(13);
 jest.mock("node:crypto", () => ({
   randomInt: (...args: unknown[]) => mockRandomInt(...args),
+  randomBytes: (size: number) =>
+    Buffer.from(Array.from({ length: size }, () => 0)),
+}));
+
+jest.mock("@/auth", () => ({
+  auth: async () => ({ user: { id: "test-user-id" }, expires: "2099-01-01" }),
 }));
 
 import { POST } from "@/app/api/v1/csgodouble/roll/route";
@@ -14,11 +20,13 @@ import { POST } from "@/app/api/v1/csgodouble/roll/route";
 const mockGet = jest.fn();
 const mockSet = jest.fn();
 const mockExec = jest.fn().mockResolvedValue(undefined);
+const mockEval = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@/lib/server/redis", () => ({
   redis: {
     get: (...args: unknown[]) => mockGet(...args),
     set: (...args: unknown[]) => mockSet(...args),
+    eval: (...args: unknown[]) => mockEval(...args),
     multi: () => ({
       set: () => ({
         set: () => ({ exec: () => mockExec() }),

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/game;game_pb";
+
+import "google/api/annotations.proto";
+import "proto/game/game.proto";
+
+service GameService {
+  rpc GetGameBalance(GetGameBalanceRequest) returns (GetGameBalanceResponse) {
+    option (google.api.http) = {
+      get: "/v1/game/balance"
+    };
+  }
+
+  rpc UpdateGameBalance(UpdateGameBalanceRequest) returns (UpdateGameBalanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/game/balance"
+      body: "*"
+    };
+  }
+
+  rpc RecordBets(RecordBetsRequest) returns (RecordBetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/game/bets"
+      body: "*"
+    };
+  }
+
+  rpc GetBetHistory(GetBetHistoryRequest) returns (GetBetHistoryResponse) {
+    option (google.api.http) = {
+      get: "/v1/game/bets"
+    };
+  }
+}

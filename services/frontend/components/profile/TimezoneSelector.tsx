@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { updateTimezone } from "@/actions/user";
 
@@ -58,14 +58,16 @@ export function TimezoneSelector({ currentTimezone }: TimezoneSelectorProps) {
     [currentTimezone, updateSession],
   );
 
-  // Auto-detect: if timezone is UTC, check if browser has a different one
+  // Auto-detect once on mount: if timezone is UTC, set to browser timezone.
+  // Ref prevents re-running after session update (which would recreate handleTimezoneChange and re-trigger the effect).
+  const hasAutoDetected = useRef(false);
   useEffect(() => {
-    if (currentTimezone === "UTC") {
-      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (detected && detected !== "UTC") {
-        handleTimezoneChange(detected);
-      }
-    }
+    if (hasAutoDetected.current) return;
+    if (currentTimezone !== "UTC") return;
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!detected || detected === "UTC") return;
+    hasAutoDetected.current = true;
+    handleTimezoneChange(detected);
   }, [currentTimezone, handleTimezoneChange]);
 
   return (

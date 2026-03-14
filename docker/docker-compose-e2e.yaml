@@ -1,6 +1,6 @@
 # Docker Compose configuration for e2e tests.
-# Spins up postgres, backend, and frontend with source baked into images
-# (no volume mounts). Playwright runs on the host against localhost:3000.
+# Spins up postgres, django (migrations), backend, and frontend with source
+# baked into images (no volume mounts). Playwright runs on the host against localhost:3000.
 #
 # Usage:
 #   docker compose -f docker/docker-compose-e2e.yaml up -d --build --wait
@@ -25,6 +25,27 @@ services:
       timeout: 3s
       retries: 10
 
+  django:
+    build:
+      context: ../services/django
+      dockerfile: Dockerfile
+    container_name: e2e-django
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=e2e-django-secret-key
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,django
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - ANALYZER_BASE_URL=http://localhost:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     build:
       context: ../services/backend
@@ -39,6 +60,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      django:
+        condition: service_started
 
   frontend:
     build:

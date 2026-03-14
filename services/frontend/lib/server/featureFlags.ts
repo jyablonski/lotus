@@ -29,7 +29,8 @@ export async function fetchFeatureFlags(
   try {
     const params = new URLSearchParams();
     if (userRole) {
-      params.set("user_role", userRole);
+      // gRPC-Gateway binds query params by JSON (camelCase) name, not proto name
+      params.set("userRole", userRole);
     }
 
     const response = await fetch(
@@ -39,7 +40,6 @@ export async function fetchFeatureFlags(
         headers: {
           "Content-Type": "application/json",
         },
-        // Short cache — flags should be responsive to admin changes
         next: { revalidate: 30 },
       },
     );

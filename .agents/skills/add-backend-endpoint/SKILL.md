@@ -195,6 +195,10 @@ This regenerates `services/backend/internal/mocks/querier_mock.go`. **Do not edi
 
 ### Step 6: Write tests
 
+There are two layers of tests for gRPC services:
+
+#### Unit tests (mocks, no DB)
+
 Add unit tests in `services/backend/internal/grpc/{domain}_service_test.go`. Use package `grpc_test` (external test package) with `testify` assertions and `moq`-generated mocks.
 
 Tests use context-based dependency injection -- create a context with mocked deps using `inject.WithX` helpers, then call the method on an empty server struct:
@@ -252,19 +256,96 @@ func Test{Domain}Server_GetWidget_InvalidInput(t *testing.T) {
 }
 ```
 
+#### Integration tests (real DB)
+
+Add integration tests in `services/backend/internal/grpc/{domain}_service_integration_test.go`. All integration tests use `package grpc_test` (same as unit tests) and share the helpers from `testhelpers_test.go`.
+
+**How the DB container works** (`testmain_test.go`):
+
+`TestMain` starts a single ephemeral postgres container (testcontainers-go) before any test runs and terminates it after all tests finish. The container's connection string is stored in the `testDBConnStr` package-level variable. After `postgres.Run` returns, `TestMain` calls a `waitForDB` retry loop (up to 10s, 500ms intervals) to ensure postgres has truly finished running init scripts before any test connects. This means:
+
+- No external postgres required — `make test-backend` is fully self-contained
+- Running tests never touches your local Tilt postgres
+- The container starts **once per `go test` invocation**, not once per test function
+
+**Per-test isolation: transaction rollback**
+Each `newTestCtx(t)` call opens a fresh `*sql.DB` connection and immediately begins a transaction. `db.New(tx)` is used because sqlc's `New()` accepts the `DBTX` interface, which both `*sql.DB` and `*sql.Tx` satisfy. `t.Cleanup` rolls back the transaction and closes the connection. Since the transaction is never committed, every write is discarded at cleanup — no truncation, no WAL writes.
+
+One implication: if two records are inserted in the same `newTestCtx` transaction within the same millisecond, `ORDER BY created_at DESC` is non-deterministic. Use a map-based assertion or insert records in separate `newTestCtx` calls if ordering matters.
+
+**Shared setup** (`testhelpers_test.go`):
+
+- `newTestCtx(t)` — opens a connection, begins a transaction, registers `t.Cleanup` to roll back and close. Returns `(ctx context.Context, queries *db.Queries)`.
+- `withAnalyzer(ctx, url)` — adds HTTP client and analyzer URL to ctx (for journal tests).
+- `mockAnalyzerServer(t)` / `failingAnalyzerServer(t)` — httptest servers with `t.Cleanup(srv.Close)` registered automatically.
+- `createTestUser(t, queries)` — inserts a minimal OAuth user and returns its UUID.
+
+**Schema** (`testdata/schema.sql`): mirrors `docker/db/01-bootstrap.sql` without seed data or unrelated databases (dagster, mlflow, etc.). Keep these in sync when adding new tables.
+
+Key conventions:
+
+- Call `newTestCtx(t)` at the start of every test that touches the DB. Rollback on cleanup gives a clean slate automatically.
+- For tests that only check input validation (bad UUIDs, missing fields), use `context.Background()` directly — no DB setup needed.
+- Use `t.Run` for grouping related subtests within a single top-level test function (e.g., pagination variants, or multiple invalid input shapes). Each subtest that needs the DB calls `newTestCtx(t)` independently.
+- Log to `io.Discard` (the shared helpers do this automatically) — no `os.Stdout` or `slog.SetDefault` in tests.
+- Do not use `time.Sleep` to wait for async goroutines or create timestamp ordering. If ordering matters, insert with explicit timestamps.
+
+```go
+package grpc_test
+
+import (
+    "context"
+    "testing"
+
+    grpcServer "github.com/jyablonski/lotus/internal/grpc"
+    pb "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
+    "github.com/stretchr/testify/require"
+)
+
+func TestIntegration_GetWidget(t *testing.T) {
+    t.Run("success", func(t *testing.T) {
+        ctx, queries := newTestCtx(t)
+        userID := createTestUser(t, queries)
+        svc := &grpcServer.{Domain}Server{}
+
+        resp, err := svc.GetWidget(ctx, &pb.GetWidgetRequest{WidgetId: "..."})
+        require.NoError(t, err)
+        require.NotNil(t, resp)
+    })
+
+    t.Run("not_found", func(t *testing.T) {
+        ctx, _ := newTestCtx(t)
+        svc := &grpcServer.{Domain}Server{}
+
+        _, err := svc.GetWidget(ctx, &pb.GetWidgetRequest{WidgetId: "99999"})
+        require.Error(t, err)
+    })
+
+    t.Run("invalid_id", func(t *testing.T) {
+        // No DB needed — validation fails before any DB access
+        svc := &grpcServer.{Domain}Server{}
+        _, err := svc.GetWidget(context.Background(), &pb.GetWidgetRequest{WidgetId: "not-a-uuid"})
+        require.Error(t, err)
+    })
+}
+```
+
+#### Running tests
+
+```bash
+# All tests — testcontainers starts an isolated Postgres automatically, no setup needed
+make test-backend
+
+# Or directly
+cd services/backend && go test ./internal/grpc/...
+```
+
 Test patterns to cover:
 
 - Success case
-- Invalid input (bad UUIDs, missing fields)
-- DB errors
+- Invalid input (bad UUIDs, missing fields) — no DB setup needed, use `context.Background()`
 - Not found cases
 - Pagination defaults and limits (if applicable)
-
-Run tests:
-
-```bash
-cd services/backend && go test ./internal/grpc/...
-```
 
 ### Step 7: Update the Bruno API collection
 

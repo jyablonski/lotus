@@ -13,7 +13,9 @@ export const ROUTES = {
   },
   profile: "/profile",
   profileSettings: "/profile/settings",
-  profileCsgodouble: "/profile/csgodouble",
+  games: {
+    csgodouble: "/games/csgodouble",
+  },
   admin: "/admin",
   errorDemo: "/error-demo",
 } as const;

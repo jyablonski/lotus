@@ -59,14 +59,26 @@ var _ db.Querier = &QuerierMock{}
 //			GetUserByIdFunc: func(ctx context.Context, id uuid.UUID) (db.SourceUser, error) {
 //				panic("mock out the GetUserById method")
 //			},
+//			GetUserGameBalanceFunc: func(ctx context.Context, userID uuid.UUID) (db.SourceUserGameBalance, error) {
+//				panic("mock out the GetUserGameBalance method")
+//			},
+//			GetUserGameBetsFunc: func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error) {
+//				panic("mock out the GetUserGameBets method")
+//			},
 //			GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
 //				panic("mock out the GetUserJournalSummaryByUserId method")
+//			},
+//			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
+//				panic("mock out the InsertUserGameBet method")
 //			},
 //			UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
 //				panic("mock out the UpdateUserTimezone method")
 //			},
 //			UpsertRuntimeConfigValueFunc: func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
 //				panic("mock out the UpsertRuntimeConfigValue method")
+//			},
+//			UpsertUserGameBalanceFunc: func(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error) {
+//				panic("mock out the UpsertUserGameBalance method")
 //			},
 //		}
 //
@@ -114,14 +126,26 @@ type QuerierMock struct {
 	// GetUserByIdFunc mocks the GetUserById method.
 	GetUserByIdFunc func(ctx context.Context, id uuid.UUID) (db.SourceUser, error)
 
+	// GetUserGameBalanceFunc mocks the GetUserGameBalance method.
+	GetUserGameBalanceFunc func(ctx context.Context, userID uuid.UUID) (db.SourceUserGameBalance, error)
+
+	// GetUserGameBetsFunc mocks the GetUserGameBets method.
+	GetUserGameBetsFunc func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error)
+
 	// GetUserJournalSummaryByUserIdFunc mocks the GetUserJournalSummaryByUserId method.
 	GetUserJournalSummaryByUserIdFunc func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error)
+
+	// InsertUserGameBetFunc mocks the InsertUserGameBet method.
+	InsertUserGameBetFunc func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error)
 
 	// UpdateUserTimezoneFunc mocks the UpdateUserTimezone method.
 	UpdateUserTimezoneFunc func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error)
 
 	// UpsertRuntimeConfigValueFunc mocks the UpsertRuntimeConfigValue method.
 	UpsertRuntimeConfigValueFunc func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error)
+
+	// UpsertUserGameBalanceFunc mocks the UpsertUserGameBalance method.
+	UpsertUserGameBalanceFunc func(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -214,12 +238,33 @@ type QuerierMock struct {
 			// ID is the id argument value.
 			ID uuid.UUID
 		}
+		// GetUserGameBalance holds details about calls to the GetUserGameBalance method.
+		GetUserGameBalance []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uuid.UUID
+		}
+		// GetUserGameBets holds details about calls to the GetUserGameBets method.
+		GetUserGameBets []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetUserGameBetsParams
+		}
 		// GetUserJournalSummaryByUserId holds details about calls to the GetUserJournalSummaryByUserId method.
 		GetUserJournalSummaryByUserId []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// UserID is the userID argument value.
 			UserID uuid.UUID
+		}
+		// InsertUserGameBet holds details about calls to the InsertUserGameBet method.
+		InsertUserGameBet []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertUserGameBetParams
 		}
 		// UpdateUserTimezone holds details about calls to the UpdateUserTimezone method.
 		UpdateUserTimezone []struct {
@@ -235,6 +280,13 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.UpsertRuntimeConfigValueParams
 		}
+		// UpsertUserGameBalance holds details about calls to the UpsertUserGameBalance method.
+		UpsertUserGameBalance []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertUserGameBalanceParams
+		}
 	}
 	lockCreateJournal                 sync.RWMutex
 	lockCreateUser                    sync.RWMutex
@@ -249,9 +301,13 @@ type QuerierMock struct {
 	lockGetTopicsByJournalIds         sync.RWMutex
 	lockGetUserByEmail                sync.RWMutex
 	lockGetUserById                   sync.RWMutex
+	lockGetUserGameBalance            sync.RWMutex
+	lockGetUserGameBets               sync.RWMutex
 	lockGetUserJournalSummaryByUserId sync.RWMutex
+	lockInsertUserGameBet             sync.RWMutex
 	lockUpdateUserTimezone            sync.RWMutex
 	lockUpsertRuntimeConfigValue      sync.RWMutex
+	lockUpsertUserGameBalance         sync.RWMutex
 }
 
 // CreateJournal calls CreateJournalFunc.
@@ -718,6 +774,78 @@ func (mock *QuerierMock) GetUserByIdCalls() []struct {
 	return calls
 }
 
+// GetUserGameBalance calls GetUserGameBalanceFunc.
+func (mock *QuerierMock) GetUserGameBalance(ctx context.Context, userID uuid.UUID) (db.SourceUserGameBalance, error) {
+	if mock.GetUserGameBalanceFunc == nil {
+		panic("QuerierMock.GetUserGameBalanceFunc: method is nil but Querier.GetUserGameBalance was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uuid.UUID
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockGetUserGameBalance.Lock()
+	mock.calls.GetUserGameBalance = append(mock.calls.GetUserGameBalance, callInfo)
+	mock.lockGetUserGameBalance.Unlock()
+	return mock.GetUserGameBalanceFunc(ctx, userID)
+}
+
+// GetUserGameBalanceCalls gets all the calls that were made to GetUserGameBalance.
+// Check the length with:
+//
+//	len(mockedQuerier.GetUserGameBalanceCalls())
+func (mock *QuerierMock) GetUserGameBalanceCalls() []struct {
+	Ctx    context.Context
+	UserID uuid.UUID
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uuid.UUID
+	}
+	mock.lockGetUserGameBalance.RLock()
+	calls = mock.calls.GetUserGameBalance
+	mock.lockGetUserGameBalance.RUnlock()
+	return calls
+}
+
+// GetUserGameBets calls GetUserGameBetsFunc.
+func (mock *QuerierMock) GetUserGameBets(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error) {
+	if mock.GetUserGameBetsFunc == nil {
+		panic("QuerierMock.GetUserGameBetsFunc: method is nil but Querier.GetUserGameBets was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetUserGameBetsParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetUserGameBets.Lock()
+	mock.calls.GetUserGameBets = append(mock.calls.GetUserGameBets, callInfo)
+	mock.lockGetUserGameBets.Unlock()
+	return mock.GetUserGameBetsFunc(ctx, arg)
+}
+
+// GetUserGameBetsCalls gets all the calls that were made to GetUserGameBets.
+// Check the length with:
+//
+//	len(mockedQuerier.GetUserGameBetsCalls())
+func (mock *QuerierMock) GetUserGameBetsCalls() []struct {
+	Ctx context.Context
+	Arg db.GetUserGameBetsParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetUserGameBetsParams
+	}
+	mock.lockGetUserGameBets.RLock()
+	calls = mock.calls.GetUserGameBets
+	mock.lockGetUserGameBets.RUnlock()
+	return calls
+}
+
 // GetUserJournalSummaryByUserId calls GetUserJournalSummaryByUserIdFunc.
 func (mock *QuerierMock) GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
 	if mock.GetUserJournalSummaryByUserIdFunc == nil {
@@ -751,6 +879,42 @@ func (mock *QuerierMock) GetUserJournalSummaryByUserIdCalls() []struct {
 	mock.lockGetUserJournalSummaryByUserId.RLock()
 	calls = mock.calls.GetUserJournalSummaryByUserId
 	mock.lockGetUserJournalSummaryByUserId.RUnlock()
+	return calls
+}
+
+// InsertUserGameBet calls InsertUserGameBetFunc.
+func (mock *QuerierMock) InsertUserGameBet(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
+	if mock.InsertUserGameBetFunc == nil {
+		panic("QuerierMock.InsertUserGameBetFunc: method is nil but Querier.InsertUserGameBet was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertUserGameBetParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertUserGameBet.Lock()
+	mock.calls.InsertUserGameBet = append(mock.calls.InsertUserGameBet, callInfo)
+	mock.lockInsertUserGameBet.Unlock()
+	return mock.InsertUserGameBetFunc(ctx, arg)
+}
+
+// InsertUserGameBetCalls gets all the calls that were made to InsertUserGameBet.
+// Check the length with:
+//
+//	len(mockedQuerier.InsertUserGameBetCalls())
+func (mock *QuerierMock) InsertUserGameBetCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertUserGameBetParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertUserGameBetParams
+	}
+	mock.lockInsertUserGameBet.RLock()
+	calls = mock.calls.InsertUserGameBet
+	mock.lockInsertUserGameBet.RUnlock()
 	return calls
 }
 
@@ -823,5 +987,41 @@ func (mock *QuerierMock) UpsertRuntimeConfigValueCalls() []struct {
 	mock.lockUpsertRuntimeConfigValue.RLock()
 	calls = mock.calls.UpsertRuntimeConfigValue
 	mock.lockUpsertRuntimeConfigValue.RUnlock()
+	return calls
+}
+
+// UpsertUserGameBalance calls UpsertUserGameBalanceFunc.
+func (mock *QuerierMock) UpsertUserGameBalance(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error) {
+	if mock.UpsertUserGameBalanceFunc == nil {
+		panic("QuerierMock.UpsertUserGameBalanceFunc: method is nil but Querier.UpsertUserGameBalance was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertUserGameBalanceParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertUserGameBalance.Lock()
+	mock.calls.UpsertUserGameBalance = append(mock.calls.UpsertUserGameBalance, callInfo)
+	mock.lockUpsertUserGameBalance.Unlock()
+	return mock.UpsertUserGameBalanceFunc(ctx, arg)
+}
+
+// UpsertUserGameBalanceCalls gets all the calls that were made to UpsertUserGameBalance.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertUserGameBalanceCalls())
+func (mock *QuerierMock) UpsertUserGameBalanceCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertUserGameBalanceParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertUserGameBalanceParams
+	}
+	mock.lockUpsertUserGameBalance.RLock()
+	calls = mock.calls.UpsertUserGameBalance
+	mock.lockUpsertUserGameBalance.RUnlock()
 	return calls
 }

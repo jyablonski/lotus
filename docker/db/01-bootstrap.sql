@@ -24,13 +24,36 @@ CREATE TABLE IF NOT EXISTS users
 	timezone varchar default 'UTC' not null
 );
 
+-- First user seeded as Admin for local dev (profile admin link, feature flags).
 insert into users (id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone)
 values
-  ('a91b114d-b3de-4fe6-b162-039c9850c06b', 'jyablonski9@gmail.com', null, null, 'github', 'Consumer', now(), now(), 'UTC'),
+  ('a91b114d-b3de-4fe6-b162-039c9850c06b', 'jyablonski9@gmail.com', null, null, 'github', 'Admin', now(), now(), 'UTC'),
   ('a7f3e8b2-4d91-4c3a-9f2e-1b8c5d6e7f8a', 'alice.smith@example.com', null, null, 'google', 'Consumer', now() - interval '30 days', now() - interval '30 days', 'America/New_York'),
   ('b8e4f9c3-5e02-4d4b-a03f-2c9d6e7f8a9b', 'bob.jones@example.com', 'hashed_password_123', 'salt_123', null, 'Consumer', now() - interval '60 days', now() - interval '60 days', 'America/Los_Angeles'),
   ('c9f5a0d4-6f13-4e5c-b14f-3d0e7f8a9b0c', 'carol.white@example.com', null, null, 'github', 'Premium', now() - interval '90 days', now() - interval '90 days', 'Europe/London'),
   ('d0a6b1e5-7024-4f6d-c25e-4e1f8a9b0c1d', 'david.brown@example.com', 'hashed_password_456', 'salt_456', null, 'Admin', now() - interval '120 days', now() - interval '120 days', 'UTC');
+
+-- Game tables (backend integration tests and app use these; Django migrations may also create them)
+CREATE TABLE IF NOT EXISTS source.user_game_balances (
+    id          SERIAL PRIMARY KEY,
+    user_id     UUID NOT NULL UNIQUE REFERENCES source.users(id) ON DELETE CASCADE,
+    balance     INTEGER NOT NULL DEFAULT 100,
+    created_at  TIMESTAMP DEFAULT NOW() NOT NULL,
+    modified_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS source.user_game_bets (
+    id          SERIAL PRIMARY KEY,
+    user_id     UUID NOT NULL REFERENCES source.users(id) ON DELETE CASCADE,
+    zone        VARCHAR(10) NOT NULL,
+    amount      INTEGER NOT NULL,
+    roll_result INTEGER NOT NULL,
+    payout      INTEGER NOT NULL,
+    created_at  TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_game_bets_user_created
+    ON source.user_game_bets (user_id, created_at DESC);
 
 /* Mood: integer 1-10 (user-facing slider). */
 DROP TABLE IF EXISTS journals;
@@ -124,3 +147,41 @@ CREATE TABLE IF NOT EXISTS source.runtime_config
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     modified_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Feature flags (django-waffle compatible). Go backend reads these for /v1/feature-flags.
+CREATE TABLE IF NOT EXISTS source.waffle_flag
+(
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL UNIQUE,
+    everyone      BOOLEAN,
+    percent       NUMERIC(3,1),
+    testing       BOOLEAN NOT NULL DEFAULT false,
+    superusers    BOOLEAN NOT NULL DEFAULT true,
+    staff         BOOLEAN NOT NULL DEFAULT false,
+    authenticated BOOLEAN NOT NULL DEFAULT false,
+    languages     TEXT NOT NULL DEFAULT '',
+    rollout       BOOLEAN NOT NULL DEFAULT false,
+    note          TEXT NOT NULL DEFAULT '',
+    created       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    modified      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO source.waffle_flag (name, everyone, superusers, staff, authenticated, note)
+VALUES ('frontend_admin', NULL, true, true, false, 'Show admin link on profile when user role is Admin')
+ON CONFLICT (name) DO UPDATE SET everyone = EXCLUDED.everyone, superusers = EXCLUDED.superusers, staff = EXCLUDED.staff, modified = NOW();
+
+-- Ensure frontend_admin uses role-based logic (everyone=NULL) not "off for all" (everyone=false)
+UPDATE source.waffle_flag SET everyone = NULL, modified = NOW() WHERE name = 'frontend_admin';
+
+-- Truncate integration-test tables in FK-safe order. Call from backend integration tests
+-- so cleanup works regardless of which tables have rows (e.g. user_game_*, journals).
+CREATE OR REPLACE FUNCTION source.truncate_integration_tables()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  TRUNCATE source.journal_sentiments, source.journal_topics, source.journal_details,
+            source.journals, source.user_game_bets, source.user_game_balances, source.users
+  RESTART IDENTITY CASCADE;
+END;
+$$;

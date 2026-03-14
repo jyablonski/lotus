@@ -6,6 +6,10 @@
 
 import { GET } from "@/app/api/v1/csgodouble/state/route";
 
+jest.mock("@/auth", () => ({
+  auth: async () => ({ user: { id: "test-user-id" }, expires: "2099-01-01" }),
+}));
+
 const mockGet = jest.fn();
 const mockSet = jest.fn();
 

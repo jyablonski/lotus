@@ -44,25 +44,22 @@ jobs:
           go install github.com/pact-foundation/pact-go/v2@v2.4.2
           sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install --libDir /usr/local/lib
 
-      - name: Start Postgres
-        run: make start-postgres
-
       - name: Run Backend Tests
-        working-directory: services/backend
-        run: |
-          go tool gotestsum --format testdox -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/utils
+        run: make test-backend
+
+      # - name: Upload coverage report
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: backend-coverage
+      #     path: services/backend/coverage.out
 
       - name: Run contract tests
         working-directory: services/backend
         run: go test -tags=contract ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
 
-      - name: Stop Postgres
-        if: always()
-        run: make stop-postgres
-
   # k6 smoke test against a live backend via Docker Compose.
-  # Runs k6 inside the same Docker network as the backend so it can reach
-  # http://backend:8080 directly — no host port mapping needed.
+  # Uses docker-compose-k6.yaml (postgres + backend only, no Django) so CI
+  # does not need services/django when sparse checkout only has backend/docker.
   k6-smoke:
     runs-on: ubuntu-latest
     needs: backend-pipeline
@@ -79,16 +76,20 @@ jobs:
 
       - name: Start backend stack
         run: |
-          docker compose -f docker/docker-compose-e2e.yaml --profile load-test up -d --build --wait postgres backend
+          docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --build --wait postgres backend
 
       - name: Run k6 HTTP smoke test
         run: |
-          docker compose -f docker/docker-compose-e2e.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
+          docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
 
       - name: Backend logs
         if: failure()
-        run: docker compose -f docker/docker-compose-e2e.yaml logs backend
+        run: docker compose -f docker/docker-compose-k6.yaml logs backend
 
-      - name: Stop e2e stack
+      - name: Stop stack
         if: always()
-        run: docker compose -f docker/docker-compose-e2e.yaml --profile load-test down -v
+        run: docker compose -f docker/docker-compose-k6.yaml --profile load-test down -v
+
+  e2e:
+    needs: k6-smoke
+    uses: ./.github/workflows/e2e.yaml

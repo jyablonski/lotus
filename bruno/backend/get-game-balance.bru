@@ -1,0 +1,14 @@
+meta {
+  name: Get Game Balance
+  type: http
+}
+
+get {
+  url: {{backend_url}}/v1/game/balance?userId=
+  body: none
+  auth: none
+}
+
+params:query {
+  ~userId:
+}

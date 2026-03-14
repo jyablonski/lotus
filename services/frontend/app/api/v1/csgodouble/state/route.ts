@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { redis } from "@/lib/server/redis";
-
-const KEY_NEXT_ROLL = "csgodouble:next_roll_at";
-const KEY_HISTORY = "csgodouble:history";
-const ROLL_INTERVAL_MS = 45_000;
+import {
+  KEY_NEXT_ROLL,
+  KEY_HISTORY,
+  ROLL_INTERVAL_MS,
+} from "@/lib/csgodouble/constants";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const now = Date.now();
     const [nextRollAtStr, historyStr] = await Promise.all([
@@ -14,7 +21,12 @@ export async function GET() {
     ]);
 
     let nextRollAt = nextRollAtStr ? parseInt(nextRollAtStr, 10) : null;
-    const history: number[] = historyStr ? JSON.parse(historyStr) : [];
+    let history: number[] = [];
+    try {
+      history = historyStr ? JSON.parse(historyStr) : [];
+    } catch {
+      history = [];
+    }
 
     if (nextRollAt == null || nextRollAt < now) {
       nextRollAt = now + ROLL_INTERVAL_MS;
