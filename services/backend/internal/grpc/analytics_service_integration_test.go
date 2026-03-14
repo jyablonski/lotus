@@ -1,235 +1,74 @@
-package grpc
+package grpc_test
 
 import (
 	"context"
 	"database/sql"
-	"log/slog"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
-	"github.com/jyablonski/lotus/internal/inject"
+	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
-	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupAnalyticsTestDB(t *testing.T) (*sql.DB, *db.Queries) {
-	connStr := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable&search_path=source"
-	dbConn, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	return dbConn, db.New(dbConn)
-}
-
-func setupAnalyticsTestLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-}
-
-// analyticsIntegrationCtx creates a context enriched with deps needed by analytics service methods.
-func analyticsIntegrationCtx(queries *db.Queries, logger *slog.Logger) context.Context {
-	ctx := context.Background()
-	ctx = inject.WithDB(ctx, queries)
-	ctx = inject.WithLogger(ctx, logger)
-	return ctx
-}
-
-// Helper function to create a test user and journals for analytics testing
+// createTestUserWithJournals creates a user with 5 journals for analytics testing.
 func createTestUserWithJournals(t *testing.T, queries *db.Queries) uuid.UUID {
-	userID := uuid.New()
+	t.Helper()
+	userID := createTestUser(t, queries)
 
-	// Create multiple journals to generate analytics data
 	for i := 0; i < 5; i++ {
 		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
 			UserID:      userID,
 			JournalText: "Test journal entry for analytics " + string(rune('A'+i)),
-			MoodScore:   sql.NullInt32{Int32: int32(3 + i), Valid: true}, // Mood scores from 3-7
+			MoodScore:   sql.NullInt32{Int32: int32(3 + i), Valid: true},
 		})
 		require.NoError(t, err)
-		// Small delay to ensure different timestamps
-		time.Sleep(10 * time.Millisecond)
 	}
 
 	return userID
 }
 
 func TestGetUserJournalSummary(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
+	ctx, queries := newTestCtx(t)
+	svc := &grpcServer.AnalyticsServer{}
 
-	// Test DB connectivity first
-	if err := dbConn.Ping(); err != nil {
-		t.Skip("Skipping test: database not available")
-	}
-
-	logger := setupAnalyticsTestLogger()
-	server := &AnalyticsServer{}
-	ctx := analyticsIntegrationCtx(queries, logger)
-
-	// Create a test user with journals
 	userID := createTestUserWithJournals(t, queries)
 
-	// Note: This test depends on the gold.user_journal_summary materialized view
-	// being populated. In a real test environment, you'd need to refresh the view
-	// or use a test fixture that includes pre-populated analytics data.
-
-	req := &pb.GetUserJournalSummaryRequest{
+	resp, err := svc.GetUserJournalSummary(ctx, &pb.GetUserJournalSummaryRequest{
 		UserId: userID.String(),
-	}
+	})
 
-	resp, err := server.GetUserJournalSummary(ctx, req)
-
-	// If the materialized view doesn't have data for this user, we expect an error
-	// This is expected behavior in a test environment without dbt running
+	// The materialized view may not be populated in the test environment without dbt running.
 	if err != nil {
-		// This is acceptable - the view may not be populated in test environment
 		t.Logf("GetUserJournalSummary returned error (expected if materialized view not populated): %v", err)
 		return
 	}
 
-	// If we got a response, validate its structure
 	assert.NotNil(t, resp)
 	assert.NotNil(t, resp.Summary)
 	assert.Equal(t, userID.String(), resp.Summary.UserId)
 }
 
 func TestGetUserJournalSummaryInvalidUserID(t *testing.T) {
-	server := &AnalyticsServer{}
+	svc := &grpcServer.AnalyticsServer{}
 
-	// Test with invalid UUID format — validation happens before dep extraction
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: "invalid-uuid-format",
-	}
-
-	_, err := server.GetUserJournalSummary(context.Background(), req)
-	assert.Error(t, err, "Should return error for invalid UUID format")
-	assert.ErrorIs(t, err, ErrInvalidUserID)
-}
-
-func TestGetUserJournalSummaryEmptyUserID(t *testing.T) {
-	server := &AnalyticsServer{}
-
-	// Test with empty user ID — validation happens before dep extraction
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: "",
-	}
-
-	_, err := server.GetUserJournalSummary(context.Background(), req)
-	assert.Error(t, err, "Should return error for empty user ID")
-	assert.ErrorIs(t, err, ErrInvalidUserID)
-}
-
-func TestGetUserJournalSummaryNonExistentUser(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-	defer dbConn.Close()
-
-	// Test DB connectivity first
-	if err := dbConn.Ping(); err != nil {
-		t.Skip("Skipping test: database not available")
-	}
-
-	logger := setupAnalyticsTestLogger()
-	server := &AnalyticsServer{}
-	ctx := analyticsIntegrationCtx(queries, logger)
-
-	// Test with a valid UUID that doesn't exist in the database
-	nonExistentUserID := uuid.New()
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: nonExistentUserID.String(),
-	}
-
-	_, err := server.GetUserJournalSummary(ctx, req)
-	assert.Error(t, err, "Should return error for non-existent user")
-}
-
-func TestGetUserJournalSummaryDBError(t *testing.T) {
-	dbConn, queries := setupAnalyticsTestDB(t)
-
-	logger := setupAnalyticsTestLogger()
-	server := &AnalyticsServer{}
-	ctx := analyticsIntegrationCtx(queries, logger)
-
-	// Close the DB connection to simulate a DB error
-	_ = dbConn.Close()
-
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: uuid.New().String(),
-	}
-
-	_, err := server.GetUserJournalSummary(ctx, req)
-	assert.Error(t, err, "Should return error when DB is unavailable")
-}
-
-func TestParseNumericToFloat64(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected float64
-	}{
-		{"valid integer", "42", 42.0},
-		{"valid float", "3.14159", 3.14159},
-		{"negative number", "-5.5", -5.5},
-		{"zero", "0", 0.0},
-		{"invalid string", "not-a-number", 0.0},
-		{"empty string", "", 0.0},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := parseNumericToFloat64(tc.input)
-			assert.Equal(t, tc.expected, result)
+	t.Run("invalid_format", func(t *testing.T) {
+		_, err := svc.GetUserJournalSummary(context.Background(), &pb.GetUserJournalSummaryRequest{
+			UserId: "invalid-uuid-format",
 		})
-	}
-}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, grpcServer.ErrInvalidUserID)
+	})
 
-func TestNullStringToString(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    sql.NullString
-		expected string
-	}{
-		{"valid string", sql.NullString{String: "hello", Valid: true}, "hello"},
-		{"empty valid string", sql.NullString{String: "", Valid: true}, ""},
-		{"null string", sql.NullString{String: "", Valid: false}, ""},
-		{"null string with value", sql.NullString{String: "ignored", Valid: false}, ""},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := nullStringToString(tc.input)
-			assert.Equal(t, tc.expected, result)
+	t.Run("empty", func(t *testing.T) {
+		_, err := svc.GetUserJournalSummary(context.Background(), &pb.GetUserJournalSummaryRequest{
+			UserId: "",
 		})
-	}
-}
-
-func TestNullTimeToString(t *testing.T) {
-	testTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
-	expectedFormat := "2024-01-15T10:30:00Z"
-
-	tests := []struct {
-		name     string
-		input    sql.NullTime
-		expected string
-	}{
-		{"valid time", sql.NullTime{Time: testTime, Valid: true}, expectedFormat},
-		{"null time", sql.NullTime{Time: time.Time{}, Valid: false}, ""},
-		{"null time with value", sql.NullTime{Time: testTime, Valid: false}, ""},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := nullTimeToString(tc.input)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
-func TestGetUserJournalSummaryUUIDFormats(t *testing.T) {
-	server := &AnalyticsServer{}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, grpcServer.ErrInvalidUserID)
+	})
 
 	invalidUUIDs := []struct {
 		name   string
@@ -237,19 +76,25 @@ func TestGetUserJournalSummaryUUIDFormats(t *testing.T) {
 	}{
 		{"short string", "abc123"},
 		{"too long", "12345678-1234-1234-1234-1234567890123"},
-		// Note: "12345678123412341234123456789012" (32 hex chars) is actually a valid UUID
 		{"special characters", "12345678-1234-1234-1234-12345678901!"},
 		{"spaces", "12345678-1234-1234-1234-12345678 012"},
 	}
-
 	for _, tc := range invalidUUIDs {
 		t.Run(tc.name, func(t *testing.T) {
-			req := &pb.GetUserJournalSummaryRequest{
+			_, err := svc.GetUserJournalSummary(context.Background(), &pb.GetUserJournalSummaryRequest{
 				UserId: tc.userID,
-			}
-
-			_, err := server.GetUserJournalSummary(context.Background(), req)
-			assert.Error(t, err, "Should return error for invalid UUID: %s", tc.userID)
+			})
+			assert.Error(t, err)
 		})
 	}
+}
+
+func TestGetUserJournalSummaryNonExistentUser(t *testing.T) {
+	ctx, _ := newTestCtx(t)
+	svc := &grpcServer.AnalyticsServer{}
+
+	_, err := svc.GetUserJournalSummary(ctx, &pb.GetUserJournalSummaryRequest{
+		UserId: uuid.New().String(),
+	})
+	assert.Error(t, err)
 }

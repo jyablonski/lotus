@@ -21,12 +21,10 @@ type FeatureFlagServer struct {
 }
 
 // isFlagActive evaluates a waffle flag for the given user role.
-// It mirrors django-waffle's Flag.is_active_for_user() logic:
-//   - everyone=true  -> active for all users
-//   - everyone=false -> explicitly inactive for all users
-//   - everyone=null  -> check superusers, staff, authenticated fields
+//   - everyone=true  -> active for all users (short-circuit)
+//   - everyone=false -> inactive for all users (overrides role-based flags)
+//   - everyone=null  -> check superusers, staff, authenticated
 func isFlagActive(flag db.SourceWaffleFlag, userRole string) bool {
-	// If "everyone" is explicitly set, it takes precedence.
 	if flag.Everyone.Valid {
 		return flag.Everyone.Bool
 	}
@@ -70,8 +68,6 @@ func (s *FeatureFlagServer) GetFeatureFlags(ctx context.Context, req *pb.GetFeat
 			IsActive: isFlagActive(f, userRole),
 		})
 	}
-
-	logger.Info("Feature flags evaluated", "count", len(result), "user_role", userRole)
 
 	return &pb.GetFeatureFlagsResponse{
 		Flags: result,

@@ -22,7 +22,6 @@ export default async function ProfilePage() {
   const userRole = session.user?.role ?? "";
   const timezone = session.user?.timezone ?? "UTC";
 
-  // Fetch profile stats and feature flags server-side in parallel
   const [stats, flags] = await Promise.all([
     fetchProfileStats(session.user.id),
     fetchFeatureFlags(userRole),

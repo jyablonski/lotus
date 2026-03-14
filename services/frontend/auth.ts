@@ -118,19 +118,27 @@ const userCache = new Map<string, { user: BackendUser; until: number }>();
 // share one backend request instead of each firing their own.
 const inFlight = new Map<string, Promise<BackendUser | null>>();
 
-async function fetchBackendUser(email: string): Promise<BackendUser | null> {
+/** When true, skip cache so role/admin changes take effect on next sign-in. */
+async function fetchBackendUser(
+  email: string,
+  options?: { skipCache?: boolean },
+): Promise<BackendUser | null> {
   const now = Date.now();
-  const hit = userCache.get(email);
-  if (hit && hit.until > now) {
-    return hit.user;
+  const skipCache = options?.skipCache === true;
+
+  if (!skipCache) {
+    const hit = userCache.get(email);
+    if (hit && hit.until > now) {
+      return hit.user;
+    }
+
+    const promise = inFlight.get(email);
+    if (promise) {
+      return promise;
+    }
   }
 
-  let promise = inFlight.get(email);
-  if (promise) {
-    return promise;
-  }
-
-  promise = (async () => {
+  const doFetch = async (): Promise<BackendUser | null> => {
     try {
       const response = await fetch(
         `${BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
@@ -146,7 +154,7 @@ async function fetchBackendUser(email: string): Promise<BackendUser | null> {
 
       const data: BackendUserResponse = await response.json();
       const user = parseBackendUser(data);
-      if (user) {
+      if (user && !skipCache) {
         userCache.set(email, { user, until: Date.now() + USER_CACHE_TTL_MS });
       }
       return user;
@@ -158,9 +166,12 @@ async function fetchBackendUser(email: string): Promise<BackendUser | null> {
     } finally {
       inFlight.delete(email);
     }
-  })();
+  };
 
-  inFlight.set(email, promise);
+  const promise = doFetch();
+  if (!skipCache) {
+    inFlight.set(email, promise);
+  }
   return promise;
 }
 
@@ -321,7 +332,8 @@ export const authConfig: NextAuthConfig = {
       }
 
       // ----- Backend user sync (runs for GitHub and magic-link phase-2) -----
-      let backendUser = await fetchBackendUser(user.email);
+      // Skip cache so role changes (e.g. admin promotion) take effect on sign-in.
+      let backendUser = await fetchBackendUser(user.email, { skipCache: true });
 
       if (!backendUser) {
         // Create the user in the Go backend.
@@ -340,7 +352,7 @@ export const authConfig: NextAuthConfig = {
           return false;
         }
 
-        backendUser = await fetchBackendUser(user.email);
+        backendUser = await fetchBackendUser(user.email, { skipCache: true });
         if (!backendUser) {
           authLog(
             "error",
@@ -402,7 +414,9 @@ export const authConfig: NextAuthConfig = {
         // our signIn mutations (backendId, role, etc.). Ensure role is set
         // from the backend when we have email so Admin users get the correct role.
         if (!token.role && user.email) {
-          const backendUser = await fetchBackendUser(user.email);
+          const backendUser = await fetchBackendUser(user.email, {
+            skipCache: true,
+          });
           if (backendUser) {
             token.role = backendUser.role;
             if (!token.backendId) token.backendId = backendUser.userId;
@@ -416,9 +430,9 @@ export const authConfig: NextAuthConfig = {
 
       // If backendId is still missing (common with email/magic-link sign-ins
       // where the adapter user object doesn't carry our custom fields), look
-      // it up from the Go backend by email.
+      // it up from the Go backend by email. Skip cache so we get latest role.
       if (!token.backendId && email) {
-        const backendUser = await fetchBackendUser(email);
+        const backendUser = await fetchBackendUser(email, { skipCache: true });
         if (backendUser) {
           token.backendId = backendUser.userId;
           token.createdAt = backendUser.createdAt;
@@ -428,7 +442,7 @@ export const authConfig: NextAuthConfig = {
           // User doesn't exist yet — create them.
           const result = await createUserInBackend(email, "email");
           if (result) {
-            const created = await fetchBackendUser(email);
+            const created = await fetchBackendUser(email, { skipCache: true });
             if (created) {
               token.backendId = created.userId;
               token.createdAt = created.createdAt;

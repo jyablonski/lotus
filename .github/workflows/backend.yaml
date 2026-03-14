@@ -44,21 +44,18 @@ jobs:
           go install github.com/pact-foundation/pact-go/v2@v2.4.2
           sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install --libDir /usr/local/lib
 
-      - name: Start Postgres
-        run: make start-postgres
-
       - name: Run Backend Tests
-        working-directory: services/backend
-        run: |
-          go tool gotestsum --format testdox -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/utils
+        run: make test-backend
+
+      # - name: Upload coverage report
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: backend-coverage
+      #     path: services/backend/coverage.out
 
       - name: Run contract tests
         working-directory: services/backend
         run: go test -tags=contract ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
-
-      - name: Stop Postgres
-        if: always()
-        run: make stop-postgres
 
   # k6 smoke test against a live backend via Docker Compose.
   # Uses docker-compose-k6.yaml (postgres + backend only, no Django) so CI
