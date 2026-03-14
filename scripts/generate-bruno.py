@@ -200,7 +200,6 @@ def generate_bru_content(
     name: str,
     method: str,
     url: str,
-    seq: int,
     body_json: dict | None = None,
     query_params: list[dict] | None = None,
 ) -> str:
@@ -211,7 +210,6 @@ def generate_bru_content(
     lines.append("meta {")
     lines.append(f"  name: {name}")
     lines.append("  type: http")
-    lines.append(f"  seq: {seq}")
     lines.append("}")
     lines.append("")
 
@@ -428,13 +426,11 @@ def write_bru_files(endpoints: list[dict], output_dir: Path) -> None:
     for existing in output_dir.glob("*.bru"):
         existing.unlink()
 
-    # Assign sequence numbers and write
-    for seq, ep in enumerate(endpoints, start=1):
+    for ep in endpoints:
         content = generate_bru_content(
             name=ep["name"],
             method=ep["method"],
             url=ep["url"],
-            seq=seq,
             body_json=ep["body_json"],
             query_params=ep["query_params"],
         )

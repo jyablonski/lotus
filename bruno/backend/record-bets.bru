@@ -1,0 +1,24 @@
+meta {
+  name: Record Bets
+  type: http
+}
+
+post {
+  url: {{backend_url}}/v1/game/bets
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "userId": "string",
+  "bets": [
+    {
+      "zone": "string",
+      "amount": 0,
+      "rollResult": 0,
+      "payout": 0
+    }
+  ]
+}
+}

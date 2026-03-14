@@ -1,0 +1,16 @@
+meta {
+  name: Get Bet History
+  type: http
+}
+
+get {
+  url: {{backend_url}}/v1/game/bets?userId=&limit=&offset=
+  body: none
+  auth: none
+}
+
+params:query {
+  ~userId:
+  ~limit:
+  ~offset:
+}

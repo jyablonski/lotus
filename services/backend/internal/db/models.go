@@ -83,6 +83,24 @@ type SourceUser struct {
 	Timezone      string
 }
 
+type SourceUserGameBalance struct {
+	ID         int32
+	UserID     uuid.UUID
+	Balance    int32
+	CreatedAt  time.Time
+	ModifiedAt time.Time
+}
+
+type SourceUserGameBet struct {
+	ID         int32
+	UserID     uuid.UUID
+	Zone       string
+	Amount     int32
+	RollResult int32
+	Payout     int32
+	CreatedAt  time.Time
+}
+
 type SourceWaffleFlag struct {
 	ID            int32
 	Name          string

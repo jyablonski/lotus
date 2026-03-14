@@ -22,7 +22,7 @@ export function ProfileActions({ isAdmin = false }: ProfileActionsProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         {isAdmin && (
-          <Link href={ROUTES.profileCsgodouble} className="block">
+          <Link href={ROUTES.games.csgodouble} className="block">
             <button className="action-item">
               <Gamepad2 size={20} className="text-lotus-400" />
               <span className="text-lotus-300 font-medium">CSGO Double</span>

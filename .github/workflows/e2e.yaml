@@ -1,0 +1,80 @@
+# Dedicated E2E workflow. Runs when frontend, backend, or django CI succeeds,
+# or when a PR is labeled "e2e". Exercises the full stack with Playwright.
+name: E2E
+
+on:
+  workflow_run:
+    workflows:
+      - "Frontend CI / CD Pipeline"
+      - "Backend CI / CD Pipeline"
+      - "Django CI / CD Pipeline"
+    types:
+      - completed
+  pull_request:
+    types:
+      - labeled
+
+concurrency:
+  group: e2e-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'e2e')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      AUTH_SECRET: e2e-test-secret-at-least-32-characters-long
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
+
+      # ── Start the stack via docker compose ───────────────────────
+      - name: Build and start services
+        run: docker compose -f docker/docker-compose-e2e.yaml up -d --build
+
+      - name: Wait for frontend to be ready
+        run: |
+          echo "Waiting for frontend at http://localhost:3000 ..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend failed to start within 120s"
+          docker compose -f docker/docker-compose-e2e.yaml logs
+          exit 1
+
+      # ── Run Playwright on the host ───────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: "npm"
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: services/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        working-directory: services/frontend
+        run: npx playwright test --reporter=github
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker/docker-compose-e2e.yaml down -v

@@ -1,0 +1,17 @@
+meta {
+  name: Update Game Balance
+  type: http
+}
+
+post {
+  url: {{backend_url}}/v1/game/balance
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "userId": "string",
+  "balance": 0
+}
+}

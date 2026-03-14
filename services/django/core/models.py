@@ -186,6 +186,66 @@ class ActiveMLModel(models.Model):
         return f"{status} {self.ml_model}"
 
 
+class UserGameBalance(models.Model):
+    """Per-user balance for the CSGODouble game."""
+
+    id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="game_balance",
+    )
+    balance = models.IntegerField(default=100)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+    modified_at = models.DateTimeField(
+        auto_now=True,
+        db_default=Now(),
+    )
+
+    class Meta:
+        db_table = "user_game_balances"
+
+    def __str__(self):
+        return f"{self.user.email} — ${self.balance}"
+
+
+class UserGameBet(models.Model):
+    """Records each bet placed by a user in the CSGODouble game."""
+
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="game_bets",
+    )
+    zone = models.CharField(max_length=10)  # '1-7', '0', '8-14'
+    amount = models.IntegerField()
+    roll_result = models.IntegerField()  # 0-14
+    payout = models.IntegerField()  # 0 if lost
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+
+    class Meta:
+        db_table = "user_game_bets"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["user", "-created_at"],
+                name="idx_ugb_user_created",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} bet ${self.amount} on {self.zone} (roll={self.roll_result})"
+
+
 class RuntimeConfig(models.Model):
     """Key-value configuration store for cross-service settings and runtime data.
 

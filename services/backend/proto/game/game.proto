@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/game;game_pb";
+
+message GetGameBalanceRequest {
+  string user_id = 1;
+}
+
+message GetGameBalanceResponse {
+  string user_id = 1;
+  int32  balance = 2;
+}
+
+message UpdateGameBalanceRequest {
+  string user_id = 1;
+  int32  balance = 2;
+}
+
+message UpdateGameBalanceResponse {
+  string user_id = 1;
+  int32  balance = 2;
+}
+
+message BetEntry {
+  string zone       = 1;
+  int32  amount     = 2;
+  int32  roll_result = 3;
+  int32  payout     = 4;
+}
+
+message BetRecord {
+  int32  id          = 1;
+  string zone        = 2;
+  int32  amount      = 3;
+  int32  roll_result  = 4;
+  int32  payout      = 5;
+  string created_at  = 6;
+}
+
+message RecordBetsRequest {
+  string             user_id = 1;
+  repeated BetEntry  bets    = 2;
+}
+
+message RecordBetsResponse {
+  bool success = 1;
+}
+
+message GetBetHistoryRequest {
+  string user_id = 1;
+  int32  limit   = 2;
+  int32  offset  = 3;
+}
+
+message GetBetHistoryResponse {
+  repeated BetRecord bets = 1;
+}

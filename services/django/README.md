@@ -63,6 +63,14 @@ If you modify models, create migrations locally before committing:
 
 The entrypoint will reject startup if migrations are missing.
 
+#### Command Cheat Sheet
+
+```py
+uv run python manage.py makemigrations # generate new migration files
+uv run python manage.py migrate core 0006_remove_featureflag # rollback to specific migration
+uv run python manage.py migrate # run migrations
+```
+
 ## Admin Access Control
 
 The `AdminOnlyMiddleware` restricts access to the admin interface. Users can access if they meet any of the following:
