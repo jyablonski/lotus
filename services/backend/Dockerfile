@@ -2,10 +2,10 @@ FROM golang:1.25 AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY --link go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY --link . .
 
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
@@ -14,12 +14,12 @@ RUN go build -o lotus ./internal/
 FROM scratch
 
 # CA certs for HTTPS calls
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --link --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Timezone data (if you need it)
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --link --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
-COPY --from=builder /app/lotus /lotus
+COPY --link --from=builder /app/lotus /lotus
 
 # Run as nonroot (65534 is nobody)
 USER 65534

@@ -134,8 +134,8 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - ${PWD}/services/analyzer/src:/home/appuser/src
-      - ${PWD}/services/analyzer/config.yaml:/home/appuser/config.yaml
+      - ${PWD}/services/analyzer/src:/app/src
+      - ${PWD}/services/analyzer/config.yaml:/app/config.yaml
     environment:
       - ENV_TYPE=docker_dev
       - MLFLOW_CONN_URI=http://mlflow:5000

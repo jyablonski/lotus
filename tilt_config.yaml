@@ -23,7 +23,7 @@ services:
     mlflow: true
     observability: true
 
+# note: these aren't used, but are examples of how to split out
+# local infra vs shared (cloud) infra
 options:
-  # Use shared database (postgres) for all services
   shared-database: true
-  debug: false
