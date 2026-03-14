@@ -42,9 +42,9 @@ export async function POST() {
   const acquired = await redis.set(
     KEY_ROLL_LOCK,
     lockToken,
-    "NX",
     "PX",
     LOCK_TTL_MS,
+    "NX",
   );
 
   if (!acquired) {
