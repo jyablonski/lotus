@@ -5,12 +5,9 @@ name: E2E
 on:
   workflow_call:
 
-concurrency:
-  group: e2e-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   e2e:
+    name: E2E Smoke Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
