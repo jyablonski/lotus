@@ -80,6 +80,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
+	github.com/sqlc-dev/pqtype v0.3.0 // indirect
 	github.com/testcontainers/testcontainers-go v0.41.0 // indirect
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
