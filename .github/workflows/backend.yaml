@@ -92,3 +92,7 @@ jobs:
       - name: Stop stack
         if: always()
         run: docker compose -f docker/docker-compose-k6.yaml --profile load-test down -v
+
+  e2e:
+    needs: k6-smoke
+    uses: ./.github/workflows/e2e.yaml

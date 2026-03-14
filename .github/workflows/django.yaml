@@ -53,3 +53,7 @@ jobs:
       - name: Shutdown Services
         if: always()
         run: make stop-postgres
+
+  e2e:
+    needs: django-pipeline
+    uses: ./.github/workflows/e2e.yaml

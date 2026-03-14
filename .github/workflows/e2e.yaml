@@ -1,28 +1,16 @@
-# Dedicated E2E workflow. Runs when frontend, backend, or django CI succeeds,
-# or when a PR is labeled "e2e". Exercises the full stack with Playwright.
+# Reusable E2E workflow. Not triggered by events; called by frontend, backend,
+# and django pipelines at the end of each. Exercises full stack with Playwright.
 name: E2E
 
 on:
-  workflow_run:
-    workflows:
-      - "Frontend CI / CD Pipeline"
-      - "Backend CI / CD Pipeline"
-      - "Django CI / CD Pipeline"
-    types:
-      - completed
-  pull_request:
-    types:
-      - labeled
+  workflow_call:
 
 concurrency:
-  group: e2e-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref || github.ref }}
+  group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   e2e:
-    if: |
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      (github.event_name == 'pull_request' && github.event.label.name == 'e2e')
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -32,10 +20,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
 
-      # ── Start the stack via docker compose ───────────────────────
       - name: Build and start services
         run: docker compose -f docker/docker-compose-e2e.yaml up -d --build
 
@@ -53,7 +38,6 @@ jobs:
           docker compose -f docker/docker-compose-e2e.yaml logs
           exit 1
 
-      # ── Run Playwright on the host ───────────────────────────────
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:

@@ -53,3 +53,7 @@ jobs:
       - name: Build project
         working-directory: services/frontend
         run: npm run build
+
+  e2e:
+    needs: frontend-pipeline
+    uses: ./.github/workflows/e2e.yaml
