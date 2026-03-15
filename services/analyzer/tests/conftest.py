@@ -317,7 +317,8 @@ def override_db_dependency(test_db_session):
 
 
 @pytest.fixture
-def client_fixture():
+def client_fixture(override_db_dependency):
+    """TestClient with auth header and testcontainer DB wired up via override_db_dependency."""
     client = TestClient(app, headers={"Authorization": f"Bearer {_TEST_API_KEY}"})
 
     return client
