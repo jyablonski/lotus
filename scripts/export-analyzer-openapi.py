@@ -36,6 +36,10 @@ for mod in [
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
+# Satisfy the module-level ANALYZER_API_KEY guard in src/main.py without
+# needing a real key — we only import the app to extract its OpenAPI schema.
+os.environ.setdefault("ANALYZER_API_KEY", "schema-export-placeholder")
+
 from src.main import app  # noqa: E402
 
 

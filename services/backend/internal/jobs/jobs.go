@@ -52,9 +52,10 @@ func NewClient(
 	queries db.Querier,
 	httpClient *http.Client,
 	analyzerURL string,
+	analyzerAPIKey string,
 	logger *slog.Logger,
 ) (*river.Client[pgx.Tx], error) {
-	return NewClientWithPeriodicInterval(pool, queries, httpClient, analyzerURL, logger, 15*time.Minute)
+	return NewClientWithPeriodicInterval(pool, queries, httpClient, analyzerURL, analyzerAPIKey, logger, 15*time.Minute)
 }
 
 // NewClientWithPeriodicInterval is like NewClient but allows overriding the hello_cron
@@ -64,15 +65,17 @@ func NewClientWithPeriodicInterval(
 	queries db.Querier,
 	httpClient *http.Client,
 	analyzerURL string,
+	analyzerAPIKey string,
 	logger *slog.Logger,
 	cronInterval time.Duration,
 ) (*river.Client[pgx.Tx], error) {
 	workers := river.NewWorkers()
 
 	river.AddWorker(workers, &AnalyzeEntryWorker{
-		httpClient:  httpClient,
-		analyzerURL: analyzerURL,
-		logger:      logger,
+		httpClient:     httpClient,
+		analyzerURL:    analyzerURL,
+		analyzerAPIKey: analyzerAPIKey,
+		logger:         logger,
 	})
 
 	river.AddWorker(workers, &HelloCronWorker{

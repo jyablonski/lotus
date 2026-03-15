@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"log/slog"
 	"net"
 	"net/http"
@@ -42,6 +43,24 @@ func allowCORS(origin string, h http.Handler) http.Handler {
 			return
 		}
 
+		h.ServeHTTP(w, r)
+	})
+}
+
+// authMiddleware validates the Authorization: Bearer <key> header on every
+// request except OPTIONS (handled by CORS middleware) and /metrics (Prometheus scrape).
+func authMiddleware(apiKey string, h http.Handler) http.Handler {
+	expected := []byte("Bearer " + apiKey)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions || r.URL.Path == "/metrics" {
+			h.ServeHTTP(w, r)
+			return
+		}
+		got := []byte(r.Header.Get("Authorization"))
+		if subtle.ConstantTimeCompare(got, expected) != 1 {
+			http.Error(w, `{"code":16,"message":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
 		h.ServeHTTP(w, r)
 	})
 }
@@ -132,6 +151,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	backendAPIKey := os.Getenv("BACKEND_API_KEY")
+	if backendAPIKey == "" {
+		logger.Error("BACKEND_API_KEY environment variable is required")
+		os.Exit(1)
+	}
+
+	analyzerAPIKey := os.Getenv("ANALYZER_API_KEY")
+	if analyzerAPIKey == "" {
+		logger.Error("ANALYZER_API_KEY environment variable is required")
+		os.Exit(1)
+	}
+
 	analyzerBaseURL := os.Getenv("ANALYZER_BASE_URL")
 	if analyzerBaseURL == "" {
 		analyzerBaseURL = "http://localhost:8083"
@@ -188,7 +219,7 @@ func main() {
 	}
 
 	// ── River client ───────────────────────────────────────────────────
-	riverClient, err := jobs.NewClient(pgxPool, queries, httpClient, analyzerBaseURL, logger)
+	riverClient, err := jobs.NewClient(pgxPool, queries, httpClient, analyzerBaseURL, analyzerAPIKey, logger)
 	if err != nil {
 		logger.Error("Failed to create River client", "error", err)
 		os.Exit(1)
@@ -237,7 +268,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:    ":8080",
-		Handler: rateLimitMiddleware(20, 40, allowCORS(corsOrigin, otelhttp.NewHandler(rootMux, "http"))),
+		Handler: rateLimitMiddleware(20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, otelhttp.NewHandler(rootMux, "http")))),
 	}
 
 	// ── Graceful shutdown context ──────────────────────────────────────

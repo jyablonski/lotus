@@ -46,16 +46,7 @@ jobs:
           prune-cache: false
           working-directory: services/analyzer
 
-      - name: Start Services
-        run: make ci-analyzer-up
-
       - name: Run analyzer tests
-        working-directory: services/analyzer
         env:
-          ENV_TYPE: dev
-          MLFLOW_CONN_URI: http://localhost:5000
-        run: uv run pytest
-
-      - name: Stop Services
-        if: always()
-        run: make ci-analyzer-down
+          ANALYZER_API_KEY: test-key
+        run: make test-analyzer

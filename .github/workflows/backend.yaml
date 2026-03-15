@@ -75,10 +75,15 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Start backend stack
+        env:
+          BACKEND_API_KEY: lotus-backend-dev-key
+          ANALYZER_API_KEY: lotus-analyzer-dev-key
         run: |
           docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --build --wait postgres backend
 
       - name: Run k6 HTTP smoke test
+        env:
+          BACKEND_API_KEY: lotus-backend-dev-key
         run: |
           docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
 

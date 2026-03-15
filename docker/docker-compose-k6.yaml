@@ -35,6 +35,8 @@ services:
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
       - ANALYZER_BASE_URL=http://localhost:8083
+      - BACKEND_API_KEY=${BACKEND_API_KEY:-lotus-backend-dev-key}
+      - ANALYZER_API_KEY=${ANALYZER_API_KEY:-lotus-analyzer-dev-key}
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,6 +56,7 @@ services:
       - GRPC_ADDR=backend:50051
       - PROTO_ROOT=/
       - THIRD_PARTY_ROOT=/third_party
+      - BACKEND_API_KEY=${BACKEND_API_KEY:-lotus-backend-dev-key}
     depends_on:
       backend:
         condition: service_started

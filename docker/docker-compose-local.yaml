@@ -87,6 +87,7 @@ services:
     environment:
       - NEXTAUTH_URL=http://localhost:3000
       - BACKEND_URL=http://backend:8080
+      - BACKEND_API_KEY=${BACKEND_API_KEY}
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_GITHUB_ID=${AUTH_GITHUB_ID}
       - AUTH_GITHUB_SECRET=${AUTH_GITHUB_SECRET}
@@ -119,6 +120,8 @@ services:
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
       - ANALYZER_BASE_URL=http://analyzer:8083
+      - BACKEND_API_KEY=${BACKEND_API_KEY}
+      - ANALYZER_API_KEY=${ANALYZER_API_KEY}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     working_dir: /app
     command: ["air", "-c", ".air.toml"]
@@ -141,6 +144,7 @@ services:
       - MLFLOW_CONN_URI=http://mlflow:5000
       - ENABLE_V1_ROUTER=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANALYZER_API_KEY=${ANALYZER_API_KEY}
       - GIT_PYTHON_REFRESH=quiet
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     depends_on:
