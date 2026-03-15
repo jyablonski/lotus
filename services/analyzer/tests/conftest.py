@@ -195,7 +195,20 @@ def postgres_container():
         )
         conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute(_BOOTSTRAP_SQL.read_text())
+            # Execute statements individually so each runs in true autocommit
+            # mode. Passing the whole file as one string causes PostgreSQL's
+            # simple-query protocol to wrap everything in an implicit
+            # transaction, which rejects CREATE DATABASE. We also skip
+            # CREATE DATABASE entirely — the testcontainer already provides
+            # its own database and the extra ones (dagster, mlflow, etc.)
+            # are only needed for the full local dev stack.
+            for stmt in _BOOTSTRAP_SQL.read_text().split(";"):
+                stmt = stmt.strip()
+                if not stmt:
+                    continue
+                if stmt.upper().startswith("CREATE DATABASE"):
+                    continue
+                cur.execute(stmt)
         conn.close()
         yield pg
 
