@@ -49,7 +49,7 @@ func allowCORS(origin string, h http.Handler) http.Handler {
 
 // authMiddleware validates the Authorization: Bearer <key> header on every
 // request except OPTIONS (handled by CORS middleware) and /metrics (Prometheus scrape).
-func authMiddleware(apiKey string, h http.Handler) http.Handler {
+func authMiddleware(apiKey string, logger *slog.Logger, h http.Handler) http.Handler {
 	expected := []byte("Bearer " + apiKey)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions || r.URL.Path == "/metrics" {
@@ -58,6 +58,17 @@ func authMiddleware(apiKey string, h http.Handler) http.Handler {
 		}
 		got := []byte(r.Header.Get("Authorization"))
 		if subtle.ConstantTimeCompare(got, expected) != 1 {
+			recv := r.Header.Get("Authorization")
+			if len(recv) > 10 {
+				recv = recv[:10] + "…"
+			}
+			logger.Warn("authMiddleware: rejected request",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"received_prefix", recv,
+				"expected_len", len(expected),
+				"received_len", len(got),
+			)
 			http.Error(w, `{"code":16,"message":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
@@ -268,7 +279,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:    ":8080",
-		Handler: rateLimitMiddleware(20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, otelhttp.NewHandler(rootMux, "http")))),
+		Handler: rateLimitMiddleware(20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, otelhttp.NewHandler(rootMux, "http")))),
 	}
 
 	// ── Graceful shutdown context ──────────────────────────────────────
