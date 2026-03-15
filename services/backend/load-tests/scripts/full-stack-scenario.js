@@ -16,7 +16,12 @@
 import http from "k6/http";
 import { check, group, sleep } from "k6";
 import { Counter } from "k6/metrics";
-import { BASE_URL, defaultThresholds, presets } from "../lib/config.js";
+import {
+  BASE_URL,
+  BACKEND_API_KEY,
+  defaultThresholds,
+  presets,
+} from "../lib/config.js";
 import {
   randomEmail,
   randomPassword,
@@ -82,7 +87,10 @@ export const options = {
   },
 };
 
-const headers = { "Content-Type": "application/json" };
+const headers = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${BACKEND_API_KEY}`,
+};
 
 // ---------- Setup: wait for backend readiness ----------
 export function setup() {
@@ -164,6 +172,7 @@ export function returningUser() {
   group("Returning: browse journals page 1", () => {
     const res = http.get(
       `${BASE_URL}/v1/journals?user_id=${userId}&limit=10&offset=0`,
+      { headers },
     );
     checkResponse(res, 200, "Browse journals p1");
   });
@@ -179,6 +188,7 @@ export function returningUser() {
   group("Returning: browse journals page 1 (refresh)", () => {
     const res = http.get(
       `${BASE_URL}/v1/journals?user_id=${userId}&limit=10&offset=0`,
+      { headers },
     );
     checkResponse(res, 200, "Browse journals refresh");
   });
@@ -206,6 +216,7 @@ export function readHeavy() {
     group(`ReadHeavy: journals page ${page}`, () => {
       const res = http.get(
         `${BASE_URL}/v1/journals?user_id=${userId}&limit=10&offset=${page * 10}`,
+        { headers },
       );
       checkResponse(res, 200, `Journals page ${page}`);
     });
@@ -213,7 +224,7 @@ export function readHeavy() {
   }
 
   group("ReadHeavy: random string", () => {
-    const res = http.get(`${BASE_URL}/v1/util/random-string`);
+    const res = http.get(`${BASE_URL}/v1/util/random-string`, { headers });
     checkResponse(res, 200, "Random string");
   });
 }
@@ -251,6 +262,7 @@ export function oauthRegistration() {
   group("OAuth: browse journals", () => {
     const res = http.get(
       `${BASE_URL}/v1/journals?user_id=${userId}&limit=10&offset=0`,
+      { headers },
     );
     checkResponse(res, 200, "OAuth browse");
   });

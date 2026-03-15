@@ -32,15 +32,16 @@ func (a AnalyzeEntryArgs) InsertOpts() river.InsertOpts {
 // River schedules a retry with exponential backoff (up to InsertOpts.MaxAttempts).
 type AnalyzeEntryWorker struct {
 	river.WorkerDefaults[AnalyzeEntryArgs]
-	httpClient  *http.Client
-	analyzerURL string
-	logger      *slog.Logger
+	httpClient     *http.Client
+	analyzerURL    string
+	analyzerAPIKey string
+	logger         *slog.Logger
 }
 
 // NewAnalyzeEntryWorker constructs an AnalyzeEntryWorker with the provided dependencies.
 // Exposed so tests can create workers with custom HTTP servers.
-func NewAnalyzeEntryWorker(httpClient *http.Client, analyzerURL string, logger *slog.Logger) *AnalyzeEntryWorker {
-	return &AnalyzeEntryWorker{httpClient: httpClient, analyzerURL: analyzerURL, logger: logger}
+func NewAnalyzeEntryWorker(httpClient *http.Client, analyzerURL, analyzerAPIKey string, logger *slog.Logger) *AnalyzeEntryWorker {
+	return &AnalyzeEntryWorker{httpClient: httpClient, analyzerURL: analyzerURL, analyzerAPIKey: analyzerAPIKey, logger: logger}
 }
 
 func (w *AnalyzeEntryWorker) Work(ctx context.Context, job *river.Job[AnalyzeEntryArgs]) error {
@@ -79,6 +80,7 @@ func (w *AnalyzeEntryWorker) callEndpoint(ctx context.Context, entryID int64, an
 		return fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+w.analyzerAPIKey)
 
 	resp, err := w.httpClient.Do(req)
 	if err != nil {

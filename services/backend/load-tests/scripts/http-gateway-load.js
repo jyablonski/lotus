@@ -19,7 +19,12 @@
 import http from "k6/http";
 import { check, group, sleep } from "k6";
 import { Trend, Counter } from "k6/metrics";
-import { BASE_URL, defaultThresholds, presets } from "../lib/config.js";
+import {
+  BASE_URL,
+  BACKEND_API_KEY,
+  defaultThresholds,
+  presets,
+} from "../lib/config.js";
 import {
   randomEmail,
   randomPassword,
@@ -54,7 +59,10 @@ export const options = {
   },
 };
 
-const headers = { "Content-Type": "application/json" };
+const headers = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${BACKEND_API_KEY}`,
+};
 
 // ---------- Setup: wait for backend readiness ----------
 export function setup() {
@@ -130,6 +138,7 @@ export default function () {
   group("GET /v1/journals - list journals", () => {
     const res = http.get(
       `${BASE_URL}/v1/journals?user_id=${userId}&limit=10&offset=0`,
+      { headers },
     );
     getJournalsDuration.add(res.timings.duration);
 
@@ -149,7 +158,7 @@ export default function () {
 
   // 4. Utility endpoint (lightweight, good for measuring baseline latency)
   group("GET /v1/util/random-string", () => {
-    const res = http.get(`${BASE_URL}/v1/util/random-string`);
+    const res = http.get(`${BASE_URL}/v1/util/random-string`, { headers });
 
     logUnexpectedStatus("GenerateRandomString", res, 200);
     checkResponse(res, 200, "GenerateRandomString");

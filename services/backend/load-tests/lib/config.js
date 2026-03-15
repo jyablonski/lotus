@@ -5,6 +5,7 @@
 
 export const BASE_URL = __ENV.BASE_URL || "http://localhost:8080";
 export const GRPC_ADDR = __ENV.GRPC_ADDR || "localhost:50051";
+export const BACKEND_API_KEY = __ENV.BACKEND_API_KEY || "lotus-backend-dev-key";
 
 // Default thresholds applied to every scenario unless overridden.
 export const defaultThresholds = {

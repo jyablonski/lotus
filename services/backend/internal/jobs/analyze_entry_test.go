@@ -96,7 +96,7 @@ func TestAnalyzeEntryWorkerSuccess(t *testing.T) {
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
-		http.DefaultClient, analyzerSrv.URL, testinfra.DiscardLogger(),
+		http.DefaultClient, analyzerSrv.URL, "", testinfra.DiscardLogger(),
 	))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
@@ -135,7 +135,7 @@ func TestAnalyzeEntryWorkerRetry(t *testing.T) {
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
-		http.DefaultClient, failingSrv.URL, testinfra.DiscardLogger(),
+		http.DefaultClient, failingSrv.URL, "", testinfra.DiscardLogger(),
 	))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{

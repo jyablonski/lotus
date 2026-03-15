@@ -1,6 +1,15 @@
 /**
  * Tests for lib/server/featureFlags.ts
+ *
+ * Verifies correct flag parsing, error handling, and that every request
+ * includes the Authorization Bearer header required by the backend auth
+ * middleware.
  */
+
+jest.mock("@/lib/config", () => ({
+  BACKEND_URL: "http://backend:8080",
+  BACKEND_API_KEY: "test-api-key",
+}));
 
 import { fetchFeatureFlags } from "@/lib/server/featureFlags";
 
@@ -52,6 +61,24 @@ describe("fetchFeatureFlags", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("userRole=Admin"),
       expect.any(Object),
+    );
+  });
+
+  it("sends Authorization Bearer header on every request", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ flags: [] }),
+    });
+
+    await fetchFeatureFlags();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-api-key",
+        }),
+      }),
     );
   });
 

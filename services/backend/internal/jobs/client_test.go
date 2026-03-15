@@ -25,6 +25,7 @@ func TestNewClientStartStop(t *testing.T) {
 		testQueries,
 		http.DefaultClient,
 		analyzerSrv.URL,
+		"",
 		testinfra.DiscardLogger(),
 	)
 	require.NoError(t, err)
@@ -47,6 +48,7 @@ func TestNewClientWorkersRegistered(t *testing.T) {
 		testQueries,
 		http.DefaultClient,
 		analyzerSrv.URL,
+		"",
 		testinfra.DiscardLogger(),
 	)
 	require.NoError(t, err)
@@ -92,6 +94,7 @@ func TestPeriodicJobConfigured(t *testing.T) {
 		testQueries,
 		http.DefaultClient,
 		analyzerSrv.URL,
+		"",
 		testinfra.DiscardLogger(),
 		2*time.Second,
 	)

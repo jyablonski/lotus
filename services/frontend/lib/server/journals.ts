@@ -5,7 +5,7 @@ import {
   BackendJournal,
   transformBackendJournal,
 } from "@/types/journal";
-import { BACKEND_URL } from "@/lib/config";
+import { BACKEND_URL, BACKEND_API_KEY } from "@/lib/config";
 
 export interface JournalsResponse {
   journals: JournalEntry[];
@@ -30,6 +30,7 @@ export async function fetchJournalsForUser(
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${BACKEND_API_KEY}`,
         },
         ...(cache === "no-store"
           ? { cache: "no-store" as RequestCache }

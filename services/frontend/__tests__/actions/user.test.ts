@@ -63,7 +63,9 @@ describe("updateTimezone", () => {
       expect.stringContaining("/v1/users/user-123/timezone"),
       expect.objectContaining({
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
         body: JSON.stringify({ timezone: "America/New_York" }),
       }),
     );

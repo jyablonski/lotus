@@ -1,3 +1,17 @@
+import os
+
+# Must be set before any src imports — main.py raises RuntimeError at module
+# level if ANALYZER_API_KEY is missing, and database.py reads ENV_TYPE at import.
+os.environ.setdefault("ANALYZER_API_KEY", "test-key")
+os.environ.setdefault("ENV_TYPE", "dev")
+# Prevent the OTel OTLP exporter from retrying indefinitely when there is no
+# collector running in CI. The background BatchSpanProcessor thread will fail
+# immediately instead of hanging until after pytest closes its log streams,
+# which would produce "ValueError: I/O operation on closed file" and cause a
+# non-zero exit code via pytest's threading.excepthook capture.
+os.environ.setdefault("OTEL_BSP_SCHEDULE_DELAY_MILLIS", "1")
+os.environ.setdefault("OTEL_BSP_EXPORT_TIMEOUT_MILLIS", "100")
+
 from datetime import datetime
 import logging
 from pathlib import Path
@@ -6,7 +20,10 @@ from unittest.mock import AsyncMock, Mock
 
 from fastapi.testclient import TestClient
 import pandas as pd
+import psycopg2
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from src.clients.ml_sentiment_client import SentimentClient
 from src.clients.ml_topic_client import TopicClient
 from src.dependencies import get_db
@@ -14,12 +31,43 @@ from src.main import app
 from src.models.journal_sentiments import JournalSentiments
 from src.models.journals import Journals
 from src.schemas.openai_topics import TopicAnalysis
+from testcontainers.postgres import PostgresContainer
 
 logger = logging.getLogger(__name__)
 
 TEST_FIXTURES_DIR = Path("tests/fixtures/models")
 SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
 TOPIC_MODEL_PATH = TEST_FIXTURES_DIR / "topic_test_model.pkl"
+
+# Path to the bootstrap SQL relative to the repo root, resolved from this file's location.
+# conftest.py lives at services/analyzer/tests/conftest.py → 3 parents up = repo root.
+_BOOTSTRAP_SQL = Path(__file__).parents[3] / "docker/db/01-bootstrap.sql"
+
+_TEST_API_KEY = os.environ["ANALYZER_API_KEY"]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def shutdown_otel_providers():
+    """Cleanly shut down OTel providers after the test session.
+
+    The BatchSpanProcessor starts a background thread on import of src.main.
+    Without an explicit shutdown() that thread keeps running after pytest
+    finishes, then tries to log into already-closed streams → ValueError.
+    Shutting down the provider here drains and stops the background thread
+    before pytest tears down its logging infrastructure.
+    """
+    yield
+    import contextlib
+
+    from opentelemetry import (
+        metrics as otel_metrics,
+        trace,
+    )
+
+    with contextlib.suppress(Exception):
+        trace.get_tracer_provider().shutdown()
+    with contextlib.suppress(Exception):
+        otel_metrics.get_meter_provider().shutdown()
 
 
 class MockPyfuncSentimentModel:
@@ -129,6 +177,69 @@ class MockPyfuncTopicModel:
         return results
 
 
+# ---------------------------------------------------------------------------
+# Testcontainers: Postgres
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def postgres_container():
+    """Spin up an isolated Postgres container for the entire test session."""
+    with PostgresContainer("postgres:16-alpine") as pg:
+        conn = psycopg2.connect(
+            host=pg.get_container_host_ip(),
+            port=pg.get_exposed_port(5432),
+            user=pg.username,
+            password=pg.password,
+            dbname=pg.dbname,
+        )
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            # Filter out CREATE DATABASE lines and execute the rest in one
+            # call.  Splitting on ";" would fragment the dollar-quoted
+            # PL/pgSQL function body (truncate_integration_tables) and
+            # produce empty / partial statements.  All remaining SQL
+            # (CREATE SCHEMA/TABLE/INDEX/FUNCTION, INSERT …) is
+            # transaction-safe.  CREATE DATABASE is skipped entirely —
+            # the testcontainer already provides its own database; the
+            # extras (dagster, mlflow, etc.) are only needed for the
+            # full local dev stack.
+            sql = "\n".join(
+                line
+                for line in _BOOTSTRAP_SQL.read_text().splitlines()
+                if not line.strip().upper().startswith("CREATE DATABASE")
+            )
+            cur.execute(sql)
+        conn.close()
+        yield pg
+
+
+@pytest.fixture(scope="session")
+def test_engine(postgres_container):
+    """SQLAlchemy engine pointed at the testcontainer with source schema."""
+    engine = create_engine(
+        postgres_container.get_connection_url(),
+        connect_args={"options": "-csearch_path=source"},
+    )
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def test_db_session(test_engine):
+    """Fresh SQLAlchemy session per test; rolls back after each test."""
+    Session = sessionmaker(bind=test_engine, autocommit=False, autoflush=False, future=True)
+    session = Session()
+    yield session
+    session.rollback()
+    session.close()
+
+
+# ---------------------------------------------------------------------------
+# Existing fixtures
+# ---------------------------------------------------------------------------
+
+
 @pytest.fixture(scope="session")
 def real_sentiment_client():
     """Load pre-saved sentiment model for testing."""
@@ -220,8 +331,9 @@ def override_db_dependency(test_db_session):
 
 
 @pytest.fixture
-def client_fixture():
-    client = TestClient(app)
+def client_fixture(override_db_dependency):
+    """TestClient with auth header and testcontainer DB wired up via override_db_dependency."""
+    client = TestClient(app, headers={"Authorization": f"Bearer {_TEST_API_KEY}"})
 
     return client
 

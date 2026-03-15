@@ -2,9 +2,14 @@
  * Tests for lib/server/journals.ts
  *
  * These test the server-side data-fetching layer by mocking global fetch
- * and verifying correct URL construction, response transformation, and
- * error handling.
+ * and verifying correct URL construction, response transformation, error
+ * handling, and that the Authorization header is always included.
  */
+
+jest.mock("@/lib/config", () => ({
+  BACKEND_URL: "http://backend:8080",
+  BACKEND_API_KEY: "test-api-key",
+}));
 
 import {
   fetchJournalsForUser,
@@ -100,6 +105,24 @@ describe("fetchJournalsForUser", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("limit=10&offset=0"),
       expect.anything(),
+    );
+  });
+
+  test("sends Authorization Bearer header on every request", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ journals: [], totalCount: "0", hasMore: false }),
+    });
+
+    await fetchJournalsForUser("u1");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-api-key",
+        }),
+      }),
     );
   });
 

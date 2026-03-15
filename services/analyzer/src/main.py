@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import logging
 import os
+import secrets
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
@@ -81,6 +82,24 @@ set_global_textmap(CompositeHTTPPropagator([TraceContextTextMapPropagator()]))
 
 app = FastAPI(lifespan=lifespan)
 FastAPIInstrumentor.instrument_app(app)
+
+_ANALYZER_API_KEY = os.getenv("ANALYZER_API_KEY", "")
+if not _ANALYZER_API_KEY:
+    raise RuntimeError("ANALYZER_API_KEY environment variable is required")
+
+_UNPROTECTED_PATHS = {"/", "/health", "/metrics"}
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if request.method == "OPTIONS" or request.url.path in _UNPROTECTED_PATHS:
+        return await call_next(request)
+    expected = f"Bearer {_ANALYZER_API_KEY}"
+    got = request.headers.get("Authorization", "")
+    if not secrets.compare_digest(got, expected):
+        return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+    return await call_next(request)
+
 
 app.include_router(v1_router, prefix="/v1")
 
