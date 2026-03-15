@@ -9,6 +9,7 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
+	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -279,7 +280,7 @@ func TestCreateJournalInvalidMoodScore(t *testing.T) {
 
 func TestCreateJournalInvalidMoodValue(t *testing.T) {
 	ctx, queries := newTestCtx(t)
-	srv := mockAnalyzerServer(t)
+	srv := testinfra.MockAnalyzerServer(t)
 	ctx = withAnalyzer(ctx, srv.URL)
 	svc := &grpcServer.JournalServer{}
 

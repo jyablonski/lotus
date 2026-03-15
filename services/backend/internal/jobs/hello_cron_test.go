@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jyablonski/lotus/internal/jobs"
+	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/stretchr/testify/assert"
@@ -30,12 +31,12 @@ func TestHelloCronWorkerWritesRuntimeConfig(t *testing.T) {
 	defer cancel()
 
 	workers := river.NewWorkers()
-	river.AddWorker(workers, jobs.NewHelloCronWorker(testQueries, discardLogger()))
+	river.AddWorker(workers, jobs.NewHelloCronWorker(testQueries, testinfra.DiscardLogger()))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
 		Queues:  map[string]river.QueueConfig{jobs.QueueCron: {MaxWorkers: 1}},
 		Workers: workers,
-		Logger:  discardLogger(),
+		Logger:  testinfra.DiscardLogger(),
 	})
 	require.NoError(t, err)
 	require.NoError(t, client.Start(ctx))

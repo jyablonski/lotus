@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jyablonski/lotus/internal/jobs"
+	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/stretchr/testify/assert"
@@ -91,17 +92,17 @@ func TestAnalyzeEntryWorkerSuccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	analyzerSrv := newAnalyzerServer(t)
+	analyzerSrv := testinfra.MockAnalyzerServer(t)
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
-		http.DefaultClient, analyzerSrv.URL, discardLogger(),
+		http.DefaultClient, analyzerSrv.URL, testinfra.DiscardLogger(),
 	))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
 		Queues:  map[string]river.QueueConfig{jobs.QueueAnalysis: {MaxWorkers: 2}},
 		Workers: workers,
-		Logger:  discardLogger(),
+		Logger:  testinfra.DiscardLogger(),
 	})
 	require.NoError(t, err)
 	require.NoError(t, client.Start(ctx))
@@ -130,17 +131,17 @@ func TestAnalyzeEntryWorkerRetry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	failingSrv := newFailingAnalyzerServer(t)
+	failingSrv := testinfra.FailingAnalyzerServer(t)
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
-		http.DefaultClient, failingSrv.URL, discardLogger(),
+		http.DefaultClient, failingSrv.URL, testinfra.DiscardLogger(),
 	))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
 		Queues:  map[string]river.QueueConfig{jobs.QueueAnalysis: {MaxWorkers: 2}},
 		Workers: workers,
-		Logger:  discardLogger(),
+		Logger:  testinfra.DiscardLogger(),
 	})
 	require.NoError(t, err)
 	require.NoError(t, client.Start(ctx))

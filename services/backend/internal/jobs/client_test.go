@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jyablonski/lotus/internal/jobs"
+	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/riverqueue/river"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,14 +18,14 @@ func TestNewClientStartStop(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	analyzerSrv := newAnalyzerServer(t)
+	analyzerSrv := testinfra.MockAnalyzerServer(t)
 
 	client, err := jobs.NewClient(
 		testPgxPool,
 		testQueries,
 		http.DefaultClient,
 		analyzerSrv.URL,
-		discardLogger(),
+		testinfra.DiscardLogger(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, client)
@@ -39,14 +40,14 @@ func TestNewClientStartStop(t *testing.T) {
 // TestNewClientWorkersRegistered verifies inserting each known job kind succeeds.
 func TestNewClientWorkersRegistered(t *testing.T) {
 	ctx := context.Background()
-	analyzerSrv := newAnalyzerServer(t)
+	analyzerSrv := testinfra.MockAnalyzerServer(t)
 
 	client, err := jobs.NewClient(
 		testPgxPool,
 		testQueries,
 		http.DefaultClient,
 		analyzerSrv.URL,
-		discardLogger(),
+		testinfra.DiscardLogger(),
 	)
 	require.NoError(t, err)
 
@@ -83,7 +84,7 @@ func TestPeriodicJobConfigured(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	analyzerSrv := newAnalyzerServer(t)
+	analyzerSrv := testinfra.MockAnalyzerServer(t)
 
 	// 2-second interval so we don't wait 15 minutes in CI.
 	client, err := jobs.NewClientWithPeriodicInterval(
@@ -91,7 +92,7 @@ func TestPeriodicJobConfigured(t *testing.T) {
 		testQueries,
 		http.DefaultClient,
 		analyzerSrv.URL,
-		discardLogger(),
+		testinfra.DiscardLogger(),
 		2*time.Second,
 	)
 	require.NoError(t, err)
