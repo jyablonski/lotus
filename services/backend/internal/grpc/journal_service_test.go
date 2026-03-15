@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"errors"
 	"io"
 	"net/http"
 	"testing"
@@ -42,110 +41,35 @@ func noopHTTPClient() *mocks.HTTPClientMock {
 	}
 }
 
-func TestJournalServer_CreateJournal_Success(t *testing.T) {
-	// Arrange
-	userID := uuid.New()
-	expectedJournalID := int32(123)
-	journalText := "Today was a great day!"
-	moodScore := "8"
-
-	mockQuerier := &mocks.QuerierMock{
-		CreateJournalFunc: func(ctx context.Context, arg db.CreateJournalParams) (db.SourceJournal, error) {
-			assert.Equal(t, userID, arg.UserID)
-			assert.Equal(t, journalText, arg.JournalText)
-			assert.True(t, arg.MoodScore.Valid)
-			assert.Equal(t, int32(8), arg.MoodScore.Int32)
-
-			return db.SourceJournal{
-				ID:          expectedJournalID,
-				UserID:      userID,
-				JournalText: journalText,
-				MoodScore:   sql.NullInt32{Int32: 8, Valid: true},
-				CreatedAt:   time.Now(),
-				ModifiedAt:  time.Now(),
-			}, nil
-		},
-	}
-
-	mockHTTPClient := noopHTTPClient()
-	server := &internalgrpc.JournalServer{}
-
-	req := &pb.CreateJournalRequest{
-		UserId:      userID.String(),
-		JournalText: journalText,
-		UserMood:    moodScore,
-	}
-
-	// Act
-	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
-
-	// Assert
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	assert.Equal(t, "123", resp.JournalId)
-
-	// Verify CreateJournal was called exactly once
-	assert.Len(t, mockQuerier.CreateJournalCalls(), 1)
-}
-
 func TestJournalServer_CreateJournal_InvalidUserID(t *testing.T) {
-	// Arrange — validation fails before deps are extracted, but context still
-	// needs deps because the service extracts them after this particular check
-	// passes. For invalid-uuid the error is before dep extraction.
-	mockQuerier := &mocks.QuerierMock{}
-	mockHTTPClient := noopHTTPClient()
-
 	server := &internalgrpc.JournalServer{}
-
 	req := &pb.CreateJournalRequest{
 		UserId:      "invalid-uuid",
 		JournalText: "Test journal",
 		UserMood:    "5",
 	}
-
-	// Act
-	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
-
-	// Assert
+	resp, err := server.CreateJournal(journalTestCtx(&mocks.QuerierMock{}, noopHTTPClient()), req)
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
-
-	// Verify DB was NOT called
-	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
 }
 
 func TestJournalServer_CreateJournal_InvalidMoodScore(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
-	mockQuerier := &mocks.QuerierMock{}
-	mockHTTPClient := noopHTTPClient()
-
 	server := &internalgrpc.JournalServer{}
-
 	req := &pb.CreateJournalRequest{
 		UserId:      userID.String(),
 		JournalText: "Test journal",
 		UserMood:    "not-a-number",
 	}
-
-	// Act
-	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
-
-	// Assert
+	resp, err := server.CreateJournal(journalTestCtx(&mocks.QuerierMock{}, noopHTTPClient()), req)
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrInvalidMoodScore)
-
-	// Verify DB was NOT called
-	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
 }
 
 func TestJournalServer_CreateJournal_MoodScoreOutOfRange(t *testing.T) {
 	userID := uuid.New()
-	mockQuerier := &mocks.QuerierMock{}
-	mockHTTPClient := noopHTTPClient()
-
 	server := &internalgrpc.JournalServer{}
 
 	for _, mood := range []string{"0", "11", "-1", "99"} {
@@ -154,40 +78,11 @@ func TestJournalServer_CreateJournal_MoodScoreOutOfRange(t *testing.T) {
 			JournalText: "Test",
 			UserMood:    mood,
 		}
-		resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
+		resp, err := server.CreateJournal(journalTestCtx(&mocks.QuerierMock{}, noopHTTPClient()), req)
 		require.Error(t, err, "mood %q should be rejected", mood)
 		require.Nil(t, resp)
 		assert.ErrorIs(t, err, internalgrpc.ErrInvalidMoodScore)
 	}
-	assert.Len(t, mockQuerier.CreateJournalCalls(), 0)
-}
-
-func TestJournalServer_CreateJournal_DBError(t *testing.T) {
-	// Arrange
-	userID := uuid.New()
-
-	mockQuerier := &mocks.QuerierMock{
-		CreateJournalFunc: func(ctx context.Context, arg db.CreateJournalParams) (db.SourceJournal, error) {
-			return db.SourceJournal{}, errors.New("database error")
-		},
-	}
-
-	mockHTTPClient := noopHTTPClient()
-	server := &internalgrpc.JournalServer{}
-
-	req := &pb.CreateJournalRequest{
-		UserId:      userID.String(),
-		JournalText: "Test journal",
-		UserMood:    "5",
-	}
-
-	// Act
-	resp, err := server.CreateJournal(journalTestCtx(mockQuerier, mockHTTPClient), req)
-
-	// Assert
-	require.Error(t, err)
-	require.Nil(t, resp)
-	assert.Contains(t, err.Error(), "failed to create journal")
 }
 
 func TestJournalServer_GetJournals_Success(t *testing.T) {
@@ -412,7 +307,6 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 }
 
 func TestJournalServer_TriggerJournalAnalysis_Success(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
 	journalID := int32(123)
 
@@ -429,45 +323,26 @@ func TestJournalServer_TriggerJournalAnalysis_Success(t *testing.T) {
 		},
 	}
 
-	mockHTTPClient := noopHTTPClient()
-	server := &internalgrpc.JournalServer{}
+	ctx := withRiverDeps(journalTestCtx(mockQuerier, noopHTTPClient()))
+	resp, err := (&internalgrpc.JournalServer{}).TriggerJournalAnalysis(ctx, &pb.TriggerAnalysisRequest{JournalId: "123"})
 
-	req := &pb.TriggerAnalysisRequest{
-		JournalId: "123",
-	}
-
-	// Act
-	resp, err := server.TriggerJournalAnalysis(journalTestCtx(mockQuerier, mockHTTPClient), req)
-
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.True(t, resp.Success)
 	assert.Equal(t, "Analysis triggered successfully", resp.Message)
-
-	// Verify GetJournalById was called
 	assert.Len(t, mockQuerier.GetJournalByIdCalls(), 1)
 }
 
 func TestJournalServer_TriggerJournalAnalysis_JournalNotFound(t *testing.T) {
-	// Arrange
 	mockQuerier := &mocks.QuerierMock{
 		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
 			return db.SourceJournal{}, sql.ErrNoRows
 		},
 	}
 
-	mockHTTPClient := noopHTTPClient()
-	server := &internalgrpc.JournalServer{}
+	ctx := withRiverDeps(journalTestCtx(mockQuerier, noopHTTPClient()))
+	resp, err := (&internalgrpc.JournalServer{}).TriggerJournalAnalysis(ctx, &pb.TriggerAnalysisRequest{JournalId: "999"})
 
-	req := &pb.TriggerAnalysisRequest{
-		JournalId: "999",
-	}
-
-	// Act
-	resp, err := server.TriggerJournalAnalysis(journalTestCtx(mockQuerier, mockHTTPClient), req)
-
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrJournalNotFound)

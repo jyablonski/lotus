@@ -3,18 +3,34 @@ package grpc_test
 import (
 	"context"
 	"database/sql"
-	"io"
-	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
+	"github.com/jyablonski/lotus/internal/testinfra"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
+
+// withRiverDeps adds a pgxpool and an insert-only River client to the context.
+// Required for tests that call CreateJournal, which now uses pgx for the journal insert.
+func withRiverDeps(ctx context.Context) context.Context {
+	ctx = inject.WithPgxPool(ctx, testPgxPool)
+	ctx = inject.WithRiverClient(ctx, testRiverClient)
+	return ctx
+}
+
+// newDirectQueries opens a direct (non-transaction) connection to the test DB.
+// Use this to verify rows committed by CreateJournal (which commits its own pgx tx).
+func newDirectQueries(t *testing.T) *db.Queries {
+	t.Helper()
+	conn, err := sql.Open("postgres", testDBConnStr)
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+	return db.New(conn)
+}
 
 // newTestCtx opens a transaction against the test container DB and registers
 // t.Cleanup to roll it back and close the connection. Each test gets a clean
@@ -34,7 +50,7 @@ func newTestCtx(t *testing.T) (context.Context, *db.Queries) {
 	})
 
 	queries := db.New(tx) // sqlc's New() accepts DBTX — both *sql.DB and *sql.Tx satisfy it
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	logger := testinfra.DiscardLogger()
 	ctx := inject.WithDB(context.Background(), queries)
 	ctx = inject.WithLogger(ctx, logger)
 	return ctx, queries
@@ -44,31 +60,6 @@ func newTestCtx(t *testing.T) (context.Context, *db.Queries) {
 func withAnalyzer(ctx context.Context, url string) context.Context {
 	ctx = inject.WithHTTPClient(ctx, http.DefaultClient)
 	return inject.WithAnalyzerURL(ctx, url)
-}
-
-// mockAnalyzerServer returns a test server that always responds 200 OK.
-// The server is automatically closed via t.Cleanup.
-func mockAnalyzerServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success": true, "message": "Analysis completed"}`))
-	}))
-	t.Cleanup(srv.Close)
-	return srv
-}
-
-// failingAnalyzerServer returns a test server that always responds 500.
-// The server is automatically closed via t.Cleanup.
-func failingAnalyzerServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Analysis failed"}`))
-	}))
-	t.Cleanup(srv.Close)
-	return srv
 }
 
 // createTestUser inserts a minimal OAuth user and returns its ID.

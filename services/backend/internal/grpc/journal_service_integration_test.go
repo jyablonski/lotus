@@ -9,14 +9,14 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
+	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCreateJournal(t *testing.T) {
 	ctx, queries := newTestCtx(t)
-	srv := mockAnalyzerServer(t)
-	ctx = withAnalyzer(ctx, srv.URL)
+	ctx = withRiverDeps(ctx)
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
@@ -33,7 +33,9 @@ func TestCreateJournal(t *testing.T) {
 	journalID, err := strconv.Atoi(resp.JournalId)
 	require.NoError(t, err)
 
-	journals, err := queries.GetJournalsByUserId(context.Background(), userID)
+	// CreateJournal commits its own pgx tx; use a direct connection to see the row.
+	directQ := newDirectQueries(t)
+	journals, err := directQ.GetJournalsByUserId(context.Background(), userID)
 	require.NoError(t, err)
 
 	var created *db.SourceJournal
@@ -49,42 +51,44 @@ func TestCreateJournal(t *testing.T) {
 	assert.Equal(t, int32(7), created.MoodScore.Int32)
 }
 
-func TestCreateJournalWithFailingAnalyzer(t *testing.T) {
+// TestCreateJournalSucceedsWithAnalysisDeferred verifies CreateJournal commits the
+// journal and enqueues the River job regardless of analyzer availability.
+// (Analyzer is called by the River worker, not inline.)
+func TestCreateJournalSucceedsWithAnalysisDeferred(t *testing.T) {
 	ctx, queries := newTestCtx(t)
-	srv := failingAnalyzerServer(t)
-	ctx = withAnalyzer(ctx, srv.URL)
+	ctx = withRiverDeps(ctx)
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
 	req := &pb.CreateJournalRequest{
 		UserId:      userID.String(),
-		JournalText: "This journal will have failed analysis",
+		JournalText: "Analysis is deferred to River worker",
 		UserMood:    "5",
 	}
 
-	// Journal creation should succeed even if analysis fails
 	resp, err := svc.CreateJournal(ctx, req)
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.JournalId)
 
-	journals, err := queries.GetJournalsByUserId(context.Background(), userID)
+	directQ := newDirectQueries(t)
+	journals, err := directQ.GetJournalsByUserId(context.Background(), userID)
 	require.NoError(t, err)
 	assert.Len(t, journals, 1)
 }
 
 func TestCreateJournalWithInvalidAnalyzerURL(t *testing.T) {
 	ctx, queries := newTestCtx(t)
-	ctx = withAnalyzer(ctx, "http://invalid-url:9999")
+	ctx = withRiverDeps(ctx)
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
 	req := &pb.CreateJournalRequest{
 		UserId:      userID.String(),
-		JournalText: "This journal will have unreachable analyzer",
+		JournalText: "Analysis is enqueued regardless of analyzer URL",
 		UserMood:    "3",
 	}
 
-	// Journal creation should still succeed
+	// Journal creation succeeds; analysis is handled by the River worker later.
 	resp, err := svc.CreateJournal(ctx, req)
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.JournalId)
@@ -205,8 +209,7 @@ func TestGetJournalsPaginationLimitEnforcement(t *testing.T) {
 
 func TestTriggerJournalAnalysis(t *testing.T) {
 	ctx, queries := newTestCtx(t)
-	srv := mockAnalyzerServer(t)
-	ctx = withAnalyzer(ctx, srv.URL)
+	ctx = withRiverDeps(ctx)
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
@@ -236,8 +239,7 @@ func TestTriggerJournalAnalysisInvalidID(t *testing.T) {
 
 func TestTriggerJournalAnalysisNonExistentJournal(t *testing.T) {
 	ctx, _ := newTestCtx(t)
-	srv := mockAnalyzerServer(t)
-	ctx = withAnalyzer(ctx, srv.URL)
+	ctx = withRiverDeps(ctx)
 	svc := &grpcServer.JournalServer{}
 
 	_, err := svc.TriggerJournalAnalysis(ctx, &pb.TriggerAnalysisRequest{JournalId: "99999"})
@@ -278,7 +280,7 @@ func TestCreateJournalInvalidMoodScore(t *testing.T) {
 
 func TestCreateJournalInvalidMoodValue(t *testing.T) {
 	ctx, queries := newTestCtx(t)
-	srv := mockAnalyzerServer(t)
+	srv := testinfra.MockAnalyzerServer(t)
 	ctx = withAnalyzer(ctx, srv.URL)
 	svc := &grpcServer.JournalServer{}
 

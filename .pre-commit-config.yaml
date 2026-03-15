@@ -48,6 +48,23 @@ repos:
     hooks:
       - id: go-fmt
 
+  - repo: local
+    hooks:
+      # go vet catches common correctness issues (e.g. misused printf verbs, unreachable code, suspicious composite literals)
+      - id: go-vet
+        name: go vet (backend)
+        entry: bash -c 'cd services/backend && go vet ./...'
+        language: system
+        files: ^services/backend/.*\.go$
+        pass_filenames: false
+      # deadcode traces all reachable symbols from main + test entry points and flags unexported functions/types with no callers
+      - id: go-deadcode
+        name: deadcode (backend)
+        entry: bash -c 'cd services/backend && $(go env GOPATH)/bin/deadcode -test ./...'
+        language: system
+        files: ^services/backend/.*\.go$
+        pass_filenames: false
+
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
