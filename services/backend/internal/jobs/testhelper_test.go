@@ -1,4 +1,4 @@
-package grpc_test
+package jobs_test
 
 import (
 	"context"
@@ -6,24 +6,28 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/jobs"
-	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 	"github.com/riverqueue/river"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
+
+	_ "github.com/lib/pq"
 )
 
-// testDBConnStr is set once by TestMain and used by newTestCtx in all integration tests.
+// package-level test state set by TestMain.
 var (
-	testDBConnStr   string
-	testPgxPool     *pgxpool.Pool
-	testRiverClient *river.Client[pgx.Tx] // insert-only; not started
+	testPgxPool *pgxpool.Pool
+	testSQLDB   *sql.DB
+	testQueries *db.Queries
 )
 
 func TestMain(m *testing.M) {
@@ -40,17 +44,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// plainConnStr has no search_path override — used for goose and schema bootstrapping
-	// so that DDL runs in the default search path before source schema exists.
 	plainConnStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		pgContainer.Terminate(ctx) //nolint:errcheck
-		fmt.Fprintf(os.Stderr, "failed to get container connection string: %v\n", err)
-		os.Exit(1)
-	}
-
-	// testDBConnStr pins search_path=source so sqlc queries resolve table names correctly.
-	testDBConnStr, err = pgContainer.ConnectionString(ctx, "sslmode=disable", "search_path=source")
 	if err != nil {
 		pgContainer.Terminate(ctx) //nolint:errcheck
 		fmt.Fprintf(os.Stderr, "failed to get container connection string: %v\n", err)
@@ -69,7 +63,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// pgxpool for River (used by CreateJournal handler).
+	// pgxpool for River
 	testPgxPool, err = pgxpool.New(ctx, plainConnStr)
 	if err != nil {
 		pgContainer.Terminate(ctx) //nolint:errcheck
@@ -77,23 +71,26 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	discardLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	if err := jobs.RunMigrations(ctx, testPgxPool, discardLogger); err != nil {
+	// Run River migrations using a discard logger so test output stays clean.
+	if err := jobs.RunMigrations(ctx, testPgxPool, discardLogger()); err != nil {
 		pgContainer.Terminate(ctx) //nolint:errcheck
 		fmt.Fprintf(os.Stderr, "failed to run River migrations: %v\n", err)
 		os.Exit(1)
 	}
 
-	testRiverClient, err = jobs.NewInsertOnlyClient(testPgxPool)
+	// sql.DB + Queries for workers that use sqlc
+	testSQLDB, err = sql.Open("postgres", plainConnStr)
 	if err != nil {
 		pgContainer.Terminate(ctx) //nolint:errcheck
-		fmt.Fprintf(os.Stderr, "failed to create River insert-only client: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to open sql.DB: %v\n", err)
 		os.Exit(1)
 	}
+	testQueries = db.New(testSQLDB)
 
 	code := m.Run()
 
 	testPgxPool.Close()
+	testSQLDB.Close()
 	if err := pgContainer.Terminate(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to terminate postgres container: %v\n", err)
 	}
@@ -101,48 +98,73 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// applySchema runs goose migrations then applies any extras not covered by goose.
+// applySchema runs goose migrations against the test database.
+// No extras.sql needed — jobs tests only use source.* tables and River's own tables.
 func applySchema(connStr string) error {
-	db, err := sql.Open("postgres", connStr)
+	sqlDB, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return fmt.Errorf("open db: %w", err)
 	}
-	defer db.Close()
+	defer sqlDB.Close()
 
 	goose.SetLogger(goose.NopLogger())
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("set goose dialect: %w", err)
 	}
-	// ../sql/schema is relative to the test package directory (internal/grpc/).
-	if err := goose.Up(db, "../sql/schema"); err != nil {
+	if err := goose.Up(sqlDB, "../sql/schema"); err != nil {
 		return fmt.Errorf("goose up: %w", err)
-	}
-
-	// Apply extras not covered by goose (e.g. dbt-managed schemas).
-	extras, err := os.ReadFile("testdata/extras.sql")
-	if err != nil {
-		return fmt.Errorf("read extras.sql: %w", err)
-	}
-	if _, err := db.Exec(string(extras)); err != nil {
-		return fmt.Errorf("apply extras.sql: %w", err)
 	}
 
 	return nil
 }
 
-// waitForDB pings the database up to 20 times with 500ms gaps.
 func waitForDB(connStr string) error {
-	db, err := sql.Open("postgres", connStr)
+	sqlDB, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer sqlDB.Close()
 
 	for i := 0; i < 20; i++ {
-		if err := db.Ping(); err == nil {
+		if err := sqlDB.Ping(); err == nil {
 			return nil
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
 	return fmt.Errorf("postgres did not become ready after 10s")
+}
+
+// newInsertOnlyClient returns a River client that can enqueue jobs but does not process them.
+func newInsertOnlyClient(t *testing.T) *river.Client[pgx.Tx] {
+	t.Helper()
+	client, err := jobs.NewInsertOnlyClient(testPgxPool)
+	if err != nil {
+		t.Fatalf("NewInsertOnlyClient: %v", err)
+	}
+	return client
+}
+
+// newAnalyzerServer returns a test HTTP server that always responds 200.
+func newAnalyzerServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// newFailingAnalyzerServer returns a test HTTP server that always responds 500.
+func newFailingAnalyzerServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// discardLogger returns a logger that discards all output.
+func discardLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }

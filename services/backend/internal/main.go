@@ -14,6 +14,7 @@ import (
 	"database/sql"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -25,6 +26,7 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	grpcSrv "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
+	"github.com/jyablonski/lotus/internal/jobs"
 
 	_ "github.com/lib/pq"
 )
@@ -143,7 +145,7 @@ func main() {
 		corsOrigin = "http://localhost:3000"
 	}
 
-	// ── Database ───────────────────────────────────────────────────────
+	// ── Database (database/sql + lib/pq) ──────────────────────────────
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
 		logger.Error("Failed to open database connection", "error", err)
@@ -163,12 +165,33 @@ func main() {
 
 	queries := db.New(dbConn)
 
+	// ── pgxpool (used by River) ────────────────────────────────────────
+	pgxPool, err := pgxpool.New(context.Background(), connStr)
+	if err != nil {
+		logger.Error("Failed to create pgxpool", "error", err)
+		os.Exit(1)
+	}
+	defer pgxPool.Close()
+
+	// ── River migrations ───────────────────────────────────────────────
+	if err := jobs.RunMigrations(context.Background(), pgxPool, logger); err != nil {
+		logger.Error("Failed to run River migrations", "error", err)
+		os.Exit(1)
+	}
+
 	// ── Shared HTTP client for outbound calls ──────────────────────────
 	// otelhttp.NewTransport injects W3C TraceContext headers so calls to the
 	// analyzer appear as child spans in the same Jaeger trace.
 	httpClient := &http.Client{
 		Timeout:   10 * time.Second,
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+
+	// ── River client ───────────────────────────────────────────────────
+	riverClient, err := jobs.NewClient(pgxPool, queries, httpClient, analyzerBaseURL, logger)
+	if err != nil {
+		logger.Error("Failed to create River client", "error", err)
+		os.Exit(1)
 	}
 
 	// ── Injector interceptor ───────────────────────────────────────────
@@ -183,6 +206,8 @@ func main() {
 		ctx = inject.WithLogger(ctx, logger)
 		ctx = inject.WithHTTPClient(ctx, httpClient)
 		ctx = inject.WithAnalyzerURL(ctx, analyzerBaseURL)
+		ctx = inject.WithPgxPool(ctx, pgxPool)
+		ctx = inject.WithRiverClient(ctx, riverClient)
 		return handler(ctx, req)
 	}
 
@@ -221,6 +246,15 @@ func main() {
 
 	g, gCtx := errgroup.WithContext(ctx)
 
+	// Start River client
+	g.Go(func() error {
+		logger.Info("Starting River job queue")
+		if err := riverClient.Start(gCtx); err != nil {
+			return err
+		}
+		return nil
+	})
+
 	// Start gRPC server
 	g.Go(func() error {
 		lis, err := net.Listen("tcp", ":50051")
@@ -246,6 +280,12 @@ func main() {
 		logger.Info("Shutting down servers …")
 
 		grpcServer.GracefulStop()
+
+		riverStopCtx, riverCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer riverCancel()
+		if err := riverClient.Stop(riverStopCtx); err != nil {
+			logger.Warn("River client did not stop cleanly", "error", err)
+		}
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

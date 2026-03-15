@@ -2,9 +2,9 @@
 //
 // Each dependency has a WithX function that returns a new context carrying
 // the value, and an XFrom function that extracts it. LoggerFrom falls back
-// to slog.Default() when no logger is set; DBFrom and HTTPClientFrom panic
-// if their value is absent (indicating a programming error — the injector
-// interceptor should always set them).
+// to slog.Default() when no logger is set; DBFrom, HTTPClientFrom,
+// PgxPoolFrom, and RiverClientFrom panic if their value is absent
+// (indicating a programming error — the injector interceptor should always set them).
 package inject
 
 import (
@@ -12,7 +12,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jyablonski/lotus/internal/db"
+	"github.com/riverqueue/river"
 )
 
 // HTTPDoer is the interface for making HTTP requests. The existing
@@ -29,6 +32,8 @@ const (
 	loggerKey
 	httpClientKey
 	analyzerURLKey
+	pgxPoolKey
+	riverClientKey
 )
 
 // --- DB (db.Querier) ---
@@ -83,4 +88,32 @@ func AnalyzerURLFrom(ctx context.Context) string {
 		return s
 	}
 	return ""
+}
+
+// --- pgxpool.Pool ---
+
+func WithPgxPool(ctx context.Context, p *pgxpool.Pool) context.Context {
+	return context.WithValue(ctx, pgxPoolKey, p)
+}
+
+func PgxPoolFrom(ctx context.Context) *pgxpool.Pool {
+	p, ok := ctx.Value(pgxPoolKey).(*pgxpool.Pool)
+	if !ok || p == nil {
+		panic("inject: *pgxpool.Pool not found in context (missing injector interceptor?)")
+	}
+	return p
+}
+
+// --- River client ---
+
+func WithRiverClient(ctx context.Context, c *river.Client[pgx.Tx]) context.Context {
+	return context.WithValue(ctx, riverClientKey, c)
+}
+
+func RiverClientFrom(ctx context.Context) *river.Client[pgx.Tx] {
+	c, ok := ctx.Value(riverClientKey).(*river.Client[pgx.Tx])
+	if !ok || c == nil {
+		panic("inject: *river.Client not found in context (missing injector interceptor?)")
+	}
+	return c
 }

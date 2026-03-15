@@ -16,6 +16,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// withRiverDeps adds a pgxpool and an insert-only River client to the context.
+// Required for tests that call CreateJournal, which now uses pgx for the journal insert.
+func withRiverDeps(ctx context.Context) context.Context {
+	ctx = inject.WithPgxPool(ctx, testPgxPool)
+	ctx = inject.WithRiverClient(ctx, testRiverClient)
+	return ctx
+}
+
+// newDirectQueries opens a direct (non-transaction) connection to the test DB.
+// Use this to verify rows committed by CreateJournal (which commits its own pgx tx).
+func newDirectQueries(t *testing.T) *db.Queries {
+	t.Helper()
+	conn, err := sql.Open("postgres", testDBConnStr)
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+	return db.New(conn)
+}
+
 // newTestCtx opens a transaction against the test container DB and registers
 // t.Cleanup to roll it back and close the connection. Each test gets a clean
 // snapshot without any truncation — rollback discards all writes on exit.
