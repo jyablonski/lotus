@@ -195,20 +195,21 @@ def postgres_container():
         )
         conn.autocommit = True
         with conn.cursor() as cur:
-            # Execute statements individually so each runs in true autocommit
-            # mode. Passing the whole file as one string causes PostgreSQL's
-            # simple-query protocol to wrap everything in an implicit
-            # transaction, which rejects CREATE DATABASE. We also skip
-            # CREATE DATABASE entirely — the testcontainer already provides
-            # its own database and the extra ones (dagster, mlflow, etc.)
-            # are only needed for the full local dev stack.
-            for stmt in _BOOTSTRAP_SQL.read_text().split(";"):
-                stmt = stmt.strip()
-                if not stmt:
-                    continue
-                if stmt.upper().startswith("CREATE DATABASE"):
-                    continue
-                cur.execute(stmt)
+            # Filter out CREATE DATABASE lines and execute the rest in one
+            # call.  Splitting on ";" would fragment the dollar-quoted
+            # PL/pgSQL function body (truncate_integration_tables) and
+            # produce empty / partial statements.  All remaining SQL
+            # (CREATE SCHEMA/TABLE/INDEX/FUNCTION, INSERT …) is
+            # transaction-safe.  CREATE DATABASE is skipped entirely —
+            # the testcontainer already provides its own database; the
+            # extras (dagster, mlflow, etc.) are only needed for the
+            # full local dev stack.
+            sql = "\n".join(
+                line
+                for line in _BOOTSTRAP_SQL.read_text().splitlines()
+                if not line.strip().upper().startswith("CREATE DATABASE")
+            )
+            cur.execute(sql)
         conn.close()
         yield pg
 
