@@ -33,6 +33,10 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
     'ignore:function ham\(\) is deprecated:DeprecationWarning',
+    # OTel BatchSpanProcessor background thread can raise ValueError when
+    # trying to log after pytest closes its streams. Suppress this so it
+    # doesn't inflate the exit code via pytest's threading.excepthook capture.
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 testpaths = ["tests"]
 markers = [

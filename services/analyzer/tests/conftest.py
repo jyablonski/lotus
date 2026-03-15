@@ -4,6 +4,13 @@ import os
 # level if ANALYZER_API_KEY is missing, and database.py reads ENV_TYPE at import.
 os.environ.setdefault("ANALYZER_API_KEY", "test-key")
 os.environ.setdefault("ENV_TYPE", "dev")
+# Prevent the OTel OTLP exporter from retrying indefinitely when there is no
+# collector running in CI. The background BatchSpanProcessor thread will fail
+# immediately instead of hanging until after pytest closes its log streams,
+# which would produce "ValueError: I/O operation on closed file" and cause a
+# non-zero exit code via pytest's threading.excepthook capture.
+os.environ.setdefault("OTEL_BSP_SCHEDULE_DELAY_MILLIS", "1")
+os.environ.setdefault("OTEL_BSP_EXPORT_TIMEOUT_MILLIS", "100")
 
 from datetime import datetime
 import logging
@@ -37,6 +44,30 @@ TOPIC_MODEL_PATH = TEST_FIXTURES_DIR / "topic_test_model.pkl"
 _BOOTSTRAP_SQL = Path(__file__).parents[3] / "docker/db/01-bootstrap.sql"
 
 _TEST_API_KEY = os.environ["ANALYZER_API_KEY"]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def shutdown_otel_providers():
+    """Cleanly shut down OTel providers after the test session.
+
+    The BatchSpanProcessor starts a background thread on import of src.main.
+    Without an explicit shutdown() that thread keeps running after pytest
+    finishes, then tries to log into already-closed streams → ValueError.
+    Shutting down the provider here drains and stops the background thread
+    before pytest tears down its logging infrastructure.
+    """
+    yield
+    import contextlib
+
+    from opentelemetry import (
+        metrics as otel_metrics,
+        trace,
+    )
+
+    with contextlib.suppress(Exception):
+        trace.get_tracer_provider().shutdown()
+    with contextlib.suppress(Exception):
+        otel_metrics.get_meter_provider().shutdown()
 
 
 class MockPyfuncSentimentModel:
