@@ -44,7 +44,7 @@ jobs:
           go install github.com/pact-foundation/pact-go/v2@v2.4.2
           sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install --libDir /usr/local/lib
 
-      - name: Test
+      - name: Run Tests
         working-directory: services/backend
         run: |
           set -o pipefail
@@ -54,8 +54,6 @@ jobs:
             ./... | \
             go tool github.com/mfridman/tparse -all -progress -format markdown | \
             tee --append "$GITHUB_STEP_SUMMARY"
-        env:
-          TESTCONTAINERS_RYUK_DISABLED: "true"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -77,7 +75,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: fgrosse/go-coverage-report@v1
+      - uses: fgrosse/go-coverage-report@v1.3.0
         with:
           coverage-artifact-name: backend-coverage
           coverage-file-name: coverage.txt

@@ -49,3 +49,25 @@ func TestHashPasswordDifferentInputs(t *testing.T) {
 		t.Errorf("Expected different hashes for different salts, but got the same")
 	}
 }
+
+func TestMaskSecret(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		n     int
+		want  string
+	}{
+		{"normal key", "abcdefghij", 2, "ab******ij"},
+		{"too short returns placeholder", "ab", 2, "***"},
+		{"n zero returns placeholder", "abcdefgh", 0, "***"},
+		{"unicode safe", "αβγδεζηθ", 2, "αβ****ηθ"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := MaskSecret(tc.input, tc.n)
+			if got != tc.want {
+				t.Errorf("MaskSecret(%q, %d) = %q, want %q", tc.input, tc.n, got, tc.want)
+			}
+		})
+	}
+}
