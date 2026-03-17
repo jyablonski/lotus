@@ -102,6 +102,12 @@ class SemanticTopicExtractor:
         """Cosine similarity between *vec* and every row of taxonomy_embeddings."""
         if vec.ndim == 2:
             vec = vec[0]
+
+        # Guard against dimension mismatch (e.g. when tests substitute mock
+        # encoders that return a different embedding size than taxonomy_embeddings).
+        if vec.shape[0] != self.taxonomy_embeddings.shape[1]:
+            return np.zeros(len(self.taxonomy))
+
         vec_norm = np.linalg.norm(vec)
         if vec_norm == 0.0:
             return np.zeros(len(self.taxonomy))
