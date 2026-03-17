@@ -395,4 +395,5 @@ def mock_openai_topic_client():
 
     mock_client = AsyncMock()
     mock_client.analyze_topics = mock_analyze_topics
+    mock_client.model = "gpt-4o-mini"
     return mock_client
