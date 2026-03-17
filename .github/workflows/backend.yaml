@@ -17,26 +17,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-pipeline:
+  test:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           sparse-checkout: |
             services/backend/**
             docker/**
             Makefile
           sparse-checkout-cone-mode: false
-          # needed to checkout only a single file
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
-          cache-dependency-path: |
-            services/backend/go.sum
+          go-version-file: services/backend/go.mod
+          cache-dependency-path: services/backend/go.sum
 
       - name: Install Pact FFI
         working-directory: services/backend
@@ -44,30 +44,57 @@ jobs:
           go install github.com/pact-foundation/pact-go/v2@v2.4.2
           sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install --libDir /usr/local/lib
 
-      - name: Run Backend Tests
-        run: make test-backend
+      - name: Test
+        working-directory: services/backend
+        run: |
+          set -o pipefail
+          go test -race -json -cover -covermode=atomic \
+            -coverprofile=coverage.txt \
+            -coverpkg=./internal/grpc,./internal/http,./internal/utils \
+            ./... | \
+            go tool github.com/mfridman/tparse -all -progress -format markdown | \
+            tee --append "$GITHUB_STEP_SUMMARY"
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
 
-      # - name: Upload coverage report
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: backend-coverage
-      #     path: services/backend/coverage.out
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: services/backend/coverage.txt
 
-      - name: Run contract tests
+      - name: Contract tests
         working-directory: services/backend
         run: go test -tags=contract ./internal/grpc/contract_test/ -v -run TestBackendAnalyzerContract
 
-  # k6 smoke test against a live backend via Docker Compose.
-  # Uses docker-compose-k6.yaml (postgres + backend only, no Django) so CI
-  # does not need services/django when sparse checkout only has backend/docker.
-  k6-smoke:
+  coverage:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    needs: backend-pipeline
+    needs: test
+
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: fgrosse/go-coverage-report@v1
         with:
+          coverage-artifact-name: backend-coverage
+          coverage-file-name: coverage.txt
+          trim: github.com/jyablonski/lotus
+          exclude: .+\.pb(\.gw)?\.go$
+
+  # k6 smoke test against a live backend via Docker Compose.
+  # Uses docker-compose-k6.yaml (postgres + backend only) so CI
+  # does not need other services when sparse checkout only has backend/docker.
+  k6-smoke:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
           sparse-checkout: |
             services/backend/**
             docker/**
