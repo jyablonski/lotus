@@ -85,6 +85,10 @@ _SAMPLE_ENTRIES: list[dict[str, str]] = [
             "morning routine. Small changes really do compound over time."
         ),
     },
+    {
+        "label": "sports",
+        "text": "The Lakers won last night. LeBron was incredible.",
+    },
 ]
 
 
@@ -94,7 +98,10 @@ _SAMPLE_ENTRIES: list[dict[str, str]] = [
 
 
 class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
-    """MLflow pyfunc wrapper around SemanticTopicExtractor.
+    """MLflow pyfunc wrapper for the semantic journal topic extractor.
+
+    Embeds the full journal text directly and ranks taxonomy labels by cosine
+    similarity — no intermediate keyphrase extraction step.
 
     Loaded artifacts (set by load_context):
         sentence_transformer  — directory containing the saved ST model
@@ -102,37 +109,62 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
         model_config          — JSON file with hyperparameters
     """
 
-    def load_context(self, context: mlflow.pyfunc.PythonModelContext) -> None:
-        from keybert import KeyBERT
-        from sentence_transformers import SentenceTransformer
+    def __getstate__(self) -> dict:
+        # MLflow 3.x calls load_context() on the python_model instance during
+        # log_model() validation *before* pickling it into python_model.pkl.
+        # All runtime state (sentence_model, taxonomy_embeddings, …) is rebuilt
+        # from artifacts by load_context(), so we return an empty pickle state
+        # to keep python_model.pkl device-agnostic.
+        return {}
 
-        logger.info("Loading sentence-transformer model from artifacts...")
-        self.sentence_model = SentenceTransformer(context.artifacts["sentence_transformer"])
-        self.kw_model = KeyBERT(model=self.sentence_model)
+    def __setstate__(self, state: dict) -> None:
+        pass  # load_context() will populate all attributes at load time
+
+    def load_context(self, context: mlflow.pyfunc.PythonModelContext) -> None:
+        from sentence_transformers import SentenceTransformer
+        import torch
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info("Loading sentence-transformer model from artifacts (device=%s)...", device)
+        self.sentence_model = SentenceTransformer(
+            context.artifacts["sentence_transformer"], device=device
+        )
 
         with open(context.artifacts["taxonomy_labels"]) as f:
             self.taxonomy: list[str] = json.load(f)
 
-        # Precompute taxonomy embeddings once at load time.
+        # Precompute taxonomy embeddings once. Store on CPU so that if MLflow
+        # pickles this instance for validation, no CUDA tensors end up in
+        # python_model.pkl. predict() moves them to the right device on demand.
         self.taxonomy_embeddings = self.sentence_model.encode(
             self.taxonomy,
             convert_to_tensor=True,
             normalize_embeddings=True,
-        )
+        ).cpu()
 
         with open(context.artifacts["model_config"]) as f:
             config: dict[str, Any] = json.load(f)
 
-        self.keyphrase_ngram_range: tuple[int, int] = tuple(  # type: ignore[assignment]
-            config["keyphrase_ngram_range"]
-        )
         self.min_confidence: float = config["min_confidence"]
 
         logger.info(
-            "SemanticTopicExtractorWrapper loaded: taxonomy_size=%d, ngram_range=%s",
+            "SemanticTopicExtractorWrapper loaded: taxonomy_size=%d, device=%s",
             len(self.taxonomy),
-            self.keyphrase_ngram_range,
+            device,
         )
+
+    @staticmethod
+    def _max_topics(word_count: int) -> int:
+        """Scale topic budget with entry length, up to 7."""
+        if word_count < 15:
+            return 2
+        if word_count < 40:
+            return 4
+        if word_count < 80:
+            return 5
+        if word_count < 150:
+            return 6
+        return 7
 
     def predict(
         self,
@@ -157,47 +189,26 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
 
         for text in model_input["text"].tolist():
             word_count = len(text.split())
+            max_topics = self._max_topics(word_count)
 
-            if word_count < 20:
-                top_n = 2
-            elif word_count < 50:
-                top_n = 4
-            else:
-                top_n = 6
-
-            keyphrases: list[tuple[str, float]] = self.kw_model.extract_keywords(
+            # Embed the full text and compare directly to every taxonomy label.
+            # This preserves full sentence context — "I love basketball" maps to
+            # sports, not love/romance, because the whole sentence is encoded.
+            text_embedding = self.sentence_model.encode(
                 text,
-                keyphrase_ngram_range=self.keyphrase_ngram_range,
-                stop_words="english",
-                use_maxsum=True,
-                nr_candidates=20,
-                top_n=top_n,
+                convert_to_tensor=True,
+                normalize_embeddings=True,
             )
+            taxonomy_embs = self.taxonomy_embeddings.to(text_embedding.device)
+            similarities = util.cos_sim(text_embedding, taxonomy_embs)[0]
 
-            seen_topics: dict[str, float] = {}
-
-            for phrase, keyphrase_score in keyphrases:
-                if keyphrase_score < self.min_confidence:
-                    continue
-
-                phrase_embedding = self.sentence_model.encode(
-                    phrase,
-                    convert_to_tensor=True,
-                    normalize_embeddings=True,
-                )
-                similarities = util.cos_sim(phrase_embedding, self.taxonomy_embeddings)[0]
-                best_idx = int(similarities.argmax())
-                taxonomy_score = float(similarities[best_idx])
-
-                topic_name = self.taxonomy[best_idx]
-                combined_score = (keyphrase_score + taxonomy_score) / 2
-
-                if topic_name not in seen_topics or combined_score > seen_topics[topic_name]:
-                    seen_topics[topic_name] = combined_score
+            top_k = min(max_topics, len(self.taxonomy))
+            top_values, top_indices = similarities.topk(top_k)
 
             topics = [
-                {"topic_name": name, "confidence": round(score, 4)}
-                for name, score in sorted(seen_topics.items(), key=lambda x: x[1], reverse=True)
+                {"topic_name": self.taxonomy[int(idx)], "confidence": round(float(val), 4)}
+                for val, idx in zip(top_values, top_indices, strict=True)
+                if float(val) >= self.min_confidence
             ]
             results.append({"topics": topics})
 
@@ -219,9 +230,7 @@ def train_and_register() -> None:
     model_name = "all-MiniLM-L6-v2"
     config = {
         "model_name": model_name,
-        "keyphrase_ngram_range": [1, 2],
-        "min_confidence": 0.15,
-        "nr_candidates": 20,
+        "min_confidence": 0.12,
     }
 
     with mlflow.start_run(run_name="semantic_topic_extractor") as run:
@@ -282,7 +291,6 @@ def train_and_register() -> None:
                 python_model=SemanticTopicExtractorWrapper(),
                 artifacts=artifacts,
                 pip_requirements=[
-                    "keybert>=0.8.5",
                     "sentence-transformers>=3.0.0",
                 ],
                 registered_model_name="semantic_journal_topics",

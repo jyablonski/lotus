@@ -21,15 +21,14 @@ def extract_journal_topics(
     topic_client: TopicClient = Depends(get_topic_client),
 ):
     """Extract topics from a journal entry."""
+    if not topic_client.is_ready():
+        raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
+
     try:
         # Get the journal entry
         journal = get_journal_by_id(db, journal_id)
         if not journal:
             raise HTTPException(status_code=404, detail="Journal not found")
-
-        # Check if topic client is ready
-        if not topic_client.is_ready():
-            raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
 
         # Extract topics from the journal content (includes model version)
         with tracer.start_as_current_span("topics.extract") as span:
@@ -57,11 +56,11 @@ def get_journal_topics(
     db: Session = Depends(get_db),
 ):
     """Get stored topics for a journal entry."""
-    try:
-        journal = get_journal_by_id(db, journal_id)
-        if not journal:
-            raise HTTPException(status_code=404, detail="Journal not found")
+    journal = get_journal_by_id(db, journal_id)
+    if not journal:
+        raise HTTPException(status_code=404, detail="Journal not found")
 
+    try:
         # Get stored topics from database
         topics = get_topics_by_journal_id(db, journal_id)
 

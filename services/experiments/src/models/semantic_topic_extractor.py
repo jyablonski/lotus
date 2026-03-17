@@ -1,83 +1,74 @@
-"""Semantic topic extractor for journal entries using KeyBERT + sentence-transformers.
+"""Semantic topic extractor for journal entries using sentence-transformers.
 
-Uses a pre-trained sentence transformer model (no fine-tuning required) to extract
-semantically meaningful keyphrases and map them to a canonical topic taxonomy.
-
-Two-stage approach:
-  1. KeyBERT extracts the most representative n-gram keyphrases from the text using
-     cosine similarity between candidate phrase embeddings and the document embedding.
-  2. Each keyphrase is mapped to the closest entry in a canonical topic taxonomy via
-     cosine similarity between their sentence-transformer embeddings.
-
-This replaces the old TF-IDF + LDA approach with a fully semantic pipeline that
-understands meaning rather than just word frequency.
+Embeds the full journal text and compares it directly against precomputed
+taxonomy label embeddings using cosine similarity.  This approach preserves
+full sentence context (no lossy keyphrase extraction step) and works well
+for both short and long entries.
 """
 
 from __future__ import annotations
 
 JOURNAL_TOPIC_TAXONOMY: list[str] = [
     # Life domains
-    "work and career",
-    "relationships and social life",
+    "work",
     "family",
-    "mental health and anxiety",
-    "physical health and fitness",
-    "sleep and rest",
-    "finances and money",
-    "personal growth and self-improvement",
-    "creativity and art",
-    "hobbies and leisure",
-    "travel and adventure",
-    "food and nutrition",
+    "relationships",
+    "health",
+    "fitness",
+    "sleep",
+    "money",
+    "creativity",
+    "hobbies",
+    "sports",
+    "travel",
+    "nature",
+    "food",
     # Emotional states
-    "gratitude and appreciation",
-    "sadness and grief",
-    "stress and overwhelm",
-    "motivation and goals",
-    "joy and happiness",
-    "love and romance",
-    "conflict and frustration",
-    "loneliness and isolation",
-    # Life events / themes
-    "achievement and success",
-    "daily routine",
-    "reflection and introspection",
-    "spirituality and mindfulness",
-    "learning and education",
-    "parenting and children",
-    "productivity and time management",
+    "gratitude",
+    "sadness",
+    "anxiety",
+    "stress",
+    "motivation",
+    "happiness",
+    "love",
+    "anger",
+    "loneliness",
+    # Life themes
+    "achievement",
+    "growth",
+    "learning",
+    "productivity",
+    "parenting",
+    "spirituality",
+    "reflection",
 ]
 
 
 class SemanticTopicExtractor:
-    """Extracts semantic topics from journal text using KeyBERT + sentence-transformers.
+    """Extracts semantic topics from journal text using sentence-transformers.
+
+    Embeds the full journal text and ranks all taxonomy labels by cosine
+    similarity.  No keyphrase extraction step — full context is preserved.
 
     Args:
         model_name: HuggingFace sentence-transformer model identifier.
-        taxonomy: List of canonical topic strings to map keyphrases onto.
-            Defaults to JOURNAL_TOPIC_TAXONOMY.
-        keyphrase_ngram_range: Min/max word count for extracted keyphrases.
-        min_confidence: Minimum combined confidence score to include a topic.
-            Combined score = average of (keyphrase relevance, taxonomy similarity).
+        taxonomy: List of canonical topic strings. Defaults to JOURNAL_TOPIC_TAXONOMY.
+        min_confidence: Minimum cosine similarity to include a topic (0-1).
     """
 
     def __init__(
         self,
         model_name: str = "all-MiniLM-L6-v2",
         taxonomy: list[str] | None = None,
-        keyphrase_ngram_range: tuple[int, int] = (1, 2),
-        min_confidence: float = 0.15,
+        min_confidence: float = 0.20,
     ) -> None:
-        from keybert import KeyBERT
         from sentence_transformers import SentenceTransformer
 
         self.model_name = model_name
         self.taxonomy = taxonomy if taxonomy is not None else JOURNAL_TOPIC_TAXONOMY
-        self.keyphrase_ngram_range = keyphrase_ngram_range
         self.min_confidence = min_confidence
 
         self.sentence_model = SentenceTransformer(model_name)
-        self.kw_model = KeyBERT(model=self.sentence_model)
 
         # Precompute and cache taxonomy embeddings once at init time.
         self.taxonomy_embeddings = self.sentence_model.encode(
@@ -85,6 +76,18 @@ class SemanticTopicExtractor:
             convert_to_tensor=True,
             normalize_embeddings=True,
         )
+
+    def _max_topics(self, word_count: int) -> int:
+        """Scale the topic budget with entry length, up to 7."""
+        if word_count < 15:
+            return 2
+        if word_count < 40:
+            return 4
+        if word_count < 80:
+            return 5
+        if word_count < 150:
+            return 6
+        return 7
 
     def extract_topics(self, text: str) -> list[dict]:
         """Extract canonical topics from a single journal entry.
@@ -99,58 +102,23 @@ class SemanticTopicExtractor:
         from sentence_transformers import util
 
         word_count = len(text.split())
+        max_topics = self._max_topics(word_count)
 
-        # Adaptive keyphrase budget based on entry length.
-        if word_count < 20:
-            top_n = 2
-        elif word_count < 50:
-            top_n = 4
-        else:
-            top_n = 6
-
-        # KeyBERT: extract top-n keyphrases most representative of the document.
-        # use_maxsum=True diversifies results (Max Sum Similarity algorithm).
-        keyphrases: list[tuple[str, float]] = self.kw_model.extract_keywords(
+        # Embed the full text and compare directly to every taxonomy label.
+        text_embedding = self.sentence_model.encode(
             text,
-            keyphrase_ngram_range=self.keyphrase_ngram_range,
-            stop_words="english",
-            use_maxsum=True,
-            nr_candidates=20,
-            top_n=top_n,
+            convert_to_tensor=True,
+            normalize_embeddings=True,
         )
+        similarities = util.cos_sim(text_embedding, self.taxonomy_embeddings)[0]
 
-        if not keyphrases:
-            return []
-
-        seen_topics: dict[str, float] = {}
-
-        for phrase, keyphrase_score in keyphrases:
-            if keyphrase_score < self.min_confidence:
-                continue
-
-            # Map the keyphrase to the most semantically similar taxonomy entry.
-            phrase_embedding = self.sentence_model.encode(
-                phrase,
-                convert_to_tensor=True,
-                normalize_embeddings=True,
-            )
-            similarities = util.cos_sim(phrase_embedding, self.taxonomy_embeddings)[0]
-            best_idx = int(similarities.argmax())
-            taxonomy_score = float(similarities[best_idx])
-
-            topic_name = self.taxonomy[best_idx]
-            # Average the two signals: how well the phrase represents the document
-            # and how well the phrase matches the taxonomy entry.
-            combined_score = (keyphrase_score + taxonomy_score) / 2
-
-            # Deduplicate: if the same taxonomy topic is matched by multiple
-            # keyphrases, keep the highest-confidence mapping.
-            if topic_name not in seen_topics or combined_score > seen_topics[topic_name]:
-                seen_topics[topic_name] = combined_score
+        top_k = min(max_topics, len(self.taxonomy))
+        top_values, top_indices = similarities.topk(top_k)
 
         return [
-            {"topic_name": name, "confidence": round(score, 4)}
-            for name, score in sorted(seen_topics.items(), key=lambda x: x[1], reverse=True)
+            {"topic_name": self.taxonomy[int(idx)], "confidence": round(float(val), 4)}
+            for val, idx in zip(top_values, top_indices, strict=True)
+            if float(val) >= self.min_confidence
         ]
 
     def extract_topics_batch(self, texts: list[str]) -> list[list[dict]]:
