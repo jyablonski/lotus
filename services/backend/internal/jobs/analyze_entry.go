@@ -73,7 +73,7 @@ func (w *AnalyzeEntryWorker) callEndpoint(ctx context.Context, entryID int64, an
 		return fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/v1/journals/%d/openai/%s", w.analyzerURL, entryID, analysisType)
+	url := fmt.Sprintf("%s/v1/journals/%d/%s/internal", w.analyzerURL, entryID, analysisType)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {

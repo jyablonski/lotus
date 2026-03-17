@@ -85,7 +85,7 @@ def get_openai_topic_client() -> OpenAITopicClient:
 
     Example:
 
-    @router.post("/journals/{journal_id}/topics")
+    @router.post("/journals/{journal_id}/openai/topics")
     def extract_topics(
         journal_id: int,
         topic_client: OpenAITopicClient = Depends(get_openai_topic_client),

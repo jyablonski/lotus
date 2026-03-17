@@ -87,8 +87,8 @@ func TestBackendAnalyzerContract_TriggerTopics(t *testing.T) {
 	err = mockProvider.
 		AddInteraction().
 		Given("a journal entry exists in the analyzer database").
-		UponReceiving("a request to trigger OpenAI topic extraction").
-		WithRequest("POST", "/v1/journals/123/openai/topics", func(b *consumer.V3RequestBuilder) {
+		UponReceiving("a request to trigger internal topic extraction").
+		WithRequest("POST", "/v1/journals/123/topics/internal", func(b *consumer.V3RequestBuilder) {
 			b.Header("Content-Type", matchers.S("application/json"))
 			b.JSONBody(map[string]interface{}{
 				"force_reanalyze": matchers.Like(false),
@@ -96,7 +96,7 @@ func TestBackendAnalyzerContract_TriggerTopics(t *testing.T) {
 		}).
 		WillRespondWith(204).
 		ExecuteTest(t, func(config consumer.MockServerConfig) error {
-			url := fmt.Sprintf("http://%s:%d/v1/journals/123/openai/topics", config.Host, config.Port)
+			url := fmt.Sprintf("http://%s:%d/v1/journals/123/topics/internal", config.Host, config.Port)
 
 			body := strings.NewReader(`{"force_reanalyze":false}`)
 			req, err := http.NewRequest("POST", url, body)

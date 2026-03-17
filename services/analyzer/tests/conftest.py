@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 TEST_FIXTURES_DIR = Path("tests/fixtures/models")
 SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
-TOPIC_MODEL_PATH = TEST_FIXTURES_DIR / "topic_test_model.pkl"
 
 # Path to the bootstrap SQL relative to the repo root, resolved from this file's location.
 # conftest.py lives at services/analyzer/tests/conftest.py → 3 parents up = repo root.
@@ -123,18 +122,14 @@ class MockPyfuncSentimentModel:
         return results
 
 
-class MockPyfuncTopicModel:
-    """
-    Mock pyfunc model that wraps a sklearn pipeline
-    and provides the same interface as the production pyfunc wrapper.
-    """
+class MockSemanticTopicModel:
+    """Mock pyfunc model matching the SemanticTopicExtractorWrapper output format.
 
-    def __init__(self, sklearn_pipeline, topic_labels: dict):
-        self.pipeline = sklearn_pipeline
-        self.topic_labels = topic_labels
+    Returns keyword-heuristic topics so integration tests can exercise the full
+    HTTP → DB → response path without loading the real sentence-transformer model.
+    """
 
     def predict(self, model_input: pd.DataFrame) -> list[dict]:
-        """Mimic the pyfunc wrapper's predict method."""
         if "text" not in model_input.columns:
             raise ValueError("model_input must contain 'text' column")
 
@@ -142,37 +137,28 @@ class MockPyfuncTopicModel:
         results = []
 
         for text in texts:
+            lower = text.lower()
             word_count = len(text.split())
+            top_n = 2 if word_count < 20 else (4 if word_count < 50 else 6)
 
-            # Adaptive thresholds (matching the production wrapper)
-            if word_count < 20:
-                min_confidence = 0.25
-                max_topics = 2
-            elif word_count < 50:
-                min_confidence = 0.20
-                max_topics = 4
-            else:
-                min_confidence = 0.15
-                max_topics = 6
+            candidates = []
+            if any(w in lower for w in ["work", "meeting", "boss", "deadline", "office"]):
+                candidates.append({"topic_name": "work and career", "confidence": 0.82})
+            if any(w in lower for w in ["stress", "anxious", "overwhelm", "drained"]):
+                candidates.append({"topic_name": "stress and overwhelm", "confidence": 0.75})
+            if any(w in lower for w in ["happy", "joy", "amazing", "wonderful", "great"]):
+                candidates.append({"topic_name": "joy and happiness", "confidence": 0.78})
+            if any(w in lower for w in ["sleep", "tired", "rest", "exhausted"]):
+                candidates.append({"topic_name": "sleep and rest", "confidence": 0.71})
+            if any(w in lower for w in ["grateful", "thankful", "gratitude", "appreciate"]):
+                candidates.append({"topic_name": "gratitude and appreciation", "confidence": 0.80})
+            if any(w in lower for w in ["run", "gym", "exercise", "workout", "fitness"]):
+                candidates.append({"topic_name": "physical health and fitness", "confidence": 0.77})
 
-            # Get topic probabilities from sklearn pipeline
-            topic_probs = self.pipeline.transform([text])[0]
+            if not candidates:
+                candidates = [{"topic_name": "reflection and introspection", "confidence": 0.60}]
 
-            # Filter and format topics
-            topics = []
-            for i, confidence in enumerate(topic_probs):
-                if confidence > min_confidence:
-                    topics.append(
-                        {
-                            "topic_id": i,
-                            "topic_name": self.topic_labels.get(i, f"topic_{i}"),
-                            "confidence": round(float(confidence), 4),
-                        }
-                    )
-
-            # Sort by confidence and limit
-            topics.sort(key=lambda x: x["confidence"], reverse=True)
-            results.append({"topics": topics[:max_topics]})
+            results.append({"topics": candidates[:top_n]})
 
         return results
 
@@ -273,45 +259,23 @@ def real_sentiment_client():
 
 @pytest.fixture(scope="session")
 def real_topic_client():
-    """Load pre-saved topic model for testing."""
-    logger.info("Loading test topic model from fixtures...")
+    """Topic client with a lightweight mock semantic model for integration tests.
 
-    if not TOPIC_MODEL_PATH.exists():
-        pytest.skip(f"Test topic model not found at {TOPIC_MODEL_PATH}.")
+    Uses MockSemanticTopicModel instead of loading the real sentence-transformer
+    so tests run without network access or large model downloads.
+    """
+    client = TopicClient()
+    client.model = MockSemanticTopicModel()
+    client.model_version = "test_v1.0.0"
+    client.model_run_id = "test_run_id"
+    client._is_loaded = True
 
-    try:
-        with TOPIC_MODEL_PATH.open("rb") as f:
-            test_pipeline = pickle.load(f)
+    # Verify it works
+    test_result = client.extract_topics("This is a test entry about work")
+    assert isinstance(test_result, list)
 
-        # Topic labels for the test model
-        topic_labels = {
-            0: "Daily Needs & Work",
-            1: "Evening Reflection",
-            2: "Work & Productivity",
-            3: "Emotional State",
-            4: "Feelings & Emotions",
-            5: "Daily Activities",
-            6: "Morning Routine & Positivity",
-            7: "Work Focus & Effort",
-        }
-
-        # Create client and inject mock pyfunc model
-        client = TopicClient()
-        client.model = MockPyfuncTopicModel(test_pipeline, topic_labels)
-        client.model_version = "test_v1.0.0"
-        client.model_run_id = "test_run_id"
-        client._is_loaded = True
-
-        # Verify it works
-        test_result = client.extract_topics("This is a test")
-        assert isinstance(test_result, list)
-
-        logger.info("Test topic model loaded successfully")
-        return client
-
-    except Exception as e:
-        logger.error(f"Failed to load test topic model: {e}")
-        pytest.skip(f"Test topic model could not be loaded: {e}")
+    logger.info("Test topic client (semantic mock) ready")
+    return client
 
 
 @pytest.fixture
@@ -347,8 +311,7 @@ def mock_topic_client():
 
     client.extract_topics.return_value = [
         {
-            "topic_id": 2,
-            "topic_name": "Work & Productivity",
+            "topic_name": "work and career",
             "confidence": 0.85,
             "ml_model_version": "test_v1",
         }

@@ -14,7 +14,7 @@ tracer = trace.get_tracer(__name__)
 router = APIRouter()
 
 
-@router.post("/journals/{journal_id}/topics", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/journals/{journal_id}/topics/internal", status_code=status.HTTP_204_NO_CONTENT)
 def extract_journal_topics(
     journal_id: int,
     db: Session = Depends(get_db),
@@ -83,7 +83,7 @@ def get_journal_topics(
         raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
-@router.get("/health/topics")
+@router.get("/health/topics/internal")
 def topic_service_health(topic_client: TopicClient = Depends(get_topic_client)):
     """Health check endpoint for the topic extraction service."""
     if topic_client.is_ready():
@@ -91,5 +91,5 @@ def topic_service_health(topic_client: TopicClient = Depends(get_topic_client)):
         return {"status": "healthy", "service": "topic_extraction", **model_info}
     raise HTTPException(
         status_code=503,
-        detail={"status": "unhealthy", "service": "topic_extraction"},
+        detail={"status": "unhealthy", "service": "topic_extraction_internal"},
     )

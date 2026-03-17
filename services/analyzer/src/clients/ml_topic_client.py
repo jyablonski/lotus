@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import pandas as pd
 
@@ -9,80 +8,37 @@ logger = logging.getLogger(__name__)
 
 
 class TopicClient(BaseMLflowClient):
+    """MLflow client for the semantic journal topic extractor.
+
+    Wraps the 'semantic_journal_topics' pyfunc model registered in MLflow.
+    The underlying model uses KeyBERT + sentence-transformers (all-MiniLM-L6-v2)
+    to extract semantically meaningful topics without relying on an external API.
     """
-    Client for topic extraction using MLflow pyfunc models.
 
-    The loaded model is a pyfunc wrapper that handles all preprocessing
-    and returns formatted topic predictions directly.
-    """
+    def __init__(self) -> None:
+        super().__init__(model_name="semantic_journal_topics")
 
-    def __init__(
-        self,
-        mlflow_uri: str | None = None,
-    ):
-        super().__init__(model_name="adaptive_journal_topics", mlflow_uri=mlflow_uri)
-
-    def extract_topics(self, text: str) -> list[dict[str, Any]]:
-        """
-        Extract topics from text using the pyfunc model.
-
-        The model handles adaptive topic extraction based on text length
-        and returns formatted results directly.
+    def extract_topics(self, text: str) -> list[dict]:
+        """Extract topics from a single journal entry.
 
         Returns:
-            List of topic dicts with topic_id, topic_name, confidence, and ml_model_version
+            List of topic dicts sorted by descending confidence:
+            [{"topic_name": str, "confidence": float, "ml_model_version": str}, ...]
         """
-        if not self.is_ready():
-            raise RuntimeError("TopicClient model not loaded. Call load_model() first.")
+        model_input = pd.DataFrame({"text": [text]})
+        results: list[dict] = self.model.predict(model_input)
+        return [{**topic, "ml_model_version": self.model_version} for topic in results[0]["topics"]]
 
-        # Create DataFrame input for pyfunc model
-        input_df = pd.DataFrame({"text": [text]})
+    def extract_topics_batch(self, texts: list[str]) -> list[list[dict]]:
+        """Extract topics for multiple journal entries in a single model call."""
+        model_input = pd.DataFrame({"text": texts})
+        results: list[dict] = self.model.predict(model_input)
+        return [
+            [{**topic, "ml_model_version": self.model_version} for topic in result["topics"]]
+            for result in results
+        ]
 
-        # Model returns list of dicts with "topics" key
-        results = self.model.predict(input_df)
-
-        # Extract topics from first result and add model version
-        topics = results[0].get("topics", []) if results else []
-
-        # Add model version to each topic
-        for topic in topics:
-            topic["ml_model_version"] = self.model_version
-
-        return topics
-
-    def extract_topics_batch(self, texts: list[str]) -> list[list[dict[str, Any]]]:
-        """
-        Extract topics from multiple texts.
-
-        Returns:
-            List of topic lists, one per input text
-        """
-        if not self.is_ready():
-            raise RuntimeError("TopicClient model not loaded. Call load_model() first.")
-
-        input_df = pd.DataFrame({"text": texts})
-        results = self.model.predict(input_df)
-
-        # Add model version to each topic in each result
-        all_topics = []
-        for result in results:
-            topics = result.get("topics", [])
-            for topic in topics:
-                topic["ml_model_version"] = self.model_version
-            all_topics.append(topics)
-
-        return all_topics
-
-    def get_top_topic(self, text: str) -> dict[str, Any]:
-        """Get just the most likely topic."""
+    def get_top_topic(self, text: str) -> dict | None:
+        """Return the single highest-confidence topic for the given text."""
         topics = self.extract_topics(text)
-
-        if topics:
-            return topics[0]
-
-        return {
-            "topic_name": "Other",
-            "confidence": 0.0,
-            "reason": "No topics extracted",
-            "ml_model_version": self.model_version,
-        }
+        return topics[0] if topics else None
