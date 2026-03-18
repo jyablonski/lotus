@@ -296,8 +296,8 @@ class TestSemanticTopicExtractorIntegration:
         topics = extractor.extract_topics(text)
         assert len(topics) > 0
         # Check both topic_name (domain) and subtopic_name — valid models may
-        # classify "overwhelmed" under "mental and emotional wellbeing" with
-        # subtopic "stress and feeling overwhelmed" rather than "work and career".
+        # classify "overwhelmed" under "wellbeing" with subtopic
+        # "stress and feeling overwhelmed" rather than "work".
         assert any(
             any(
                 kw in (t["topic_name"] + " " + (t.get("subtopic_name") or ""))

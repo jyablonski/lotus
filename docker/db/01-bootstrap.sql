@@ -112,10 +112,10 @@ CREATE INDEX idx_journal_topics_topic_name ON journal_topics(topic_name);
 CREATE INDEX idx_journal_topics_subtopic_name ON journal_topics(subtopic_name);
 
 INSERT INTO journal_topics (journal_id, topic_name, subtopic_name, confidence, ml_model_version) VALUES
-(1, 'work and career',                'deadlines and workload pressure',     0.7234, 'v1.0.0'),
-(1, 'personal growth',                'goals and personal motivation',       0.2156, 'v1.0.0'),
-(2, 'mental and emotional wellbeing', 'anxiety and worry about the future',  0.8901, 'v1.0.0'),
-(2, 'work and career',                'stress and feeling overwhelmed',      0.3245, 'v1.0.0');
+(1, 'work',      'deadlines and workload pressure',    0.7234, 'v1.0.0'),
+(1, 'growth',    'goals and personal motivation',      0.2156, 'v1.0.0'),
+(2, 'wellbeing', 'anxiety and worry about the future', 0.8901, 'v1.0.0'),
+(2, 'work',      'stress and feeling overwhelmed',     0.3245, 'v1.0.0');
 
 
 CREATE TABLE IF NOT EXISTS source.journal_sentiments (

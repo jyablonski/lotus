@@ -24,38 +24,38 @@ from sentence_transformers import SentenceTransformer
 # ---------------------------------------------------------------------------
 
 JOURNAL_TOPIC_HIERARCHY: dict[str, list[str]] = {
-    "work and career": [
+    "work": [
         "deadlines and workload pressure",
         "career growth and ambition",
         "workplace relationships and colleagues",
         "job satisfaction and meaning",
         "work-life balance and boundaries",
     ],
-    "family and home": [
+    "family": [
         "parenting and raising children",
         "partnership and marriage",
         "family conflict and tension",
         "household chores and responsibilities",
         "extended family and relatives",
     ],
-    "relationships and social life": [
+    "relationships": [
         "friendship and social connection",
         "romantic relationship and dating",
         "loneliness and social isolation",
         "conflict and disagreement with others",
     ],
-    "health and body": [
+    "health": [
         "physical illness and recovery",
         "diet and nutrition habits",
         "exercise and physical fitness",
         "medical care and health concerns",
     ],
-    "sleep and rest": [
+    "sleep": [
         "sleep quality and insomnia",
         "fatigue and low energy",
         "rest and relaxation",
     ],
-    "mental and emotional wellbeing": [
+    "wellbeing": [
         "anxiety and worry about the future",
         "sadness and grief",
         "stress and feeling overwhelmed",
@@ -63,30 +63,30 @@ JOURNAL_TOPIC_HIERARCHY: dict[str, list[str]] = {
         "anger and frustration",
         "emotional numbness and disconnection",
     ],
-    "personal growth": [
+    "growth": [
         "learning and skill development",
         "self-reflection and introspection",
         "goals and personal motivation",
         "habits and daily discipline",
         "identity and self-worth",
     ],
-    "money and finances": [
+    "finances": [
         "financial stress and debt",
         "spending and budgeting",
         "financial goals and savings",
     ],
-    "creativity and hobbies": [
+    "creativity": [
         "creative projects and artistic expression",
         "hobbies and leisure activities",
         "entertainment and media consumption",
     ],
-    "spirituality and meaning": [
+    "spirituality": [
         "spiritual practice and faith",
         "purpose and meaning in life",
         "gratitude and appreciation",
         "mindfulness and present-moment awareness",
     ],
-    "travel and environment": [
+    "travel": [
         "nature and outdoor experiences",
         "travel and new places",
         "food and eating experiences",
@@ -118,7 +118,7 @@ class SemanticTopicExtractor:
 
     Each result entry contains:
 
-    - ``topic_name``    — broad domain (e.g. ``"work and career"``)
+    - ``topic_name``    — broad domain (e.g. ``"work"``)
     - ``subtopic_name`` — matched descriptive label
       (e.g. ``"deadlines and workload pressure"``)
     - ``confidence``    — ``(KeyBERT score + cosine similarity) / 2``,
@@ -218,7 +218,7 @@ class SemanticTopicExtractor:
 
                 [
                     {
-                        "topic_name": "work and career",
+                        "topic_name": "work",
                         "subtopic_name": "deadlines and workload pressure",
                         "confidence": 0.8731,
                     },

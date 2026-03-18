@@ -221,7 +221,7 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
                     {
                         "topics": [
                             {
-                                "topic_name": "work and career",
+                                "topic_name": "work",
                                 "subtopic_name": "deadlines and workload pressure",
                                 "confidence": 0.8731,
                             },
