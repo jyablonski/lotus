@@ -295,8 +295,16 @@ class TestSemanticTopicExtractorIntegration:
         )
         topics = extractor.extract_topics(text)
         assert len(topics) > 0
-        names = [t["topic_name"] for t in topics]
-        assert any("work" in n or "stress" in n for n in names)
+        # Check both topic_name (domain) and subtopic_name — valid models may
+        # classify "overwhelmed" under "mental and emotional wellbeing" with
+        # subtopic "stress and feeling overwhelmed" rather than "work and career".
+        assert any(
+            any(
+                kw in (t["topic_name"] + " " + (t.get("subtopic_name") or ""))
+                for kw in ("work", "stress", "overwhelm")
+            )
+            for t in topics
+        )
 
     def test_confidence_in_valid_range(self, extractor):
         text = "Feeling anxious about the big presentation tomorrow."
