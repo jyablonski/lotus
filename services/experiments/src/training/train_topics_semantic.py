@@ -1,10 +1,10 @@
 """Training (registration) script for the semantic journal topic extractor.
 
 There is no gradient-based training here — we use a pre-trained sentence-transformer
-model (all-MiniLM-L6-v2) as-is. This script:
+model (all-mpnet-base-v2) as-is. This script:
 
   1. Downloads and saves the sentence-transformer model to a temp directory.
-  2. Serialises the topic taxonomy and model config as JSON artifacts.
+  2. Serialises the topic hierarchy and model config as JSON artifacts.
   3. Runs a validation pass against sample journal entries to confirm the
      pyfunc wrapper works end-to-end before registering.
   4. Logs everything to MLflow and registers the model as "semantic_journal_topics".
@@ -23,9 +23,8 @@ from typing import Any
 
 import mlflow
 import mlflow.pyfunc
+import numpy as np
 import pandas as pd
-
-from src.models.semantic_topic_extractor import JOURNAL_TOPIC_TAXONOMY
 
 logger = logging.getLogger(__name__)
 
@@ -94,125 +93,148 @@ _SAMPLE_ENTRIES: list[dict[str, str]] = [
 
 # ---------------------------------------------------------------------------
 # MLflow pyfunc wrapper
+#
+# Intentionally self-contained: no imports from src.models.*.
+# All extraction logic is implemented inline so that MLflow can load this
+# wrapper in the analyzer without needing code_paths or sys.path manipulation.
 # ---------------------------------------------------------------------------
 
 
 class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
     """MLflow pyfunc wrapper for the semantic journal topic extractor.
 
-    Embeds the full journal text directly and ranks taxonomy labels by cosine
-    similarity — no intermediate keyphrase extraction step.
+    Self-contained: loads a SentenceTransformer + KeyBERT directly from
+    artifacts and implements extraction inline. No imports from src.models
+    are needed, so this wrapper loads correctly in any environment that has
+    keybert and sentence-transformers installed.
 
     Loaded artifacts (set by load_context):
         sentence_transformer  — directory containing the saved ST model
-        taxonomy_labels       — JSON file with the canonical topic list
+        hierarchy             — JSON file with the domain → subtopic mapping
         model_config          — JSON file with hyperparameters
     """
 
     def __getstate__(self) -> dict:
         # MLflow 3.x calls load_context() on the python_model instance during
         # log_model() validation *before* pickling it into python_model.pkl.
-        # All runtime state (sentence_model, taxonomy_embeddings, …) is rebuilt
-        # from artifacts by load_context(), so we return an empty pickle state
-        # to keep python_model.pkl device-agnostic.
+        # All runtime state is rebuilt from artifacts by load_context(), so we
+        # return an empty state to keep python_model.pkl device-agnostic.
         return {}
 
     def __setstate__(self, state: dict) -> None:
         pass  # load_context() will populate all attributes at load time
 
     def load_context(self, context: mlflow.pyfunc.PythonModelContext) -> None:
+        from keybert import KeyBERT
         from sentence_transformers import SentenceTransformer
         import torch
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        logger.info("Loading sentence-transformer model from artifacts (device=%s)...", device)
-        self.sentence_model = SentenceTransformer(
-            context.artifacts["sentence_transformer"], device=device
-        )
-
-        with open(context.artifacts["taxonomy_labels"]) as f:
-            self.taxonomy: list[str] = json.load(f)
-
-        # Precompute taxonomy embeddings once. Store on CPU so that if MLflow
-        # pickles this instance for validation, no CUDA tensors end up in
-        # python_model.pkl. predict() moves them to the right device on demand.
-        self.taxonomy_embeddings = self.sentence_model.encode(
-            self.taxonomy,
-            convert_to_tensor=True,
-            normalize_embeddings=True,
-        ).cpu()
+        with open(context.artifacts["hierarchy"]) as f:
+            hierarchy: dict[str, list[str]] = json.load(f)
 
         with open(context.artifacts["model_config"]) as f:
             config: dict[str, Any] = json.load(f)
 
-        self.min_confidence: float = config["min_confidence"]
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info("Loading sentence-transformer model from artifacts (device=%s)...", device)
 
-        logger.info(
-            "SemanticTopicExtractorWrapper loaded: taxonomy_size=%d, device=%s",
-            len(self.taxonomy),
-            device,
+        # Build flat taxonomy and reverse domain lookup from the saved hierarchy.
+        self._taxonomy: list[str] = [sub for subs in hierarchy.values() for sub in subs]
+        self._subtopic_to_domain: dict[str, str] = {
+            sub: domain for domain, subs in hierarchy.items() for sub in subs
+        }
+        self._min_confidence: float = config["min_confidence"]
+
+        self._sentence_model = SentenceTransformer(context.artifacts["sentence_transformer"])
+        self._kw_model = KeyBERT(model=self._sentence_model)
+
+        # Precompute and cache taxonomy embeddings once at load time.
+        self._taxonomy_embeddings: np.ndarray = self._sentence_model.encode(
+            self._taxonomy,
+            convert_to_tensor=False,
+            normalize_embeddings=True,
         )
 
-    @staticmethod
-    def _max_topics(word_count: int) -> int:
-        """Scale topic budget with entry length, up to 7."""
-        if word_count < 15:
-            return 2
-        if word_count < 40:
-            return 4
-        if word_count < 80:
-            return 5
-        if word_count < 150:
-            return 6
-        return 7
+        logger.info(
+            "SemanticTopicExtractorWrapper loaded: %d domains, %d subtopics",
+            len(hierarchy),
+            len(self._taxonomy),
+        )
+
+    def _extract_topics(self, text: str) -> list[dict]:
+        """Extract hierarchical topics for a single journal entry."""
+        word_count = len(text.split())
+        top_n = 2 if word_count < 20 else (4 if word_count < 50 else 6)
+
+        keyphrases: list[tuple[str, float]] = self._kw_model.extract_keywords(
+            text,
+            keyphrase_ngram_range=(1, 2),
+            top_n=top_n,
+        )
+        keyphrases = [(kp, score) for kp, score in keyphrases if score >= self._min_confidence]
+
+        if not keyphrases:
+            return []
+
+        best: dict[str, tuple[str, float]] = {}  # subtopic → (domain, confidence)
+
+        for keyphrase, kp_score in keyphrases:
+            embedding = self._sentence_model.encode(keyphrase, normalize_embeddings=True)
+
+            # Cosine similarity against precomputed taxonomy embeddings.
+            vec = embedding.flatten()
+            matrix = self._taxonomy_embeddings
+            similarities = (matrix @ vec).flatten()
+
+            best_idx = int(np.argmax(similarities))
+            cosim = float(similarities[best_idx])
+            combined = round((kp_score + cosim) / 2, 4)
+            subtopic = self._taxonomy[best_idx]
+            domain = self._subtopic_to_domain[subtopic]
+
+            if subtopic not in best or combined > best[subtopic][1]:
+                best[subtopic] = (domain, combined)
+
+        return sorted(
+            [
+                {"topic_name": domain, "subtopic_name": subtopic, "confidence": conf}
+                for subtopic, (domain, conf) in best.items()
+            ],
+            key=lambda t: t["confidence"],
+            reverse=True,
+        )
 
     def predict(
         self,
         context: mlflow.pyfunc.PythonModelContext,
         model_input: pd.DataFrame,
     ) -> list[dict]:
-        """Extract canonical topics for each row in model_input.
+        """Extract hierarchical topics for each row in model_input.
 
         Args:
-            model_input: DataFrame with a "text" column.
+            model_input: DataFrame with a ``"text"`` column.
 
         Returns:
-            List of dicts (one per row):
-            [{"topics": [{"topic_name": str, "confidence": float}, ...]}, ...]
-        """
-        from sentence_transformers import util
+            List of dicts (one per row)::
 
+                [
+                    {
+                        "topics": [
+                            {
+                                "topic_name": "work and career",
+                                "subtopic_name": "deadlines and workload pressure",
+                                "confidence": 0.8731,
+                            },
+                            ...,
+                        ]
+                    },
+                    ...,
+                ]
+        """
         if "text" not in model_input.columns:
             raise ValueError("model_input must contain a 'text' column")
 
-        results: list[dict] = []
-
-        for text in model_input["text"].tolist():
-            word_count = len(text.split())
-            max_topics = self._max_topics(word_count)
-
-            # Embed the full text and compare directly to every taxonomy label.
-            # This preserves full sentence context — "I love basketball" maps to
-            # sports, not love/romance, because the whole sentence is encoded.
-            text_embedding = self.sentence_model.encode(
-                text,
-                convert_to_tensor=True,
-                normalize_embeddings=True,
-            )
-            taxonomy_embs = self.taxonomy_embeddings.to(text_embedding.device)
-            similarities = util.cos_sim(text_embedding, taxonomy_embs)[0]
-
-            top_k = min(max_topics, len(self.taxonomy))
-            top_values, top_indices = similarities.topk(top_k)
-
-            topics = [
-                {"topic_name": self.taxonomy[int(idx)], "confidence": round(float(val), 4)}
-                for val, idx in zip(top_values, top_indices, strict=True)
-                if float(val) >= self.min_confidence
-            ]
-            results.append({"topics": topics})
-
-        return results
+        return [{"topics": self._extract_topics(text)} for text in model_input["text"].tolist()]
 
 
 # ---------------------------------------------------------------------------
@@ -223,19 +245,27 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
 def train_and_register() -> None:
     from sentence_transformers import SentenceTransformer
 
+    # Import hierarchy from src.models — safe here because train_and_register()
+    # runs on the host where experiments/src/ is on sys.path.
+    from src.models.semantic_topic_extractor import (
+        JOURNAL_TOPIC_HIERARCHY,
+        JOURNAL_TOPIC_TAXONOMY,
+    )
+
     mlflow_uri = os.getenv("MLFLOW_CONN_URI", "http://localhost:5000")
     mlflow.set_tracking_uri(mlflow_uri)
     mlflow.set_experiment("journal_topic_extraction")
 
-    model_name = "all-MiniLM-L6-v2"
+    model_name = "all-mpnet-base-v2"
     config = {
         "model_name": model_name,
-        "min_confidence": 0.12,
+        "min_confidence": 0.15,
     }
 
     with mlflow.start_run(run_name="semantic_topic_extractor") as run:
         mlflow.log_params(config)
-        mlflow.log_param("taxonomy_size", len(JOURNAL_TOPIC_TAXONOMY))
+        mlflow.log_param("taxonomy_domains", len(JOURNAL_TOPIC_HIERARCHY))
+        mlflow.log_param("taxonomy_subtopics", len(JOURNAL_TOPIC_TAXONOMY))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # 1. Save sentence-transformer model.
@@ -243,10 +273,10 @@ def train_and_register() -> None:
             logger.info("Downloading and saving sentence-transformer model: %s", model_name)
             SentenceTransformer(model_name).save(st_path)
 
-            # 2. Save taxonomy labels.
-            taxonomy_path = os.path.join(tmpdir, "taxonomy_labels.json")
-            with open(taxonomy_path, "w") as f:
-                json.dump(JOURNAL_TOPIC_TAXONOMY, f, indent=2)
+            # 2. Save hierarchy (domain → subtopic list mapping).
+            hierarchy_path = os.path.join(tmpdir, "hierarchy.json")
+            with open(hierarchy_path, "w") as f:
+                json.dump(JOURNAL_TOPIC_HIERARCHY, f, indent=2)
 
             # 3. Save model config.
             config_path = os.path.join(tmpdir, "model_config.json")
@@ -255,7 +285,7 @@ def train_and_register() -> None:
 
             artifacts = {
                 "sentence_transformer": st_path,
-                "taxonomy_labels": taxonomy_path,
+                "hierarchy": hierarchy_path,
                 "model_config": config_path,
             }
 
@@ -271,13 +301,14 @@ def train_and_register() -> None:
 
             for entry, result in zip(_SAMPLE_ENTRIES, results, strict=True):
                 topics = result["topics"]
-                top = topics[0]["topic_name"] if topics else "(none)"
+                top = topics[0] if topics else {}
                 logger.info(
-                    "[%s] → %d topics, top: %s (%.3f)",
+                    "[%s] → %d topics, top: %s / %s (%.3f)",
                     entry["label"],
                     len(topics),
-                    top,
-                    topics[0]["confidence"] if topics else 0.0,
+                    top.get("topic_name", "(none)"),
+                    top.get("subtopic_name", "(none)"),
+                    top.get("confidence", 0.0),
                 )
                 mlflow.log_metric(
                     f"val_topics_{entry['label'].replace(' / ', '_').replace(' ', '_')}",
@@ -285,12 +316,15 @@ def train_and_register() -> None:
                 )
 
             # 5. Log and register the pyfunc model.
+            # No code_paths needed — the wrapper is self-contained and only
+            # uses installed packages (keybert, sentence-transformers, numpy).
             logger.info("Logging model to MLflow...")
             mlflow.pyfunc.log_model(
                 artifact_path="model",
                 python_model=SemanticTopicExtractorWrapper(),
                 artifacts=artifacts,
                 pip_requirements=[
+                    "keybert>=0.8.5",
                     "sentence-transformers>=3.0.0",
                 ],
                 registered_model_name="semantic_journal_topics",

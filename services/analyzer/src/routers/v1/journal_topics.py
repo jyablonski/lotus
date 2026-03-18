@@ -69,6 +69,7 @@ def get_journal_topics(
             "topics": [
                 {
                     "topic_name": (topic.topic_name or "").lower(),
+                    "subtopic_name": (topic.subtopic_name or "").lower() or None,
                     "confidence": float(topic.confidence),
                     "ml_model_version": topic.ml_model_version,
                     "created_at": topic.created_at,

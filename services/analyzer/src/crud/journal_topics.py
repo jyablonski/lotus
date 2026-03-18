@@ -20,9 +20,12 @@ def create_or_update_topics(
         for topic in topics:
             # always lowercase the topic name for standardization.
             topic_name = str(topic["topic_name"]).strip().lower()
+            raw_subtopic = topic.get("subtopic_name")
+            subtopic_name = str(raw_subtopic).strip().lower() if raw_subtopic else None
             topic_record = JournalTopics(
                 journal_id=journal_id,
                 topic_name=topic_name,
+                subtopic_name=subtopic_name,
                 confidence=float(topic["confidence"]),
                 ml_model_version=topic["ml_model_version"],
             )
