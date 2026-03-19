@@ -79,7 +79,8 @@ func authMiddleware(apiKey string, logger *slog.Logger, h http.Handler) http.Han
 // rateLimitMiddleware enforces a per-IP token-bucket rate limit.
 // rps is the sustained request rate; burst is the maximum burst size.
 // Stale limiters (no activity for 10 minutes) are pruned every 5 minutes.
-func rateLimitMiddleware(rps float64, burst int, h http.Handler) http.Handler {
+// The pruning goroutine stops when ctx is cancelled (i.e. on graceful shutdown).
+func rateLimitMiddleware(ctx context.Context, rps float64, burst int, h http.Handler) http.Handler {
 	type entry struct {
 		limiter  *rate.Limiter
 		lastSeen time.Time
@@ -90,14 +91,21 @@ func rateLimitMiddleware(rps float64, burst int, h http.Handler) http.Handler {
 
 	// Prune stale entries in the background.
 	go func() {
-		for range time.Tick(5 * time.Minute) {
-			mu.Lock()
-			for ip, e := range limiters {
-				if time.Since(e.lastSeen) > 10*time.Minute {
-					delete(limiters, ip)
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				mu.Lock()
+				for ip, e := range limiters {
+					if time.Since(e.lastSeen) > 10*time.Minute {
+						delete(limiters, ip)
+					}
 				}
+				mu.Unlock()
 			}
-			mu.Unlock()
 		}
 	}()
 
@@ -277,14 +285,14 @@ func main() {
 	rootMux.Handle("/metrics", promhttp.Handler())
 	rootMux.Handle("/", gwMux)
 
-	httpServer := &http.Server{
-		Addr:    ":8080",
-		Handler: rateLimitMiddleware(20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, otelhttp.NewHandler(rootMux, "http")))),
-	}
-
 	// ── Graceful shutdown context ──────────────────────────────────────
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: rateLimitMiddleware(ctx, 20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, otelhttp.NewHandler(rootMux, "http")))),
+	}
 
 	g, gCtx := errgroup.WithContext(ctx)
 

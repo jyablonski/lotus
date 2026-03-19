@@ -9,6 +9,7 @@ class JournalTopics(Base):
     id = Column(Integer, primary_key=True, index=True)
     journal_id = Column(Integer, ForeignKey("journals.id", ondelete="CASCADE"), nullable=False)
     topic_name = Column(String(100), nullable=False)
+    subtopic_name = Column(String(100), nullable=True)
     confidence = Column(Numeric(5, 4), nullable=False)
     ml_model_version = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

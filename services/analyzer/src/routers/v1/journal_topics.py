@@ -14,22 +14,21 @@ tracer = trace.get_tracer(__name__)
 router = APIRouter()
 
 
-@router.post("/journals/{journal_id}/topics", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/journals/{journal_id}/topics/internal", status_code=status.HTTP_204_NO_CONTENT)
 def extract_journal_topics(
     journal_id: int,
     db: Session = Depends(get_db),
     topic_client: TopicClient = Depends(get_topic_client),
 ):
     """Extract topics from a journal entry."""
+    if not topic_client.is_ready():
+        raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
+
     try:
         # Get the journal entry
         journal = get_journal_by_id(db, journal_id)
         if not journal:
             raise HTTPException(status_code=404, detail="Journal not found")
-
-        # Check if topic client is ready
-        if not topic_client.is_ready():
-            raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
 
         # Extract topics from the journal content (includes model version)
         with tracer.start_as_current_span("topics.extract") as span:
@@ -57,11 +56,11 @@ def get_journal_topics(
     db: Session = Depends(get_db),
 ):
     """Get stored topics for a journal entry."""
-    try:
-        journal = get_journal_by_id(db, journal_id)
-        if not journal:
-            raise HTTPException(status_code=404, detail="Journal not found")
+    journal = get_journal_by_id(db, journal_id)
+    if not journal:
+        raise HTTPException(status_code=404, detail="Journal not found")
 
+    try:
         # Get stored topics from database
         topics = get_topics_by_journal_id(db, journal_id)
 
@@ -70,6 +69,7 @@ def get_journal_topics(
             "topics": [
                 {
                     "topic_name": (topic.topic_name or "").lower(),
+                    "subtopic_name": (topic.subtopic_name or "").lower() or None,
                     "confidence": float(topic.confidence),
                     "ml_model_version": topic.ml_model_version,
                     "created_at": topic.created_at,
@@ -83,7 +83,7 @@ def get_journal_topics(
         raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
-@router.get("/health/topics")
+@router.get("/health/topics/internal")
 def topic_service_health(topic_client: TopicClient = Depends(get_topic_client)):
     """Health check endpoint for the topic extraction service."""
     if topic_client.is_ready():
@@ -91,5 +91,5 @@ def topic_service_health(topic_client: TopicClient = Depends(get_topic_client)):
         return {"status": "healthy", "service": "topic_extraction", **model_info}
     raise HTTPException(
         status_code=503,
-        detail={"status": "unhealthy", "service": "topic_extraction"},
+        detail={"status": "unhealthy", "service": "topic_extraction_internal"},
     )

@@ -1,97 +1,99 @@
+import logging
 import time
 
 import instructor
 import mlflow
-from pydantic import Field
+from openai import AsyncOpenAI
+from pydantic import BaseModel, field_validator
 
 from src.config import settings
 from src.schemas.openai_topics import AnalysisRequest, TopicAnalysis
 
+logger = logging.getLogger(__name__)
+
 
 class OpenAITopicClient:
-    def __init__(self):
-        # self.client = instructor.from_openai(OpenAI(api_key=settings.openai_api_key))
-        self.client = instructor.from_provider(model=f"openai/{settings.default_model}")
-        self._setup_mlflow()
+    """Topic extraction client backed by OpenAI via instructor structured outputs.
 
-    def _setup_mlflow(self):
-        """Initialize MLflow tracking"""
-        mlflow.set_tracking_uri(uri=settings.mlflow_tracking_uri)
+    Kept alongside the in-house semantic model so results can be compared
+    directly. Both clients store results in the same journal_topics table,
+    distinguished by ml_model_version.
+    """
 
-        try:
-            experiment = mlflow.get_experiment_by_name(name=settings.mlflow_experiment_name)
-            if experiment is None:
-                mlflow.create_experiment(name=settings.mlflow_experiment_name)
-        except Exception:
-            mlflow.create_experiment(name=settings.mlflow_experiment_name)
-
-        mlflow.set_experiment(experiment_name=settings.mlflow_experiment_name)
+    def __init__(self) -> None:
+        self.client = instructor.from_openai(AsyncOpenAI(api_key=settings.openai_api_key))
+        self.model = settings.default_model
 
     async def analyze_topics(self, request: AnalysisRequest) -> TopicAnalysis:
-        """Extract topics using Instructor + OpenAI with MLflow tracking"""
+        start_time = time.time()
 
-        with mlflow.start_run(run_name=f"topic_analysis_{int(time.time())}"):
-            tags = {
-                "env": settings.environment,
-            }
-            mlflow.set_tags(tags=tags)
+        mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
+        mlflow.set_experiment(settings.mlflow_experiment_name)
 
+        with mlflow.start_run(run_name="openai_topic_analysis"):
             mlflow.log_params(
                 {
-                    "model": settings.default_model,
+                    "model": self.model,
                     "max_topics": request.max_topics,
-                    # "temperature": settings.temperature,
                     "text_length": len(request.text),
                     "word_count": len(request.text.split()),
                 }
             )
 
-            description = f"Confidence score for each of the {request.max_topics} topics"
+            max_topics = request.max_topics
 
-            class DynamicTopicAnalysis(TopicAnalysis):
-                topics: list[str] = Field(
-                    description=f"Exactly {request.max_topics} main topics",
-                    min_items=request.max_topics,
-                    max_items=request.max_topics,
-                )
-                confidence_scores: list[float] = Field(description=description)
+            # Dynamic model enforces exact topic count at validation time.
+            class DynamicTopicAnalysis(BaseModel):
+                topics: list[str]
+                confidence_scores: list[float]
 
-            try:
-                system_prompt = (
-                    "You are an expert text analyst. Extract exactly "
-                    f"{request.max_topics} most relevant topics from the given text. "
-                    "Rank them by importance and assign confidence scores (0-1). "
-                    "The Topics should be concise, single words."
-                )
+                @field_validator("topics")
+                @classmethod
+                def validate_topic_count(cls, v: list[str]) -> list[str]:
+                    if len(v) != max_topics:
+                        raise ValueError(f"Must have exactly {max_topics} topics")
+                    return v
 
-                user_prompt = (
-                    f"Analyze this text and extract the top {request.max_topics} "
-                    f"topics:\n\n{request.text}"
-                )
+                @field_validator("confidence_scores")
+                @classmethod
+                def validate_score_count(cls, v: list[float]) -> list[float]:
+                    if len(v) != max_topics:
+                        raise ValueError(f"Must have exactly {max_topics} confidence scores")
+                    return v
 
-                response = self.client.chat.completions.create(
-                    model=settings.default_model,
-                    response_model=DynamicTopicAnalysis,
-                    # temperature=settings.temperature,
-                    # max_tokens=settings.max_tokens,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    max_retries=0,
-                )
+            prompt = (
+                f"Analyze the following journal entry and extract exactly "
+                f"{max_topics} distinct topics that best represent its content. "
+                f"For each topic provide a confidence score between 0 and 1.\n\n"
+                f"Journal entry:\n{request.text}"
+            )
 
+            result: DynamicTopicAnalysis = await self.client.chat.completions.create(
+                model=self.model,
+                response_model=DynamicTopicAnalysis,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=settings.temperature,
+                max_tokens=settings.max_tokens,
+            )
+
+            processing_time_ms = (time.time() - start_time) * 1000
+            logger.info(
+                "OpenAI topic analysis complete in %.0f ms, model=%s",
+                processing_time_ms,
+                self.model,
+            )
+
+            if result.confidence_scores:
                 mlflow.log_metrics(
                     {
-                        "avg_confidence": sum(response.confidence_scores)
-                        / len(response.confidence_scores),
-                        "min_confidence": min(response.confidence_scores),
-                        "max_confidence": max(response.confidence_scores),
+                        "avg_confidence": sum(result.confidence_scores)
+                        / len(result.confidence_scores),
+                        "min_confidence": min(result.confidence_scores),
+                        "max_confidence": max(result.confidence_scores),
                     }
                 )
 
-                return response
-
-            except Exception as e:
-                mlflow.log_param("error", str(e))
-                raise e
+            return TopicAnalysis(
+                topics=result.topics,
+                confidence_scores=result.confidence_scores,
+            )

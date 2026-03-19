@@ -1,9 +1,17 @@
+import inspect
 import logging
 from typing import Any
 
 import mlflow
 
 from src.config import settings
+
+# MLflow 3.x wraps pyfunc.load_model with @trace_disabled. That decorator can
+# silently return None when our OTel HTTP provider overwrites the NoOp provider
+# that MLflow installs, causing the re-enable() in the finally block to raise
+# MlflowTracingException after result was already set — but a race in the
+# wrapper loses the value. Bypass the decorator entirely with inspect.unwrap.
+_pyfunc_load_model = inspect.unwrap(mlflow.pyfunc.load_model)
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +53,14 @@ class BaseMLflowClient:
             mlflow.set_tracking_uri(self.mlflow_uri)
 
             model_uri = f"models:/{self.model_name}/{model_version}"
-            self.model = mlflow.pyfunc.load_model(model_uri)
+            logger.info(f"Calling _pyfunc_load_model({model_uri!r})...")
+            self.model = _pyfunc_load_model(model_uri)
+            logger.info(f"_pyfunc_load_model returned: {type(self.model)}")
+            if self.model is None:
+                raise RuntimeError(
+                    f"mlflow.pyfunc.load_model returned None for {self.model_name} "
+                    "even after bypassing @trace_disabled — unexpected MLflow 3.x state."
+                )
 
             # Get actual model version info - pass tracking URI explicitly
             client = mlflow.MlflowClient(tracking_uri=self.mlflow_uri)
@@ -82,7 +97,10 @@ class BaseMLflowClient:
             )
 
         except Exception as e:
-            logger.error(f"Failed to load MLflow model {self.model_name}: {e}")
+            logger.error(
+                f"Failed to load MLflow model {self.model_name}: {type(e).__name__}: {e}",
+                exc_info=True,
+            )
             raise
 
     def get_model_info(self) -> dict[str, Any]:
@@ -100,4 +118,10 @@ class BaseMLflowClient:
 
     def is_ready(self) -> bool:
         """Check if the model is loaded and ready to use."""
-        return self._is_loaded and self.model is not None
+        ready = self._is_loaded and self.model is not None
+        if not ready:
+            logger.warning(
+                f"is_ready=False for {self.model_name}: "
+                f"_is_loaded={self._is_loaded}, model={self.model!r}"
+            )
+        return ready

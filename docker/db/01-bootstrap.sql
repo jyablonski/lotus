@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS journal_topics (
     id SERIAL PRIMARY KEY,
     journal_id INTEGER REFERENCES journals(id) ON DELETE CASCADE,
     topic_name VARCHAR(100) NOT NULL,
+    subtopic_name VARCHAR(100),
     confidence DECIMAL(5,4) NOT NULL,
     ml_model_version VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
@@ -108,12 +109,13 @@ CREATE TABLE IF NOT EXISTS journal_topics (
 
 CREATE INDEX idx_journal_topics_journal_id ON journal_topics(journal_id);
 CREATE INDEX idx_journal_topics_topic_name ON journal_topics(topic_name);
+CREATE INDEX idx_journal_topics_subtopic_name ON journal_topics(subtopic_name);
 
-INSERT INTO journal_topics (journal_id, topic_name, confidence, ml_model_version) VALUES
-(1, 'productivity', 0.7234, 'v1.0.0'),
-(1, 'accomplishment', 0.2156, 'v1.0.0'),
-(2, 'anxiety', 0.8901, 'v1.0.0'),
-(2, 'work_stress', 0.3245, 'v1.0.0');
+INSERT INTO journal_topics (journal_id, topic_name, subtopic_name, confidence, ml_model_version) VALUES
+(1, 'work',      'deadlines and workload pressure',    0.7234, 'v1.0.0'),
+(1, 'growth',    'goals and personal motivation',      0.2156, 'v1.0.0'),
+(2, 'wellbeing', 'anxiety and worry about the future', 0.8901, 'v1.0.0'),
+(2, 'work',      'stress and feeling overwhelmed',     0.3245, 'v1.0.0');
 
 
 CREATE TABLE IF NOT EXISTS source.journal_sentiments (

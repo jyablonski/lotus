@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
         logger.info("Sentiment model loaded successfully")
         logger.info("All ML models loaded successfully")
     except Exception as e:
-        logger.error(f"Failed to load ML models: {e}")
+        logger.error(f"Failed to load ML models: {type(e).__name__}: {e}", exc_info=True)
         logger.error("Application will start but ML endpoints may fail")
         # Re-raise to prevent app from starting if models are critical
         # Comment out the next line if you want the app to start anyway

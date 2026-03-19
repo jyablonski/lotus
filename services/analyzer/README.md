@@ -30,9 +30,9 @@ The service uses three main client classes for ML operations:
 
 2. **`TopicClient`** (`src/clients/ml_topic_client.py`)
    - Inherits from `BaseMLflowClient`
-   - Model: `adaptive_journal_topics`
-   - Purpose: Extracts topics from journal entries
-   - Features: Adaptive topic extraction based on text length
+   - Model: `semantic_journal_topics`
+   - Purpose: Extracts hierarchical topics (domain + subtopic) from journal entries using KeyBERT + sentence-transformers
+   - Features: Adaptive keyphrase extraction, cosine-similarity taxonomy matching, subtopic-level results
 
 3. **`OpenAITopicClient`** (`src/clients/openai_topic_client.py`)
    - Uses OpenAI API via instructor library
@@ -84,68 +84,50 @@ The clients automatically:
 
 ### Model Storage Requirements
 
-Models **must** be logged to MLflow in a specific format for the analyzer service to use them:
+Models **must** be logged to MLflow in a specific format for the analyzer service to use them. Full documentation and worked examples are in `services/experiments/README.md`.
 
 #### Required Format
 
-1. **PyFunc Model Wrapper**: Models must be logged as `mlflow.pyfunc.PythonModel` instances
-   - The wrapper class must extend `mlflow.pyfunc.PythonModel`
-   - Must implement `load_context()` to load artifacts
-   - Must implement `predict()` that accepts a pandas DataFrame
-   - **The wrapper handles all preprocessing internally** - no preprocessing needed in API code
+1. **PyFunc Model Wrapper** — must extend `mlflow.pyfunc.PythonModel` and implement:
+   - `load_context(context)` — called once at startup to load artifacts into `self`
+   - `predict(context, model_input: pd.DataFrame) -> list[dict]` — called per request; input always has a `"text"` column
 
-   **Preprocessing Included in Wrapper:**
-   - **Sentiment Models**: Text normalization (lowercasing, whitespace cleanup, stripping)
-   - **Topic Models**: Adaptive topic extraction based on text length:
-     - Short entries (< 20 words): min_confidence=0.25, max_topics=2
-     - Medium entries (20-50 words): min_confidence=0.20, max_topics=4
-     - Long entries (> 50 words): min_confidence=0.15, max_topics=6
-   - All text preprocessing (TF-IDF vectorization, feature extraction) is handled by the sklearn pipeline within the wrapper
-   - The API simply passes raw text and receives formatted results - no preprocessing duplication needed
-
-2. **Artifacts**: Models must include required artifacts in the `artifacts` dictionary:
-
-   **Sentiment Model Artifacts:**
-   - `sklearn_pipeline`: Path to saved sklearn pipeline (via `mlflow.sklearn.save_model()`)
-   - `label_encoder`: Path to pickled label encoder
-   - `sentiment_labels`: Path to sentiment labels mapping (parquet file)
-
-   **Topic Model Artifacts:**
-   - `sklearn_pipeline`: Path to saved sklearn pipeline (via `mlflow.sklearn.save_model()`)
-   - `topic_labels`: Path to pickled topic labels dictionary
-   - `model_config`: Path to pickled model configuration dictionary
-
-3. **Logging Example**:
+2. **`predict()` output contract** — the analyzer clients expect a list with one dict per input row:
 
    ```python
-   mlflow.pyfunc.log_model(
-       artifact_path="sentiment_model",
-       python_model=SentimentAnalyzerWrapper(),  # Your wrapper class
-       artifacts={
-           "sklearn_pipeline": sklearn_path,
-           "label_encoder": label_encoder_path,
-           "sentiment_labels": sentiment_labels_path,
-       },
-       code_paths=[__file__],  # Include wrapper code
-       pip_requirements=["pandas", "numpy", "scikit-learn", "mlflow"],
-       registered_model_name="journal_sentiment_analyzer",  # Exact name required
-   )
+   # TopicClient expects:
+   [{"topics": [{"topic_name": str, "subtopic_name": str, "confidence": float}, ...]}, ...]
+
+   # SentimentClient expects:
+   [{"sentiment": str, "confidence": float, "confidence_level": str, "all_scores": dict}, ...]
    ```
+
+3. **Artifacts** — current models use:
+
+   | Model                        | Artifact key           | Contents                                   |
+   | ---------------------------- | ---------------------- | ------------------------------------------ |
+   | `semantic_journal_topics`    | `sentence_transformer` | Saved sentence-transformer model directory |
+   | `semantic_journal_topics`    | `hierarchy`            | JSON — domain → subtopic list mapping      |
+   | `semantic_journal_topics`    | `model_config`         | JSON — `model_name`, `min_confidence`      |
+   | `journal_sentiment_analyzer` | `sklearn_pipeline`     | Saved sklearn pipeline                     |
+   | `journal_sentiment_analyzer` | `label_encoder`        | Pickled label encoder                      |
+   | `journal_sentiment_analyzer` | `sentiment_labels`     | Parquet — label index mapping              |
+
+4. **`code_paths=["src"]`** — required when the wrapper imports anything from `experiments/src/`. MLflow bundles the directory into the model artifact and adds it to `sys.path` at load time. Without it, the analyzer raises `ModuleNotFoundError` on startup.
+
+5. **Registered model names** — must exactly match what the client class passes to `BaseMLflowClient`:
+
+   | Client class      | Expected model name          |
+   | ----------------- | ---------------------------- |
+   | `TopicClient`     | `semantic_journal_topics`    |
+   | `SentimentClient` | `journal_sentiment_analyzer` |
 
 #### Training Scripts
 
-Reference implementations can be found in:
+Reference implementations:
 
-- `services/experiments/src/training/train_sentiment_analysis.py`
-- `services/experiments/src/training/train_topics.py`
-
-These scripts demonstrate the complete workflow for:
-
-- Creating the pyfunc wrapper class
-- Training the underlying sklearn pipeline
-- Saving artifacts
-- Logging to MLflow with proper format
-- Registering models with correct names
+- `services/experiments/src/training/train_topics_semantic.py` — `SemanticTopicExtractorWrapper`
+- `services/experiments/src/training/train_sentiment_analysis.py` — sentiment wrapper
 
 ### Health Endpoints
 

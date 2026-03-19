@@ -13,6 +13,14 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type ActiveMlModel struct {
+	ID         int32
+	MlModel    string
+	IsEnabled  bool
+	CreatedAt  time.Time
+	ModifiedAt time.Time
+}
+
 type GoldUserJournalSummary struct {
 	UserID                         uuid.UUID
 	UserEmail                      sql.NullString

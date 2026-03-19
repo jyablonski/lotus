@@ -113,6 +113,7 @@ class JournalTopic(models.Model):
     id = models.AutoField(primary_key=True)
     journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
     topic_name = models.CharField(max_length=100)
+    subtopic_name = models.CharField(max_length=100, db_default=None, null=True)
     confidence = models.DecimalField(max_digits=5, decimal_places=4)
     ml_model_version = models.CharField(max_length=50)
     created_at = models.DateTimeField(
