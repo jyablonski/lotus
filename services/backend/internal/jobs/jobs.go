@@ -69,13 +69,20 @@ func NewClientWithPeriodicInterval(
 	logger *slog.Logger,
 	cronInterval time.Duration,
 ) (*river.Client[pgx.Tx], error) {
+	useOpenAITopics, err := queries.GetActiveMLModel(context.Background(), "openai_topic_modeling")
+	if err != nil {
+		logger.Warn("failed to load openai_topic_modeling flag, defaulting to false", "error", err)
+		useOpenAITopics = false
+	}
+
 	workers := river.NewWorkers()
 
 	river.AddWorker(workers, &AnalyzeEntryWorker{
-		httpClient:     httpClient,
-		analyzerURL:    analyzerURL,
-		analyzerAPIKey: analyzerAPIKey,
-		logger:         logger,
+		httpClient:      httpClient,
+		analyzerURL:     analyzerURL,
+		analyzerAPIKey:  analyzerAPIKey,
+		logger:          logger,
+		useOpenAITopics: useOpenAITopics,
 	})
 
 	river.AddWorker(workers, &HelloCronWorker{

@@ -32,16 +32,17 @@ func (a AnalyzeEntryArgs) InsertOpts() river.InsertOpts {
 // River schedules a retry with exponential backoff (up to InsertOpts.MaxAttempts).
 type AnalyzeEntryWorker struct {
 	river.WorkerDefaults[AnalyzeEntryArgs]
-	httpClient     *http.Client
-	analyzerURL    string
-	analyzerAPIKey string
-	logger         *slog.Logger
+	httpClient      *http.Client
+	analyzerURL     string
+	analyzerAPIKey  string
+	logger          *slog.Logger
+	useOpenAITopics bool
 }
 
 // NewAnalyzeEntryWorker constructs an AnalyzeEntryWorker with the provided dependencies.
 // Exposed so tests can create workers with custom HTTP servers.
-func NewAnalyzeEntryWorker(httpClient *http.Client, analyzerURL, analyzerAPIKey string, logger *slog.Logger) *AnalyzeEntryWorker {
-	return &AnalyzeEntryWorker{httpClient: httpClient, analyzerURL: analyzerURL, analyzerAPIKey: analyzerAPIKey, logger: logger}
+func NewAnalyzeEntryWorker(httpClient *http.Client, analyzerURL, analyzerAPIKey string, logger *slog.Logger, useOpenAITopics bool) *AnalyzeEntryWorker {
+	return &AnalyzeEntryWorker{httpClient: httpClient, analyzerURL: analyzerURL, analyzerAPIKey: analyzerAPIKey, logger: logger, useOpenAITopics: useOpenAITopics}
 }
 
 func (w *AnalyzeEntryWorker) Work(ctx context.Context, job *river.Job[AnalyzeEntryArgs]) error {
@@ -51,7 +52,12 @@ func (w *AnalyzeEntryWorker) Work(ctx context.Context, job *river.Job[AnalyzeEnt
 		"attempt", job.Attempt,
 	)
 
-	if err := w.callEndpoint(ctx, job.Args.EntryID, "topics", http.MethodPost); err != nil {
+	topicEndpoint := "topics/internal"
+	if w.useOpenAITopics {
+		topicEndpoint = "topics/openai"
+	}
+
+	if err := w.callEndpoint(ctx, job.Args.EntryID, topicEndpoint, http.MethodPost); err != nil {
 		return fmt.Errorf("topic analysis failed: %w", err)
 	}
 
@@ -67,13 +73,13 @@ type analysisRequest struct {
 	ForceReanalyze bool `json:"force_reanalyze,omitempty"`
 }
 
-func (w *AnalyzeEntryWorker) callEndpoint(ctx context.Context, entryID int64, analysisType, method string) error {
+func (w *AnalyzeEntryWorker) callEndpoint(ctx context.Context, entryID int64, path, method string) error {
 	body, err := json.Marshal(analysisRequest{})
 	if err != nil {
 		return fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/v1/journals/%d/%s/internal", w.analyzerURL, entryID, analysisType)
+	url := fmt.Sprintf("%s/v1/journals/%d/%s", w.analyzerURL, entryID, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {

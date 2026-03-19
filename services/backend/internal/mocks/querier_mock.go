@@ -32,6 +32,9 @@ var _ db.Querier = &QuerierMock{}
 //			GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 //				panic("mock out the GetActiveFeatureFlags method")
 //			},
+//			GetActiveMLModelFunc: func(ctx context.Context, mlModel string) (bool, error) {
+//				panic("mock out the GetActiveMLModel method")
+//			},
 //			GetFeatureFlagByNameFunc: func(ctx context.Context, name string) (db.SourceWaffleFlag, error) {
 //				panic("mock out the GetFeatureFlagByName method")
 //			},
@@ -98,6 +101,9 @@ type QuerierMock struct {
 
 	// GetActiveFeatureFlagsFunc mocks the GetActiveFeatureFlags method.
 	GetActiveFeatureFlagsFunc func(ctx context.Context) ([]db.SourceWaffleFlag, error)
+
+	// GetActiveMLModelFunc mocks the GetActiveMLModel method.
+	GetActiveMLModelFunc func(ctx context.Context, mlModel string) (bool, error)
 
 	// GetFeatureFlagByNameFunc mocks the GetFeatureFlagByName method.
 	GetFeatureFlagByNameFunc func(ctx context.Context, name string) (db.SourceWaffleFlag, error)
@@ -174,6 +180,13 @@ type QuerierMock struct {
 		GetActiveFeatureFlags []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// GetActiveMLModel holds details about calls to the GetActiveMLModel method.
+		GetActiveMLModel []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// MlModel is the mlModel argument value.
+			MlModel string
 		}
 		// GetFeatureFlagByName holds details about calls to the GetFeatureFlagByName method.
 		GetFeatureFlagByName []struct {
@@ -292,6 +305,7 @@ type QuerierMock struct {
 	lockCreateUser                    sync.RWMutex
 	lockCreateUserOauth               sync.RWMutex
 	lockGetActiveFeatureFlags         sync.RWMutex
+	lockGetActiveMLModel              sync.RWMutex
 	lockGetFeatureFlagByName          sync.RWMutex
 	lockGetJournalById                sync.RWMutex
 	lockGetJournalCountByUserId       sync.RWMutex
@@ -447,6 +461,42 @@ func (mock *QuerierMock) GetActiveFeatureFlagsCalls() []struct {
 	mock.lockGetActiveFeatureFlags.RLock()
 	calls = mock.calls.GetActiveFeatureFlags
 	mock.lockGetActiveFeatureFlags.RUnlock()
+	return calls
+}
+
+// GetActiveMLModel calls GetActiveMLModelFunc.
+func (mock *QuerierMock) GetActiveMLModel(ctx context.Context, mlModel string) (bool, error) {
+	if mock.GetActiveMLModelFunc == nil {
+		panic("QuerierMock.GetActiveMLModelFunc: method is nil but Querier.GetActiveMLModel was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		MlModel string
+	}{
+		Ctx:     ctx,
+		MlModel: mlModel,
+	}
+	mock.lockGetActiveMLModel.Lock()
+	mock.calls.GetActiveMLModel = append(mock.calls.GetActiveMLModel, callInfo)
+	mock.lockGetActiveMLModel.Unlock()
+	return mock.GetActiveMLModelFunc(ctx, mlModel)
+}
+
+// GetActiveMLModelCalls gets all the calls that were made to GetActiveMLModel.
+// Check the length with:
+//
+//	len(mockedQuerier.GetActiveMLModelCalls())
+func (mock *QuerierMock) GetActiveMLModelCalls() []struct {
+	Ctx     context.Context
+	MlModel string
+} {
+	var calls []struct {
+		Ctx     context.Context
+		MlModel string
+	}
+	mock.lockGetActiveMLModel.RLock()
+	calls = mock.calls.GetActiveMLModel
+	mock.lockGetActiveMLModel.RUnlock()
 	return calls
 }
 

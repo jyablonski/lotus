@@ -54,7 +54,7 @@ export function JournalEntryCard({
 
         {showTags && entry.topicNames && entry.topicNames.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2" aria-label="Topics">
-            {entry.topicNames.map((name) => (
+            {[...new Set(entry.topicNames)].map((name) => (
               <span
                 key={name}
                 className="inline-flex items-center rounded-md bg-dark-700 px-2.5 py-1 text-xs font-medium text-dark-200 ring-1 ring-dark-600"
