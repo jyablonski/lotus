@@ -8,6 +8,9 @@ from dagster_project.definitions import all_jobs, all_schedules
 # Global registry - update these when adding new jobs/schedules
 # =============================================================================
 
+from dagster_project.jobs import game_bets_pipeline_job
+
+# Jobs that are always registered
 EXPECTED_JOBS = [
     "get_game_types_job",
     "daily_sales_job",
@@ -15,8 +18,11 @@ EXPECTED_JOBS = [
     "hello_world_example_job",
     "unload_journal_entries_job",
     "sync_flags_to_sheets_job",
-    "game_bets_pipeline_job",
 ]
+
+# Jobs that depend on dbt being available
+if game_bets_pipeline_job is not None:
+    EXPECTED_JOBS.append("game_bets_pipeline_job")
 
 EXPECTED_SCHEDULES = [
     "sync_users_schedule",
