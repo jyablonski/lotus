@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: user_topic_summary
+    description: Aggregated topic analysis metrics per user from ML-generated journal topics
+    columns:
+      - name: user_id
+        description: Primary key - unique identifier for each user
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_id
+
+      - name: total_topic_assignments
+        description: Total number of topic assignments across all journals
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: journals_with_topics
+        description: Number of distinct journals that have topic assignments
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: distinct_topics
+        description: Number of unique topics across all journal entries
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: distinct_subtopics
+        description: Number of unique subtopics across all journal entries
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: avg_topic_confidence
+        description: Average confidence score across all topic assignments
+
+      - name: dominant_topic
+        description: Most frequently assigned topic for the user
+
+      - name: dominant_topic_count
+        description: Number of times the dominant topic was assigned
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: dominant_subtopic
+        description: Most frequently assigned subtopic for the user
+
+      - name: total_topic_assignments_30d
+        description: Topic assignments in last 30 days
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: distinct_topics_30d
+        description: Unique topics in last 30 days
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"

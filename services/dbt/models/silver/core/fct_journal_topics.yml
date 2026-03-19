@@ -24,6 +24,9 @@ models:
       - name: topic_name
         description: Name of the identified topic
 
+      - name: subtopic_name
+        description: More specific subtopic within the parent topic
+
       - name: topic_confidence
         description: Confidence score for the topic assignment
 

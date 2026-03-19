@@ -15,6 +15,7 @@ EXPECTED_JOBS = [
     "hello_world_example_job",
     "unload_journal_entries_job",
     "sync_flags_to_sheets_job",
+    "game_bets_pipeline_job",
 ]
 
 EXPECTED_SCHEDULES = [

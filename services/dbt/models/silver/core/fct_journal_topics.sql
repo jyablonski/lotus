@@ -18,6 +18,7 @@ final as (
         topic_id,
         journal_id,
         topic_name,
+        subtopic_name,
         topic_confidence,
         ml_model_version as topic_model_version,
         created_at as topic_created_at

@@ -1,13 +1,13 @@
 {{
     config(
         materialized='incremental',
-        unique_key='topic_id'
+        unique_key='bet_id'
     )
 }}
 
 with source as (
     select *
-    from {{ source('application_db', 'journal_topics') }}
+    from {{ source('application_db', 'user_game_bets') }}
 
     {% if is_incremental() %}
     where created_at > (select max(created_at) from {{ this }})
@@ -16,12 +16,12 @@ with source as (
 
 renamed as (
     select
-        id as topic_id,
-        journal_id,
-        topic_name,
-        subtopic_name,
-        confidence as topic_confidence,
-        ml_model_version,
+        id as bet_id,
+        user_id,
+        zone as bet_zone,
+        amount as bet_amount,
+        roll_result,
+        payout as bet_payout,
         created_at
     from source
 )

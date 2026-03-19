@@ -18,6 +18,9 @@ sources:
           - name: topic_name
             description: Name of the identified topic
 
+          - name: subtopic_name
+            description: Name of the identified subtopic (more specific than topic_name)
+
           - name: confidence
             description: Confidence score for the topic assignment
 

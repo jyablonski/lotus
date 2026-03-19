@@ -8,6 +8,10 @@ with journal_entries as (
     select * from {{ ref('fct_journal_entries') }}
 ),
 
+topics as (
+    select * from {{ ref('fct_journal_topics') }}
+),
+
 users as (
     select * from {{ ref('dim_users') }}
 ),
@@ -34,6 +38,16 @@ user_metrics as (
     group by journal_entries.user_id
 ),
 
+user_metrics_7d as (
+    select
+        journal_entries.user_id,
+        count(distinct journal_entries.journal_id) as total_journals_7d,
+        avg(journal_entries.mood_score) as avg_mood_score_7d
+    from journal_entries
+    where date_trunc('day', journal_entries.journal_created_at)::date >= current_date - interval '6 days'
+    group by journal_entries.user_id
+),
+
 user_metrics_30d as (
     select
         journal_entries.user_id,
@@ -44,6 +58,35 @@ user_metrics_30d as (
     from journal_entries
     where date_trunc('day', journal_entries.journal_created_at)::date >= current_date - interval '29 days'
     group by journal_entries.user_id
+),
+
+-- topic metrics per user
+user_topic_metrics as (
+    select
+        je.user_id,
+        count(distinct t.topic_name) as distinct_topics,
+        avg(t.topic_confidence) as avg_topic_confidence
+    from topics t
+    inner join journal_entries je on t.journal_id = je.journal_id
+    group by je.user_id
+),
+
+-- dominant topic per user
+topic_ranks as (
+    select
+        je.user_id,
+        t.topic_name,
+        count(*) as cnt,
+        row_number() over (partition by je.user_id order by count(*) desc, avg(t.topic_confidence) desc) as rn
+    from topics t
+    inner join journal_entries je on t.journal_id = je.journal_id
+    group by je.user_id, t.topic_name
+),
+
+dominant_topic as (
+    select user_id, topic_name as dominant_topic
+    from topic_ranks
+    where rn = 1
 ),
 
 daily_entries as (
@@ -121,11 +164,20 @@ final as (
         user_metrics.last_journal_at,
         user_metrics.last_modified_at,
 
+        -- Last 7 days metrics
+        coalesce(user_metrics_7d.total_journals_7d, 0) as total_journals_7d,
+        user_metrics_7d.avg_mood_score_7d,
+
         -- Last 30 days metrics
         coalesce(user_metrics_30d.total_journals_30d, 0) as total_journals_30d,
         user_metrics_30d.avg_mood_score_30d,
         user_metrics_30d.min_mood_score_30d,
         user_metrics_30d.max_mood_score_30d,
+
+        -- Topic metrics
+        coalesce(user_topic_metrics.distinct_topics, 0) as distinct_topics,
+        round(user_topic_metrics.avg_topic_confidence::numeric, 4) as avg_topic_confidence,
+        dominant_topic.dominant_topic,
 
         -- Streak metrics
         coalesce(max_current_streak.daily_streak, 0) as daily_streak,
@@ -159,8 +211,14 @@ final as (
     from users
     left join user_metrics
         on users.user_id = user_metrics.user_id
+    left join user_metrics_7d
+        on users.user_id = user_metrics_7d.user_id
     left join user_metrics_30d
         on users.user_id = user_metrics_30d.user_id
+    left join user_topic_metrics
+        on users.user_id = user_topic_metrics.user_id
+    left join dominant_topic
+        on users.user_id = dominant_topic.user_id
     left join max_current_streak
         on users.user_id = max_current_streak.user_id
 )

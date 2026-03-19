@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: application_db
+    schema: source
+    description: Application database containing user and core business data
+    tables:
+      - name: user_game_balances
+        description: |
+          Per-user account balance for the CSGODouble game
+        columns:
+          - name: id
+            description: Unique identifier for the balance record
+
+          - name: user_id
+            description: Foreign key reference to the users table
+
+          - name: balance
+            description: Current game currency balance
+
+          - name: created_at
+            description: Timestamp when the balance was created
+
+          - name: modified_at
+            description: Timestamp when the balance was last updated

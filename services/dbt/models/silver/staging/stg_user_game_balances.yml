@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_user_game_balances
+    description: Staging table for CSGODouble game balances
+    columns:
+      - name: user_id
+        description: Primary key - one balance per user
+        data_tests:
+          - unique
+          - not_null
+
+      - name: current_balance
+        description: Current game currency balance
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Timestamp when balance was created
+        data_tests:
+          - not_null
+
+      - name: modified_at
+        description: Timestamp when balance was last updated
