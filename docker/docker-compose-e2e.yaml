@@ -9,7 +9,7 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: e2e-postgres
     ports:
       - "5432:5432"
@@ -55,7 +55,7 @@ services:
       - "8080:8080"
       - "50051:50051"
     environment:
-      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable&search_path=source,public
       - ANALYZER_BASE_URL=http://localhost:8083
       - BACKEND_API_KEY=${BACKEND_API_KEY:-lotus-backend-dev-key}
       - ANALYZER_API_KEY=${ANALYZER_API_KEY:-lotus-analyzer-dev-key}

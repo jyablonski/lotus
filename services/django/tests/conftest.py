@@ -1,21 +1,31 @@
 import os
 
 from django.db import connection
+from django.db.models.signals import pre_migrate
 import pytest
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lotus_admin.settings")
 
+# Track whether the schema/extensions have been set up to avoid re-running.
+_schema_ready = False
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_database(django_db_setup, django_db_blocker):
-    """Create schema and uuid-ossp extension for tests."""
-    with django_db_blocker.unblock(), connection.cursor() as cursor:
-        # Create extension in public schema (default)
-        cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-        # Create source schema
+
+def _ensure_schema(sender, **kwargs):
+    """pre_migrate signal handler: create the source schema and extensions
+    before Django attempts to run any migrations that reference them."""
+    global _schema_ready
+    if _schema_ready:
+        return
+    with connection.cursor() as cursor:
         cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
-        # Ensure search_path includes public so uuid_generate_v4() is accessible
+        cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS vector SCHEMA public")
         cursor.execute("SET search_path TO source, public")
+    _schema_ready = True
+
+
+# Connect early so it fires before the very first migration.
+pre_migrate.connect(_ensure_schema)
 
 
 @pytest.fixture

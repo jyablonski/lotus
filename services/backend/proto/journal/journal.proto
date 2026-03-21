@@ -45,3 +45,18 @@ message TriggerAnalysisResponse {
   bool success = 1;
   string message = 2;
 }
+
+message SearchJournalsRequest {
+  string user_id = 1;
+  string query = 2;
+  int32 limit = 3;  // optional - defaults to 20 if not provided
+}
+
+message SearchJournalsResponse {
+  repeated JournalSearchResult results = 1;
+}
+
+message JournalSearchResult {
+  JournalEntry journal = 1;
+  float similarity_score = 2;
+}

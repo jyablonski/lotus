@@ -61,6 +61,10 @@ func (w *AnalyzeEntryWorker) Work(ctx context.Context, job *river.Job[AnalyzeEnt
 		return fmt.Errorf("topic analysis failed: %w", err)
 	}
 
+	if err := w.callEndpoint(ctx, job.Args.EntryID, "embeddings", http.MethodPost); err != nil {
+		return fmt.Errorf("embedding generation failed: %w", err)
+	}
+
 	w.logger.Info("analyze_entry: finished",
 		"entry_id", job.Args.EntryID,
 		"attempt", job.Attempt,

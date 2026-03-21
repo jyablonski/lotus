@@ -32,6 +32,7 @@ const (
 	loggerKey
 	httpClientKey
 	analyzerURLKey
+	analyzerAPIKeyKey
 	pgxPoolKey
 	riverClientKey
 )
@@ -85,6 +86,19 @@ func WithAnalyzerURL(ctx context.Context, url string) context.Context {
 
 func AnalyzerURLFrom(ctx context.Context) string {
 	if s, ok := ctx.Value(analyzerURLKey).(string); ok {
+		return s
+	}
+	return ""
+}
+
+// --- Analyzer API Key ---
+
+func WithAnalyzerAPIKey(ctx context.Context, key string) context.Context {
+	return context.WithValue(ctx, analyzerAPIKeyKey, key)
+}
+
+func AnalyzerAPIKeyFrom(ctx context.Context) string {
+	if s, ok := ctx.Value(analyzerAPIKeyKey).(string); ok {
 		return s
 	}
 	return ""
