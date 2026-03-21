@@ -1,23 +1,26 @@
 from dagster import ScheduleDefinition, define_asset_job
 from dagster_dbt import build_dbt_asset_selection
 
-from dagster_project.assets.transformations.dbt_assets import dbt_analytics
+from dagster_project.assets.transformations.dbt_assets import (
+    dbt_gold_analytics,
+    dbt_silver_core,
+    dbt_silver_stg,
+)
 
-if dbt_analytics is not None:
-    # Select only game-related dbt models by name
+if dbt_silver_stg is not None:
     staging_selection = build_dbt_asset_selection(
-        [dbt_analytics],
-        dbt_select="stg_user_game_bets stg_user_game_balances",
+        [dbt_silver_stg],
+        dbt_select="tag:game",
     )
 
     core_selection = build_dbt_asset_selection(
-        [dbt_analytics],
-        dbt_select="fct_game_bets",
+        [dbt_silver_core],
+        dbt_select="tag:game",
     )
 
     analytics_selection = build_dbt_asset_selection(
-        [dbt_analytics],
-        dbt_select="user_game_summary",
+        [dbt_gold_analytics],
+        dbt_select="tag:game",
     )
 
     all_game_selection = staging_selection | core_selection | analytics_selection

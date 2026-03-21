@@ -3,6 +3,8 @@ version: 2
 models:
   - name: stg_user_game_bets
     description: Staging table for CSGODouble game bets
+    config:
+      tags: ["game"]
     columns:
       - name: bet_id
         description: Primary key for bets

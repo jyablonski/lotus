@@ -2,7 +2,6 @@ package grpc_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -15,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newWaffleFlag(name string, everyone sql.NullBool, superusers, staff, authenticated bool) db.SourceWaffleFlag {
+func newWaffleFlag(name string, everyone, superusers, staff, authenticated bool) db.SourceWaffleFlag {
 	return db.SourceWaffleFlag{
 		ID:            1,
 		Name:          name,
@@ -32,8 +31,8 @@ func TestFeatureFlagServer_GetFeatureFlags_Success(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("frontend_maintenance", sql.NullBool{Bool: true, Valid: true}, true, false, false),
-				newWaffleFlag("frontend_admin", sql.NullBool{Valid: false}, true, false, false),
+				newWaffleFlag("frontend_maintenance", true, true, false, false),
+				newWaffleFlag("frontend_admin", false, true, false, false),
 			}, nil
 		},
 	}
@@ -59,22 +58,30 @@ func TestFeatureFlagServer_GetFeatureFlags_Success(t *testing.T) {
 	assert.Len(t, mockQuerier.GetActiveFeatureFlagsCalls(), 1)
 }
 
-func TestFeatureFlagServer_GetFeatureFlags_EveryoneFalseOverridesAll(t *testing.T) {
-	// When everyone=false, the flag should be inactive regardless of other settings.
+func TestFeatureFlagServer_GetFeatureFlags_EveryoneFalseFallsThrough(t *testing.T) {
+	// When everyone=false, role-based checks still apply.
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("disabled_flag", sql.NullBool{Bool: false, Valid: true}, true, true, true),
+				newWaffleFlag("admin_flag", false, true, true, false),
 			}, nil
 		},
 	}
 
 	server := &internalgrpc.FeatureFlagServer{}
 
+	// Admin should see it active via superusers/staff check
 	resp, err := server.GetFeatureFlags(testCtx(mockQuerier), &pb.GetFeatureFlagsRequest{
 		UserRole: "Admin",
 	})
+	require.NoError(t, err)
+	require.Len(t, resp.Flags, 1)
+	assert.True(t, resp.Flags[0].IsActive)
 
+	// Consumer should see it inactive — no role match
+	resp, err = server.GetFeatureFlags(testCtx(mockQuerier), &pb.GetFeatureFlagsRequest{
+		UserRole: "Consumer",
+	})
 	require.NoError(t, err)
 	require.Len(t, resp.Flags, 1)
 	assert.False(t, resp.Flags[0].IsActive)
@@ -85,7 +92,7 @@ func TestFeatureFlagServer_GetFeatureFlags_SuperusersOnlyForAdmin(t *testing.T) 
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("admin_only", sql.NullBool{Valid: false}, true, false, false),
+				newWaffleFlag("admin_only", false, true, false, false),
 			}, nil
 		},
 	}
@@ -111,7 +118,7 @@ func TestFeatureFlagServer_GetFeatureFlags_StaffFlagForAdmin(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("staff_only", sql.NullBool{Valid: false}, false, true, false),
+				newWaffleFlag("staff_only", false, false, true, false),
 			}, nil
 		},
 	}
@@ -136,7 +143,7 @@ func TestFeatureFlagServer_GetFeatureFlags_AuthenticatedForAll(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("auth_flag", sql.NullBool{Valid: false}, false, false, true),
+				newWaffleFlag("auth_flag", false, false, false, true),
 			}, nil
 		},
 	}
@@ -191,8 +198,8 @@ func TestFeatureFlagServer_GetFeatureFlags_EmptyRole(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("admin_only", sql.NullBool{Valid: false}, true, false, false),
-				newWaffleFlag("everyone_on", sql.NullBool{Bool: true, Valid: true}, false, false, false),
+				newWaffleFlag("admin_only", false, true, false, false),
+				newWaffleFlag("everyone_on", true, false, false, false),
 			}, nil
 		},
 	}
@@ -213,7 +220,7 @@ func TestFeatureFlagServer_GetFeatureFlags_CaseInsensitiveRole(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("admin_flag", sql.NullBool{Valid: false}, true, false, false),
+				newWaffleFlag("admin_flag", false, true, false, false),
 			}, nil
 		},
 	}
@@ -233,8 +240,8 @@ func TestFeatureFlagServer_GetFeatureFlags_AllInactiveForConsumer(t *testing.T) 
 	mockQuerier := &mocks.QuerierMock{
 		GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 			return []db.SourceWaffleFlag{
-				newWaffleFlag("su_only", sql.NullBool{Valid: false}, true, false, false),
-				newWaffleFlag("staff_only", sql.NullBool{Valid: false}, false, true, false),
+				newWaffleFlag("su_only", false, true, false, false),
+				newWaffleFlag("staff_only", false, false, true, false),
 			}, nil
 		},
 	}

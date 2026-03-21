@@ -1,16 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { context, propagation } from "@opentelemetry/api";
-import { BACKEND_URL, BACKEND_API_KEY } from "@/lib/config";
-
-function withTraceHeaders(
-  base: Record<string, string>,
-): Record<string, string> {
-  const headers = { ...base, Authorization: `Bearer ${BACKEND_API_KEY}` };
-  propagation.inject(context.active(), headers);
-  return headers;
-}
+import { BACKEND_URL } from "@/lib/config";
+import { backendHeaders } from "@/lib/server/backendHeaders";
 
 export interface GameBalanceResult {
   success: boolean;
@@ -55,7 +47,7 @@ export async function recordBets(bets: BetEntry[]): Promise<RecordBetsResult> {
 
     const response = await fetch(`${BACKEND_URL}/v1/game/bets`, {
       method: "POST",
-      headers: withTraceHeaders({ "Content-Type": "application/json" }),
+      headers: backendHeaders(),
       body: JSON.stringify({ user_id: session.user.id, bets }),
     });
 
@@ -93,7 +85,7 @@ export async function getBetHistory(
       `${BACKEND_URL}/v1/game/bets?user_id=${session.user.id}&limit=${limit}&offset=${offset}`,
       {
         method: "GET",
-        headers: withTraceHeaders({ "Content-Type": "application/json" }),
+        headers: backendHeaders(),
         cache: "no-store",
       },
     );
@@ -131,7 +123,7 @@ export async function getGameBalance(): Promise<GameBalanceResult> {
       `${BACKEND_URL}/v1/game/balance?user_id=${session.user.id}`,
       {
         method: "GET",
-        headers: withTraceHeaders({ "Content-Type": "application/json" }),
+        headers: backendHeaders(),
         cache: "no-store",
       },
     );
@@ -168,7 +160,7 @@ export async function updateGameBalance(
 
     const response = await fetch(`${BACKEND_URL}/v1/game/balance`, {
       method: "POST",
-      headers: withTraceHeaders({ "Content-Type": "application/json" }),
+      headers: backendHeaders(),
       body: JSON.stringify({ user_id: session.user.id, balance }),
     });
 

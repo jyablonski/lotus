@@ -38,6 +38,11 @@ jest.mock("@/lib/server/redis", () => ({
   },
 }));
 
+jest.mock("@/lib/config", () => ({
+  BACKEND_URL: "http://backend:8080",
+  BACKEND_API_KEY: "test-api-key",
+}));
+
 // Now we can import authConfig -- NextAuth() is mocked so it won't
 // try to initialize the full auth system
 import { authConfig, __clearBackendUserCacheForTests } from "@/auth";
@@ -189,6 +194,66 @@ describe("signIn callback", () => {
 
     // fetchBackendUser catches error -> null -> tries create -> also fails (no mock)
     expect(result).toBe(false);
+  });
+
+  test("sends Authorization Bearer header on fetchBackendUser", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userId: "backend-123",
+        createdAt: "2025-01-01T00:00:00Z",
+        timezone: "UTC",
+      }),
+    });
+
+    const user = { email: "auth-header@example.com" } as Record<
+      string,
+      unknown
+    >;
+    await signIn({ user, account: { provider: "github" } } as never);
+
+    // First fetch call is fetchBackendUser
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-api-key",
+        }),
+      }),
+    );
+  });
+
+  test("sends Authorization Bearer header on createUserInBackend", async () => {
+    // fetchBackendUser returns 404
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+    // createUserInBackend succeeds
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ userId: "new-u" }),
+    });
+    // fetchBackendUser after creation
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userId: "new-u",
+        createdAt: "2025-01-01",
+        timezone: "UTC",
+      }),
+    });
+
+    const user = { email: "auth-header2@example.com" } as Record<
+      string,
+      unknown
+    >;
+    await signIn({ user, account: { provider: "github" } } as never);
+
+    // Second fetch call is the POST to create user
+    const createCall = mockFetch.mock.calls[1];
+    expect(createCall[1].headers).toEqual(
+      expect.objectContaining({
+        Authorization: "Bearer test-api-key",
+      }),
+    );
   });
 
   test("sends oauth_provider to createUserInBackend", async () => {

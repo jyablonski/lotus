@@ -6,14 +6,17 @@ from dagster import ResourceDefinition, build_op_context
 import pytest
 import requests
 
-from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_postgres
+from dagster_project.assets.ingestion.get_api_assets import (
+    get_api_users,
+    users_in_postgres,
+)
 
 
 @pytest.mark.unit
 class TestApiUsers:
-    """Test the api_users asset."""
+    """Test the get_api_users asset."""
 
-    def test_api_users_success(self):
+    def test_get_api_users_success(self):
         """Test successful API fetch."""
         mock_users = [
             {
@@ -33,14 +36,14 @@ class TestApiUsers:
             mock_get.return_value = mock_response
 
             context = build_op_context()
-            result = api_users(context)
+            result = get_api_users(context)
 
             assert result == mock_users
             mock_get.assert_called_once_with(
                 "https://jsonplaceholder.typicode.com/users"
             )
 
-    def test_api_users_http_error(self):
+    def test_get_api_users_http_error(self):
         """Test handling of HTTP errors."""
         with patch(
             "dagster_project.assets.ingestion.get_api_assets.requests.get"
@@ -52,7 +55,7 @@ class TestApiUsers:
             context = build_op_context()
 
             with pytest.raises(requests.HTTPError):
-                api_users(context)
+                get_api_users(context)
 
 
 @pytest.mark.unit

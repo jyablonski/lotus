@@ -9,7 +9,7 @@ with journals as (
     select * from {{ ref('stg_journals') }}
 
     {% if is_incremental() %}
-    where modified_at > (select max(journal_modified_at) from {{ this }})
+    where modified_at > coalesce((select max(journal_modified_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 
@@ -17,7 +17,7 @@ journal_details as (
     select * from {{ ref('stg_journal_details') }}
 
     {% if is_incremental() %}
-    where modified_at > (select max(journal_modified_at) from {{ this }})
+    where modified_at > coalesce((select max(journal_modified_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 

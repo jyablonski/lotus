@@ -22,11 +22,10 @@ type FeatureFlagServer struct {
 
 // isFlagActive evaluates a waffle flag for the given user role.
 //   - everyone=true  -> active for all users (short-circuit)
-//   - everyone=false -> inactive for all users (overrides role-based flags)
-//   - everyone=null  -> check superusers, staff, authenticated
+//   - everyone=false -> check superusers, staff, authenticated
 func isFlagActive(flag db.SourceWaffleFlag, userRole string) bool {
-	if flag.Everyone.Valid {
-		return flag.Everyone.Bool
+	if flag.Everyone {
+		return true
 	}
 
 	isAdmin := strings.EqualFold(userRole, "Admin")

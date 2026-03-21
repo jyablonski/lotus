@@ -2,10 +2,14 @@ from dagster import AssetExecutionContext, asset
 import requests
 
 from dagster_project.resources import PostgresResource
+from dagster_project.sql.ingestion import (
+    CREATE_EXAMPLE_API_USERS_TABLE,
+    UPSERT_EXAMPLE_API_USER,
+)
 
 
 @asset(group_name="ingestion")
-def api_users(context: AssetExecutionContext) -> list[dict]:
+def get_api_users(context: AssetExecutionContext) -> list[dict]:
     """Fetch users from JSONPlaceholder API."""
     response = requests.get("https://jsonplaceholder.typicode.com/users")
     response.raise_for_status()
@@ -17,33 +21,19 @@ def api_users(context: AssetExecutionContext) -> list[dict]:
 @asset(group_name="ingestion")
 def users_in_postgres(
     context: AssetExecutionContext,
-    api_users: list[dict],
+    get_api_users: list[dict],
     postgres_conn: PostgresResource,
 ) -> None:
     """Store users in Postgres."""
     with postgres_conn.get_connection() as conn, conn.cursor() as cur:
-        cur.execute("""
-                CREATE TABLE IF NOT EXISTS example_api_users (
-                    id INTEGER PRIMARY KEY,
-                    name VARCHAR(255),
-                    email VARCHAR(255),
-                    username VARCHAR(255)
-                )
-            """)
+        cur.execute(CREATE_EXAMPLE_API_USERS_TABLE)
 
-        for user in api_users:
+        for user in get_api_users:
             cur.execute(
-                """
-                    INSERT INTO example_api_users (id, name, email, username)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (id) DO UPDATE SET
-                        name = EXCLUDED.name,
-                        email = EXCLUDED.email,
-                        username = EXCLUDED.username
-                    """,
+                UPSERT_EXAMPLE_API_USER,
                 (user["id"], user["name"], user["email"], user["username"]),
             )
 
         conn.commit()
 
-    context.log.info(f"Stored {len(api_users)} users in Postgres")
+    context.log.info(f"Stored {len(get_api_users)} users in Postgres")

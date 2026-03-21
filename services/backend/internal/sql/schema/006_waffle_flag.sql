@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS source.waffle_flag
 (
     id            SERIAL PRIMARY KEY,
     name          VARCHAR(100) NOT NULL UNIQUE,
-    everyone      BOOLEAN,
+    everyone      BOOLEAN NOT NULL DEFAULT false,
     percent       NUMERIC(3,1),
     testing       BOOLEAN NOT NULL DEFAULT false,
     superusers    BOOLEAN NOT NULL DEFAULT true,

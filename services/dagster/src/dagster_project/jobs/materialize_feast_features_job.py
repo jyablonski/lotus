@@ -1,16 +1,16 @@
 from dagster import AssetSelection, define_asset_job
 from dagster_dbt import build_dbt_asset_selection
 
-from dagster_project.assets.transformations.dbt_assets import dbt_analytics
+from dagster_project.assets.transformations.dbt_assets import dbt_gold_analytics
 
 # Create a job that:
 # 1. First runs dbt to build gold.user_journal_summary
 # 2. Then materializes features to Redis via Feast
 
-if dbt_analytics is not None:
-    # Select the analytics models (which includes gold.user_journal_summary)
+if dbt_gold_analytics is not None:
+    # Select the analytics models (dbt_gold_analytics covers tag:analytics layer)
     analytics_selection = build_dbt_asset_selection(
-        [dbt_analytics], dbt_select="tag:analytics"
+        [dbt_gold_analytics], dbt_select="tag:analytics"
     )
 
     # Select the Feast materialization asset

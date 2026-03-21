@@ -3,15 +3,32 @@ from dagster_dbt import DbtCliResource, dbt_assets
 
 from dagster_project.dbt_config import dbt_project
 
-# Only define dbt_analytics if dbt_project is available
-# this is only for testing purposes so shit doesnt break
+# Split dbt assets into one definition per layer so Dagster runs each as a
+# separate op/step, giving visibility in the Gantt chart.
+# Only defined when dbt_project is available (test resilience).
 if dbt_project is not None:
-    # if this doesnt load during local dev, build the dbt project so you have a manifest.json
-    @dbt_assets(manifest=dbt_project.manifest_path)
-    def dbt_analytics(context: AssetExecutionContext, dbt: DbtCliResource):
-        # This runs `dbt build` for the selected assets
-        # It passes the correct flags to run only the specific models Dagster requested
+
+    @dbt_assets(
+        manifest=dbt_project.manifest_path, select="tag:staging", name="dbt_silver_stg"
+    )
+    def dbt_silver_stg(context: AssetExecutionContext, dbt: DbtCliResource):
         yield from dbt.cli(["build"], context=context).stream()
+
+    @dbt_assets(
+        manifest=dbt_project.manifest_path, select="tag:core", name="dbt_silver_core"
+    )
+    def dbt_silver_core(context: AssetExecutionContext, dbt: DbtCliResource):
+        yield from dbt.cli(["build"], context=context).stream()
+
+    @dbt_assets(
+        manifest=dbt_project.manifest_path,
+        select="tag:analytics",
+        name="dbt_gold_analytics",
+    )
+    def dbt_gold_analytics(context: AssetExecutionContext, dbt: DbtCliResource):
+        yield from dbt.cli(["build"], context=context).stream()
+
 else:
-    # Define dbt_analytics as None when dbt_project is not available
-    dbt_analytics = None
+    dbt_silver_stg = None
+    dbt_silver_core = None
+    dbt_gold_analytics = None
