@@ -5,11 +5,12 @@ CREATE DATABASE pact_broker;
 CREATE SCHEMA source;
 CREATE SCHEMA silver;
 CREATE SCHEMA gold;
--- Extensions go in public so types (uuid, vector) are visible from any schema.
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS vector;
-
 SET search_path TO source;
+
+-- uuid-ossp goes into source (same schema as the tables that use uuid_generate_v4())
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- vector must live in public so the type is visible regardless of search_path
+CREATE EXTENSION IF NOT EXISTS vector SCHEMA public;
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users
