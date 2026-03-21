@@ -58,7 +58,7 @@ class TestIntegration:
             postgres_resource_with_cleanup.get_connection() as conn,
             conn.cursor() as cur,
         ):
-            cur.execute("SELECT * FROM example_get_api_users WHERE id = %s", (999,))
+            cur.execute("SELECT * FROM example_api_users WHERE id = %s", (999,))
             result = cur.fetchone()
             assert result is not None
             assert result[1] == "Integration Test User"
