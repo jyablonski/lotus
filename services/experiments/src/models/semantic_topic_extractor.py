@@ -46,9 +46,13 @@ JOURNAL_TOPIC_HIERARCHY: dict[str, list[str]] = {
     ],
     "health": [
         "physical illness and recovery",
-        "diet and nutrition habits",
         "exercise and physical fitness",
         "medical care and health concerns",
+    ],
+    "food": [
+        "cooking and recipes",
+        "dining out and restaurants",
+        "diet and nutrition habits",
     ],
     "sleep": [
         "sleep quality and insomnia",
@@ -80,17 +84,30 @@ JOURNAL_TOPIC_HIERARCHY: dict[str, list[str]] = {
         "hobbies and leisure activities",
         "entertainment and media consumption",
     ],
+    "sports": [
+        "watching sports and fandom",
+        "playing sports and competition",
+        "sports news and athlete discussion",
+    ],
+    "technology": [
+        "software and programming projects",
+        "tools and apps and gadgets",
+        "internet and social media",
+    ],
     "spirituality": [
         "spiritual practice and faith",
         "purpose and meaning in life",
         "gratitude and appreciation",
         "mindfulness and present-moment awareness",
     ],
+    "social": [
+        "social events and community",
+        "parties and gatherings",
+    ],
     "travel": [
         "nature and outdoor experiences",
         "travel and new places",
-        "food and eating experiences",
-        "social events and community",
+        "vacation and trip planning",
     ],
 }
 
@@ -145,12 +162,14 @@ class SemanticTopicExtractor:
         self,
         model_name: str = "all-mpnet-base-v2",
         taxonomy: list[str] | None = None,
-        min_confidence: float = 0.15,
-        keyphrase_ngram_range: tuple[int, int] = (1, 2),
+        min_confidence: float = 0.25,
+        min_cosine_similarity: float = 0.35,
+        keyphrase_ngram_range: tuple[int, int] = (1, 3),
     ) -> None:
         self.model_name = model_name
         self.taxonomy = taxonomy if taxonomy is not None else JOURNAL_TOPIC_TAXONOMY
         self.min_confidence = min_confidence
+        self.min_cosine_similarity = min_cosine_similarity
         self.keyphrase_ngram_range = keyphrase_ngram_range
 
         # Per-instance domain lookup.  Falls back to the subtopic string itself
@@ -249,6 +268,12 @@ class SemanticTopicExtractor:
             similarities = self._cosine_similarities(embedding)
             best_idx = int(np.argmax(similarities))
             cosim = float(similarities[best_idx])
+
+            # Skip if the best taxonomy match is too weak — avoids forcing
+            # unrelated keyphrases into the nearest (but still distant) topic.
+            if cosim < self.min_cosine_similarity:
+                continue
+
             combined = round((kp_score + cosim) / 2, 4)
             subtopic = self.taxonomy[best_idx]
             domain = self._subtopic_to_domain[subtopic]

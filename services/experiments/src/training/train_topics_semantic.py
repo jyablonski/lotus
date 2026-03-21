@@ -144,6 +144,7 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
             sub: domain for domain, subs in hierarchy.items() for sub in subs
         }
         self._min_confidence: float = config["min_confidence"]
+        self._min_cosine_similarity: float = config.get("min_cosine_similarity", 0.35)
 
         self._sentence_model = SentenceTransformer(context.artifacts["sentence_transformer"])
         self._kw_model = KeyBERT(model=self._sentence_model)
@@ -168,7 +169,7 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
 
         keyphrases: list[tuple[str, float]] = self._kw_model.extract_keywords(
             text,
-            keyphrase_ngram_range=(1, 2),
+            keyphrase_ngram_range=(1, 3),
             top_n=top_n,
         )
         keyphrases = [(kp, score) for kp, score in keyphrases if score >= self._min_confidence]
@@ -188,6 +189,11 @@ class SemanticTopicExtractorWrapper(mlflow.pyfunc.PythonModel):
 
             best_idx = int(np.argmax(similarities))
             cosim = float(similarities[best_idx])
+
+            # Skip if the best taxonomy match is too weak.
+            if cosim < self._min_cosine_similarity:
+                continue
+
             combined = round((kp_score + cosim) / 2, 4)
             subtopic = self._taxonomy[best_idx]
             domain = self._subtopic_to_domain[subtopic]
@@ -259,7 +265,8 @@ def train_and_register() -> None:
     model_name = "all-mpnet-base-v2"
     config = {
         "model_name": model_name,
-        "min_confidence": 0.15,
+        "min_confidence": 0.25,
+        "min_cosine_similarity": 0.35,
     }
 
     with mlflow.start_run(run_name="semantic_topic_extractor") as run:
