@@ -5,7 +5,10 @@ from unittest.mock import MagicMock, patch
 from dagster import materialize
 import pytest
 
-from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_postgres
+from dagster_project.assets.ingestion.get_api_assets import (
+    get_api_users,
+    users_in_postgres,
+)
 from dagster_project.resources import PostgresResource
 
 
@@ -13,8 +16,8 @@ from dagster_project.resources import PostgresResource
 class TestMaterialization:
     """Test asset materialization with mocked resources."""
 
-    def test_materialize_api_users(self):
-        """Test materializing api_users asset."""
+    def test_materialize_get_api_users(self):
+        """Test materializing get_api_users asset."""
         mock_users = [
             {
                 "id": 1,
@@ -32,10 +35,10 @@ class TestMaterialization:
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
 
-            result = materialize([api_users])
+            result = materialize([get_api_users])
 
             assert result.success
-            assert result.asset_materializations_for_node("api_users") is not None
+            assert result.asset_materializations_for_node("get_api_users") is not None
 
     def test_materialize_with_mocked_postgres(self):
         """Test materializing users_in_postgres with mocked database."""
@@ -72,7 +75,7 @@ class TestMaterialization:
 
                 # Materialize both assets - ConfigurableResource instances can be passed directly
                 result = materialize(
-                    [api_users, users_in_postgres],
+                    [get_api_users, users_in_postgres],
                     resources={"postgres_conn": mock_postgres},
                 )
 

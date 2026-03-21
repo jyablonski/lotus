@@ -9,7 +9,10 @@ Run with: pytest -m integration
 from dagster import build_asset_context
 import pytest
 
-from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_postgres
+from dagster_project.assets.ingestion.get_api_assets import (
+    get_api_users,
+    users_in_postgres,
+)
 
 
 @pytest.mark.integration
@@ -17,10 +20,10 @@ from dagster_project.assets.ingestion.get_api_assets import api_users, users_in_
 class TestIntegration:
     """Integration tests that require external services."""
 
-    def test_api_users_integration(self):
-        """Test api_users asset with real API call."""
+    def test_get_api_users_integration(self):
+        """Test get_api_users asset with real API call."""
         context = build_asset_context()
-        result = api_users(context)
+        result = get_api_users(context)
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -55,7 +58,7 @@ class TestIntegration:
             postgres_resource_with_cleanup.get_connection() as conn,
             conn.cursor() as cur,
         ):
-            cur.execute("SELECT * FROM example_api_users WHERE id = %s", (999,))
+            cur.execute("SELECT * FROM example_get_api_users WHERE id = %s", (999,))
             result = cur.fetchone()
             assert result is not None
             assert result[1] == "Integration Test User"
