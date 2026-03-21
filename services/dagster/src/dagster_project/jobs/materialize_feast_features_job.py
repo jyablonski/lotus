@@ -23,6 +23,7 @@ if dbt_analytics is not None:
     materialize_feast_features_job = define_asset_job(
         name="materialize_feast_features_job",
         selection=combined_selection,
+        tags={"audience": "user-facing", "domain": "feature-store", "pii": "true"},
         description=(
             "Builds dbt analytics models (including gold.user_journal_summary) "
             "and materializes features to Redis via Feast"

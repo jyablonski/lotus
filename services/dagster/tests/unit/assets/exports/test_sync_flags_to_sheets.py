@@ -13,107 +13,112 @@ from dagster_project.assets.exports.sync_flags_to_sheets import (
 )
 
 
+def _make_mock_postgres(df: pl.DataFrame) -> MagicMock:
+    """Create a mock PostgresResource whose query_to_polars returns *df*."""
+    mock = MagicMock()
+    mock.query_to_polars.return_value = df
+    return mock
+
+
 @pytest.mark.unit
 class TestGetFeatureFlagsFromPostgres:
     """Test the get_feature_flags_from_postgres asset."""
 
-    def test_get_feature_flags_from_postgres_success(self, mock_postgres_resource):
+    def test_get_feature_flags_from_postgres_success(self):
         """Test successful fetch of feature flags from Postgres."""
-        # Mock database response
-        mock_rows = [
-            (1, "enable_feature_a", True, "2024-01-01 10:00:00", "2024-01-01 10:00:00"),
-            (
-                2,
-                "enable_feature_b",
-                False,
-                "2024-01-02 11:00:00",
-                "2024-01-02 11:00:00",
-            ),
-            (3, "enable_feature_c", True, "2024-01-03 12:00:00", "2024-01-03 12:00:00"),
-        ]
-        mock_columns = ["id", "flag_name", "enabled", "created_at", "modified_at"]
-
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.description = [(col,) for col in mock_columns]
-        mock_cursor.fetchall.return_value = mock_rows
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_postgres_resource.get_connection.return_value.__enter__.return_value = (
-            mock_conn
+        expected_df = pl.DataFrame(
+            {
+                "id": [1, 2, 3],
+                "flag_name": [
+                    "enable_feature_a",
+                    "enable_feature_b",
+                    "enable_feature_c",
+                ],
+                "enabled": [True, False, True],
+                "created_at": [
+                    "2024-01-01 10:00:00",
+                    "2024-01-02 11:00:00",
+                    "2024-01-03 12:00:00",
+                ],
+                "modified_at": [
+                    "2024-01-01 10:00:00",
+                    "2024-01-02 11:00:00",
+                    "2024-01-03 12:00:00",
+                ],
+            }
         )
+        mock_postgres = _make_mock_postgres(expected_df)
 
         def resource_fn(_context):
-            return mock_postgres_resource
+            return mock_postgres
 
-        postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
+        context = build_op_context(
+            resources={"postgres_conn": ResourceDefinition(resource_fn=resource_fn)}
+        )
 
         result = get_feature_flags_from_postgres(context)
 
-        # Verify database interactions
-        mock_postgres_resource.get_connection.assert_called_once()
-        mock_cursor.execute.assert_called_once_with("SELECT * FROM feature_flags")
-        mock_cursor.fetchall.assert_called_once()
-
-        # Verify result is a Polars DataFrame
+        mock_postgres.query_to_polars.assert_called_once_with(
+            "SELECT * FROM feature_flags"
+        )
         assert isinstance(result, pl.DataFrame)
         assert len(result) == 3
-        assert list(result.columns) == mock_columns
+        assert list(result.columns) == [
+            "id",
+            "flag_name",
+            "enabled",
+            "created_at",
+            "modified_at",
+        ]
 
-    def test_get_feature_flags_from_postgres_empty_result(self, mock_postgres_resource):
+    def test_get_feature_flags_from_postgres_empty_result(self):
         """Test handling of empty query result."""
-        mock_rows = []
-        mock_columns = ["id", "flag_name", "enabled", "created_at", "modified_at"]
-
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.description = [(col,) for col in mock_columns]
-        mock_cursor.fetchall.return_value = mock_rows
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_postgres_resource.get_connection.return_value.__enter__.return_value = (
-            mock_conn
+        expected_df = pl.DataFrame(
+            {
+                "id": [],
+                "flag_name": [],
+                "enabled": [],
+                "created_at": [],
+                "modified_at": [],
+            }
         )
+        mock_postgres = _make_mock_postgres(expected_df)
 
         def resource_fn(_context):
-            return mock_postgres_resource
+            return mock_postgres
 
-        postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
+        context = build_op_context(
+            resources={"postgres_conn": ResourceDefinition(resource_fn=resource_fn)}
+        )
 
         result = get_feature_flags_from_postgres(context)
 
         assert isinstance(result, pl.DataFrame)
         assert len(result) == 0
-        assert list(result.columns) == mock_columns
 
-    def test_get_feature_flags_from_postgres_logs_info(self, mock_postgres_resource):
+    def test_get_feature_flags_from_postgres_logs_info(self):
         """Test that asset logs information about the dataframe."""
-        mock_rows = [
-            (1, "enable_feature_a", True, "2024-01-01 10:00:00", "2024-01-01 10:00:00"),
-        ]
-        mock_columns = ["id", "flag_name", "enabled", "created_at", "modified_at"]
-
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.description = [(col,) for col in mock_columns]
-        mock_cursor.fetchall.return_value = mock_rows
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        mock_postgres_resource.get_connection.return_value.__enter__.return_value = (
-            mock_conn
+        expected_df = pl.DataFrame(
+            {
+                "id": [1],
+                "flag_name": ["enable_feature_a"],
+                "enabled": [True],
+                "created_at": ["2024-01-01 10:00:00"],
+                "modified_at": ["2024-01-01 10:00:00"],
+            }
         )
+        mock_postgres = _make_mock_postgres(expected_df)
 
         def resource_fn(_context):
-            return mock_postgres_resource
+            return mock_postgres
 
-        postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
-
-        # Mock the log methods to verify they're called
+        context = build_op_context(
+            resources={"postgres_conn": ResourceDefinition(resource_fn=resource_fn)}
+        )
         context.log.info = MagicMock()
 
         result = get_feature_flags_from_postgres(context)
 
-        # Verify logging was called (asset logs fetched count and columns)
         assert context.log.info.call_count == 2
         assert isinstance(result, pl.DataFrame)
 
@@ -124,7 +129,6 @@ class TestSyncFlagsToSheets:
 
     def test_sync_flags_to_sheets_success(self):
         """Test successful sync of feature flags to Google Sheets."""
-        # Create mock DataFrame (simulating output from get_feature_flags_from_postgres)
         mock_df = pl.DataFrame(
             {
                 "id": [1, 2],
@@ -135,7 +139,6 @@ class TestSyncFlagsToSheets:
             }
         )
 
-        # Mock Google Sheets resource
         mock_google_sheets_resource = MagicMock()
         mock_sheet = MagicMock()
         mock_worksheet = MagicMock()
@@ -152,24 +155,20 @@ class TestSyncFlagsToSheets:
             resources={"feature_flags_google_sheet": google_sheets_resource_def}
         )
 
-        # Mock log methods
         context.log.info = MagicMock()
         context.log.error = MagicMock()
 
         result = sync_flags_to_sheets(context, mock_df)
 
-        # Verify Google Sheets interactions
         mock_google_sheets_resource.get_sheet.assert_called_once()
         mock_sheet.worksheet.assert_called_once_with("Feature Flags")
         mock_worksheet.clear.assert_called_once()
         mock_worksheet.update.assert_called_once()
 
-        # Verify update was called with correct data structure
         update_call_args = mock_worksheet.update.call_args
         assert update_call_args[0][0] == "A1"
         assert update_call_args[1]["value_input_option"] == "RAW"
 
-        # Verify the data structure includes headers + rows
         all_rows = update_call_args[0][1]
         assert len(all_rows) == 3  # headers + 2 data rows
         assert all_rows[0] == [
@@ -179,13 +178,10 @@ class TestSyncFlagsToSheets:
             "created_at",
             "modified_at",
             "synced_at",
-        ]  # headers + synced_at
+        ]
 
-        # Verify logging
         assert context.log.info.call_count == 1
         assert context.log.error.call_count == 0
-
-        # Verify result
         assert result is None
 
     def test_sync_flags_to_sheets_creates_worksheet_if_not_exists(self):
@@ -203,8 +199,6 @@ class TestSyncFlagsToSheets:
         mock_google_sheets_resource = MagicMock()
         mock_sheet = MagicMock()
         mock_worksheet = MagicMock()
-
-        # Simulate worksheet not found, then create it
         mock_sheet.worksheet.side_effect = gspread.WorksheetNotFound("Not found")
         mock_sheet.add_worksheet.return_value = mock_worksheet
         mock_google_sheets_resource.get_sheet.return_value = mock_sheet
@@ -224,14 +218,12 @@ class TestSyncFlagsToSheets:
 
         result = sync_flags_to_sheets(context, mock_df)
 
-        # Verify worksheet was created
         mock_sheet.worksheet.assert_called_once_with("Feature Flags")
         mock_sheet.add_worksheet.assert_called_once_with(
             title="Feature Flags", rows=1000, cols=20
         )
         mock_worksheet.clear.assert_called_once()
         mock_worksheet.update.assert_called_once()
-
         assert result is None
 
     def test_sync_flags_to_sheets_adds_synced_at_column(self):
@@ -265,7 +257,6 @@ class TestSyncFlagsToSheets:
 
         sync_flags_to_sheets(context, mock_df)
 
-        # Verify synced_at column was added
         update_call_args = mock_worksheet.update.call_args
         all_rows = update_call_args[0][1]
         headers = all_rows[0]
@@ -304,12 +295,10 @@ class TestSyncFlagsToSheets:
 
         sync_flags_to_sheets(context, mock_df)
 
-        # Verify data was cast to strings
         update_call_args = mock_worksheet.update.call_args
         all_rows = update_call_args[0][1]
-        data_rows = all_rows[1:]  # Skip header row
+        data_rows = all_rows[1:]
 
-        # All values should be strings (including boolean True/False)
         for row in data_rows:
             for value in row:
                 assert isinstance(value, str)
@@ -345,14 +334,12 @@ class TestSyncFlagsToSheets:
 
         result = sync_flags_to_sheets(context, mock_df)
 
-        # Should still clear and update (with just headers)
         mock_worksheet.clear.assert_called_once()
         mock_worksheet.update.assert_called_once()
 
         update_call_args = mock_worksheet.update.call_args
         all_rows = update_call_args[0][1]
         assert len(all_rows) == 1  # Just headers, no data rows
-
         assert result is None
 
     def test_sync_flags_to_sheets_raises_error_on_exception(self):
@@ -386,7 +373,6 @@ class TestSyncFlagsToSheets:
         with pytest.raises(Exception, match="Google API Error"):
             sync_flags_to_sheets(context, mock_df)
 
-        # Verify error was logged
         context.log.error.assert_called_once()
         error_call = context.log.error.call_args[0][0]
         assert "Error syncing to Google Sheets" in error_call

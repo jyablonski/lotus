@@ -25,6 +25,7 @@ if dbt_analytics is not None:
     dbt_pipeline_job = define_asset_job(
         name="dbt_pipeline_job",
         selection=all_dbt_selection,
+        tags={"audience": "internal", "domain": "analytics", "pii": "true"},
         description="Builds dbt models in stages: staging -> core -> analytics",
     )
 else:

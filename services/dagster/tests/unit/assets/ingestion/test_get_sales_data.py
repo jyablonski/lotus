@@ -6,7 +6,7 @@ from dagster import build_op_context
 import polars as pl
 import pytest
 
-from dagster_project.assets.ingestion.get_sales_data import sales_data, sales_summary
+from dagster_project.assets.ingestion.get_sales_data import sales_data
 
 
 @pytest.mark.unit
@@ -50,60 +50,3 @@ class TestSalesData:
         # Verify sales values are within expected range
         assert result["total_sales"].min() >= 10
         assert result["total_sales"].max() <= 100
-
-
-@pytest.mark.unit
-class TestSalesSummary:
-    """Test the sales_summary asset."""
-
-    def test_sales_summary_success(self):
-        """Test successful calculation of sales summary."""
-        # Create a test DataFrame
-        test_df = pl.DataFrame(
-            {
-                "id": [1, 2, 3],
-                "total_sales": [10, 20, 30],
-                "date": [date.today()] * 3,
-            }
-        )
-
-        context = build_op_context(partition_key="2025-12-18")
-
-        result = sales_summary(context, test_df)
-
-        assert isinstance(result, int)
-        assert result == 60
-
-    def test_sales_summary_zero_sum(self):
-        """Test sales_summary with DataFrame containing zeros."""
-        # Use zeros instead of empty DataFrame to avoid None return from Polars sum()
-        test_df = pl.DataFrame(
-            {
-                "id": [1],
-                "total_sales": [0],
-                "date": [date.today()],
-            }
-        )
-
-        context = build_op_context(partition_key="2025-12-18")
-
-        result = sales_summary(context, test_df)
-
-        assert isinstance(result, int)
-        assert result == 0
-
-    def test_sales_summary_single_row(self):
-        """Test sales_summary with single row."""
-        test_df = pl.DataFrame(
-            {
-                "id": [1],
-                "total_sales": [50],
-                "date": [date.today()],
-            }
-        )
-
-        context = build_op_context(partition_key="2025-12-18")
-
-        result = sales_summary(context, test_df)
-
-        assert result == 50

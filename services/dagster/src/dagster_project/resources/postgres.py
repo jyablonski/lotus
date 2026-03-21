@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 from dagster import ConfigurableResource, EnvVar
+import polars as pl
 import psycopg2
 
 
@@ -26,6 +27,14 @@ class PostgresResource(ConfigurableResource):
             yield conn
         finally:
             conn.close()
+
+    def query_to_polars(self, query: str) -> pl.DataFrame:
+        """Execute a SQL query and return the results as a Polars DataFrame."""
+        with self.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(query)
+            columns = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+        return pl.DataFrame(rows, schema=columns, orient="row")
 
 
 # connection only happens once an asset or op calls `get_connection` on the resource

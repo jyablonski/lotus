@@ -25,6 +25,7 @@ if dbt_analytics is not None:
     game_bets_pipeline_job = define_asset_job(
         name="game_bets_pipeline_job",
         selection=all_game_selection,
+        tags={"audience": "internal", "domain": "game", "pii": "false"},
         description="Daily pipeline for game bets analytics: staging -> core -> gold",
     )
 

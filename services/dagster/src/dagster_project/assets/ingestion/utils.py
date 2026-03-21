@@ -82,37 +82,3 @@ def create_basic_metadata(
         metadata["date_range"] = MetadataValue.text(date_range)
 
     return metadata
-
-
-def create_summary_metadata(
-    context: AssetExecutionContext,
-    total_sales: float | None = None,
-    num_rows: int | None = None,
-    df: pl.DataFrame | None = None,
-) -> dict[str, MetadataValue]:
-    """Create metadata dictionary for summary assets.
-
-    Args:
-        context: The asset execution context
-        total_sales: Total sales value
-        num_rows: Number of rows (if None and df provided, will be calculated)
-        df: Optional DataFrame to extract num_rows from
-
-    Returns:
-        A dictionary of metadata values
-    """
-    metadata = {
-        "partition": MetadataValue.text(get_partition_date_str(context)),
-    }
-
-    if total_sales is not None:
-        metadata["total_sales"] = MetadataValue.float(float(total_sales))
-
-    # Extract num_rows from DataFrame if not provided
-    if num_rows is None and df is not None:
-        num_rows = len(df)
-
-    if num_rows is not None:
-        metadata["num_rows"] = MetadataValue.int(num_rows)
-
-    return metadata

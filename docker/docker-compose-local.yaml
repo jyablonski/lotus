@@ -222,6 +222,7 @@ services:
     volumes:
       - ${PWD}/services/dagster/src:/app/src
       - ${PWD}/services/dbt:/app/dbt
+      - dagster_io_storage:/tmp/io_manager_storage
     environment:
       - DAGSTER_POSTGRES_USER=postgres
       - DAGSTER_POSTGRES_PASSWORD=postgres
@@ -237,11 +238,11 @@ services:
       - FEAST_REPO_PATH=/app/feast_repo
       - API_KEY=fdwer424324aserdsfbbbb
       - API_BASE_URL=${API_BASE_URL:-}
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
-      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
-      - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL}
-      - FEATURE_FLAGS_GOOGLE_SHEET_URL=${FEATURE_FLAGS_GOOGLE_SHEET_URL}
-      - FEATURE_FLAGS_GOOGLE_SHEET_CREDENTIALS_JSON=${FEATURE_FLAGS_GOOGLE_SHEET_CREDENTIALS_JSON}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL:-}
+      - FEATURE_FLAGS_GOOGLE_SHEET_URL=${FEATURE_FLAGS_GOOGLE_SHEET_URL:-}
+      - FEATURE_FLAGS_GOOGLE_SHEET_CREDENTIALS_JSON=${FEATURE_FLAGS_GOOGLE_SHEET_CREDENTIALS_JSON:-}
     networks:
       - default
     healthcheck:
@@ -257,7 +258,8 @@ services:
   dagster_webserver:
     profiles: ["dagster"]
     image: dagster_server_image
-    entrypoint:
+    entrypoint: ["/app/entrypoint.sh"]
+    command:
       - dagster-webserver
       - -h
       - "0.0.0.0"
@@ -292,7 +294,8 @@ services:
   dagster_daemon:
     profiles: ["dagster"]
     image: dagster_server_image
-    entrypoint:
+    entrypoint: ["/app/entrypoint.sh"]
+    command:
       - dagster-daemon
       - run
       - -w
@@ -307,8 +310,8 @@ services:
       - DAGSTER_POSTGRES_HOST=postgres
       - DAGSTER_POSTGRES_DB=postgres
       - DAGSTER_POSTGRES_PORT=5432
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
-      - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - SLACK_DEFAULT_CHANNEL=${SLACK_DEFAULT_CHANNEL:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - dagster_io_storage:/tmp/io_manager_storage

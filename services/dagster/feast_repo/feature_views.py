@@ -28,7 +28,7 @@ user_journal_summary_source = PostgreSQLSource(
         neutral_entries,
         avg_sentiment_score,
         positive_percentage,
-        days_since_first_journal,
+        days_since_last_journal,
         journals_per_active_day,
         COALESCE(last_modified_at, last_journal_at, CURRENT_TIMESTAMP) as event_timestamp
     FROM gold.user_journal_summary
@@ -53,7 +53,7 @@ user_journal_summary_fv = FeatureView(
         Field(name="neutral_entries", dtype=Int64),
         Field(name="avg_sentiment_score", dtype=Float32),
         Field(name="positive_percentage", dtype=Float32),
-        Field(name="days_since_first_journal", dtype=Int64),
+        Field(name="days_since_last_journal", dtype=Int64),
         Field(name="journals_per_active_day", dtype=Float32),
     ],
 )
