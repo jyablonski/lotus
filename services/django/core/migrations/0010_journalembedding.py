@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
             sql=[
                 "CREATE EXTENSION IF NOT EXISTS vector SCHEMA public;",
                 "ALTER TABLE source.journal_embeddings ALTER COLUMN embedding TYPE public.vector(384) USING embedding::public.vector(384);",
-                "CREATE INDEX idx_journal_embeddings_hnsw ON source.journal_embeddings USING hnsw (embedding vector_cosine_ops);",
+                "CREATE INDEX idx_journal_embeddings_hnsw ON source.journal_embeddings USING hnsw (embedding public.vector_cosine_ops);",
             ],
             reverse_sql=[
                 "DROP INDEX IF EXISTS source.idx_journal_embeddings_hnsw;",

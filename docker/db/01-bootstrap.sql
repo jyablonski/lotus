@@ -117,14 +117,14 @@ CREATE INDEX idx_journal_topics_subtopic_name ON journal_topics(subtopic_name);
 CREATE TABLE IF NOT EXISTS journal_embeddings (
     id SERIAL PRIMARY KEY,
     journal_id INTEGER NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
-    embedding vector(384) NOT NULL,
+    embedding public.vector(384) NOT NULL,
     model_version VARCHAR(50) NOT NULL DEFAULT 'all-MiniLM-L6-v2',
     created_at TIMESTAMP DEFAULT NOW() NOT NULL,
     UNIQUE(journal_id, model_version)
 );
 
 CREATE INDEX idx_journal_embeddings_hnsw ON journal_embeddings
-    USING hnsw (embedding vector_cosine_ops);
+    USING hnsw (embedding public.vector_cosine_ops);
 
 INSERT INTO journal_topics (journal_id, topic_name, subtopic_name, confidence, ml_model_version) VALUES
 (1, 'work',      'deadlines and workload pressure',    0.7234, 'v1.0.0'),
