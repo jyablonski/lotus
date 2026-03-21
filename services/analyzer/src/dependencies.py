@@ -5,7 +5,6 @@ import logging
 import mlflow
 from sqlalchemy.orm import Session
 
-from src.clients.embedding_client import EmbeddingClient
 from src.clients.ml_sentiment_client import SentimentClient
 from src.clients.ml_topic_client import TopicClient
 from src.clients.openai_topic_client import OpenAITopicClient
@@ -95,10 +94,3 @@ def get_openai_topic_client() -> OpenAITopicClient:
     logger.info("Creating OpenAI TopicClient instance")
     mlflow.openai.autolog()
     return OpenAITopicClient()
-
-
-@lru_cache
-def get_embedding_client() -> EmbeddingClient:
-    """Dependency to get the singleton EmbeddingClient instance."""
-    logger.info("Creating EmbeddingClient instance")
-    return EmbeddingClient()

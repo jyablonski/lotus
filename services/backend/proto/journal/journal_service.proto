@@ -27,11 +27,4 @@ service JournalService {
       post: "/v1/journals/{journal_id}/analysis"
     };
   }
-
-  rpc SearchJournals(SearchJournalsRequest) returns (SearchJournalsResponse) {
-    option (google.api.http) = {
-      post: "/v1/journals/search"
-      body: "*"
-    };
-  }
 }

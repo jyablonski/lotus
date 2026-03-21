@@ -6,8 +6,6 @@ import { BACKEND_URL } from "@/lib/config";
 import { ROUTES } from "@/lib/routes";
 import { MOOD_MIN, MOOD_MAX } from "@/lib/utils/moodMapping";
 import { backendHeaders } from "@/lib/server/backendHeaders";
-import type { JournalEntry, BackendJournal } from "@/types/journal";
-import { transformBackendJournal } from "@/types/journal";
 
 export interface CreateJournalInput {
   journalText: string;
@@ -18,16 +16,6 @@ export interface CreateJournalResult {
   success: boolean;
   journalId?: string;
   totalCount?: number;
-  error?: string;
-}
-
-export interface SemanticSearchResult {
-  journal: JournalEntry;
-  similarityScore: number;
-}
-
-export interface SemanticSearchResponse {
-  results: SemanticSearchResult[];
   error?: string;
 }
 
@@ -114,55 +102,6 @@ export async function createJournal(
       success: false,
       error:
         error instanceof Error ? error.message : "Failed to create journal",
-    };
-  }
-}
-
-/**
- * Server action for semantic search over journals.
- * Calls the Go backend's SearchJournals RPC via grpc-gateway.
- */
-export async function searchJournals(
-  query: string,
-  limit: number = 20,
-): Promise<SemanticSearchResponse> {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return { results: [], error: "Unauthorized" };
-    }
-
-    const response = await fetch(`${BACKEND_URL}/v1/journals/search`, {
-      method: "POST",
-      headers: backendHeaders(),
-      body: JSON.stringify({
-        user_id: session.user.id,
-        query,
-        limit,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Backend semantic search error:", errorText);
-      return { results: [], error: `Search failed: ${response.status}` };
-    }
-
-    const data = await response.json();
-
-    const results: SemanticSearchResult[] = (data.results ?? []).map(
-      (r: { journal: BackendJournal; similarityScore: number }) => ({
-        journal: transformBackendJournal(r.journal),
-        similarityScore: r.similarityScore,
-      }),
-    );
-
-    return { results };
-  } catch (error) {
-    console.error("Error in semantic search:", error);
-    return {
-      results: [],
-      error: error instanceof Error ? error.message : "Semantic search failed",
     };
   }
 }

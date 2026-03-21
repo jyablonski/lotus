@@ -256,7 +256,6 @@ func main() {
 		ctx = inject.WithLogger(ctx, logger)
 		ctx = inject.WithHTTPClient(ctx, httpClient)
 		ctx = inject.WithAnalyzerURL(ctx, analyzerBaseURL)
-		ctx = inject.WithAnalyzerAPIKey(ctx, analyzerAPIKey)
 		ctx = inject.WithPgxPool(ctx, pgxPool)
 		ctx = inject.WithRiverClient(ctx, riverClient)
 		return handler(ctx, req)
