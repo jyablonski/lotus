@@ -1,7 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { BACKEND_URL, BACKEND_API_KEY } from "@/lib/config";
+import { BACKEND_URL } from "@/lib/config";
+import { backendHeaders } from "@/lib/server/backendHeaders";
 
 export interface UpdateTimezoneResult {
   success: boolean;
@@ -27,10 +28,7 @@ export async function updateTimezone(
       `${BACKEND_URL}/v1/users/${session.user.id}/timezone`,
       {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${BACKEND_API_KEY}`,
-        },
+        headers: backendHeaders(),
         body: JSON.stringify({ timezone }),
       },
     );

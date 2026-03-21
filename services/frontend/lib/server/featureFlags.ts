@@ -1,6 +1,7 @@
 import "server-only";
 
-import { BACKEND_URL, BACKEND_API_KEY } from "@/lib/config";
+import { BACKEND_URL } from "@/lib/config";
+import { backendHeaders } from "@/lib/server/backendHeaders";
 
 export interface FeatureFlags {
   [key: string]: boolean;
@@ -37,10 +38,7 @@ export async function fetchFeatureFlags(
       `${BACKEND_URL}/v1/feature-flags?${params.toString()}`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${BACKEND_API_KEY}`,
-        },
+        headers: backendHeaders(),
         next: { revalidate: 30 },
       },
     );

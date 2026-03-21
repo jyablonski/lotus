@@ -21,6 +21,7 @@ interface TestUser {
   name: string;
   email: string;
   image?: string;
+  role?: string;
   createdAt?: string;
 }
 
@@ -33,6 +34,7 @@ export const TEST_USER: TestUser = {
   name: "E2E Test User",
   email: "e2e-test@lotus.dev",
   image: "https://avatars.githubusercontent.com/u/1?v=4",
+  role: "Consumer",
   createdAt: "2025-01-01T00:00:00Z",
 };
 
@@ -60,6 +62,7 @@ async function createSessionToken(user: TestUser): Promise<string> {
       email: user.email,
       picture: user.image,
       backendId: user.id,
+      role: user.role,
       createdAt: user.createdAt,
     },
     secret,

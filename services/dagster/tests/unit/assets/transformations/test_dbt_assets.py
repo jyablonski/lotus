@@ -8,36 +8,34 @@ from dagster_dbt import DbtCliResource
 
 
 @pytest.mark.unit
-class TestDbtAnalytics:
-    """Test the dbt_analytics asset."""
+class TestDbtAssets:
+    """Test the split dbt asset definitions (staging, core, analytics)."""
 
-    def test_dbt_analytics_conditional_definition(self):
-        """Test that dbt_analytics is conditionally defined based on dbt_project availability."""
-        # This test verifies the conditional logic in the module
+    def test_dbt_assets_conditional_definition(self):
+        """Test that dbt assets are conditionally defined based on dbt_project availability."""
         from dagster_project.assets.transformations import dbt_assets
 
-        # The asset should either be defined or None based on dbt_project
-        assert dbt_assets.dbt_analytics is None or hasattr(
-            dbt_assets.dbt_analytics, "__call__"
-        )
+        for attr in ("dbt_silver_stg", "dbt_silver_core", "dbt_gold_analytics"):
+            value = getattr(dbt_assets, attr)
+            assert value is None or callable(value)
 
-    def test_dbt_analytics_when_available(self):
-        """Test dbt_analytics when dbt_project is available."""
+    @pytest.mark.parametrize(
+        "asset_name", ["dbt_silver_stg", "dbt_silver_core", "dbt_gold_analytics"]
+    )
+    def test_dbt_asset_calls_build(self, asset_name):
+        """Test each dbt asset invokes dbt build."""
         from dagster_project.assets.transformations import dbt_assets
 
-        # If dbt_analytics is defined, test its basic structure
-        if dbt_assets.dbt_analytics is not None:
-            mock_dbt_resource = MagicMock(spec=DbtCliResource)
-            mock_cli_result = MagicMock()
-            mock_cli_result.stream.return_value = iter([MagicMock()])
-            mock_dbt_resource.cli.return_value = mock_cli_result
+        asset_fn = getattr(dbt_assets, asset_name)
+        if asset_fn is None:
+            pytest.skip(f"dbt_project not available, skipping {asset_name}")
 
-            context = build_op_context(resources={"dbt": mock_dbt_resource})
+        mock_dbt_resource = MagicMock(spec=DbtCliResource)
+        mock_cli_result = MagicMock()
+        mock_cli_result.stream.return_value = iter([MagicMock()])
+        mock_dbt_resource.cli.return_value = mock_cli_result
 
-            # Execute the asset
-            list(dbt_assets.dbt_analytics(context, mock_dbt_resource))
+        context = build_op_context(resources={"dbt": mock_dbt_resource})
+        list(asset_fn(context, mock_dbt_resource))
 
-            mock_dbt_resource.cli.assert_called_once_with(["build"], context=context)
-        else:
-            # If dbt_project is not available, skip this test
-            pytest.skip("dbt_project is not available, skipping dbt_analytics test")
+        mock_dbt_resource.cli.assert_called_once_with(["build"], context=context)

@@ -5,6 +5,8 @@ models:
     description: |
       Fact table for CSGODouble game bets with derived win/loss
       and color classification
+    config:
+      tags: ["game"]
     columns:
       - name: bet_id
         description: Primary key for bets

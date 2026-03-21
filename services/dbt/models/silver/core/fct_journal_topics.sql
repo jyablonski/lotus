@@ -9,7 +9,7 @@ with topics as (
     select * from {{ ref('stg_journal_topics') }}
 
     {% if is_incremental() %}
-    where created_at > (select max(topic_created_at) from {{ this }})
+    where created_at > coalesce((select max(topic_created_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 

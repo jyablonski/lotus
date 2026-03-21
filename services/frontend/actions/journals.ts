@@ -1,20 +1,11 @@
 "use server";
 
 import { auth } from "@/auth";
-import { context, propagation } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
-import { BACKEND_URL, BACKEND_API_KEY } from "@/lib/config";
+import { BACKEND_URL } from "@/lib/config";
 import { ROUTES } from "@/lib/routes";
 import { MOOD_MIN, MOOD_MAX } from "@/lib/utils/moodMapping";
-
-/** Inject W3C traceparent/tracestate and service auth token into a headers object. */
-function withTraceHeaders(
-  base: Record<string, string>,
-): Record<string, string> {
-  const headers = { ...base, Authorization: `Bearer ${BACKEND_API_KEY}` };
-  propagation.inject(context.active(), headers);
-  return headers;
-}
+import { backendHeaders } from "@/lib/server/backendHeaders";
 
 export interface CreateJournalInput {
   journalText: string;
@@ -58,7 +49,7 @@ export async function createJournal(
 
     const response = await fetch(`${BACKEND_URL}/v1/journals`, {
       method: "POST",
-      headers: withTraceHeaders({ "Content-Type": "application/json" }),
+      headers: backendHeaders(),
       body: JSON.stringify({
         user_id: session.user.id,
         journal_text: journalText,
@@ -84,7 +75,7 @@ export async function createJournal(
         `${BACKEND_URL}/v1/journals?user_id=${session.user.id}&limit=1&offset=0`,
         {
           method: "GET",
-          headers: withTraceHeaders({ "Content-Type": "application/json" }),
+          headers: backendHeaders(),
         },
       );
       if (countResp.ok) {

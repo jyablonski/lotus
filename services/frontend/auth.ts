@@ -10,6 +10,7 @@ import type {
 import { BACKEND_URL } from "@/lib/config";
 import { ROUTES } from "@/lib/routes";
 import { redis } from "@/lib/server/redis";
+import { backendHeaders } from "@/lib/server/backendHeaders";
 
 // ---------------------------------------------------------------------------
 // Types for backend responses
@@ -79,7 +80,7 @@ async function createUserInBackend(
   try {
     const response = await fetch(`${BACKEND_URL}/v1/oauth/users`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: backendHeaders(),
       body: JSON.stringify({ email, oauth_provider: oauthProvider }),
     });
 
@@ -142,6 +143,9 @@ async function fetchBackendUser(
     try {
       const response = await fetch(
         `${BACKEND_URL}/v1/users?email=${encodeURIComponent(email)}`,
+        {
+          headers: backendHeaders(),
+        },
       );
 
       if (!response.ok) {

@@ -3,6 +3,8 @@ version: 2
 models:
   - name: stg_user_game_balances
     description: Staging table for CSGODouble game balances
+    config:
+      tags: ["game"]
     columns:
       - name: user_id
         description: Primary key - one balance per user

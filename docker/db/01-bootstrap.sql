@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS source.waffle_flag
 (
     id            SERIAL PRIMARY KEY,
     name          VARCHAR(100) NOT NULL UNIQUE,
-    everyone      BOOLEAN,
+    everyone      BOOLEAN NOT NULL DEFAULT false,
     percent       NUMERIC(3,1),
     testing       BOOLEAN NOT NULL DEFAULT false,
     superusers    BOOLEAN NOT NULL DEFAULT true,
@@ -169,11 +169,8 @@ CREATE TABLE IF NOT EXISTS source.waffle_flag
 );
 
 INSERT INTO source.waffle_flag (name, everyone, superusers, staff, authenticated, note)
-VALUES ('frontend_admin', NULL, true, true, false, 'Show admin link on profile when user role is Admin')
+VALUES ('frontend_admin', false, true, true, false, 'Show admin link on profile when user role is Admin')
 ON CONFLICT (name) DO UPDATE SET everyone = EXCLUDED.everyone, superusers = EXCLUDED.superusers, staff = EXCLUDED.staff, modified = NOW();
-
--- Ensure frontend_admin uses role-based logic (everyone=NULL) not "off for all" (everyone=false)
-UPDATE source.waffle_flag SET everyone = NULL, modified = NOW() WHERE name = 'frontend_admin';
 
 -- Truncate integration-test tables in FK-safe order. Call from backend integration tests
 -- so cleanup works regardless of which tables have rows (e.g. user_game_*, journals).

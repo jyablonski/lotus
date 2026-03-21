@@ -3,6 +3,8 @@ version: 2
 models:
   - name: user_game_summary
     description: Aggregated CSGODouble game metrics and betting patterns per user
+    config:
+      tags: ["game"]
     columns:
       - name: user_id
         description: Primary key - unique identifier for each user

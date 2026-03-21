@@ -134,7 +134,7 @@ type SourceUserGameBet struct {
 type SourceWaffleFlag struct {
 	ID            int32
 	Name          string
-	Everyone      sql.NullBool
+	Everyone      bool
 	Percent       sql.NullString
 	Testing       bool
 	Superusers    bool
