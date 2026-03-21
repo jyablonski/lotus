@@ -44,8 +44,8 @@ class Migration(migrations.Migration):
         # Enable pgvector extension and convert the TextField to vector(384)
         migrations.RunSQL(
             sql=[
-                "CREATE EXTENSION IF NOT EXISTS vector;",
-                "ALTER TABLE source.journal_embeddings ALTER COLUMN embedding TYPE vector(384) USING embedding::vector(384);",
+                "CREATE EXTENSION IF NOT EXISTS vector SCHEMA public;",
+                "ALTER TABLE source.journal_embeddings ALTER COLUMN embedding TYPE public.vector(384) USING embedding::public.vector(384);",
                 "CREATE INDEX idx_journal_embeddings_hnsw ON source.journal_embeddings USING hnsw (embedding vector_cosine_ops);",
             ],
             reverse_sql=[

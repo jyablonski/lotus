@@ -12,6 +12,7 @@ def setup_test_database(django_db_setup, django_db_blocker):
     with django_db_blocker.unblock(), connection.cursor() as cursor:
         # Create extension in public schema (default)
         cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS vector SCHEMA public")
         # Create source schema
         cursor.execute("CREATE SCHEMA IF NOT EXISTS source")
         # Ensure search_path includes public so uuid_generate_v4() is accessible

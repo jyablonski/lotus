@@ -49,6 +49,9 @@ export function JournalHomeClient({
   const semanticDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const semanticCacheRef = useRef<Map<string, SemanticSearchResult[]>>(
+    new Map(),
+  );
   const itemsPerPage = 10;
 
   // §3c: entries_browsed — fire once when the browse page is viewed
@@ -116,19 +119,27 @@ export function JournalHomeClient({
     : totalCount;
   const totalPages = Math.ceil(displayTotalCount / itemsPerPage);
 
-  // Trigger semantic search (debounced)
+  // Trigger semantic search (debounced, with in-memory cache)
   const triggerSemanticSearch = useCallback((query: string) => {
     if (semanticDebounceRef.current) {
       clearTimeout(semanticDebounceRef.current);
     }
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       setSemanticResults([]);
       setIsSearching(false);
+      return;
+    }
+    const cached = semanticCacheRef.current.get(trimmed);
+    if (cached) {
+      setSemanticResults(cached);
+      setCurrentPage(1);
       return;
     }
     setIsSearching(true);
     semanticDebounceRef.current = setTimeout(async () => {
       const response = await searchJournals(query);
+      semanticCacheRef.current.set(trimmed, response.results);
       setSemanticResults(response.results);
       setIsSearching(false);
       setCurrentPage(1);
@@ -162,11 +173,11 @@ export function JournalHomeClient({
   const handleSearchModeChange = useCallback(
     (mode: SearchMode) => {
       setSearchMode(mode);
-      setSemanticResults([]);
       setCurrentPage(1);
-      // If switching to semantic with an existing search term, trigger search
       if (mode === "semantic" && searchTerm.trim()) {
         triggerSemanticSearch(searchTerm);
+      } else if (mode === "exact") {
+        setSemanticResults([]);
       }
     },
     [searchTerm, triggerSemanticSearch],
@@ -187,6 +198,7 @@ export function JournalHomeClient({
     setSelectedMood("all");
     setSelectedTag("all");
     setSemanticResults([]);
+    semanticCacheRef.current.clear();
     setIsSearching(false);
     setCurrentPage(1);
   }, []);
