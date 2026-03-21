@@ -120,7 +120,7 @@ services:
     depends_on:
       - postgres
     environment:
-      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable&search_path=source,public
       - ANALYZER_BASE_URL=http://analyzer:8083
       - BACKEND_API_KEY=${BACKEND_API_KEY}
       - ANALYZER_API_KEY=${ANALYZER_API_KEY}

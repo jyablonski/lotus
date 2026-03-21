@@ -4,7 +4,7 @@
 Calls the analyzer's embedding endpoint for each journal that doesn't already
 have an embedding. Run manually after deploying the pgvector migration:
 
-    python scripts/backfill_embeddings.py
+    ANALYZER_API_KEY=$ANALYZER_API_KEY uv run --with httpx --with psycopg2-binary backfill_embeddings.py
 
 Environment variables:
     ANALYZER_URL      Base URL of the analyzer service (default: http://localhost:8083)
