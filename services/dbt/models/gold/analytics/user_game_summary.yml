@@ -1,0 +1,118 @@
+version: 2
+
+models:
+  - name: user_game_summary
+    description: Aggregated CSGODouble game metrics and betting patterns per user
+    columns:
+      - name: user_id
+        description: Primary key - unique identifier for each user
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_id
+
+      - name: total_bets
+        description: Total number of bets placed
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: total_wins
+        description: Total number of winning bets
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<= total_bets"
+              config:
+                where: "total_bets > 0"
+
+      - name: total_losses
+        description: Total number of losing bets
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: win_rate
+        description: Win percentage (0-100)
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 100"
+              config:
+                where: "win_rate is not null"
+
+      - name: total_wagered
+        description: Total amount wagered across all bets
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: net_profit
+        description: Net profit/loss (total payouts - total wagered)
+        data_tests:
+          - not_null
+
+      - name: favorite_zone
+        description: Most frequently bet zone
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["0", "1-7", "8-14"]
+              config:
+                where: "favorite_zone is not null"
+
+      - name: longest_win_streak
+        description: Longest consecutive winning streak
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: longest_loss_streak
+        description: Longest consecutive losing streak
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: total_bets_30d
+        description: Total bets in last 30 days
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<= total_bets"
+              config:
+                where: "total_bets > 0"
+
+      - name: net_profit_30d
+        description: Net profit/loss in last 30 days
+        data_tests:
+          - not_null
+
+      - name: days_since_last_bet
+        description: Days since the user's last bet
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                where: "days_since_last_bet is not null"

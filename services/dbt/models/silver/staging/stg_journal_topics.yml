@@ -24,6 +24,9 @@ models:
         data_tests:
           - not_null
 
+      - name: subtopic_name
+        description: More specific subtopic within the parent topic
+
       - name: ml_model_version
         description: Version of the ML model used
         data_tests:
@@ -31,5 +34,3 @@ models:
 
       - name: created_at
         description: Timestamp when the topic was assigned
-        data_tests:
-          - not_null

@@ -98,6 +98,22 @@ models:
               config:
                 where: "positive_percentage is not null"
 
+      - name: total_journals_7d
+        description: Total number of journal entries created in the last 7 days
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<= total_journals"
+              config:
+                where: "total_journals > 0"
+
+      - name: avg_mood_score_7d
+        description: Average mood score across journal entries in the last 7 days
+
       - name: total_journals_30d
         description: Total number of journal entries created in the last 30 days
         data_tests:
@@ -119,6 +135,20 @@ models:
 
       - name: max_mood_score_30d
         description: Maximum mood score in the last 30 days
+
+      - name: distinct_topics
+        description: Number of unique ML-generated topics across all journal entries
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: avg_topic_confidence
+        description: Average confidence score across all topic assignments
+
+      - name: dominant_topic
+        description: Most frequently assigned topic for the user
 
       - name: daily_streak
         description: Current consecutive days with journal entries (resets if no entry yesterday or today)

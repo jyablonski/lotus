@@ -32,6 +32,14 @@ sentiments as (
     {% endif %}
 ),
 
+topic_counts as (
+    select
+        journal_id,
+        count(*) as topic_count
+    from {{ ref('stg_journal_topics') }}
+    group by journal_id
+),
+
 joined as (
     select
         journals.journal_id,
@@ -47,6 +55,7 @@ joined as (
         sentiments.is_reliable as sentiment_is_reliable,
         sentiments.ml_model_version as sentiment_model_version,
         sentiments.sentiment_scores_json,
+        coalesce(topic_counts.topic_count, 0) as topic_count,
         journals.created_at as journal_created_at,
         journals.modified_at as journal_modified_at
     from journals
@@ -55,6 +64,8 @@ joined as (
     left join sentiments
         on journals.journal_id = sentiments.journal_id
         and sentiments.rn = 1
+    left join topic_counts
+        on journals.journal_id = topic_counts.journal_id
 )
 
 select * from joined

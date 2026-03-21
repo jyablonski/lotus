@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: fct_game_bets
+    description: |
+      Fact table for CSGODouble game bets with derived win/loss
+      and color classification
+    columns:
+      - name: bet_id
+        description: Primary key for bets
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_id
+        description: Foreign key to dim_users
+        data_tests:
+          - not_null
+
+      - name: bet_zone
+        description: Zone the user bet on
+        data_tests:
+          - not_null
+
+      - name: bet_amount
+        description: Amount wagered
+        data_tests:
+          - not_null
+
+      - name: roll_result
+        description: The roll outcome (0-14)
+        data_tests:
+          - not_null
+
+      - name: bet_payout
+        description: Amount paid out (0 if lost)
+        data_tests:
+          - not_null
+
+      - name: roll_color
+        description: Color of the roll result (green, red, black)
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["green", "red", "black"]
+
+      - name: zone_multiplier
+        description: Payout multiplier for the bet zone (14x green, 2x red/black)
+        data_tests:
+          - not_null
+
+      - name: is_win
+        description: Whether the bet was a win
+        data_tests:
+          - not_null
+
+      - name: net_result
+        description: Net profit/loss from the bet (payout - amount)
+        data_tests:
+          - not_null
+
+      - name: bet_created_at
+        description: Timestamp when the bet was placed
+        data_tests:
+          - not_null

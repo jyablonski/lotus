@@ -1,24 +1,12 @@
-# import all jobs and schedules within this folder
-# if added here, they will automatically be pulled into the definitions.py file
-# and be available in the Dagster UI
-from .daily_sales_job import daily_sales_job, daily_sales_schedule
-from .dbt_pipeline_job import dbt_pipeline_job
-from .example_job import hello_world_job
-from .game_types_job import get_game_types_job
-from .materialize_feast_features_job import materialize_feast_features_job
-from .sync_flags_to_sheets import sync_flags_to_sheets_job
-from .sync_users_job import sync_users_job, sync_users_schedule
-from .unload_journal_entries import unload_journal_entries_job
+"""Auto-imports every module in this package.
 
-__all__ = [
-    "daily_sales_job",
-    "daily_sales_schedule",
-    "dbt_pipeline_job",
-    "get_game_types_job",
-    "hello_world_job",
-    "materialize_feast_features_job",
-    "sync_flags_to_sheets_job",
-    "sync_users_job",
-    "sync_users_schedule",
-    "unload_journal_entries_job",
-]
+Drop a .py file in jobs/ that defines a JobDefinition or ScheduleDefinition
+and it's automatically registered — no manual imports needed.
+"""
+
+import importlib
+import pkgutil
+
+# Import every submodule so their top-level objects are visible via vars(jobs)
+for _importer, module_name, _ispkg in pkgutil.iter_modules(__path__):
+    importlib.import_module(f"{__name__}.{module_name}")

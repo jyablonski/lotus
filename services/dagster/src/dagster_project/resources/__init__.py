@@ -19,3 +19,15 @@ __all__ = [
     "feast_store",
     "slack_resource",
 ]
+
+# Explicit resource registry — every resource used by assets must be listed here.
+# This avoids the fragility of auto-discovery (name collisions, accidentally
+# picking up imported classes, etc.).  When you add a new resource, add an entry.
+RESOURCES: dict = {
+    "api_client": api_client,
+    "feature_flags_google_sheet": feature_flags_google_sheet,
+    "postgres_conn": postgres_conn,
+    "redis_conn": redis_conn,
+    "feast_store": feast_store,
+    "slack_resource": slack_resource,
+}

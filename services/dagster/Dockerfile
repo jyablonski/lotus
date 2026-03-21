@@ -30,14 +30,15 @@ FROM base AS runtime
 
 WORKDIR /app
 
-RUN useradd --create-home appuser \
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home appuser \
     && mkdir -p /tmp/io_manager_storage/compute_logs \
     && mkdir -p /tmp/io_manager_storage/artifacts \
     && mkdir -p $DAGSTER_HOME \
     && chown -R appuser:appuser /tmp/io_manager_storage \
     && chown -R appuser:appuser $DAGSTER_HOME
 
-USER appuser
+COPY services/dagster/entrypoint.sh /app/entrypoint.sh
 
 COPY --link --from=deps /app/.venv /app/.venv
 
@@ -61,4 +62,5 @@ ENV PYTHONPATH="/app/src"
 
 EXPOSE 4000 3000
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["dagster", "code-server", "start", "-h", "0.0.0.0", "-p", "4000", "-m", "dagster_project.definitions"]

@@ -15,5 +15,6 @@ unload_notification_hooks = create_slack_notification_hooks(
 unload_journal_entries_job = define_asset_job(
     name="unload_journal_entries_job",
     selection=AssetSelection.assets("unload_journals_to_s3"),
+    tags={"audience": "internal", "domain": "analytics", "pii": "true"},
     hooks=unload_notification_hooks,
 )

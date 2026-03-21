@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 import sys
 from pathlib import Path
-from dagster import AssetExecutionContext, asset
+from dagster import AssetExecutionContext, AssetKey, asset
 from dagster_project.resources import FeastResource
 
 
 @asset(
     group_name="exports",
+    deps=[AssetKey(["gold", "user_journal_summary"])],
     description="Materialize user_journal_summary features from gold schema to Redis via Feast",
 )
 def materialize_user_journal_features(

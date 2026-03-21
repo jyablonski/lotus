@@ -1,9 +1,18 @@
+"""Dagster definitions entry point.
+
+Assets are auto-discovered from the assets/ package via load_assets_from_package_module.
+Jobs and schedules are auto-discovered from the jobs/ package — just drop a file there.
+Resources are explicitly registered in resources/RESOURCES.
+"""
+
+import importlib
+import pkgutil
+
 from dagster import (
-    ConfigurableResource,
     Definitions,
     JobDefinition,
-    ResourceDefinition,
     ScheduleDefinition,
+    SensorDefinition,
     load_asset_checks_from_package_module,
     load_assets_from_package_module,
 )
@@ -12,38 +21,34 @@ from dagster._core.definitions.unresolved_asset_job_definition import (
 )
 from dagster_dbt import DbtCliResource
 
-from dagster_project import (
-    assets,
-    jobs,
-    resources as resources_module,
-)
+from dagster_project import assets, jobs, sensors
 from dagster_project.dbt_config import DBT_PROFILES_DIR, dbt_project
+from dagster_project.resources import RESOURCES
+
+_JOB_TYPES = (JobDefinition, UnresolvedAssetJobDefinition)
 
 
-def load_resources() -> dict:
-    """Auto-discover all ConfigurableResource instances from resources module."""
-    resource_dict = {}
-    for name, obj in vars(resources_module).items():
-        if isinstance(obj, (ConfigurableResource, ResourceDefinition)):
-            # Use snake_case name as key
-            resource_dict[name.lower()] = obj
-    return resource_dict
+def _collect_from_package(package, types: tuple[type, ...]) -> list:
+    """Walk every module in *package* and return all top-level objects matching *types*.
+
+    Filters out None values so conditional definitions (e.g. dbt_pipeline_job = None)
+    don't break registration.
+    """
+    results = []
+    for _importer, module_name, _ispkg in pkgutil.iter_modules(package.__path__):
+        module = importlib.import_module(f"{package.__name__}.{module_name}")
+        for obj in vars(module).values():
+            if isinstance(obj, types) and obj is not None:
+                results.append(obj)
+    return results
 
 
-# Grab all jobs and schedules from the jobs module
-all_jobs = [
-    obj
-    for obj in vars(jobs).values()
-    if isinstance(obj, (JobDefinition, UnresolvedAssetJobDefinition))
-]
-all_schedules = [
-    obj for obj in vars(jobs).values() if isinstance(obj, ScheduleDefinition)
-]
+all_jobs = _collect_from_package(jobs, _JOB_TYPES)
+all_schedules = _collect_from_package(jobs, (ScheduleDefinition,))
+all_sensors = _collect_from_package(sensors, (SensorDefinition,))
 
-all_resources = load_resources()
+all_resources = dict(RESOURCES)
 
-
-# Only add dbt resource if dbt_project is available
 if dbt_project is not None:
     all_resources["dbt"] = DbtCliResource(
         project_dir=dbt_project,
@@ -55,5 +60,6 @@ defs = Definitions(
     asset_checks=load_asset_checks_from_package_module(assets),
     jobs=all_jobs,
     schedules=all_schedules,
+    sensors=all_sensors,
     resources=all_resources,
 )

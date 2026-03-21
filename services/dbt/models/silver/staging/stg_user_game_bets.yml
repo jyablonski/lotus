@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: stg_user_game_bets
+    description: Staging table for CSGODouble game bets
+    columns:
+      - name: bet_id
+        description: Primary key for bets
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_id
+        description: Foreign key to users
+        data_tests:
+          - not_null
+
+      - name: bet_zone
+        description: Zone the user bet on (0, 1-7, or 8-14)
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["0", "1-7", "8-14"]
+
+      - name: bet_amount
+        description: Amount wagered
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: roll_result
+        description: The roll outcome (0-14)
+        data_tests:
+          - not_null
+
+      - name: bet_payout
+        description: Amount paid out (0 if lost)
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: created_at
+        description: Timestamp when the bet was placed

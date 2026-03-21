@@ -5,6 +5,7 @@ import gspread
 import polars as pl
 
 from dagster_project.resources import PostgresResource, GoogleSheetsResource
+from dagster_project.sql.exports import SELECT_FEATURE_FLAGS
 
 
 @asset(group_name="exports")
@@ -13,12 +14,7 @@ def get_feature_flags_from_postgres(
     postgres_conn: PostgresResource,
 ) -> pl.DataFrame:
     """Read feature flags data from source.feature_flags postgres table."""
-    with postgres_conn.get_connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT * FROM feature_flags")
-        columns = [desc[0] for desc in cur.description]
-        rows = cur.fetchall()
-
-    df = pl.DataFrame(rows, schema=columns, orient="row")
+    df = postgres_conn.query_to_polars(SELECT_FEATURE_FLAGS)
 
     context.log.info(f"Fetched {len(df)} feature flags from Postgres")
     context.log.info(f"Columns: {df.columns}")

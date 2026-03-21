@@ -5,5 +5,6 @@ sync_flags_to_sheets_job = define_asset_job(
     selection=AssetSelection.assets(
         "get_feature_flags_from_postgres", "sync_flags_to_sheets"
     ),
+    tags={"audience": "internal", "domain": "ops", "pii": "false"},
     description="Sync feature flags from Postgres source.feature_flags table to Google Sheets",
 )

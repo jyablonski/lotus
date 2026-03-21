@@ -1,3 +1,7 @@
+# Disable anonymous usage telemetry sent to Dagster Cloud devs
+telemetry:
+  enabled: false
+
 # Unified storage config - simpler and recommended approach
 # This configures run_storage, event_log_storage, and schedule_storage all at once
 storage:
@@ -25,6 +29,11 @@ local_artifact_storage:
   class: LocalArtifactStorage
   config:
     base_dir: /tmp/io_manager_storage/artifacts
+
+# Job-level retries: if an entire run fails, the daemon launches a brand new run
+# from scratch (re-runs all steps). Set to 0 to disable.
+# run_retries:
+#   max_retries: 2
 
 run_coordinator:
   module: dagster.core.run_coordinator

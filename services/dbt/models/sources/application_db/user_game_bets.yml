@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: application_db
+    schema: source
+    description: Application database containing user and core business data
+    tables:
+      - name: user_game_bets
+        description: |
+          Records of individual bets placed in the CSGODouble game
+        columns:
+          - name: id
+            description: Unique identifier for each bet
+
+          - name: user_id
+            description: Foreign key reference to the users table
+
+          - name: zone
+            description: Bet zone chosen by the user (0, 1-7, or 8-14)
+
+          - name: amount
+            description: Amount wagered on the bet
+
+          - name: roll_result
+            description: The roll outcome (0-14)
+
+          - name: payout
+            description: Amount paid out (0 if lost)
+
+          - name: created_at
+            description: Timestamp when the bet was placed

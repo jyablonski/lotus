@@ -28,6 +28,14 @@ models:
               arguments:
                 values: ["positive", "negative", "neutral", "uncertain"]
 
+      - name: topic_count
+        description: Number of ML-generated topics assigned to this journal entry
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
       - name: journal_created_at
         description: Timestamp when the journal entry was created
         data_tests:
