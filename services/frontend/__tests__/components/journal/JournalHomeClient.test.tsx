@@ -2,6 +2,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { JournalHomeClient } from "@/components/journal/JournalHomeClient";
 import { JournalEntry } from "@/types/journal";
 
+// Mock server actions (pulls in next-auth which Jest can't parse)
+jest.mock("@/actions/journals", () => ({
+  searchJournals: jest.fn().mockResolvedValue({ results: [] }),
+}));
+
 // Mock child components to test orchestration
 jest.mock("@/components/journal/JournalHeader", () => ({
   JournalHeader: ({ totalEntries }: { totalEntries: number }) => (

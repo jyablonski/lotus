@@ -171,7 +171,7 @@ class MockSemanticTopicModel:
 @pytest.fixture(scope="session")
 def postgres_container():
     """Spin up an isolated Postgres container for the entire test session."""
-    with PostgresContainer("postgres:16-alpine") as pg:
+    with PostgresContainer("pgvector/pgvector:pg16") as pg:
         conn = psycopg2.connect(
             host=pg.get_container_host_ip(),
             port=pg.get_exposed_port(5432),

@@ -12,12 +12,15 @@ interface JournalEntryCardProps {
   timezone: string;
   /** When true, show topic tags (gated by frontend_show_tags). */
   showTags?: boolean;
+  /** Similarity score from semantic search (admin-only). */
+  similarityScore?: number;
 }
 
 export function JournalEntryCard({
   entry,
   timezone,
   showTags = false,
+  similarityScore,
 }: JournalEntryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -39,11 +42,18 @@ export function JournalEntryCard({
           <div>
             <p className="text-sm text-dark-400">{formattedDate}</p>
           </div>
-          <span
-            className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${moodConfig.color}`}
-          >
-            Mood {moodConfig.label}
-          </span>
+          <div className="flex items-center gap-2">
+            {similarityScore !== undefined && (
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-purple-600/20 text-purple-300 ring-1 ring-purple-500/30">
+                {Math.round(similarityScore * 100)}% match
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${moodConfig.color}`}
+            >
+              Mood {moodConfig.label}
+            </span>
+          </div>
         </div>
 
         <div className="prose prose-sm max-w-none">

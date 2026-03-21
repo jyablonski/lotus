@@ -169,6 +169,26 @@ class JournalSentiment(models.Model):
         return f"{self.sentiment} ({self.confidence_level}) for Journal {self.journal.id}"
 
 
+class JournalEmbedding(models.Model):
+    """Stores vector embeddings for journal entries, used for semantic search via pgvector."""
+
+    id = models.AutoField(primary_key=True)
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
+    embedding = models.TextField()  # Overridden to vector(384) via RunSQL in migration
+    model_version = models.CharField(max_length=50, default="all-MiniLM-L6-v2")
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+
+    class Meta:
+        db_table = "journal_embeddings"
+        unique_together = [["journal", "model_version"]]
+
+    def __str__(self):
+        return f"Embedding ({self.model_version}) for Journal {self.journal.id}"
+
+
 class ActiveMLModel(models.Model):
     """Model for tracking which ML models are currently enabled for the application."""
 

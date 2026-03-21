@@ -1,0 +1,16 @@
+meta {
+  name: Encode Text
+  type: http
+}
+
+post {
+  url: {{analyzer_url}}/v1/embeddings/encode
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "text": "string"
+}
+}

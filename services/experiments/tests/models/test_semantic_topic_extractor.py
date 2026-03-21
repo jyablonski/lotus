@@ -87,11 +87,11 @@ class TestSemanticTopicExtractorInit:
 
     def test_default_ngram_range(self):
         extractor = _make_mock_extractor()
-        assert extractor.keyphrase_ngram_range == (1, 2)
+        assert extractor.keyphrase_ngram_range == (1, 3)
 
     def test_default_min_confidence(self):
         extractor = _make_mock_extractor()
-        assert extractor.min_confidence == 0.15
+        assert extractor.min_confidence == 0.25
 
 
 # ---------------------------------------------------------------------------
@@ -164,10 +164,10 @@ class TestExtractTopicsFormat:
 
     def test_low_confidence_keyphrases_filtered(self):
         extractor = _make_mock_extractor()
-        # All below min_confidence of 0.15
+        # All below min_confidence of 0.25
         extractor.kw_model.extract_keywords.return_value = [
-            ("low score phrase", 0.05),
-            ("another low one", 0.10),
+            ("low score phrase", 0.10),
+            ("another low one", 0.20),
         ]
         result = extractor.extract_topics("Some text")
         assert result == []
