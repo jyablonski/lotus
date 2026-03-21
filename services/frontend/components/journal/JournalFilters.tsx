@@ -1,6 +1,7 @@
-import { Search, Filter, Tag } from "lucide-react";
+import { Search, Filter, Tag, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import type { MoodOption } from "@/lib/utils/moodMapping";
+import type { SearchMode } from "@/components/journal/JournalHomeClient";
 
 interface JournalFiltersProps {
   searchTerm: string;
@@ -16,6 +17,11 @@ interface JournalFiltersProps {
   selectedTag?: string;
   setSelectedTag?: (tag: string) => void;
   uniqueTags?: string[];
+  /** When true, show the exact/semantic search mode toggle. */
+  semanticSearchEnabled?: boolean;
+  searchMode?: SearchMode;
+  onSearchModeChange?: (mode: SearchMode) => void;
+  isSearching?: boolean;
 }
 
 function formatTagLabel(tag: string): string {
@@ -35,6 +41,10 @@ export function JournalFilters({
   selectedTag = "all",
   setSelectedTag,
   uniqueTags = [],
+  semanticSearchEnabled = false,
+  searchMode = "exact",
+  onSearchModeChange,
+  isSearching = false,
 }: JournalFiltersProps) {
   const hasActiveFilters =
     searchTerm ||
@@ -57,18 +67,59 @@ export function JournalFilters({
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400"
-              size={20}
-            />
+            {isSearching ? (
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-dark-400 border-t-transparent" />
+              </div>
+            ) : searchMode === "semantic" ? (
+              <Sparkles
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400"
+                size={20}
+              />
+            ) : (
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400"
+                size={20}
+              />
+            )}
             <input
               type="text"
-              placeholder="Search your entries..."
+              placeholder={
+                searchMode === "semantic"
+                  ? "Semantic search your entries..."
+                  : "Search your entries..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-primary pl-10"
             />
           </div>
+
+          {/* Search Mode Toggle */}
+          {semanticSearchEnabled && (
+            <div className="flex rounded-lg border border-dark-600 overflow-hidden">
+              <button
+                onClick={() => onSearchModeChange?.("exact")}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  searchMode === "exact"
+                    ? "bg-dark-600 text-dark-100"
+                    : "bg-dark-800 text-dark-400 hover:text-dark-200"
+                }`}
+              >
+                Exact
+              </button>
+              <button
+                onClick={() => onSearchModeChange?.("semantic")}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  searchMode === "semantic"
+                    ? "bg-purple-600/20 text-purple-300 border-l border-purple-500/30"
+                    : "bg-dark-800 text-dark-400 hover:text-dark-200 border-l border-dark-600"
+                }`}
+              >
+                Semantic
+              </button>
+            </div>
+          )}
 
           {/* Mood Filter */}
           <div className="sm:w-48">
@@ -124,7 +175,9 @@ export function JournalFilters({
               Showing {filteredCount} of {totalEntries} entries
             </span>
             {searchTerm && (
-              <span className="badge-filter-blue">Text: {searchTerm}</span>
+              <span className="badge-filter-blue">
+                {searchMode === "semantic" ? "Semantic" : "Text"}: {searchTerm}
+              </span>
             )}
             {selectedMood !== "all" && (
               <span className="badge-filter-green">

@@ -70,6 +70,14 @@ type SourceJournalDetail struct {
 	ModifiedAt     time.Time
 }
 
+type SourceJournalEmbedding struct {
+	ID           int32
+	JournalID    int32
+	Embedding    interface{}
+	ModelVersion string
+	CreatedAt    time.Time
+}
+
 type SourceJournalSentiment struct {
 	ID              int32
 	JournalID       sql.NullInt32

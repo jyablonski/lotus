@@ -5,10 +5,11 @@ CREATE DATABASE pact_broker;
 CREATE SCHEMA source;
 CREATE SCHEMA silver;
 CREATE SCHEMA gold;
-SET search_path TO source;
-
--- this has to come after setting the schema search path ;-)
+-- Extensions go in public so types (uuid, vector) are visible from any schema.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS vector;
+
+SET search_path TO source;
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users
@@ -111,6 +112,19 @@ CREATE INDEX idx_journal_topics_journal_id ON journal_topics(journal_id);
 CREATE INDEX idx_journal_topics_topic_name ON journal_topics(topic_name);
 CREATE INDEX idx_journal_topics_subtopic_name ON journal_topics(subtopic_name);
 
+-- Embeddings table for semantic search (pgvector)
+CREATE TABLE IF NOT EXISTS journal_embeddings (
+    id SERIAL PRIMARY KEY,
+    journal_id INTEGER NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+    embedding vector(384) NOT NULL,
+    model_version VARCHAR(50) NOT NULL DEFAULT 'all-MiniLM-L6-v2',
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    UNIQUE(journal_id, model_version)
+);
+
+CREATE INDEX idx_journal_embeddings_hnsw ON journal_embeddings
+    USING hnsw (embedding vector_cosine_ops);
+
 INSERT INTO journal_topics (journal_id, topic_name, subtopic_name, confidence, ml_model_version) VALUES
 (1, 'work',      'deadlines and workload pressure',    0.7234, 'v1.0.0'),
 (1, 'growth',    'goals and personal motivation',      0.2156, 'v1.0.0'),
@@ -169,7 +183,9 @@ CREATE TABLE IF NOT EXISTS source.waffle_flag
 );
 
 INSERT INTO source.waffle_flag (name, everyone, superusers, staff, authenticated, note)
-VALUES ('frontend_admin', false, true, true, false, 'Show admin link on profile when user role is Admin')
+VALUES
+  ('frontend_admin', false, true, true, false, 'Show admin link on profile when user role is Admin'),
+  ('semantic_search', false, true, true, false, 'Enable semantic search toggle on journal page')
 ON CONFLICT (name) DO UPDATE SET everyone = EXCLUDED.everyone, superusers = EXCLUDED.superusers, staff = EXCLUDED.staff, modified = NOW();
 
 -- Truncate integration-test tables in FK-safe order. Call from backend integration tests
@@ -179,8 +195,9 @@ RETURNS void
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  TRUNCATE source.journal_sentiments, source.journal_topics, source.journal_details,
-            source.journals, source.user_game_bets, source.user_game_balances, source.users
+  TRUNCATE source.journal_embeddings, source.journal_sentiments, source.journal_topics,
+            source.journal_details, source.journals, source.user_game_bets,
+            source.user_game_balances, source.users
   RESTART IDENTITY CASCADE;
 END;
 $$;
