@@ -42,9 +42,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: services/frontend/package-lock.json
 
-      - name: Install frontend dependencies
+      - name: Install frontend dependencies (e2e-only, skip pact postinstall)
         working-directory: services/frontend
-        run: npm ci
+        run: npm ci --ignore-scripts
+        # --ignore-scripts skips pact-node's 50MB binary download which is
+        # not needed for e2e tests and fails intermittently on checksum.
 
       - name: Install Playwright browsers
         working-directory: services/frontend
@@ -52,9 +54,10 @@ jobs:
 
       - name: Run e2e tests
         working-directory: services/frontend
-        run: npx playwright test --reporter=github
+        run: npx playwright test
         env:
           BASE_URL: http://localhost:3000
+          FORCE_COLOR: "1"
 
       - name: Stop services
         if: always()
