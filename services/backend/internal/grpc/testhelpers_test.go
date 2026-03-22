@@ -53,6 +53,7 @@ func newTestCtx(t *testing.T) (context.Context, *db.Queries) {
 	logger := testinfra.DiscardLogger()
 	ctx := inject.WithDB(context.Background(), queries)
 	ctx = inject.WithLogger(ctx, logger)
+	ctx = inject.WithRedisClient(ctx, testRedisClient)
 	return ctx, queries
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jyablonski/lotus/internal/db"
+	"github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 )
 
@@ -34,6 +35,7 @@ const (
 	analyzerURLKey
 	analyzerAPIKeyKey
 	pgxPoolKey
+	redisClientKey
 	riverClientKey
 )
 
@@ -116,6 +118,20 @@ func PgxPoolFrom(ctx context.Context) *pgxpool.Pool {
 		panic("inject: *pgxpool.Pool not found in context (missing injector interceptor?)")
 	}
 	return p
+}
+
+// --- Redis client ---
+
+func WithRedisClient(ctx context.Context, c *redis.Client) context.Context {
+	return context.WithValue(ctx, redisClientKey, c)
+}
+
+func RedisClientFrom(ctx context.Context) *redis.Client {
+	c, ok := ctx.Value(redisClientKey).(*redis.Client)
+	if !ok || c == nil {
+		panic("inject: *redis.Client not found in context (missing injector interceptor?)")
+	}
+	return c
 }
 
 // --- River client ---

@@ -1,12 +1,9 @@
 package grpc
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -132,15 +129,7 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 	for _, j := range journals {
 		journalIDs = append(journalIDs, j.ID)
 	}
-	topicsByJournal := make(map[int32][]string)
-	if len(journalIDs) > 0 {
-		topicRows, topicErr := dbq.GetTopicsByJournalIds(ctx, journalIDs)
-		if topicErr == nil {
-			for _, row := range topicRows {
-				topicsByJournal[row.JournalID] = append(topicsByJournal[row.JournalID], row.TopicName)
-			}
-		}
-	}
+	topicsByJournal := hydrateTopics(ctx, dbq, journalIDs)
 
 	// prepare journal entries for response
 	var journalEntries []*pb.JournalEntry
@@ -198,139 +187,6 @@ func (s *JournalServer) TriggerJournalAnalysis(ctx context.Context, req *pb.Trig
 		Success: true,
 		Message: "Analysis triggered successfully",
 	}, nil
-}
-
-// SearchJournals performs semantic search over a user's journal entries.
-// It encodes the query text via the analyzer, then runs a pgvector cosine
-// similarity search directly against the database.
-func (s *JournalServer) SearchJournals(ctx context.Context, req *pb.SearchJournalsRequest) (*pb.SearchJournalsResponse, error) {
-	userID, err := uuid.Parse(req.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
-	}
-
-	httpClient := inject.HTTPClientFrom(ctx)
-	analyzerURL := inject.AnalyzerURLFrom(ctx)
-	analyzerAPIKey := inject.AnalyzerAPIKeyFrom(ctx)
-	pgxPool := inject.PgxPoolFrom(ctx)
-	dbq := inject.DBFrom(ctx)
-
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	// Step 1: Encode the search query via the analyzer's embedding model.
-	encodeReq := struct {
-		Text string `json:"text"`
-	}{Text: req.Query}
-
-	body, err := json.Marshal(encodeReq)
-	if err != nil {
-		return nil, fmt.Errorf("marshal encode request: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/v1/embeddings/encode", analyzerURL)
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, fmt.Errorf("create encode request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+analyzerAPIKey)
-
-	resp, err := httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("encode request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("analyzer returned status %d for encode", resp.StatusCode)
-	}
-
-	var encodeResp struct {
-		Embedding []float64 `json:"embedding"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&encodeResp); err != nil {
-		return nil, fmt.Errorf("decode encode response: %w", err)
-	}
-
-	// Step 2: Run pgvector cosine similarity search directly via pgx.
-	embeddingStr := formatVector(encodeResp.Embedding)
-
-	type searchRow struct {
-		ID          int32
-		JournalText string
-		MoodScore   *int32
-		CreatedAt   time.Time
-		Similarity  float64
-	}
-
-	rows, err := pgxPool.Query(ctx, `
-		SELECT j.id, j.journal_text, j.mood_score, j.created_at,
-		       1 - (je.embedding <=> $1::public.vector) AS similarity
-		FROM source.journals j
-		JOIN source.journal_embeddings je ON j.id = je.journal_id
-		WHERE j.user_id = $2
-		ORDER BY je.embedding <=> $1::public.vector ASC
-		LIMIT $3
-	`, embeddingStr, userID, limit)
-	if err != nil {
-		return nil, fmt.Errorf("semantic search query failed: %w", err)
-	}
-	defer rows.Close()
-
-	var searchResults []searchRow
-	for rows.Next() {
-		var r searchRow
-		if err := rows.Scan(&r.ID, &r.JournalText, &r.MoodScore, &r.CreatedAt, &r.Similarity); err != nil {
-			return nil, fmt.Errorf("scan search row: %w", err)
-		}
-		searchResults = append(searchResults, r)
-	}
-
-	// Hydrate topic names for the returned journals.
-	journalIDs := make([]int32, 0, len(searchResults))
-	for _, r := range searchResults {
-		journalIDs = append(journalIDs, r.ID)
-	}
-	topicsByJournal := make(map[int32][]string)
-	if len(journalIDs) > 0 {
-		topicRows, topicErr := dbq.GetTopicsByJournalIds(ctx, journalIDs)
-		if topicErr == nil {
-			for _, row := range topicRows {
-				topicsByJournal[row.JournalID] = append(topicsByJournal[row.JournalID], row.TopicName)
-			}
-		}
-	}
-
-	// Build response.
-	results := make([]*pb.JournalSearchResult, 0, len(searchResults))
-	for _, r := range searchResults {
-		mood := ""
-		if r.MoodScore != nil {
-			mood = strconv.Itoa(int(*r.MoodScore))
-		}
-		entry := &pb.JournalEntry{
-			JournalId:   strconv.Itoa(int(r.ID)),
-			UserId:      req.UserId,
-			JournalText: r.JournalText,
-			UserMood:    mood,
-			CreatedAt:   r.CreatedAt.Format(time.RFC3339),
-		}
-		if names := topicsByJournal[r.ID]; len(names) > 0 {
-			entry.TopicNames = names
-		}
-		results = append(results, &pb.JournalSearchResult{
-			Journal:         entry,
-			SimilarityScore: float32(r.Similarity),
-		})
-	}
-
-	return &pb.SearchJournalsResponse{Results: results}, nil
 }
 
 // formatVector converts a float64 slice to a pgvector-compatible string "[0.1,0.2,...]".

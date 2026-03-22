@@ -53,12 +53,13 @@ type GoldUserJournalSummary struct {
 }
 
 type SourceJournal struct {
-	ID          int32
-	UserID      uuid.UUID
-	JournalText string
-	MoodScore   sql.NullInt32
-	CreatedAt   time.Time
-	ModifiedAt  time.Time
+	ID           int32
+	UserID       uuid.UUID
+	JournalText  string
+	MoodScore    sql.NullInt32
+	CreatedAt    time.Time
+	ModifiedAt   time.Time
+	SearchVector interface{}
 }
 
 type SourceJournalDetail struct {

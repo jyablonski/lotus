@@ -34,4 +34,11 @@ service JournalService {
       body: "*"
     };
   }
+
+  rpc KeywordSearchJournals(KeywordSearchJournalsRequest) returns (KeywordSearchJournalsResponse) {
+    option (google.api.http) = {
+      post: "/v1/journals/keyword-search"
+      body: "*"
+    };
+  }
 }

@@ -31,6 +31,16 @@ export interface SemanticSearchResponse {
   error?: string;
 }
 
+export interface KeywordSearchResult {
+  journal: JournalEntry;
+  rank: number;
+}
+
+export interface KeywordSearchResponse {
+  results: KeywordSearchResult[];
+  error?: string;
+}
+
 /**
  * Server action to create a new journal entry
  * This bypasses the API route and calls the Go backend directly
@@ -163,6 +173,55 @@ export async function searchJournals(
     return {
       results: [],
       error: error instanceof Error ? error.message : "Semantic search failed",
+    };
+  }
+}
+
+/**
+ * Server action for keyword-based full-text search over journals.
+ * Uses PostgreSQL tsvector/tsquery via the Go backend's KeywordSearchJournals RPC.
+ */
+export async function keywordSearchJournals(
+  query: string,
+  limit: number = 20,
+): Promise<KeywordSearchResponse> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { results: [], error: "Unauthorized" };
+    }
+
+    const response = await fetch(`${BACKEND_URL}/v1/journals/keyword-search`, {
+      method: "POST",
+      headers: backendHeaders(),
+      body: JSON.stringify({
+        user_id: session.user.id,
+        query,
+        limit,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Backend keyword search error:", errorText);
+      return { results: [], error: `Search failed: ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    const results: KeywordSearchResult[] = (data.results ?? []).map(
+      (r: { journal: BackendJournal; rank: number }) => ({
+        journal: transformBackendJournal(r.journal),
+        rank: r.rank,
+      }),
+    );
+
+    return { results };
+  } catch (error) {
+    console.error("Error in keyword search:", error);
+    return {
+      results: [],
+      error: error instanceof Error ? error.message : "Keyword search failed",
     };
   }
 }
