@@ -35,8 +35,8 @@ values
   ('c9f5a0d4-6f13-4e5c-b14f-3d0e7f8a9b0c', 'carol.white@example.com', null, null, 'github', 'Premium', now() - interval '90 days', now() - interval '90 days', 'Europe/London'),
   ('d0a6b1e5-7024-4f6d-c25e-4e1f8a9b0c1d', 'david.brown@example.com', 'hashed_password_456', 'salt_456', null, 'Admin', now() - interval '120 days', now() - interval '120 days', 'UTC'),
   -- E2E test users (Playwright tests authenticate via JWT; rows here let backend queries succeed)
-  ('e2e-test-user-00000000-0000-0000-0000-000000000001', 'e2e-test@lotus.dev', null, null, null, 'Consumer', now(), now(), 'UTC'),
-  ('e2e-admin-user-00000000-0000-0000-0000-000000000002', 'e2e-admin@lotus.dev', null, null, null, 'Admin', now(), now(), 'UTC');
+  ('00000000-0000-0000-0000-000000000001', 'e2e-test@lotus.dev', null, null, null, 'Consumer', now(), now(), 'UTC'),
+  ('00000000-0000-0000-0000-000000000002', 'e2e-admin@lotus.dev', null, null, null, 'Admin', now(), now(), 'UTC');
 
 -- Game tables (backend integration tests and app use these; Django migrations may also create them)
 CREATE TABLE IF NOT EXISTS source.user_game_balances (
@@ -107,23 +107,23 @@ VALUES
    'Feeling grateful for the support from friends and family.', 9, now() - interval '4 days', now() - interval '4 days'),
 
   -- E2E admin user journals
-  ('e2e-admin-user-00000000-0000-0000-0000-000000000002',
+  ('00000000-0000-0000-0000-000000000002',
    'Working on the new feature deployment today. Everything went smoothly.', 8, now(), now()),
 
-  ('e2e-admin-user-00000000-0000-0000-0000-000000000002',
+  ('00000000-0000-0000-0000-000000000002',
    'Had a tough debugging session but finally found the root cause.', 5, now() - interval '1 day', now() - interval '1 day'),
 
-  ('e2e-admin-user-00000000-0000-0000-0000-000000000002',
+  ('00000000-0000-0000-0000-000000000002',
    'Great team standup this morning. Feeling motivated and energized.', 9, now() - interval '2 days', now() - interval '2 days'),
 
   -- E2E consumer user journals
-  ('e2e-test-user-00000000-0000-0000-0000-000000000001',
+  ('00000000-0000-0000-0000-000000000001',
    'Started learning something new today. It was challenging but rewarding.', 7, now(), now()),
 
-  ('e2e-test-user-00000000-0000-0000-0000-000000000001',
+  ('00000000-0000-0000-0000-000000000001',
    'Feeling a bit overwhelmed with everything going on lately.', 4, now() - interval '1 day', now() - interval '1 day'),
 
-  ('e2e-test-user-00000000-0000-0000-0000-000000000001',
+  ('00000000-0000-0000-0000-000000000001',
    'Went for a long walk in the park. Nature always helps me clear my mind.', 8, now() - interval '2 days', now() - interval '2 days');
 
 -- table for original analyzer implementation

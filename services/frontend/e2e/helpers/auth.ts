@@ -30,7 +30,7 @@ interface TestUser {
  * placed into session.user.id by the NextAuth session callback.
  */
 export const TEST_USER: TestUser = {
-  id: "e2e-test-user-00000000-0000-0000-0000-000000000001",
+  id: "00000000-0000-0000-0000-000000000001",
   name: "E2E Test User",
   email: "e2e-test@lotus.dev",
   image: "https://avatars.githubusercontent.com/u/1?v=4",
@@ -43,7 +43,7 @@ export const TEST_USER: TestUser = {
  * in ADMIN_EMAILS so the /admin page is accessible.
  */
 export const ADMIN_TEST_USER: TestUser = {
-  id: "e2e-admin-user-00000000-0000-0000-0000-000000000002",
+  id: "00000000-0000-0000-0000-000000000002",
   name: "E2E Admin User",
   email: "e2e-admin@lotus.dev",
   role: "Admin",
