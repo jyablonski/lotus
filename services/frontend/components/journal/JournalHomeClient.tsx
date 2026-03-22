@@ -238,8 +238,6 @@ export function JournalHomeClient({
     setSelectedTag("all");
     setSemanticResults([]);
     setKeywordResults([]);
-    semanticCacheRef.current.clear();
-    keywordCacheRef.current.clear();
     setIsSearching(false);
     setCurrentPage(1);
   }, []);

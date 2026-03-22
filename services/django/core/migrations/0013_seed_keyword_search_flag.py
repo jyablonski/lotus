@@ -4,6 +4,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
     dependencies = [
         ("core", "0012_journal_search_vector_index"),
+        ("waffle", "0004_update_everyone_nullbooleanfield"),
     ]
 
     operations = [
