@@ -66,8 +66,23 @@ CREATE TABLE IF NOT EXISTS journals
     journal_text text not null,
     mood_score integer,
     created_at timestamp default now() not null,
-    modified_at timestamp default now() not null
+    modified_at timestamp default now() not null,
+    search_vector tsvector
 );
+
+-- Auto-populate search_vector on INSERT/UPDATE
+CREATE OR REPLACE FUNCTION source.journals_search_vector_trigger() RETURNS trigger AS $$
+BEGIN
+    NEW.search_vector := to_tsvector('english', COALESCE(NEW.journal_text, ''));
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_journals_search_vector
+    BEFORE INSERT OR UPDATE OF journal_text ON source.journals
+    FOR EACH ROW EXECUTE FUNCTION source.journals_search_vector_trigger();
+
+CREATE INDEX idx_journals_search_vector ON source.journals USING GIN (search_vector);
 
 CREATE INDEX idx_journals_user_id_created_at ON source.journals(user_id, created_at DESC);
 

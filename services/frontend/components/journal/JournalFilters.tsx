@@ -19,6 +19,8 @@ interface JournalFiltersProps {
   uniqueTags?: string[];
   /** When true, show the exact/semantic search mode toggle. */
   semanticSearchEnabled?: boolean;
+  /** When true, show the keyword search mode toggle. */
+  keywordSearchEnabled?: boolean;
   searchMode?: SearchMode;
   onSearchModeChange?: (mode: SearchMode) => void;
   isSearching?: boolean;
@@ -42,6 +44,7 @@ export function JournalFilters({
   setSelectedTag,
   uniqueTags = [],
   semanticSearchEnabled = false,
+  keywordSearchEnabled = false,
   searchMode = "exact",
   onSearchModeChange,
   isSearching = false,
@@ -87,7 +90,9 @@ export function JournalFilters({
               placeholder={
                 searchMode === "semantic"
                   ? "Semantic search your entries..."
-                  : "Search your entries..."
+                  : searchMode === "keyword"
+                    ? "Keyword search your entries..."
+                    : "Search your entries..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -96,7 +101,7 @@ export function JournalFilters({
           </div>
 
           {/* Search Mode Toggle */}
-          {semanticSearchEnabled && (
+          {(keywordSearchEnabled || semanticSearchEnabled) && (
             <div className="flex rounded-lg border border-dark-600 overflow-hidden">
               <button
                 onClick={() => onSearchModeChange?.("exact")}
@@ -108,16 +113,30 @@ export function JournalFilters({
               >
                 Exact
               </button>
-              <button
-                onClick={() => onSearchModeChange?.("semantic")}
-                className={`px-3 py-2 text-xs font-medium transition-colors ${
-                  searchMode === "semantic"
-                    ? "bg-purple-600/20 text-purple-300 border-l border-purple-500/30"
-                    : "bg-dark-800 text-dark-400 hover:text-dark-200 border-l border-dark-600"
-                }`}
-              >
-                Semantic
-              </button>
+              {keywordSearchEnabled && (
+                <button
+                  onClick={() => onSearchModeChange?.("keyword")}
+                  className={`px-3 py-2 text-xs font-medium transition-colors ${
+                    searchMode === "keyword"
+                      ? "bg-blue-600/20 text-blue-300 border-l border-blue-500/30"
+                      : "bg-dark-800 text-dark-400 hover:text-dark-200 border-l border-dark-600"
+                  }`}
+                >
+                  Keyword
+                </button>
+              )}
+              {semanticSearchEnabled && (
+                <button
+                  onClick={() => onSearchModeChange?.("semantic")}
+                  className={`px-3 py-2 text-xs font-medium transition-colors ${
+                    searchMode === "semantic"
+                      ? "bg-purple-600/20 text-purple-300 border-l border-purple-500/30"
+                      : "bg-dark-800 text-dark-400 hover:text-dark-200 border-l border-dark-600"
+                  }`}
+                >
+                  Semantic
+                </button>
+              )}
             </div>
           )}
 
@@ -176,7 +195,12 @@ export function JournalFilters({
             </span>
             {searchTerm && (
               <span className="badge-filter-blue">
-                {searchMode === "semantic" ? "Semantic" : "Text"}: {searchTerm}
+                {searchMode === "semantic"
+                  ? "Semantic"
+                  : searchMode === "keyword"
+                    ? "Keyword"
+                    : "Text"}
+                : {searchTerm}
               </span>
             )}
             {selectedMood !== "all" && (

@@ -15,7 +15,7 @@ import (
 const createJournal = `-- name: CreateJournal :one
 INSERT INTO source.journals(user_id, journal_text, mood_score)
 VALUES ($1, $2, $3)
-RETURNING id, user_id, journal_text, mood_score, created_at, modified_at
+RETURNING id, user_id, journal_text, mood_score, created_at, modified_at, search_vector
 `
 
 type CreateJournalParams struct {
@@ -34,12 +34,13 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (S
 		&i.MoodScore,
 		&i.CreatedAt,
 		&i.ModifiedAt,
+		&i.SearchVector,
 	)
 	return i, err
 }
 
 const getJournalById = `-- name: GetJournalById :one
-SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals WHERE id = $1
+SELECT id, user_id, journal_text, mood_score, created_at, modified_at, search_vector FROM source.journals WHERE id = $1
 `
 
 func (q *Queries) GetJournalById(ctx context.Context, id int32) (SourceJournal, error) {
@@ -52,6 +53,7 @@ func (q *Queries) GetJournalById(ctx context.Context, id int32) (SourceJournal, 
 		&i.MoodScore,
 		&i.CreatedAt,
 		&i.ModifiedAt,
+		&i.SearchVector,
 	)
 	return i, err
 }
@@ -68,7 +70,7 @@ func (q *Queries) GetJournalCountByUserId(ctx context.Context, userID uuid.UUID)
 }
 
 const getJournalsByUserId = `-- name: GetJournalsByUserId :many
-SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC
+SELECT id, user_id, journal_text, mood_score, created_at, modified_at, search_vector FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error) {
@@ -87,6 +89,7 @@ func (q *Queries) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]
 			&i.MoodScore,
 			&i.CreatedAt,
 			&i.ModifiedAt,
+			&i.SearchVector,
 		); err != nil {
 			return nil, err
 		}
@@ -102,7 +105,7 @@ func (q *Queries) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]
 }
 
 const getJournalsByUserIdPaginated = `-- name: GetJournalsByUserIdPaginated :many
-SELECT id, user_id, journal_text, mood_score, created_at, modified_at FROM source.journals
+SELECT id, user_id, journal_text, mood_score, created_at, modified_at, search_vector FROM source.journals
 WHERE user_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -130,6 +133,7 @@ func (q *Queries) GetJournalsByUserIdPaginated(ctx context.Context, arg GetJourn
 			&i.MoodScore,
 			&i.CreatedAt,
 			&i.ModifiedAt,
+			&i.SearchVector,
 		); err != nil {
 			return nil, err
 		}

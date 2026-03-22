@@ -119,11 +119,13 @@ services:
       - ${PWD}/services/backend/.air.toml:/app/.air.toml
     depends_on:
       - postgres
+      - redis
     environment:
       - DB_CONN=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable&search_path=source,public
       - ANALYZER_BASE_URL=http://analyzer:8083
       - BACKEND_API_KEY=${BACKEND_API_KEY}
       - ANALYZER_API_KEY=${ANALYZER_API_KEY}
+      - REDIS_URL=redis://redis:6379
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     working_dir: /app
     command: ["air", "-c", ".air.toml"]

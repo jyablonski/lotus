@@ -17,6 +17,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/errgroup"
@@ -237,6 +238,25 @@ func main() {
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 	}
 
+	// ── Redis ─────────────────────────────────────────────────────────
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379"
+	}
+	redisOpts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		logger.Error("Failed to parse REDIS_URL", "error", err)
+		os.Exit(1)
+	}
+	redisClient := redis.NewClient(redisOpts)
+	defer redisClient.Close()
+
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		logger.Warn("Redis not reachable; search caching will be disabled", "error", err)
+	} else {
+		logger.Info("Connected to Redis", "addr", redisOpts.Addr)
+	}
+
 	// ── River client ───────────────────────────────────────────────────
 	riverClient, err := jobs.NewClient(pgxPool, queries, httpClient, analyzerBaseURL, analyzerAPIKey, logger)
 	if err != nil {
@@ -258,6 +278,7 @@ func main() {
 		ctx = inject.WithAnalyzerURL(ctx, analyzerBaseURL)
 		ctx = inject.WithAnalyzerAPIKey(ctx, analyzerAPIKey)
 		ctx = inject.WithPgxPool(ctx, pgxPool)
+		ctx = inject.WithRedisClient(ctx, redisClient)
 		ctx = inject.WithRiverClient(ctx, riverClient)
 		return handler(ctx, req)
 	}

@@ -1,4 +1,6 @@
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 from django.db.models import Func
 from django.db.models.functions import Now
@@ -70,12 +72,14 @@ class Journal(models.Model):
         auto_now=True,
         db_default=Now(),
     )
+    search_vector = SearchVectorField(null=True)
 
     class Meta:
         db_table = "journals"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "-created_at"], name="idx_journals_user_created"),
+            GinIndex(fields=["search_vector"], name="idx_journals_search_vector"),
         ]
 
     def __str__(self):

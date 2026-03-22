@@ -20,8 +20,10 @@ import (
 	"github.com/jyablonski/lotus/internal/jobs"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 // TestDB holds all resources provisioned by Setup. Call Close when done.
@@ -29,7 +31,9 @@ type TestDB struct {
 	Pool        *pgxpool.Pool
 	ConnStr     string // plain connstr: sslmode=disable, no search_path
 	RiverClient *river.Client[pgx.Tx]
+	RedisClient *goredis.Client
 	container   *postgres.PostgresContainer
+	redisC      *redis.RedisContainer
 }
 
 // ConnStrWith returns a connection string with additional DSN options appended
@@ -38,10 +42,16 @@ func (db *TestDB) ConnStrWith(ctx context.Context, opts ...string) (string, erro
 	return db.container.ConnectionString(ctx, append([]string{"sslmode=disable"}, opts...)...)
 }
 
-// Close shuts down the pgxpool and terminates the postgres container.
+// Close shuts down the pgxpool, Redis client, and terminates containers.
 func (db *TestDB) Close(ctx context.Context) {
 	db.Pool.Close()
+	if db.RedisClient != nil {
+		db.RedisClient.Close()
+	}
 	db.container.Terminate(ctx) //nolint:errcheck
+	if db.redisC != nil {
+		db.redisC.Terminate(ctx) //nolint:errcheck
+	}
 }
 
 // Setup starts a postgres:16-alpine container, waits for it, runs goose
@@ -49,7 +59,7 @@ func (db *TestDB) Close(ctx context.Context) {
 // with a pgxpool and insert-only River client ready for use.
 func Setup(ctx context.Context, schemaDir string) (*TestDB, error) {
 	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
+		"pgvector/pgvector:pg16",
 		postgres.WithDatabase("postgres"),
 		postgres.WithUsername("postgres"),
 		postgres.WithPassword("postgres"),
@@ -93,11 +103,39 @@ func Setup(ctx context.Context, schemaDir string) (*TestDB, error) {
 		return nil, fmt.Errorf("create River insert-only client: %w", err)
 	}
 
+	// ── Redis container ─────────────────────────────────────────────
+	redisC, err := redis.Run(ctx, "redis:7-alpine")
+	if err != nil {
+		pool.Close()
+		pgContainer.Terminate(ctx) //nolint:errcheck
+		return nil, fmt.Errorf("start redis container: %w", err)
+	}
+
+	redisConnStr, err := redisC.ConnectionString(ctx)
+	if err != nil {
+		pool.Close()
+		pgContainer.Terminate(ctx) //nolint:errcheck
+		redisC.Terminate(ctx)      //nolint:errcheck
+		return nil, fmt.Errorf("get redis connection string: %w", err)
+	}
+
+	redisOpts, err := goredis.ParseURL(redisConnStr)
+	if err != nil {
+		pool.Close()
+		pgContainer.Terminate(ctx) //nolint:errcheck
+		redisC.Terminate(ctx)      //nolint:errcheck
+		return nil, fmt.Errorf("parse redis URL: %w", err)
+	}
+
+	redisClient := goredis.NewClient(redisOpts)
+
 	return &TestDB{
 		Pool:        pool,
 		ConnStr:     connStr,
 		RiverClient: riverClient,
+		RedisClient: redisClient,
 		container:   pgContainer,
+		redisC:      redisC,
 	}, nil
 }
 

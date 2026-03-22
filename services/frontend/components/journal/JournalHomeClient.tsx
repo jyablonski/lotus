@@ -13,9 +13,14 @@ import {
   getUniqueTagsFromJournals,
 } from "@/lib/utils/journalFilters";
 import { trackEvent } from "@/lib/analytics";
-import { searchJournals, type SemanticSearchResult } from "@/actions/journals";
+import {
+  searchJournals,
+  keywordSearchJournals,
+  type SemanticSearchResult,
+  type KeywordSearchResult,
+} from "@/actions/journals";
 
-export type SearchMode = "exact" | "semantic";
+export type SearchMode = "exact" | "keyword" | "semantic";
 
 interface JournalHomeClientProps {
   journals: JournalEntry[];
@@ -25,6 +30,8 @@ interface JournalHomeClientProps {
   showTags?: boolean;
   /** When true, show semantic search toggle (gated by semantic_search waffle flag). */
   semanticSearchEnabled?: boolean;
+  /** When true, show keyword search toggle (gated by keyword_search waffle flag). */
+  keywordSearchEnabled?: boolean;
   /** When true, show similarity scores on semantic search results. */
   isAdmin?: boolean;
 }
@@ -35,6 +42,7 @@ export function JournalHomeClient({
   timezone,
   showTags = false,
   semanticSearchEnabled = false,
+  keywordSearchEnabled = false,
   isAdmin = false,
 }: JournalHomeClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,13 +53,14 @@ export function JournalHomeClient({
   const [semanticResults, setSemanticResults] = useState<
     SemanticSearchResult[]
   >([]);
+  const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>(
+    [],
+  );
   const [isSearching, setIsSearching] = useState(false);
   const semanticDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const semanticCacheRef = useRef<Map<string, SemanticSearchResult[]>>(
-    new Map(),
-  );
+  const keywordDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemsPerPage = 10;
 
   // §3c: entries_browsed — fire once when the browse page is viewed
@@ -76,15 +85,20 @@ export function JournalHomeClient({
     [journals],
   );
 
-  // Determine if we're in active semantic search mode with results
+  // Determine if we're in active server-side search mode with results
   const isSemanticActive =
     searchMode === "semantic" && searchTerm.trim() !== "";
+  const isKeywordActive = searchMode === "keyword" && searchTerm.trim() !== "";
+  const isServerSearchActive = isSemanticActive || isKeywordActive;
 
   // Filter journals by search, mood, and tag (exact mode or no search term)
   const filteredJournals = useMemo(() => {
     if (isSemanticActive) {
-      // In semantic mode, results come from the server — apply only mood/tag filters
       const entries = semanticResults.map((r) => r.journal);
+      return filterJournals(entries, "", selectedMood, selectedTag);
+    }
+    if (isKeywordActive) {
+      const entries = keywordResults.map((r) => r.journal);
       return filterJournals(entries, "", selectedMood, selectedTag);
     }
     return filterJournals(journals, searchTerm, selectedMood, selectedTag);
@@ -94,16 +108,23 @@ export function JournalHomeClient({
     selectedMood,
     selectedTag,
     isSemanticActive,
+    isKeywordActive,
     semanticResults,
+    keywordResults,
   ]);
 
-  // Build a map of similarity scores by journal ID for rendering
+  // Build a map of relevance scores by journal ID for rendering
   const similarityScores = useMemo(() => {
-    if (!isSemanticActive) return new Map<string, number>();
-    return new Map(
-      semanticResults.map((r) => [r.journal.journalId, r.similarityScore]),
-    );
-  }, [isSemanticActive, semanticResults]);
+    if (isSemanticActive) {
+      return new Map(
+        semanticResults.map((r) => [r.journal.journalId, r.similarityScore]),
+      );
+    }
+    if (isKeywordActive) {
+      return new Map(keywordResults.map((r) => [r.journal.journalId, r.rank]));
+    }
+    return new Map<string, number>();
+  }, [isSemanticActive, isKeywordActive, semanticResults, keywordResults]);
 
   const hasActiveFilters =
     searchTerm.trim() !== "" || selectedMood !== "all" || selectedTag !== "all";
@@ -119,7 +140,7 @@ export function JournalHomeClient({
     : totalCount;
   const totalPages = Math.ceil(displayTotalCount / itemsPerPage);
 
-  // Trigger semantic search (debounced, with in-memory cache)
+  // Trigger semantic search (debounced, cached in Redis on the backend)
   const triggerSemanticSearch = useCallback((query: string) => {
     if (semanticDebounceRef.current) {
       clearTimeout(semanticDebounceRef.current);
@@ -130,17 +151,30 @@ export function JournalHomeClient({
       setIsSearching(false);
       return;
     }
-    const cached = semanticCacheRef.current.get(trimmed);
-    if (cached) {
-      setSemanticResults(cached);
-      setCurrentPage(1);
-      return;
-    }
     setIsSearching(true);
     semanticDebounceRef.current = setTimeout(async () => {
       const response = await searchJournals(query);
-      semanticCacheRef.current.set(trimmed, response.results);
       setSemanticResults(response.results);
+      setIsSearching(false);
+      setCurrentPage(1);
+    }, 300);
+  }, []);
+
+  // Trigger keyword search (debounced, cached in Redis on the backend)
+  const triggerKeywordSearch = useCallback((query: string) => {
+    if (keywordDebounceRef.current) {
+      clearTimeout(keywordDebounceRef.current);
+    }
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setKeywordResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    keywordDebounceRef.current = setTimeout(async () => {
+      const response = await keywordSearchJournals(query);
+      setKeywordResults(response.results);
       setIsSearching(false);
       setCurrentPage(1);
     }, 300);
@@ -162,12 +196,14 @@ export function JournalHomeClient({
         }, 800);
       }
 
-      // Trigger semantic search when in semantic mode
+      // Trigger server-side search when in semantic or keyword mode
       if (searchMode === "semantic") {
         triggerSemanticSearch(term);
+      } else if (searchMode === "keyword") {
+        triggerKeywordSearch(term);
       }
     },
-    [searchMode, triggerSemanticSearch],
+    [searchMode, triggerSemanticSearch, triggerKeywordSearch],
   );
 
   const handleSearchModeChange = useCallback(
@@ -176,11 +212,14 @@ export function JournalHomeClient({
       setCurrentPage(1);
       if (mode === "semantic" && searchTerm.trim()) {
         triggerSemanticSearch(searchTerm);
+      } else if (mode === "keyword" && searchTerm.trim()) {
+        triggerKeywordSearch(searchTerm);
       } else if (mode === "exact") {
         setSemanticResults([]);
+        setKeywordResults([]);
       }
     },
-    [searchTerm, triggerSemanticSearch],
+    [searchTerm, triggerSemanticSearch, triggerKeywordSearch],
   );
 
   const handleMoodChange = useCallback((mood: string) => {
@@ -198,7 +237,7 @@ export function JournalHomeClient({
     setSelectedMood("all");
     setSelectedTag("all");
     setSemanticResults([]);
-    semanticCacheRef.current.clear();
+    setKeywordResults([]);
     setIsSearching(false);
     setCurrentPage(1);
   }, []);
@@ -226,6 +265,7 @@ export function JournalHomeClient({
           setSelectedTag={handleTagChange}
           uniqueTags={uniqueTags}
           semanticSearchEnabled={semanticSearchEnabled}
+          keywordSearchEnabled={keywordSearchEnabled}
           searchMode={searchMode}
           onSearchModeChange={handleSearchModeChange}
           isSearching={isSearching}
@@ -239,7 +279,9 @@ export function JournalHomeClient({
               entries={paginatedJournals}
               timezone={timezone}
               showTags={showTags}
-              similarityScores={isAdmin ? similarityScores : undefined}
+              similarityScores={
+                isAdmin && isSemanticActive ? similarityScores : undefined
+              }
             />
 
             {totalPages > 1 && (

@@ -1,0 +1,18 @@
+meta {
+  name: Keyword Search Journals
+  type: http
+}
+
+post {
+  url: {{backend_url}}/v1/journals/keyword-search
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "userId": "string",
+  "query": "string",
+  "limit": 0
+}
+}

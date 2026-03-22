@@ -590,6 +590,165 @@ func (x *JournalSearchResult) GetSimilarityScore() float32 {
 	return 0
 }
 
+type KeywordSearchJournalsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Query  string `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	Limit  int32  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"` // optional - defaults to 20 if not provided
+}
+
+func (x *KeywordSearchJournalsRequest) Reset() {
+	*x = KeywordSearchJournalsRequest{}
+	mi := &file_proto_journal_journal_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KeywordSearchJournalsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeywordSearchJournalsRequest) ProtoMessage() {}
+
+func (x *KeywordSearchJournalsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeywordSearchJournalsRequest.ProtoReflect.Descriptor instead.
+func (*KeywordSearchJournalsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *KeywordSearchJournalsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *KeywordSearchJournalsRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *KeywordSearchJournalsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type KeywordSearchJournalsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Results []*KeywordSearchResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+}
+
+func (x *KeywordSearchJournalsResponse) Reset() {
+	*x = KeywordSearchJournalsResponse{}
+	mi := &file_proto_journal_journal_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KeywordSearchJournalsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeywordSearchJournalsResponse) ProtoMessage() {}
+
+func (x *KeywordSearchJournalsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeywordSearchJournalsResponse.ProtoReflect.Descriptor instead.
+func (*KeywordSearchJournalsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *KeywordSearchJournalsResponse) GetResults() []*KeywordSearchResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type KeywordSearchResult struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Journal *JournalEntry `protobuf:"bytes,1,opt,name=journal,proto3" json:"journal,omitempty"`
+	Rank    float32       `protobuf:"fixed32,2,opt,name=rank,proto3" json:"rank,omitempty"` // ts_rank score from PostgreSQL full-text search
+}
+
+func (x *KeywordSearchResult) Reset() {
+	*x = KeywordSearchResult{}
+	mi := &file_proto_journal_journal_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KeywordSearchResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeywordSearchResult) ProtoMessage() {}
+
+func (x *KeywordSearchResult) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeywordSearchResult.ProtoReflect.Descriptor instead.
+func (*KeywordSearchResult) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *KeywordSearchResult) GetJournal() *JournalEntry {
+	if x != nil {
+		return x.Journal
+	}
+	return nil
+}
+
+func (x *KeywordSearchResult) GetRank() float32 {
+	if x != nil {
+		return x.Rank
+	}
+	return 0
+}
+
 var File_proto_journal_journal_proto protoreflect.FileDescriptor
 
 var file_proto_journal_journal_proto_rawDesc = []byte{
@@ -659,12 +818,29 @@ var file_proto_journal_journal_proto_rawDesc = []byte{
 	0x74, 0x72, 0x79, 0x52, 0x07, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x12, 0x29, 0x0a, 0x10,
 	0x73, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x73, 0x63, 0x6f, 0x72, 0x65,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x02, 0x52, 0x0f, 0x73, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x69,
-	0x74, 0x79, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x42, 0x42, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6a, 0x79, 0x61, 0x62, 0x6c, 0x6f, 0x6e, 0x73, 0x6b, 0x69,
-	0x2f, 0x6c, 0x6f, 0x74, 0x75, 0x73, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f,
-	0x70, 0x62, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c,
-	0x3b, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x74, 0x79, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x22, 0x63, 0x0a, 0x1c, 0x4b, 0x65, 0x79, 0x77, 0x6f,
+	0x72, 0x64, 0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64,
+	0x12, 0x14, 0x0a, 0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0x57, 0x0a, 0x1d,
+	0x4b, 0x65, 0x79, 0x77, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x4a, 0x6f, 0x75,
+	0x72, 0x6e, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a,
+	0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c,
+	0x2e, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x4b, 0x65, 0x79, 0x77, 0x6f, 0x72, 0x64,
+	0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x07, 0x72, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x73, 0x22, 0x5a, 0x0a, 0x13, 0x4b, 0x65, 0x79, 0x77, 0x6f, 0x72, 0x64,
+	0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x2f, 0x0a, 0x07,
+	0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e,
+	0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45,
+	0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x12, 0x12, 0x0a,
+	0x04, 0x72, 0x61, 0x6e, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28, 0x02, 0x52, 0x04, 0x72, 0x61, 0x6e,
+	0x6b, 0x42, 0x42, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x6a, 0x79, 0x61, 0x62, 0x6c, 0x6f, 0x6e, 0x73, 0x6b, 0x69, 0x2f, 0x6c, 0x6f, 0x74, 0x75, 0x73,
+	0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x2f, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2f, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x3b, 0x6a, 0x6f, 0x75, 0x72, 0x6e,
+	0x61, 0x6c, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -679,28 +855,33 @@ func file_proto_journal_journal_proto_rawDescGZIP() []byte {
 	return file_proto_journal_journal_proto_rawDescData
 }
 
-var file_proto_journal_journal_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_proto_journal_journal_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_proto_journal_journal_proto_goTypes = []any{
-	(*CreateJournalRequest)(nil),    // 0: journal.CreateJournalRequest
-	(*CreateJournalResponse)(nil),   // 1: journal.CreateJournalResponse
-	(*GetJournalsRequest)(nil),      // 2: journal.GetJournalsRequest
-	(*JournalEntry)(nil),            // 3: journal.JournalEntry
-	(*GetJournalsResponse)(nil),     // 4: journal.GetJournalsResponse
-	(*TriggerAnalysisRequest)(nil),  // 5: journal.TriggerAnalysisRequest
-	(*TriggerAnalysisResponse)(nil), // 6: journal.TriggerAnalysisResponse
-	(*SearchJournalsRequest)(nil),   // 7: journal.SearchJournalsRequest
-	(*SearchJournalsResponse)(nil),  // 8: journal.SearchJournalsResponse
-	(*JournalSearchResult)(nil),     // 9: journal.JournalSearchResult
+	(*CreateJournalRequest)(nil),          // 0: journal.CreateJournalRequest
+	(*CreateJournalResponse)(nil),         // 1: journal.CreateJournalResponse
+	(*GetJournalsRequest)(nil),            // 2: journal.GetJournalsRequest
+	(*JournalEntry)(nil),                  // 3: journal.JournalEntry
+	(*GetJournalsResponse)(nil),           // 4: journal.GetJournalsResponse
+	(*TriggerAnalysisRequest)(nil),        // 5: journal.TriggerAnalysisRequest
+	(*TriggerAnalysisResponse)(nil),       // 6: journal.TriggerAnalysisResponse
+	(*SearchJournalsRequest)(nil),         // 7: journal.SearchJournalsRequest
+	(*SearchJournalsResponse)(nil),        // 8: journal.SearchJournalsResponse
+	(*JournalSearchResult)(nil),           // 9: journal.JournalSearchResult
+	(*KeywordSearchJournalsRequest)(nil),  // 10: journal.KeywordSearchJournalsRequest
+	(*KeywordSearchJournalsResponse)(nil), // 11: journal.KeywordSearchJournalsResponse
+	(*KeywordSearchResult)(nil),           // 12: journal.KeywordSearchResult
 }
 var file_proto_journal_journal_proto_depIdxs = []int32{
-	3, // 0: journal.GetJournalsResponse.journals:type_name -> journal.JournalEntry
-	9, // 1: journal.SearchJournalsResponse.results:type_name -> journal.JournalSearchResult
-	3, // 2: journal.JournalSearchResult.journal:type_name -> journal.JournalEntry
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	3,  // 0: journal.GetJournalsResponse.journals:type_name -> journal.JournalEntry
+	9,  // 1: journal.SearchJournalsResponse.results:type_name -> journal.JournalSearchResult
+	3,  // 2: journal.JournalSearchResult.journal:type_name -> journal.JournalEntry
+	12, // 3: journal.KeywordSearchJournalsResponse.results:type_name -> journal.KeywordSearchResult
+	3,  // 4: journal.KeywordSearchResult.journal:type_name -> journal.JournalEntry
+	5,  // [5:5] is the sub-list for method output_type
+	5,  // [5:5] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_proto_journal_journal_proto_init() }
@@ -714,7 +895,7 @@ func file_proto_journal_journal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_journal_journal_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

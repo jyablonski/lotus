@@ -23,6 +23,7 @@ export default async function JournalHomePage() {
   const timezone = session.user?.timezone ?? "UTC";
   const showTags = flags.frontend_show_tags === true;
   const semanticSearchEnabled = flags.semantic_search === true;
+  const keywordSearchEnabled = flags.keyword_search === true;
   const isAdmin = userRole === "Admin";
 
   return (
@@ -32,6 +33,7 @@ export default async function JournalHomePage() {
       timezone={timezone}
       showTags={showTags}
       semanticSearchEnabled={semanticSearchEnabled}
+      keywordSearchEnabled={keywordSearchEnabled}
       isAdmin={isAdmin}
     />
   );

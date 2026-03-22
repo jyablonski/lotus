@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jyablonski/lotus/internal/testinfra"
 	_ "github.com/lib/pq"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 )
 
@@ -18,6 +19,7 @@ var (
 	testDBConnStr   string
 	testPgxPool     *pgxpool.Pool
 	testRiverClient *river.Client[pgx.Tx] // insert-only; not started
+	testRedisClient *goredis.Client
 )
 
 func TestMain(m *testing.M) {
@@ -46,6 +48,7 @@ func TestMain(m *testing.M) {
 
 	testPgxPool = testDB.Pool
 	testRiverClient = testDB.RiverClient
+	testRedisClient = testDB.RedisClient
 
 	code := m.Run()
 	testDB.Close(ctx)

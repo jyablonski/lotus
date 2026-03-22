@@ -60,3 +60,18 @@ message JournalSearchResult {
   JournalEntry journal = 1;
   float similarity_score = 2;
 }
+
+message KeywordSearchJournalsRequest {
+  string user_id = 1;
+  string query = 2;
+  int32 limit = 3;  // optional - defaults to 20 if not provided
+}
+
+message KeywordSearchJournalsResponse {
+  repeated KeywordSearchResult results = 1;
+}
+
+message KeywordSearchResult {
+  JournalEntry journal = 1;
+  float rank = 2;  // ts_rank score from PostgreSQL full-text search
+}

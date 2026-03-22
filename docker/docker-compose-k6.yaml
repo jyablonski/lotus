@@ -24,6 +24,15 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: k6-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: ../services/backend
@@ -37,8 +46,11 @@ services:
       - ANALYZER_BASE_URL=http://localhost:8083
       - BACKEND_API_KEY=${BACKEND_API_KEY:-lotus-backend-dev-key}
       - ANALYZER_API_KEY=${ANALYZER_API_KEY:-lotus-analyzer-dev-key}
+      - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   k6:
