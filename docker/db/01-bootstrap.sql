@@ -33,7 +33,10 @@ values
   ('a7f3e8b2-4d91-4c3a-9f2e-1b8c5d6e7f8a', 'alice.smith@example.com', null, null, 'google', 'Consumer', now() - interval '30 days', now() - interval '30 days', 'America/New_York'),
   ('b8e4f9c3-5e02-4d4b-a03f-2c9d6e7f8a9b', 'bob.jones@example.com', 'hashed_password_123', 'salt_123', null, 'Consumer', now() - interval '60 days', now() - interval '60 days', 'America/Los_Angeles'),
   ('c9f5a0d4-6f13-4e5c-b14f-3d0e7f8a9b0c', 'carol.white@example.com', null, null, 'github', 'Premium', now() - interval '90 days', now() - interval '90 days', 'Europe/London'),
-  ('d0a6b1e5-7024-4f6d-c25e-4e1f8a9b0c1d', 'david.brown@example.com', 'hashed_password_456', 'salt_456', null, 'Admin', now() - interval '120 days', now() - interval '120 days', 'UTC');
+  ('d0a6b1e5-7024-4f6d-c25e-4e1f8a9b0c1d', 'david.brown@example.com', 'hashed_password_456', 'salt_456', null, 'Admin', now() - interval '120 days', now() - interval '120 days', 'UTC'),
+  -- E2E test users (Playwright tests authenticate via JWT; rows here let backend queries succeed)
+  ('e2e-test-user-00000000-0000-0000-0000-000000000001', 'e2e-test@lotus.dev', null, null, null, 'Consumer', now(), now(), 'UTC'),
+  ('e2e-admin-user-00000000-0000-0000-0000-000000000002', 'e2e-admin@lotus.dev', null, null, null, 'Admin', now(), now(), 'UTC');
 
 -- Game tables (backend integration tests and app use these; Django migrations may also create them)
 CREATE TABLE IF NOT EXISTS source.user_game_balances (
@@ -101,7 +104,27 @@ VALUES
    'Struggled with motivation today, found it hard to focus.', 3, now() - interval '3 days', now() - interval '3 days'),
 
   ('a7f3e8b2-4d91-4c3a-9f2e-1b8c5d6e7f8a',
-   'Feeling grateful for the support from friends and family.', 9, now() - interval '4 days', now() - interval '4 days');
+   'Feeling grateful for the support from friends and family.', 9, now() - interval '4 days', now() - interval '4 days'),
+
+  -- E2E admin user journals
+  ('e2e-admin-user-00000000-0000-0000-0000-000000000002',
+   'Working on the new feature deployment today. Everything went smoothly.', 8, now(), now()),
+
+  ('e2e-admin-user-00000000-0000-0000-0000-000000000002',
+   'Had a tough debugging session but finally found the root cause.', 5, now() - interval '1 day', now() - interval '1 day'),
+
+  ('e2e-admin-user-00000000-0000-0000-0000-000000000002',
+   'Great team standup this morning. Feeling motivated and energized.', 9, now() - interval '2 days', now() - interval '2 days'),
+
+  -- E2E consumer user journals
+  ('e2e-test-user-00000000-0000-0000-0000-000000000001',
+   'Started learning something new today. It was challenging but rewarding.', 7, now(), now()),
+
+  ('e2e-test-user-00000000-0000-0000-0000-000000000001',
+   'Feeling a bit overwhelmed with everything going on lately.', 4, now() - interval '1 day', now() - interval '1 day'),
+
+  ('e2e-test-user-00000000-0000-0000-0000-000000000001',
+   'Went for a long walk in the park. Nature always helps me clear my mind.', 8, now() - interval '2 days', now() - interval '2 days');
 
 -- table for original analyzer implementation
 CREATE TABLE IF NOT EXISTS journal_details (
@@ -145,7 +168,11 @@ INSERT INTO journal_topics (journal_id, topic_name, subtopic_name, confidence, m
 (1, 'work',      'deadlines and workload pressure',    0.7234, 'v1.0.0'),
 (1, 'growth',    'goals and personal motivation',      0.2156, 'v1.0.0'),
 (2, 'wellbeing', 'anxiety and worry about the future', 0.8901, 'v1.0.0'),
-(2, 'work',      'stress and feeling overwhelmed',     0.3245, 'v1.0.0');
+(2, 'work',      'stress and feeling overwhelmed',     0.3245, 'v1.0.0'),
+-- E2E admin user journal topics (journal IDs 6-8)
+(6, 'work',      'project deployments',                0.8100, 'v1.0.0'),
+(7, 'growth',    'problem solving and persistence',    0.7500, 'v1.0.0'),
+(8, 'wellbeing', 'team collaboration and energy',      0.6800, 'v1.0.0');
 
 
 CREATE TABLE IF NOT EXISTS source.journal_sentiments (
@@ -201,7 +228,8 @@ CREATE TABLE IF NOT EXISTS source.waffle_flag
 INSERT INTO source.waffle_flag (name, everyone, superusers, staff, authenticated, note)
 VALUES
   ('frontend_admin', false, true, true, false, 'Show admin link on profile when user role is Admin'),
-  ('semantic_search', false, true, true, false, 'Enable semantic search toggle on journal page')
+  ('semantic_search', false, true, true, false, 'Enable semantic search toggle on journal page'),
+  ('frontend_show_tags', false, true, true, false, 'Show OpenAI topic tags on journal entries')
 ON CONFLICT (name) DO UPDATE SET everyone = EXCLUDED.everyone, superusers = EXCLUDED.superusers, staff = EXCLUDED.staff, modified = NOW();
 
 -- Truncate integration-test tables in FK-safe order. Call from backend integration tests

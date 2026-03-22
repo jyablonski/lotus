@@ -26,8 +26,8 @@ interface TestUser {
 }
 
 /**
- * Default test user. The `id` here is the backendId that gets placed
- * into session.user.id by the NextAuth session callback.
+ * Default test user (Consumer role). The `id` here is the backendId that gets
+ * placed into session.user.id by the NextAuth session callback.
  */
 export const TEST_USER: TestUser = {
   id: "e2e-test-user-00000000-0000-0000-0000-000000000001",
@@ -35,6 +35,18 @@ export const TEST_USER: TestUser = {
   email: "e2e-test@lotus.dev",
   image: "https://avatars.githubusercontent.com/u/1?v=4",
   role: "Consumer",
+  createdAt: "2025-01-01T00:00:00Z",
+};
+
+/**
+ * Admin test user. Seeded in bootstrap SQL with role=Admin and listed
+ * in ADMIN_EMAILS so the /admin page is accessible.
+ */
+export const ADMIN_TEST_USER: TestUser = {
+  id: "e2e-admin-user-00000000-0000-0000-0000-000000000002",
+  name: "E2E Admin User",
+  email: "e2e-admin@lotus.dev",
+  role: "Admin",
   createdAt: "2025-01-01T00:00:00Z",
 };
 
