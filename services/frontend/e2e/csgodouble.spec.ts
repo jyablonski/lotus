@@ -72,8 +72,10 @@ test.describe("CSGODouble: Admin User", () => {
     );
 
     await expect(balanceLabel).toBeVisible();
-    // Balance value (e.g. "$100") should be visible
-    await expect(page.getByText(/^\$\d+$/)).toBeVisible();
+    // Balance value (e.g. "$100") is the sibling <p> after the "Balance" label
+    const balanceValue = balanceLabel.locator("..").locator("p.text-2xl");
+    await expect(balanceValue).toBeVisible();
+    await expect(balanceValue).toHaveText(/^\$\d+$/);
   });
 
   test("countdown or spinning state is displayed", async ({ page }) => {
@@ -100,9 +102,11 @@ test.describe("CSGODouble: Admin User", () => {
 
     await expect(betInput).toBeVisible();
 
-    // Quick bet buttons
+    // Quick bet buttons (exact: true to avoid +1 matching +10, +100, +1000)
     for (const label of ["Clear", "Last", "+1", "+10", "+100", "Max"]) {
-      await expect(page.getByRole("button", { name: label })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: label, exact: true }),
+      ).toBeVisible();
     }
   });
 
@@ -134,9 +138,12 @@ test.describe("CSGODouble: Admin User", () => {
       "frontend_admin flag not active",
     );
 
-    // Read initial balance text
-    const balanceText = page.locator("text=/^\\$\\d+$/");
-    const initialBalance = await balanceText.textContent();
+    // Read initial balance (scoped to the Balance label's parent)
+    const balanceValue = page
+      .getByText("Balance")
+      .locator("..")
+      .locator("p.text-2xl");
+    const initialBalance = await balanceValue.textContent();
 
     // Set bet amount to 10
     await betInput.fill("10");
@@ -152,7 +159,7 @@ test.describe("CSGODouble: Admin User", () => {
     await expect(page.getByText("Total placed this round: $10")).toBeVisible();
 
     // Balance should have decreased
-    const newBalance = await balanceText.textContent();
+    const newBalance = await balanceValue.textContent();
     expect(newBalance).not.toEqual(initialBalance);
   });
 
@@ -165,9 +172,12 @@ test.describe("CSGODouble: Admin User", () => {
       "frontend_admin flag not active",
     );
 
-    // Read initial balance
-    const balanceText = page.locator("text=/^\\$\\d+$/");
-    const initialBalance = await balanceText.textContent();
+    // Read initial balance (scoped to the Balance label's parent)
+    const balanceValue = page
+      .getByText("Balance")
+      .locator("..")
+      .locator("p.text-2xl");
+    const initialBalance = await balanceValue.textContent();
 
     // Place a bet
     await betInput.fill("10");
@@ -180,7 +190,7 @@ test.describe("CSGODouble: Admin User", () => {
     await page.getByRole("button", { name: /clear all bets/i }).click();
 
     // Balance should be restored
-    await expect(balanceText).toHaveText(initialBalance!);
+    await expect(balanceValue).toHaveText(initialBalance!);
 
     // Total placed should be 0
     await expect(page.getByText("Total placed this round: $0")).toBeVisible();
