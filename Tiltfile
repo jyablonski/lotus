@@ -239,7 +239,7 @@ def setup_django_admin():
     )
     dc_resource(
         "django_admin",
-        resource_deps=["postgres", "analyzer"],
+        resource_deps=["postgres"],
         labels=["admin"],
     )
 
