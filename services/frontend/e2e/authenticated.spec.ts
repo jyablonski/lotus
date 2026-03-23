@@ -104,7 +104,7 @@ test.describe("Authenticated: Navigation", () => {
     await page.waitForURL("**/journal/calendar");
 
     // Calendar page should show weekday headers
-    await expect(page.getByText("Mon")).toBeVisible();
+    await expect(page.getByText("Mon", { exact: true })).toBeVisible();
   });
 });
 
