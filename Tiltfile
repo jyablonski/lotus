@@ -67,7 +67,7 @@ def setup_mlflow():
             "services/experiments/.git",
         ],
     )
-    dc_resource("mlflow", resource_deps=["postgres"], labels=["data"])
+    dc_resource("mlflow", resource_deps=["django_admin"], labels=["data"])
 
 
 # ============================================================================
@@ -151,7 +151,7 @@ def setup_frontend():
             "services/frontend/.git",
         ],
     )
-    dc_resource("frontend", resource_deps=["postgres", "backend"], labels=["frontend"])
+    dc_resource("frontend", resource_deps=["django_admin", "backend"], labels=["frontend"])
 
 
 def setup_backend():
@@ -176,7 +176,7 @@ def setup_backend():
             "services/backend/tmp",
         ],
     )
-    dc_resource("backend", resource_deps=["postgres"], labels=["backend"])
+    dc_resource("backend", resource_deps=["django_admin"], labels=["backend"])
 
 
 def setup_analyzer():
@@ -205,7 +205,7 @@ def setup_analyzer():
     )
     dc_resource(
         "analyzer",
-        resource_deps=["postgres", "mlflow"],
+        resource_deps=["django_admin", "mlflow"],
         labels=["data"],
     )
 
@@ -272,7 +272,7 @@ def setup_dagster_base():
             "services/dbt/.git",
         ],
     )
-    dc_resource("dagster_base", resource_deps=["postgres"], labels=["data"])
+    dc_resource("dagster_base", resource_deps=["django_admin"], labels=["data"])
 
 
 def setup_dagster_webserver():
@@ -280,7 +280,7 @@ def setup_dagster_webserver():
     # No separate build needed - uses dagster_server_image from setup_dagster_base()
     dc_resource(
         "dagster_webserver",
-        resource_deps=["postgres", "dagster_base"],
+        resource_deps=["django_admin", "dagster_base"],
         labels=["data"],
     )
 
@@ -290,7 +290,7 @@ def setup_dagster_daemon():
     # No separate build needed - uses dagster_server_image from setup_dagster_base()
     dc_resource(
         "dagster_daemon",
-        resource_deps=["postgres", "dagster_base"],
+        resource_deps=["django_admin", "dagster_base"],
         labels=["data"],
     )
 

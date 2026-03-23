@@ -207,30 +207,6 @@ CREATE TABLE IF NOT EXISTS source.runtime_config
     modified_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Feature flags (django-waffle compatible). Go backend reads these for /v1/feature-flags.
-CREATE TABLE IF NOT EXISTS source.waffle_flag
-(
-    id            SERIAL PRIMARY KEY,
-    name          VARCHAR(100) NOT NULL UNIQUE,
-    everyone      BOOLEAN NOT NULL DEFAULT false,
-    percent       NUMERIC(3,1),
-    testing       BOOLEAN NOT NULL DEFAULT false,
-    superusers    BOOLEAN NOT NULL DEFAULT true,
-    staff         BOOLEAN NOT NULL DEFAULT false,
-    authenticated BOOLEAN NOT NULL DEFAULT false,
-    languages     TEXT NOT NULL DEFAULT '',
-    rollout       BOOLEAN NOT NULL DEFAULT false,
-    note          TEXT NOT NULL DEFAULT '',
-    created       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    modified      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-INSERT INTO source.waffle_flag (name, everyone, superusers, staff, authenticated, note)
-VALUES
-  ('frontend_admin', false, true, true, false, 'Show admin link on profile when user role is Admin'),
-  ('semantic_search', false, true, true, false, 'Enable semantic search toggle on journal page'),
-  ('frontend_show_tags', false, true, true, false, 'Show OpenAI topic tags on journal entries')
-ON CONFLICT (name) DO UPDATE SET everyone = EXCLUDED.everyone, superusers = EXCLUDED.superusers, staff = EXCLUDED.staff, modified = NOW();
 
 -- Truncate integration-test tables in FK-safe order. Call from backend integration tests
 -- so cleanup works regardless of which tables have rows (e.g. user_game_*, journals).
