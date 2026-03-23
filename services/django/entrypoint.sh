@@ -20,7 +20,7 @@ echo "All migrations are up to date."
 
 # Run migrations
 echo "Running migrations..."
-python manage.py migrate --fake-initial
+python manage.py migrate
 
 # Admin user will be created via data migration (0002_create_admin_user.py)
 
