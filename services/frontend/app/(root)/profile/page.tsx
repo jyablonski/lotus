@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { fetchProfileStats, fetchFeatureFlags } from "@/lib/server";
+import { canAccessAdminRoutes, fetchProfileStats } from "@/lib/server";
 import { ProfilePageClient } from "@/components/profile/ProfilePageClient";
 import { ROUTES } from "@/lib/routes";
 
@@ -19,12 +19,11 @@ export default async function ProfilePage() {
     (email !== "No Email Provided" ? email.split("@")[0] : "Unknown User");
   const image = session.user?.image ?? null;
   const signUpDate = session.user?.createdAt ?? "";
-  const userRole = session.user?.role ?? "";
   const timezone = session.user?.timezone ?? "UTC";
 
-  const [stats, flags] = await Promise.all([
+  const [stats, showAdminUI] = await Promise.all([
     fetchProfileStats(session.user.id),
-    fetchFeatureFlags(userRole),
+    canAccessAdminRoutes(session.user.email, session.user.role),
   ]);
 
   return (
@@ -34,7 +33,7 @@ export default async function ProfilePage() {
       image={image}
       signupDate={signUpDate}
       stats={stats}
-      isAdmin={flags.frontend_admin ?? false}
+      isAdmin={showAdminUI}
       timezone={timezone}
     />
   );

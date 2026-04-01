@@ -1,0 +1,14 @@
+meta {
+  name: Get Invoice Reference Data
+  type: http
+}
+
+get {
+  url: {{backend_url}}/v1/admin/invoices/reference-data?userId=
+  body: none
+  auth: none
+}
+
+params:query {
+  ~userId:
+}

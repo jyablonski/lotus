@@ -17,6 +17,8 @@ export const ROUTES = {
     csgodouble: "/games/csgodouble",
   },
   admin: "/admin",
+  adminInvoices: "/admin/invoices",
+  adminCsgodouble: "/admin/csgodouble",
   errorDemo: "/error-demo",
 } as const;
 

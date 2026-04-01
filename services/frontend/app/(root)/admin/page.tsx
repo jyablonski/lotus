@@ -1,19 +1,10 @@
 import { auth } from "@/auth";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FileText, Gamepad2 } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { canAccessAdminRoutes, fetchFeatureFlags } from "@/lib/server";
 import { ROUTES } from "@/lib/routes";
-
-/**
- * Admin page — restricted to allowed admin emails.
- * Set ADMIN_EMAILS env var as a comma-separated list (e.g. "alice@example.com,bob@example.com").
- * If ADMIN_EMAILS is not set, the page is inaccessible to everyone.
- */
-function isAdmin(email: string | null | undefined): boolean {
-  if (!email) return false;
-  const allowed =
-    process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim().toLowerCase()) ??
-    [];
-  return allowed.includes(email.toLowerCase());
-}
 
 export default async function AdminPage() {
   const session = await auth();
@@ -22,34 +13,101 @@ export default async function AdminPage() {
     redirect(ROUTES.home);
   }
 
-  if (!isAdmin(session.user.email)) {
+  if (!(await canAccessAdminRoutes(session.user.email, session.user.role))) {
     redirect(ROUTES.home);
   }
 
-  // Show only non-sensitive session info
-  const safeSessionInfo = {
-    id: session.user.id,
-    name: session.user.name ?? "N/A",
-    email: session.user.email ?? "N/A",
-    createdAt: session.user.createdAt ?? "N/A",
-  };
+  const userRole = session.user?.role ?? "";
+  const flags = await fetchFeatureFlags(userRole);
 
   return (
     <div className="page-container">
       <div className="content-container py-8">
-        <h1 className="heading-1 mb-6">Admin</h1>
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold text-primary-dark mb-4">
-            Session Info
-          </h2>
-          <dl className="space-y-2 text-sm">
-            {Object.entries(safeSessionInfo).map(([key, value]) => (
-              <div key={key} className="flex justify-between">
-                <dt className="text-muted-dark font-medium">{key}</dt>
-                <dd className="text-primary-dark">{value}</dd>
-              </div>
-            ))}
-          </dl>
+        <h1 className="heading-1 mb-2">Admin</h1>
+        <p className="text-muted-dark mb-8 max-w-2xl">
+          Internal tools. Access matches the profile Admin badge: Admin role or{" "}
+          <code className="text-xs bg-dark-800 px-1.5 py-0.5 rounded">
+            frontend_admin
+          </code>{" "}
+          flag, or an optional{" "}
+          <code className="text-xs bg-dark-800 px-1.5 py-0.5 rounded">
+            ADMIN_EMAILS
+          </code>{" "}
+          allowlist.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
+          <Link href={ROUTES.adminInvoices} className="block group">
+            <Card className="h-full transition-colors hover:border-lotus-500/40">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-lotus-500/10 text-lotus-400">
+                    <FileText size={22} />
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-semibold text-primary-dark group-hover:text-lotus-300">
+                      Invoice generator
+                    </h2>
+                    <p className="text-sm text-muted-dark mt-0.5">
+                      Create and download PDF invoices
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <span className="text-sm text-lotus-400 font-medium">
+                  Open →
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {flags.frontend_admin ? (
+            <Link href={ROUTES.adminCsgodouble} className="block group">
+              <Card className="h-full transition-colors hover:border-lotus-500/40">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-lotus-500/10 text-lotus-400">
+                      <Gamepad2 size={22} />
+                    </span>
+                    <div>
+                      <h2 className="text-lg font-semibold text-primary-dark group-hover:text-lotus-300">
+                        CSGO Double
+                      </h2>
+                      <p className="text-sm text-muted-dark mt-0.5">
+                        Wheel game (dev / admin feature flag)
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <span className="text-sm text-lotus-400 font-medium">
+                    Open →
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : (
+            <Card className="h-full opacity-60 border-dark-600">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-dark-700 text-dark-400">
+                    <Gamepad2 size={22} />
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-semibold text-dark-300">
+                      CSGO Double
+                    </h2>
+                    <p className="text-sm text-muted-dark mt-0.5">
+                      Requires the{" "}
+                      <code className="text-xs">frontend_admin</code> feature
+                      flag for your role.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          )}
         </div>
       </div>
     </div>

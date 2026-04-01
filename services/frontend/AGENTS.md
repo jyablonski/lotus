@@ -329,6 +329,13 @@ Before making changes:
 - Log errors for debugging
 - Use try/catch for async operations
 
+### TypeScript types from backend (OpenAPI)
+
+- gRPC-Gateway emits Swagger 2 specs under `services/backend/internal/pb/proto/**/**_service.swagger.json` when you run `buf generate` in `services/backend`.
+- Regenerate client types: `npm run generate:api-types` (from `services/frontend`). This runs `openapi-typescript` v5 (v6+ requires OpenAPI 3.x).
+- Output: `types/generated/*.d.ts` and `types/generated/index.ts` (prefixed exports such as `InvoiceServiceDefinitions`, `InvoiceServicePaths`).
+- After changing protos or HTTP annotations, run `buf generate` then `npm run generate:api-types` and commit the updated `types/generated/` files.
+
 ## State Management
 
 ### Server State

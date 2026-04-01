@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package invoice;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/invoice;invoice_pb";
+
+import "google/api/annotations.proto";
+import "proto/invoice/invoice.proto";
+
+service InvoiceService {
+  rpc CreateInvoice(CreateInvoiceRequest) returns (CreateInvoiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/invoices"
+      body: "*"
+    };
+  }
+
+  rpc RenderInvoicePdf(RenderInvoicePdfRequest) returns (RenderInvoicePdfResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/invoices/pdf"
+      body: "*"
+    };
+  }
+
+  rpc GetInvoiceReferenceData(GetInvoiceReferenceDataRequest) returns (GetInvoiceReferenceDataResponse) {
+    option (google.api.http) = {
+      get: "/v1/admin/invoices/reference-data"
+    };
+  }
+}

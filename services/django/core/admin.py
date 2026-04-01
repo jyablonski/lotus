@@ -12,6 +12,11 @@ from waffle.models import Flag, Sample, Switch
 
 from .models import (
     ActiveMLModel,
+    Invoice,
+    InvoiceClient,
+    InvoiceLineItem,
+    InvoicePaymentInfo,
+    InvoiceSender,
     RuntimeConfig,
     User as LotusUser,
 )
@@ -157,3 +162,59 @@ class WaffleSwitchAdmin(ModelAdmin):
 class WaffleSampleAdmin(ModelAdmin):
     list_display = ("name", "percent", "note", "created", "modified")
     search_fields = ("name", "note")
+
+
+# ── Invoice models ──────────────────────────────────────────────────────
+
+
+@admin.register(InvoiceSender, site=admin_site)
+class InvoiceSenderAdmin(ModelAdmin):
+    list_display = ("name", "email", "address_line1", "created_at")
+    search_fields = ("name", "email")
+    readonly_fields = ("id", "created_at", "modified_at")
+
+
+@admin.register(InvoiceClient, site=admin_site)
+class InvoiceClientAdmin(ModelAdmin):
+    list_display = ("name", "attention", "address_line1", "created_at")
+    search_fields = ("name", "attention")
+    readonly_fields = ("id", "created_at", "modified_at")
+
+
+@admin.register(InvoicePaymentInfo, site=admin_site)
+class InvoicePaymentInfoAdmin(ModelAdmin):
+    list_display = ("check_payable_to", "ach_routing_number", "created_at")
+    search_fields = ("check_payable_to",)
+    readonly_fields = ("id", "created_at", "modified_at")
+
+
+class InvoiceLineItemInline(admin.TabularInline):
+    model = InvoiceLineItem
+    extra = 1
+    fields = ("description", "hours", "rate", "amount")
+
+
+@admin.register(Invoice, site=admin_site)
+class InvoiceAdmin(ModelAdmin):
+    list_display = (
+        "invoice_number",
+        "client",
+        "sender",
+        "date",
+        "due_date",
+        "terms",
+        "total_display",
+    )
+    list_filter = ("terms", "date", "client")
+    search_fields = ("invoice_number", "client__name", "sender__name")
+    readonly_fields = ("id", "created_at", "modified_at")
+    inlines = (InvoiceLineItemInline,)
+    fieldsets = (
+        (None, {"fields": ("id", "invoice_number", "sender", "client", "payment_info")}),
+        ("Dates & Terms", {"fields": ("date", "due_date", "terms")}),
+        ("Timestamps", {"fields": ("created_at", "modified_at")}),
+    )
+
+    @admin.display(description="Total")
+    def total_display(self, obj):
+        return f"${obj.total:,.2f}"

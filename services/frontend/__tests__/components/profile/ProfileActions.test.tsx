@@ -12,6 +12,7 @@ jest.mock("lucide-react", () => ({
   BarChart3: () => <svg data-testid="icon-chart" />,
   Calendar: () => <svg data-testid="icon-calendar" />,
   Settings: () => <svg data-testid="icon-settings" />,
+  LayoutDashboard: () => <svg data-testid="icon-admin" />,
   LogOut: () => <svg data-testid="icon-logout" />,
 }));
 
@@ -23,6 +24,12 @@ describe("ProfileActions", () => {
   it("renders 'Quick Actions' heading", () => {
     render(<ProfileActions />);
     expect(screen.getByText("Quick Actions")).toBeInTheDocument();
+  });
+
+  it("renders Admin link when isAdmin", () => {
+    render(<ProfileActions isAdmin />);
+    const link = screen.getByText("Admin").closest("a");
+    expect(link).toHaveAttribute("href", "/admin");
   });
 
   it("renders 'Create New Entry' link", () => {

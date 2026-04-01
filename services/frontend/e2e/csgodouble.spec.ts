@@ -1,9 +1,9 @@
 /**
- * E2E tests for the CSGODouble game page.
+ * E2E tests for the CSGODouble game page (`/admin/csgodouble`).
  *
- * Access is gated by the `frontend_admin` waffle flag (superusers=true),
- * so only Admin-role users can view the page. Consumer users are
- * redirected to /profile.
+ * Requires `ADMIN_EMAILS` to include the test admin user and the
+ * `frontend_admin` waffle flag. Consumer users are redirected away
+ * (legacy `/games/csgodouble` redirects here, then the same gates apply).
  */
 import { test, expect } from "@playwright/test";
 import {
@@ -17,13 +17,13 @@ test.describe("CSGODouble: Consumer User (non-admin)", () => {
     await authenticateContext(context, TEST_USER);
   });
 
-  test("non-admin user is redirected away from /games/csgodouble", async ({
+  test("non-admin user is redirected away from CSGO Double", async ({
     page,
   }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
+    await page.waitForLoadState("networkidle");
 
-    // frontend_admin flag is superusers-only, so Consumer gets redirected to /profile
-    await page.waitForURL("**/profile", { timeout: 10000 });
+    await expect(page).not.toHaveURL(/csgodouble/);
 
     await expect(
       page.getByRole("heading", { name: /csgo double/i }),
@@ -37,7 +37,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("page loads with heading", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     // Skip if admin flag isn't active (shouldn't happen, but safety)
     const heading = page.getByRole("heading", { name: /csgo double/i });
@@ -49,21 +49,21 @@ test.describe("CSGODouble: Admin User", () => {
     await expect(heading).toBeVisible();
   });
 
-  test("back to profile link is visible", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+  test("back to admin link is visible", async ({ page }) => {
+    await page.goto("/admin/csgodouble");
 
-    const backLink = page.getByRole("link", { name: /back to profile/i });
+    const backLink = page.getByRole("link", { name: /back to admin/i });
     test.skip(
       !(await backLink.isVisible().catch(() => false)),
       "frontend_admin flag not active",
     );
 
     await expect(backLink).toBeVisible();
-    await expect(backLink).toHaveAttribute("href", "/profile");
+    await expect(backLink).toHaveAttribute("href", "/admin");
   });
 
   test("balance display is visible", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     const balanceLabel = page.getByText("Balance");
     test.skip(
@@ -79,7 +79,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("countdown or spinning state is displayed", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     // Either "Rolling in X.Xs" countdown, "Spinning…", or "Loading…" should show
     const statusCard = page.locator("text=/rolling in|spinning|loading/i");
@@ -92,7 +92,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("bet input and quick-amount buttons are visible", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     const betInput = page.locator("input[type='number']");
     test.skip(
@@ -111,7 +111,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("three betting zones are displayed", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     const redZone = page.getByRole("button", { name: /1 to 7/i });
     test.skip(
@@ -130,7 +130,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("placing a bet updates zone total and balance", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     const betInput = page.locator("input[type='number']");
     test.skip(
@@ -164,7 +164,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("clear all bets refunds balance", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     const betInput = page.locator("input[type='number']");
     test.skip(
@@ -197,7 +197,7 @@ test.describe("CSGODouble: Admin User", () => {
   });
 
   test("roulette strip is rendered with colored cells", async ({ page }) => {
-    await page.goto("/games/csgodouble");
+    await page.goto("/admin/csgodouble");
 
     // The roulette strip renders cells with bg-red-600, bg-zinc-900, bg-emerald-600
     const cells = page.locator(

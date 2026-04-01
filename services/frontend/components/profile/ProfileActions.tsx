@@ -4,7 +4,7 @@ import {
   BarChart3,
   Calendar,
   Settings,
-  Gamepad2,
+  LayoutDashboard,
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Logout } from "@/components/auth/LogoutButton";
@@ -22,10 +22,10 @@ export function ProfileActions({ isAdmin = false }: ProfileActionsProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         {isAdmin && (
-          <Link href={ROUTES.games.csgodouble} className="block">
+          <Link href={ROUTES.admin} className="block">
             <button className="action-item">
-              <Gamepad2 size={20} className="text-lotus-400" />
-              <span className="text-lotus-300 font-medium">CSGO Double</span>
+              <LayoutDashboard size={20} className="text-lotus-400" />
+              <span className="text-lotus-300 font-medium">Admin</span>
             </button>
           </Link>
         )}

@@ -305,3 +305,140 @@ class RuntimeConfig(models.Model):
 
     def __str__(self):
         return self.key
+
+
+class InvoiceSender(models.Model):
+    """Reusable sender profile for invoices (the person sending the invoice)."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    name = models.CharField(max_length=255)
+    address_line1 = models.CharField(max_length=255)
+    address_line2 = models.CharField(max_length=255, blank=True, default="")
+    email = models.EmailField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    modified_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "invoice_senders"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class InvoiceClient(models.Model):
+    """Reusable client profile for invoices (the person/company being billed)."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    name = models.CharField(max_length=255)
+    address_line1 = models.CharField(max_length=255)
+    address_line2 = models.CharField(max_length=255, blank=True, default="")
+    attention = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    modified_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "invoice_clients"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class InvoicePaymentInfo(models.Model):
+    """Reusable payment information for invoices."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    check_payable_to = models.CharField(max_length=255)
+    ach_account_number = models.CharField(max_length=50)
+    ach_routing_number = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    modified_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "invoice_payment_info"
+        verbose_name = "payment info"
+        verbose_name_plural = "payment info"
+
+    def __str__(self):
+        return f"Payment info for {self.check_payable_to}"
+
+
+class Invoice(models.Model):
+    """Invoice header linking sender, client, and payment info."""
+
+    TERMS_CHOICES = [
+        ("Net 15", "Net 15"),
+        ("Net 30", "Net 30"),
+        ("Net 45", "Net 45"),
+        ("Net 60", "Net 60"),
+        ("Due on Receipt", "Due on Receipt"),
+    ]
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    invoice_number = models.CharField(max_length=50, unique=True)
+    sender = models.ForeignKey(InvoiceSender, on_delete=models.PROTECT, db_column="sender_id")
+    client = models.ForeignKey(InvoiceClient, on_delete=models.PROTECT, db_column="client_id")
+    payment_info = models.ForeignKey(
+        InvoicePaymentInfo, on_delete=models.PROTECT, db_column="payment_info_id"
+    )
+    date = models.DateField()
+    due_date = models.DateField()
+    terms = models.CharField(max_length=50, choices=TERMS_CHOICES, default="Net 30")
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    modified_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "invoices"
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"Invoice #{self.invoice_number} — {self.client.name}"
+
+    @property
+    def total(self):
+        return sum(item.amount for item in self.line_items.all())
+
+
+class InvoiceLineItem(models.Model):
+    """Individual line item on an invoice."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        db_column="invoice_id",
+        related_name="line_items",
+    )
+    description = models.TextField()
+    hours = models.DecimalField(max_digits=8, decimal_places=2)
+    rate = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+
+    class Meta:
+        db_table = "invoice_line_items"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.description[:50]} — ${self.amount}"

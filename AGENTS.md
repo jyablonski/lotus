@@ -78,7 +78,7 @@ The backend service uses code generation tools:
 
 - **sqlc** - Generates Go code from SQL queries (`make sqlc-generate`)
 - **buf** - Generates protobuf/gRPC code (`make buf-generate`)
-- **make generate** - Runs both generators
+- **make generate** - Runs sqlc, buf, moq, and frontend OpenAPI TypeScript types (`make generate-frontend-api-types`)
 
 These are automatically run via pre-commit hooks when SQL or proto files change.
 

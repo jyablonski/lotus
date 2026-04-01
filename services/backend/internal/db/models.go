@@ -52,6 +52,58 @@ type GoldUserJournalSummary struct {
 	JournalsPerActiveDay           sql.NullString
 }
 
+type SourceInvoice struct {
+	ID            uuid.UUID
+	InvoiceNumber string
+	Date          time.Time
+	DueDate       time.Time
+	Terms         string
+	SenderID      uuid.UUID
+	ClientID      uuid.UUID
+	PaymentInfoID uuid.UUID
+	CreatedAt     time.Time
+	ModifiedAt    time.Time
+}
+
+type SourceInvoiceClient struct {
+	ID           uuid.UUID
+	Name         string
+	AddressLine1 string
+	AddressLine2 string
+	Attention    string
+	CreatedAt    time.Time
+	ModifiedAt   time.Time
+}
+
+type SourceInvoiceLineItem struct {
+	ID          uuid.UUID
+	InvoiceID   uuid.UUID
+	Description string
+	Hours       string
+	Rate        string
+	Amount      string
+	CreatedAt   time.Time
+}
+
+type SourceInvoicePaymentInfo struct {
+	ID               uuid.UUID
+	CheckPayableTo   string
+	AchAccountNumber string
+	AchRoutingNumber string
+	CreatedAt        time.Time
+	ModifiedAt       time.Time
+}
+
+type SourceInvoiceSender struct {
+	ID           uuid.UUID
+	Name         string
+	AddressLine1 string
+	AddressLine2 string
+	Email        string
+	CreatedAt    time.Time
+	ModifiedAt   time.Time
+}
+
 type SourceJournal struct {
 	ID           int32
 	UserID       uuid.UUID

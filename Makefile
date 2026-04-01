@@ -49,8 +49,12 @@ moq-generate: ## Generate Go mocks using moq
 bruno-generate: ## Generate Bruno API collection from OpenAPI specs
 	@./scripts/bruno-generate.sh
 
+.PHONY: generate-frontend-api-types
+generate-frontend-api-types: ## TypeScript API types from backend gRPC-Gateway OpenAPI (Swagger 2)
+	@cd services/frontend && npm run generate:api-types
+
 .PHONY: generate
-generate: sqlc-generate buf-generate moq-generate ## Run all code generation (sqlc, buf, moq)
+generate: sqlc-generate buf-generate moq-generate generate-frontend-api-types ## Run all code generation (sqlc, buf, moq, frontend API types)
 
 .PHONY: e2e-up
 e2e-up: ## Start e2e stack (postgres, backend, frontend)

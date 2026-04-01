@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package invoice;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/invoice;invoice_pb";
+
+message InvoiceSender {
+  string name = 1;
+  string address_line1 = 2;
+  string address_line2 = 3;
+  string email = 4;
+}
+
+message InvoiceClient {
+  string name = 1;
+  string address_line1 = 2;
+  string address_line2 = 3;
+  string attention = 4;
+}
+
+message InvoicePayment {
+  string check_payable_to = 1;
+  string ach_account_number = 2;
+  string ach_routing_number = 3;
+}
+
+message InvoiceHeader {
+  string number = 1;
+  string date = 2;      // YYYY-MM-DD
+  string due_date = 3;  // YYYY-MM-DD
+  string terms = 4;
+}
+
+message InvoiceLineItem {
+  string description = 1;
+  double hours = 2;
+  double rate = 3;
+  double amount = 4;
+}
+
+message InvoicePayload {
+  InvoiceSender sender = 1;
+  InvoiceClient client = 2;
+  InvoicePayment payment = 3;
+  InvoiceHeader invoice = 4;
+  repeated InvoiceLineItem line_items = 5;
+}
+
+message CreateInvoiceRequest {
+  string user_id = 1;
+  InvoicePayload invoice = 2;
+}
+
+message CreateInvoiceResponse {
+  string invoice_id = 1;
+}
+
+message RenderInvoicePdfRequest {
+  string user_id = 1;
+  InvoicePayload invoice = 2;
+}
+
+message RenderInvoicePdfResponse {
+  bytes pdf_bytes = 1;
+  string filename = 2;
+}
+
+// Saved profiles for prefilling the invoice form (IDs from DB).
+message InvoiceSenderRecord {
+  string id = 1;
+  string name = 2;
+  string address_line1 = 3;
+  string address_line2 = 4;
+  string email = 5;
+}
+
+message InvoiceClientRecord {
+  string id = 1;
+  string name = 2;
+  string address_line1 = 3;
+  string address_line2 = 4;
+  string attention = 5;
+}
+
+message InvoicePaymentRecord {
+  string id = 1;
+  string check_payable_to = 2;
+  string ach_account_number = 3;
+  string ach_routing_number = 4;
+}
+
+message GetInvoiceReferenceDataRequest {
+  string user_id = 1;
+}
+
+message GetInvoiceReferenceDataResponse {
+  repeated InvoiceSenderRecord senders = 1;
+  repeated InvoiceClientRecord clients = 2;
+  repeated InvoicePaymentRecord payment_profiles = 3;
+}

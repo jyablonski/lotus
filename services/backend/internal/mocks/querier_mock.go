@@ -38,6 +38,15 @@ var _ db.Querier = &QuerierMock{}
 //			GetFeatureFlagByNameFunc: func(ctx context.Context, name string) (db.SourceWaffleFlag, error) {
 //				panic("mock out the GetFeatureFlagByName method")
 //			},
+//			GetInvoiceClientByNameFunc: func(ctx context.Context, name string) (uuid.UUID, error) {
+//				panic("mock out the GetInvoiceClientByName method")
+//			},
+//			GetInvoicePaymentByCheckPayableFunc: func(ctx context.Context, checkPayableTo string) (uuid.UUID, error) {
+//				panic("mock out the GetInvoicePaymentByCheckPayable method")
+//			},
+//			GetInvoiceSenderByNameEmailFunc: func(ctx context.Context, arg db.GetInvoiceSenderByNameEmailParams) (uuid.UUID, error) {
+//				panic("mock out the GetInvoiceSenderByNameEmail method")
+//			},
 //			GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
 //				panic("mock out the GetJournalById method")
 //			},
@@ -71,8 +80,32 @@ var _ db.Querier = &QuerierMock{}
 //			GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
 //				panic("mock out the GetUserJournalSummaryByUserId method")
 //			},
+//			InsertInvoiceFunc: func(ctx context.Context, arg db.InsertInvoiceParams) (uuid.UUID, error) {
+//				panic("mock out the InsertInvoice method")
+//			},
+//			InsertInvoiceClientFunc: func(ctx context.Context, arg db.InsertInvoiceClientParams) (uuid.UUID, error) {
+//				panic("mock out the InsertInvoiceClient method")
+//			},
+//			InsertInvoiceLineItemFunc: func(ctx context.Context, arg db.InsertInvoiceLineItemParams) error {
+//				panic("mock out the InsertInvoiceLineItem method")
+//			},
+//			InsertInvoicePaymentFunc: func(ctx context.Context, arg db.InsertInvoicePaymentParams) (uuid.UUID, error) {
+//				panic("mock out the InsertInvoicePayment method")
+//			},
+//			InsertInvoiceSenderFunc: func(ctx context.Context, arg db.InsertInvoiceSenderParams) (uuid.UUID, error) {
+//				panic("mock out the InsertInvoiceSender method")
+//			},
 //			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
 //				panic("mock out the InsertUserGameBet method")
+//			},
+//			ListInvoiceClientsFunc: func(ctx context.Context) ([]db.SourceInvoiceClient, error) {
+//				panic("mock out the ListInvoiceClients method")
+//			},
+//			ListInvoicePaymentInfoFunc: func(ctx context.Context) ([]db.SourceInvoicePaymentInfo, error) {
+//				panic("mock out the ListInvoicePaymentInfo method")
+//			},
+//			ListInvoiceSendersFunc: func(ctx context.Context) ([]db.SourceInvoiceSender, error) {
+//				panic("mock out the ListInvoiceSenders method")
 //			},
 //			UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
 //				panic("mock out the UpdateUserTimezone method")
@@ -108,6 +141,15 @@ type QuerierMock struct {
 	// GetFeatureFlagByNameFunc mocks the GetFeatureFlagByName method.
 	GetFeatureFlagByNameFunc func(ctx context.Context, name string) (db.SourceWaffleFlag, error)
 
+	// GetInvoiceClientByNameFunc mocks the GetInvoiceClientByName method.
+	GetInvoiceClientByNameFunc func(ctx context.Context, name string) (uuid.UUID, error)
+
+	// GetInvoicePaymentByCheckPayableFunc mocks the GetInvoicePaymentByCheckPayable method.
+	GetInvoicePaymentByCheckPayableFunc func(ctx context.Context, checkPayableTo string) (uuid.UUID, error)
+
+	// GetInvoiceSenderByNameEmailFunc mocks the GetInvoiceSenderByNameEmail method.
+	GetInvoiceSenderByNameEmailFunc func(ctx context.Context, arg db.GetInvoiceSenderByNameEmailParams) (uuid.UUID, error)
+
 	// GetJournalByIdFunc mocks the GetJournalById method.
 	GetJournalByIdFunc func(ctx context.Context, id int32) (db.SourceJournal, error)
 
@@ -141,8 +183,32 @@ type QuerierMock struct {
 	// GetUserJournalSummaryByUserIdFunc mocks the GetUserJournalSummaryByUserId method.
 	GetUserJournalSummaryByUserIdFunc func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error)
 
+	// InsertInvoiceFunc mocks the InsertInvoice method.
+	InsertInvoiceFunc func(ctx context.Context, arg db.InsertInvoiceParams) (uuid.UUID, error)
+
+	// InsertInvoiceClientFunc mocks the InsertInvoiceClient method.
+	InsertInvoiceClientFunc func(ctx context.Context, arg db.InsertInvoiceClientParams) (uuid.UUID, error)
+
+	// InsertInvoiceLineItemFunc mocks the InsertInvoiceLineItem method.
+	InsertInvoiceLineItemFunc func(ctx context.Context, arg db.InsertInvoiceLineItemParams) error
+
+	// InsertInvoicePaymentFunc mocks the InsertInvoicePayment method.
+	InsertInvoicePaymentFunc func(ctx context.Context, arg db.InsertInvoicePaymentParams) (uuid.UUID, error)
+
+	// InsertInvoiceSenderFunc mocks the InsertInvoiceSender method.
+	InsertInvoiceSenderFunc func(ctx context.Context, arg db.InsertInvoiceSenderParams) (uuid.UUID, error)
+
 	// InsertUserGameBetFunc mocks the InsertUserGameBet method.
 	InsertUserGameBetFunc func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error)
+
+	// ListInvoiceClientsFunc mocks the ListInvoiceClients method.
+	ListInvoiceClientsFunc func(ctx context.Context) ([]db.SourceInvoiceClient, error)
+
+	// ListInvoicePaymentInfoFunc mocks the ListInvoicePaymentInfo method.
+	ListInvoicePaymentInfoFunc func(ctx context.Context) ([]db.SourceInvoicePaymentInfo, error)
+
+	// ListInvoiceSendersFunc mocks the ListInvoiceSenders method.
+	ListInvoiceSendersFunc func(ctx context.Context) ([]db.SourceInvoiceSender, error)
 
 	// UpdateUserTimezoneFunc mocks the UpdateUserTimezone method.
 	UpdateUserTimezoneFunc func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error)
@@ -194,6 +260,27 @@ type QuerierMock struct {
 			Ctx context.Context
 			// Name is the name argument value.
 			Name string
+		}
+		// GetInvoiceClientByName holds details about calls to the GetInvoiceClientByName method.
+		GetInvoiceClientByName []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
+		}
+		// GetInvoicePaymentByCheckPayable holds details about calls to the GetInvoicePaymentByCheckPayable method.
+		GetInvoicePaymentByCheckPayable []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CheckPayableTo is the checkPayableTo argument value.
+			CheckPayableTo string
+		}
+		// GetInvoiceSenderByNameEmail holds details about calls to the GetInvoiceSenderByNameEmail method.
+		GetInvoiceSenderByNameEmail []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetInvoiceSenderByNameEmailParams
 		}
 		// GetJournalById holds details about calls to the GetJournalById method.
 		GetJournalById []struct {
@@ -272,12 +359,62 @@ type QuerierMock struct {
 			// UserID is the userID argument value.
 			UserID uuid.UUID
 		}
+		// InsertInvoice holds details about calls to the InsertInvoice method.
+		InsertInvoice []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertInvoiceParams
+		}
+		// InsertInvoiceClient holds details about calls to the InsertInvoiceClient method.
+		InsertInvoiceClient []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertInvoiceClientParams
+		}
+		// InsertInvoiceLineItem holds details about calls to the InsertInvoiceLineItem method.
+		InsertInvoiceLineItem []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertInvoiceLineItemParams
+		}
+		// InsertInvoicePayment holds details about calls to the InsertInvoicePayment method.
+		InsertInvoicePayment []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertInvoicePaymentParams
+		}
+		// InsertInvoiceSender holds details about calls to the InsertInvoiceSender method.
+		InsertInvoiceSender []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertInvoiceSenderParams
+		}
 		// InsertUserGameBet holds details about calls to the InsertUserGameBet method.
 		InsertUserGameBet []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.InsertUserGameBetParams
+		}
+		// ListInvoiceClients holds details about calls to the ListInvoiceClients method.
+		ListInvoiceClients []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// ListInvoicePaymentInfo holds details about calls to the ListInvoicePaymentInfo method.
+		ListInvoicePaymentInfo []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// ListInvoiceSenders holds details about calls to the ListInvoiceSenders method.
+		ListInvoiceSenders []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// UpdateUserTimezone holds details about calls to the UpdateUserTimezone method.
 		UpdateUserTimezone []struct {
@@ -301,27 +438,38 @@ type QuerierMock struct {
 			Arg db.UpsertUserGameBalanceParams
 		}
 	}
-	lockCreateJournal                 sync.RWMutex
-	lockCreateUser                    sync.RWMutex
-	lockCreateUserOauth               sync.RWMutex
-	lockGetActiveFeatureFlags         sync.RWMutex
-	lockGetActiveMLModel              sync.RWMutex
-	lockGetFeatureFlagByName          sync.RWMutex
-	lockGetJournalById                sync.RWMutex
-	lockGetJournalCountByUserId       sync.RWMutex
-	lockGetJournalsByUserId           sync.RWMutex
-	lockGetJournalsByUserIdPaginated  sync.RWMutex
-	lockGetRuntimeConfigByKey         sync.RWMutex
-	lockGetTopicsByJournalIds         sync.RWMutex
-	lockGetUserByEmail                sync.RWMutex
-	lockGetUserById                   sync.RWMutex
-	lockGetUserGameBalance            sync.RWMutex
-	lockGetUserGameBets               sync.RWMutex
-	lockGetUserJournalSummaryByUserId sync.RWMutex
-	lockInsertUserGameBet             sync.RWMutex
-	lockUpdateUserTimezone            sync.RWMutex
-	lockUpsertRuntimeConfigValue      sync.RWMutex
-	lockUpsertUserGameBalance         sync.RWMutex
+	lockCreateJournal                   sync.RWMutex
+	lockCreateUser                      sync.RWMutex
+	lockCreateUserOauth                 sync.RWMutex
+	lockGetActiveFeatureFlags           sync.RWMutex
+	lockGetActiveMLModel                sync.RWMutex
+	lockGetFeatureFlagByName            sync.RWMutex
+	lockGetInvoiceClientByName          sync.RWMutex
+	lockGetInvoicePaymentByCheckPayable sync.RWMutex
+	lockGetInvoiceSenderByNameEmail     sync.RWMutex
+	lockGetJournalById                  sync.RWMutex
+	lockGetJournalCountByUserId         sync.RWMutex
+	lockGetJournalsByUserId             sync.RWMutex
+	lockGetJournalsByUserIdPaginated    sync.RWMutex
+	lockGetRuntimeConfigByKey           sync.RWMutex
+	lockGetTopicsByJournalIds           sync.RWMutex
+	lockGetUserByEmail                  sync.RWMutex
+	lockGetUserById                     sync.RWMutex
+	lockGetUserGameBalance              sync.RWMutex
+	lockGetUserGameBets                 sync.RWMutex
+	lockGetUserJournalSummaryByUserId   sync.RWMutex
+	lockInsertInvoice                   sync.RWMutex
+	lockInsertInvoiceClient             sync.RWMutex
+	lockInsertInvoiceLineItem           sync.RWMutex
+	lockInsertInvoicePayment            sync.RWMutex
+	lockInsertInvoiceSender             sync.RWMutex
+	lockInsertUserGameBet               sync.RWMutex
+	lockListInvoiceClients              sync.RWMutex
+	lockListInvoicePaymentInfo          sync.RWMutex
+	lockListInvoiceSenders              sync.RWMutex
+	lockUpdateUserTimezone              sync.RWMutex
+	lockUpsertRuntimeConfigValue        sync.RWMutex
+	lockUpsertUserGameBalance           sync.RWMutex
 }
 
 // CreateJournal calls CreateJournalFunc.
@@ -533,6 +681,114 @@ func (mock *QuerierMock) GetFeatureFlagByNameCalls() []struct {
 	mock.lockGetFeatureFlagByName.RLock()
 	calls = mock.calls.GetFeatureFlagByName
 	mock.lockGetFeatureFlagByName.RUnlock()
+	return calls
+}
+
+// GetInvoiceClientByName calls GetInvoiceClientByNameFunc.
+func (mock *QuerierMock) GetInvoiceClientByName(ctx context.Context, name string) (uuid.UUID, error) {
+	if mock.GetInvoiceClientByNameFunc == nil {
+		panic("QuerierMock.GetInvoiceClientByNameFunc: method is nil but Querier.GetInvoiceClientByName was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Name string
+	}{
+		Ctx:  ctx,
+		Name: name,
+	}
+	mock.lockGetInvoiceClientByName.Lock()
+	mock.calls.GetInvoiceClientByName = append(mock.calls.GetInvoiceClientByName, callInfo)
+	mock.lockGetInvoiceClientByName.Unlock()
+	return mock.GetInvoiceClientByNameFunc(ctx, name)
+}
+
+// GetInvoiceClientByNameCalls gets all the calls that were made to GetInvoiceClientByName.
+// Check the length with:
+//
+//	len(mockedQuerier.GetInvoiceClientByNameCalls())
+func (mock *QuerierMock) GetInvoiceClientByNameCalls() []struct {
+	Ctx  context.Context
+	Name string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Name string
+	}
+	mock.lockGetInvoiceClientByName.RLock()
+	calls = mock.calls.GetInvoiceClientByName
+	mock.lockGetInvoiceClientByName.RUnlock()
+	return calls
+}
+
+// GetInvoicePaymentByCheckPayable calls GetInvoicePaymentByCheckPayableFunc.
+func (mock *QuerierMock) GetInvoicePaymentByCheckPayable(ctx context.Context, checkPayableTo string) (uuid.UUID, error) {
+	if mock.GetInvoicePaymentByCheckPayableFunc == nil {
+		panic("QuerierMock.GetInvoicePaymentByCheckPayableFunc: method is nil but Querier.GetInvoicePaymentByCheckPayable was just called")
+	}
+	callInfo := struct {
+		Ctx            context.Context
+		CheckPayableTo string
+	}{
+		Ctx:            ctx,
+		CheckPayableTo: checkPayableTo,
+	}
+	mock.lockGetInvoicePaymentByCheckPayable.Lock()
+	mock.calls.GetInvoicePaymentByCheckPayable = append(mock.calls.GetInvoicePaymentByCheckPayable, callInfo)
+	mock.lockGetInvoicePaymentByCheckPayable.Unlock()
+	return mock.GetInvoicePaymentByCheckPayableFunc(ctx, checkPayableTo)
+}
+
+// GetInvoicePaymentByCheckPayableCalls gets all the calls that were made to GetInvoicePaymentByCheckPayable.
+// Check the length with:
+//
+//	len(mockedQuerier.GetInvoicePaymentByCheckPayableCalls())
+func (mock *QuerierMock) GetInvoicePaymentByCheckPayableCalls() []struct {
+	Ctx            context.Context
+	CheckPayableTo string
+} {
+	var calls []struct {
+		Ctx            context.Context
+		CheckPayableTo string
+	}
+	mock.lockGetInvoicePaymentByCheckPayable.RLock()
+	calls = mock.calls.GetInvoicePaymentByCheckPayable
+	mock.lockGetInvoicePaymentByCheckPayable.RUnlock()
+	return calls
+}
+
+// GetInvoiceSenderByNameEmail calls GetInvoiceSenderByNameEmailFunc.
+func (mock *QuerierMock) GetInvoiceSenderByNameEmail(ctx context.Context, arg db.GetInvoiceSenderByNameEmailParams) (uuid.UUID, error) {
+	if mock.GetInvoiceSenderByNameEmailFunc == nil {
+		panic("QuerierMock.GetInvoiceSenderByNameEmailFunc: method is nil but Querier.GetInvoiceSenderByNameEmail was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetInvoiceSenderByNameEmailParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetInvoiceSenderByNameEmail.Lock()
+	mock.calls.GetInvoiceSenderByNameEmail = append(mock.calls.GetInvoiceSenderByNameEmail, callInfo)
+	mock.lockGetInvoiceSenderByNameEmail.Unlock()
+	return mock.GetInvoiceSenderByNameEmailFunc(ctx, arg)
+}
+
+// GetInvoiceSenderByNameEmailCalls gets all the calls that were made to GetInvoiceSenderByNameEmail.
+// Check the length with:
+//
+//	len(mockedQuerier.GetInvoiceSenderByNameEmailCalls())
+func (mock *QuerierMock) GetInvoiceSenderByNameEmailCalls() []struct {
+	Ctx context.Context
+	Arg db.GetInvoiceSenderByNameEmailParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetInvoiceSenderByNameEmailParams
+	}
+	mock.lockGetInvoiceSenderByNameEmail.RLock()
+	calls = mock.calls.GetInvoiceSenderByNameEmail
+	mock.lockGetInvoiceSenderByNameEmail.RUnlock()
 	return calls
 }
 
@@ -932,6 +1188,186 @@ func (mock *QuerierMock) GetUserJournalSummaryByUserIdCalls() []struct {
 	return calls
 }
 
+// InsertInvoice calls InsertInvoiceFunc.
+func (mock *QuerierMock) InsertInvoice(ctx context.Context, arg db.InsertInvoiceParams) (uuid.UUID, error) {
+	if mock.InsertInvoiceFunc == nil {
+		panic("QuerierMock.InsertInvoiceFunc: method is nil but Querier.InsertInvoice was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertInvoice.Lock()
+	mock.calls.InsertInvoice = append(mock.calls.InsertInvoice, callInfo)
+	mock.lockInsertInvoice.Unlock()
+	return mock.InsertInvoiceFunc(ctx, arg)
+}
+
+// InsertInvoiceCalls gets all the calls that were made to InsertInvoice.
+// Check the length with:
+//
+//	len(mockedQuerier.InsertInvoiceCalls())
+func (mock *QuerierMock) InsertInvoiceCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertInvoiceParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceParams
+	}
+	mock.lockInsertInvoice.RLock()
+	calls = mock.calls.InsertInvoice
+	mock.lockInsertInvoice.RUnlock()
+	return calls
+}
+
+// InsertInvoiceClient calls InsertInvoiceClientFunc.
+func (mock *QuerierMock) InsertInvoiceClient(ctx context.Context, arg db.InsertInvoiceClientParams) (uuid.UUID, error) {
+	if mock.InsertInvoiceClientFunc == nil {
+		panic("QuerierMock.InsertInvoiceClientFunc: method is nil but Querier.InsertInvoiceClient was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceClientParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertInvoiceClient.Lock()
+	mock.calls.InsertInvoiceClient = append(mock.calls.InsertInvoiceClient, callInfo)
+	mock.lockInsertInvoiceClient.Unlock()
+	return mock.InsertInvoiceClientFunc(ctx, arg)
+}
+
+// InsertInvoiceClientCalls gets all the calls that were made to InsertInvoiceClient.
+// Check the length with:
+//
+//	len(mockedQuerier.InsertInvoiceClientCalls())
+func (mock *QuerierMock) InsertInvoiceClientCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertInvoiceClientParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceClientParams
+	}
+	mock.lockInsertInvoiceClient.RLock()
+	calls = mock.calls.InsertInvoiceClient
+	mock.lockInsertInvoiceClient.RUnlock()
+	return calls
+}
+
+// InsertInvoiceLineItem calls InsertInvoiceLineItemFunc.
+func (mock *QuerierMock) InsertInvoiceLineItem(ctx context.Context, arg db.InsertInvoiceLineItemParams) error {
+	if mock.InsertInvoiceLineItemFunc == nil {
+		panic("QuerierMock.InsertInvoiceLineItemFunc: method is nil but Querier.InsertInvoiceLineItem was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceLineItemParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertInvoiceLineItem.Lock()
+	mock.calls.InsertInvoiceLineItem = append(mock.calls.InsertInvoiceLineItem, callInfo)
+	mock.lockInsertInvoiceLineItem.Unlock()
+	return mock.InsertInvoiceLineItemFunc(ctx, arg)
+}
+
+// InsertInvoiceLineItemCalls gets all the calls that were made to InsertInvoiceLineItem.
+// Check the length with:
+//
+//	len(mockedQuerier.InsertInvoiceLineItemCalls())
+func (mock *QuerierMock) InsertInvoiceLineItemCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertInvoiceLineItemParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceLineItemParams
+	}
+	mock.lockInsertInvoiceLineItem.RLock()
+	calls = mock.calls.InsertInvoiceLineItem
+	mock.lockInsertInvoiceLineItem.RUnlock()
+	return calls
+}
+
+// InsertInvoicePayment calls InsertInvoicePaymentFunc.
+func (mock *QuerierMock) InsertInvoicePayment(ctx context.Context, arg db.InsertInvoicePaymentParams) (uuid.UUID, error) {
+	if mock.InsertInvoicePaymentFunc == nil {
+		panic("QuerierMock.InsertInvoicePaymentFunc: method is nil but Querier.InsertInvoicePayment was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertInvoicePaymentParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertInvoicePayment.Lock()
+	mock.calls.InsertInvoicePayment = append(mock.calls.InsertInvoicePayment, callInfo)
+	mock.lockInsertInvoicePayment.Unlock()
+	return mock.InsertInvoicePaymentFunc(ctx, arg)
+}
+
+// InsertInvoicePaymentCalls gets all the calls that were made to InsertInvoicePayment.
+// Check the length with:
+//
+//	len(mockedQuerier.InsertInvoicePaymentCalls())
+func (mock *QuerierMock) InsertInvoicePaymentCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertInvoicePaymentParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertInvoicePaymentParams
+	}
+	mock.lockInsertInvoicePayment.RLock()
+	calls = mock.calls.InsertInvoicePayment
+	mock.lockInsertInvoicePayment.RUnlock()
+	return calls
+}
+
+// InsertInvoiceSender calls InsertInvoiceSenderFunc.
+func (mock *QuerierMock) InsertInvoiceSender(ctx context.Context, arg db.InsertInvoiceSenderParams) (uuid.UUID, error) {
+	if mock.InsertInvoiceSenderFunc == nil {
+		panic("QuerierMock.InsertInvoiceSenderFunc: method is nil but Querier.InsertInvoiceSender was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceSenderParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertInvoiceSender.Lock()
+	mock.calls.InsertInvoiceSender = append(mock.calls.InsertInvoiceSender, callInfo)
+	mock.lockInsertInvoiceSender.Unlock()
+	return mock.InsertInvoiceSenderFunc(ctx, arg)
+}
+
+// InsertInvoiceSenderCalls gets all the calls that were made to InsertInvoiceSender.
+// Check the length with:
+//
+//	len(mockedQuerier.InsertInvoiceSenderCalls())
+func (mock *QuerierMock) InsertInvoiceSenderCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertInvoiceSenderParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertInvoiceSenderParams
+	}
+	mock.lockInsertInvoiceSender.RLock()
+	calls = mock.calls.InsertInvoiceSender
+	mock.lockInsertInvoiceSender.RUnlock()
+	return calls
+}
+
 // InsertUserGameBet calls InsertUserGameBetFunc.
 func (mock *QuerierMock) InsertUserGameBet(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
 	if mock.InsertUserGameBetFunc == nil {
@@ -965,6 +1401,102 @@ func (mock *QuerierMock) InsertUserGameBetCalls() []struct {
 	mock.lockInsertUserGameBet.RLock()
 	calls = mock.calls.InsertUserGameBet
 	mock.lockInsertUserGameBet.RUnlock()
+	return calls
+}
+
+// ListInvoiceClients calls ListInvoiceClientsFunc.
+func (mock *QuerierMock) ListInvoiceClients(ctx context.Context) ([]db.SourceInvoiceClient, error) {
+	if mock.ListInvoiceClientsFunc == nil {
+		panic("QuerierMock.ListInvoiceClientsFunc: method is nil but Querier.ListInvoiceClients was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListInvoiceClients.Lock()
+	mock.calls.ListInvoiceClients = append(mock.calls.ListInvoiceClients, callInfo)
+	mock.lockListInvoiceClients.Unlock()
+	return mock.ListInvoiceClientsFunc(ctx)
+}
+
+// ListInvoiceClientsCalls gets all the calls that were made to ListInvoiceClients.
+// Check the length with:
+//
+//	len(mockedQuerier.ListInvoiceClientsCalls())
+func (mock *QuerierMock) ListInvoiceClientsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListInvoiceClients.RLock()
+	calls = mock.calls.ListInvoiceClients
+	mock.lockListInvoiceClients.RUnlock()
+	return calls
+}
+
+// ListInvoicePaymentInfo calls ListInvoicePaymentInfoFunc.
+func (mock *QuerierMock) ListInvoicePaymentInfo(ctx context.Context) ([]db.SourceInvoicePaymentInfo, error) {
+	if mock.ListInvoicePaymentInfoFunc == nil {
+		panic("QuerierMock.ListInvoicePaymentInfoFunc: method is nil but Querier.ListInvoicePaymentInfo was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListInvoicePaymentInfo.Lock()
+	mock.calls.ListInvoicePaymentInfo = append(mock.calls.ListInvoicePaymentInfo, callInfo)
+	mock.lockListInvoicePaymentInfo.Unlock()
+	return mock.ListInvoicePaymentInfoFunc(ctx)
+}
+
+// ListInvoicePaymentInfoCalls gets all the calls that were made to ListInvoicePaymentInfo.
+// Check the length with:
+//
+//	len(mockedQuerier.ListInvoicePaymentInfoCalls())
+func (mock *QuerierMock) ListInvoicePaymentInfoCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListInvoicePaymentInfo.RLock()
+	calls = mock.calls.ListInvoicePaymentInfo
+	mock.lockListInvoicePaymentInfo.RUnlock()
+	return calls
+}
+
+// ListInvoiceSenders calls ListInvoiceSendersFunc.
+func (mock *QuerierMock) ListInvoiceSenders(ctx context.Context) ([]db.SourceInvoiceSender, error) {
+	if mock.ListInvoiceSendersFunc == nil {
+		panic("QuerierMock.ListInvoiceSendersFunc: method is nil but Querier.ListInvoiceSenders was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListInvoiceSenders.Lock()
+	mock.calls.ListInvoiceSenders = append(mock.calls.ListInvoiceSenders, callInfo)
+	mock.lockListInvoiceSenders.Unlock()
+	return mock.ListInvoiceSendersFunc(ctx)
+}
+
+// ListInvoiceSendersCalls gets all the calls that were made to ListInvoiceSenders.
+// Check the length with:
+//
+//	len(mockedQuerier.ListInvoiceSendersCalls())
+func (mock *QuerierMock) ListInvoiceSendersCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListInvoiceSenders.RLock()
+	calls = mock.calls.ListInvoiceSenders
+	mock.lockListInvoiceSenders.RUnlock()
 	return calls
 }
 

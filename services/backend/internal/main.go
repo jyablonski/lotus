@@ -273,6 +273,7 @@ func main() {
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
 		ctx = inject.WithDB(ctx, queries)
+		ctx = inject.WithSQLDB(ctx, dbConn)
 		ctx = inject.WithLogger(ctx, logger)
 		ctx = inject.WithHTTPClient(ctx, httpClient)
 		ctx = inject.WithAnalyzerURL(ctx, analyzerBaseURL)

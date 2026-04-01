@@ -9,6 +9,7 @@ import (
 	pb_analytics "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 	pb_featureflag "github.com/jyablonski/lotus/internal/pb/proto/featureflag"
 	pb_game "github.com/jyablonski/lotus/internal/pb/proto/game"
+	pb_invoice "github.com/jyablonski/lotus/internal/pb/proto/invoice"
 	pb_journal "github.com/jyablonski/lotus/internal/pb/proto/journal"
 	pb_user "github.com/jyablonski/lotus/internal/pb/proto/user"
 	pb_util "github.com/jyablonski/lotus/internal/pb/proto/util"
@@ -57,6 +58,7 @@ func RegisterServices(s *grpc.Server) {
 	pb_util.RegisterUtilServiceServer(s, &UtilServer{})
 	pb_featureflag.RegisterFeatureFlagServiceServer(s, &FeatureFlagServer{})
 	pb_game.RegisterGameServiceServer(s, &GameServer{})
+	pb_invoice.RegisterInvoiceServiceServer(s, &InvoiceServer{})
 }
 
 // RegisterGateway registers all gRPC-Gateway HTTP handlers on the given mux.
@@ -70,6 +72,7 @@ func RegisterGateway(ctx context.Context, mux *runtime.ServeMux, endpoint string
 		pb_util.RegisterUtilServiceHandlerFromEndpoint,
 		pb_featureflag.RegisterFeatureFlagServiceHandlerFromEndpoint,
 		pb_game.RegisterGameServiceHandlerFromEndpoint,
+		pb_invoice.RegisterInvoiceServiceHandlerFromEndpoint,
 	} {
 		if err := reg(ctx, mux, endpoint, opts); err != nil {
 			return err

@@ -3,12 +3,13 @@
 // Each dependency has a WithX function that returns a new context carrying
 // the value, and an XFrom function that extracts it. LoggerFrom falls back
 // to slog.Default() when no logger is set; DBFrom, HTTPClientFrom,
-// PgxPoolFrom, and RiverClientFrom panic if their value is absent
+// PgxPoolFrom, RiverClientFrom, and SQLDBFrom panic if their value is absent
 // (indicating a programming error — the injector interceptor should always set them).
 package inject
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"net/http"
 
@@ -30,6 +31,7 @@ type ctxKey int
 
 const (
 	dbKey ctxKey = iota
+	sqlDBKey
 	loggerKey
 	httpClientKey
 	analyzerURLKey
@@ -51,6 +53,30 @@ func DBFrom(ctx context.Context) db.Querier {
 		panic("inject: db.Querier not found in context (missing injector interceptor?)")
 	}
 	return q
+}
+
+// --- *sql.DB (same pool as DBFrom; for transactional workflows) ---
+//
+// DBFrom exposes the default sqlc Querier bound to the connection pool. Most
+// handlers only need that. Some flows require a multi-statement ACID
+// transaction (BeginTx → db.New(tx) → Commit/Rollback); those need the
+// underlying *sql.DB to start the transaction. Use SQLDBFrom for that —
+// e.g. admin invoice creation, where partial writes on failure would be
+// unacceptable.
+//
+// WithSQLDB must be set alongside WithDB on every request (see main); SQLDBFrom
+// panics if absent, same as DBFrom.
+
+func WithSQLDB(ctx context.Context, db *sql.DB) context.Context {
+	return context.WithValue(ctx, sqlDBKey, db)
+}
+
+func SQLDBFrom(ctx context.Context) *sql.DB {
+	d, ok := ctx.Value(sqlDBKey).(*sql.DB)
+	if !ok || d == nil {
+		panic("inject: *sql.DB not found in context (missing injector interceptor?)")
+	}
+	return d
 }
 
 // --- Logger ---
