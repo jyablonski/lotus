@@ -37,7 +37,7 @@ The service uses **code generation** for type safety:
   - Run: `make buf-generate` or `cd services/backend && buf generate`
 
 - **moq** - Generates mock implementations for interfaces
-  - Interfaces: `internal/db/querier.go`, `internal/grpc/interfaces.go`
+  - Interfaces: `internal/db/querier.go`, `internal/inject/inject.go`
   - Generated mocks: `internal/mocks/`
   - Run: `make moq-generate` or `./scripts/moq-generate.sh`
 
@@ -52,7 +52,7 @@ internal/
 │   └── inject.go              # WithX/From helpers for DB, Logger, HTTPClient, AnalyzerURL
 ├── grpc/                      # gRPC service implementations
 │   ├── server.go              # Service registration and gateway setup
-│   ├── interfaces.go          # Interface definitions (HTTPClient)
+│   ├── errors.go              # Shared error sentinels
 │   ├── user_service.go        # User service implementation
 │   ├── journal_service.go     # Journal service implementation
 │   ├── analytics_service.go   # Analytics service implementation
@@ -70,7 +70,7 @@ internal/
 │   └── runtime_config.sql.go  # Generated runtime config queries
 ├── mocks/                     # moq-generated mock implementations
 │   ├── querier_mock.go        # Mock for db.Querier
-│   └── http_client_mock.go    # Mock for grpc.HTTPClient (external HTTP calls)
+│   └── http_client_mock.go    # Mock for inject.HTTPDoer (external HTTP calls)
 ├── pb/                        # buf-generated protobuf code
 │   └── proto/
 │       ├── user/              # User service proto definitions
@@ -167,7 +167,7 @@ go test -v ./internal/grpc -run TestUserService
 The codebase uses [moq](https://github.com/matryer/moq) for generating mock implementations. Generated mocks are in `internal/mocks/`:
 
 - `QuerierMock` - Mock for `db.Querier` (database operations)
-- `HTTPClientMock` - Mock for `grpc.HTTPClient` (external HTTP calls; satisfies `inject.HTTPDoer` via structural typing)
+- `HTTPDoerMock` - Mock for `inject.HTTPDoer` (external HTTP calls)
 
 Example test using mocks:
 
@@ -218,7 +218,7 @@ make moq-generate
 ./scripts/moq-generate.sh
 ```
 
-Mocks are automatically regenerated via pre-commit hook when `internal/db/querier.go` or `internal/grpc/interfaces.go` change (see `.pre-commit-config.yaml`).
+Mocks are automatically regenerated via pre-commit hook when `internal/db/querier.go` or `internal/inject/inject.go` change (see `.pre-commit-config.yaml`).
 
 ### Test Patterns
 

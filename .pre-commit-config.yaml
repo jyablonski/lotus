@@ -18,7 +18,7 @@ repos:
         name: moq generate
         entry: scripts/moq-generate.sh
         language: system
-        files: ^services/backend/internal/(db/querier\.go|grpc/interfaces\.go)$
+        files: ^services/backend/internal/(db/querier\.go|inject/inject\.go)$
         pass_filenames: false
       - id: bruno-generate
         name: bruno generate
@@ -61,6 +61,13 @@ repos:
       - id: go-deadcode
         name: deadcode (backend)
         entry: bash -c 'cd services/backend && $(go env GOPATH)/bin/deadcode -test ./...'
+        language: system
+        files: ^services/backend/.*\.go$
+        pass_filenames: false
+      # golangci-lint runs a comprehensive suite of linters (gosec, gocritic, staticcheck, etc.)
+      - id: golangci-lint
+        name: golangci-lint (backend)
+        entry: bash -c 'cd services/backend && $(go env GOPATH)/bin/golangci-lint run ./...'
         language: system
         files: ^services/backend/.*\.go$
         pass_filenames: false

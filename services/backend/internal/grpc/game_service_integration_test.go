@@ -6,6 +6,7 @@ import (
 
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
+	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/game"
 	"github.com/stretchr/testify/require"
 )
@@ -101,6 +102,8 @@ func TestIntegration_UpdateGameBalance(t *testing.T) {
 
 func TestIntegration_RecordBets_AndGetBetHistory(t *testing.T) {
 	ctx, queries := newTestCtx(t)
+	// RecordBets now uses pgxpool for transactional inserts.
+	ctx = withRiverDeps(ctx)
 	userID := createTestUser(t, queries)
 	svc := &grpcServer.GameServer{}
 
@@ -110,6 +113,8 @@ func TestIntegration_RecordBets_AndGetBetHistory(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// RecordBets commits its own pgx transaction, so we need to verify via a
+	// direct (non-transaction) connection to see the committed rows.
 	recordResp, err := svc.RecordBets(ctx, &pb.RecordBetsRequest{
 		UserId: userID.String(),
 		Bets: []*pb.BetEntry{
@@ -120,11 +125,14 @@ func TestIntegration_RecordBets_AndGetBetHistory(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, recordResp.Success)
 
-	historyResp, err := svc.GetBetHistory(ctx, &pb.GetBetHistoryRequest{UserId: userID.String(), Limit: 10, Offset: 0})
+	// Use direct queries (outside the test tx) to read committed bet rows.
+	directQ := newDirectQueries(t)
+	historyResp, err := svc.GetBetHistory(
+		inject.WithDB(ctx, directQ),
+		&pb.GetBetHistoryRequest{UserId: userID.String(), Limit: 10, Offset: 0},
+	)
 	require.NoError(t, err)
 	require.Len(t, historyResp.Bets, 2)
-	// Both bets were inserted in the same transaction so created_at is identical;
-	// only assert that both records exist with the right fields.
 	zones := map[string]int32{
 		historyResp.Bets[0].Zone: historyResp.Bets[0].Amount,
 		historyResp.Bets[1].Zone: historyResp.Bets[1].Amount,

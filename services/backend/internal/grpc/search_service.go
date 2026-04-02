@@ -133,7 +133,7 @@ func (s *JournalServer) SearchJournals(ctx context.Context, req *pb.SearchJourna
 	if err != nil {
 		return nil, fmt.Errorf("encode request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // best-effort cleanup
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("analyzer returned status %d for encode", resp.StatusCode)
@@ -170,6 +170,9 @@ func (s *JournalServer) SearchJournals(ctx context.Context, req *pb.SearchJourna
 			return nil, fmt.Errorf("scan search row: %w", err)
 		}
 		searchResults = append(searchResults, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("semantic search rows iteration: %w", err)
 	}
 
 	// Hydrate topic names for the returned journals.
@@ -253,6 +256,9 @@ func (s *JournalServer) KeywordSearchJournals(ctx context.Context, req *pb.Keywo
 			return nil, fmt.Errorf("scan keyword search row: %w", err)
 		}
 		searchResults = append(searchResults, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("keyword search rows iteration: %w", err)
 	}
 
 	// Hydrate topic names for the returned journals.

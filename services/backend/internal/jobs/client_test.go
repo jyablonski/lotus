@@ -56,7 +56,6 @@ func TestNewClientWorkersRegistered(t *testing.T) {
 	_, err = client.Insert(ctx, jobs.AnalyzeEntryArgs{
 		EntryID: 300,
 		UserID:  "00000000-0000-0000-0000-000000000001",
-		Content: "client test",
 	}, nil)
 	require.NoError(t, err, "should be able to insert AnalyzeEntryArgs")
 
@@ -75,7 +74,6 @@ func TestNewInsertOnlyClient(t *testing.T) {
 	result, err := client.Insert(ctx, jobs.AnalyzeEntryArgs{
 		EntryID: 400,
 		UserID:  "00000000-0000-0000-0000-000000000001",
-		Content: "insert only test",
 	}, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, result.Job)

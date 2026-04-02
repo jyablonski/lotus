@@ -4,48 +4,56 @@ import (
 	"testing"
 )
 
-// TestGenerateSalt checks if the generated salt is of expected length and non-empty.
-func TestGenerateSalt(t *testing.T) {
-	salt, err := GenerateSalt(24)
-	if err != nil {
-		t.Fatalf("GenerateSalt returned error: %v", err)
-	}
-
-	if len(salt) == 0 {
-		t.Error("Expected non-empty salt string")
-	}
-
-	// base64 encoding of 24 bytes = ~32 characters
-	if len(salt) < 32 {
-		t.Errorf("Expected salt length >= 32, got %d", len(salt))
-	}
-}
-
-// TestHashPassword checks if the hash output is deterministic for the same inputs.
 func TestHashPassword(t *testing.T) {
 	password := "securePassword123"
-	salt := "randomSaltValue"
 
-	hash1 := HashPassword(password, salt)
-	hash2 := HashPassword(password, salt)
-
-	if hash1 != hash2 {
-		t.Errorf("Expected consistent hashes, got %s and %s", hash1, hash2)
+	hash, err := HashPassword(password)
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
 	}
 
-	if len(hash1) != 64 {
-		t.Errorf("Expected SHA256 hash length of 64, got %d", len(hash1))
+	if len(hash) == 0 {
+		t.Error("Expected non-empty hash string")
+	}
+
+	// bcrypt hashes are 60 characters
+	if len(hash) != 60 {
+		t.Errorf("Expected bcrypt hash length of 60, got %d", len(hash))
 	}
 }
 
-// TestHashPasswordDifferentInputs ensures that different salts produce different hashes.
-func TestHashPasswordDifferentInputs(t *testing.T) {
+func TestHashPasswordUniqueSalts(t *testing.T) {
 	password := "securePassword123"
 
-	hash1 := HashPassword(password, "saltOne")
-	hash2 := HashPassword(password, "saltTwo")
+	hash1, err := HashPassword(password)
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
+	}
 
+	hash2, err := HashPassword(password)
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
+	}
+
+	// bcrypt generates a unique salt each time, so hashes should differ.
 	if hash1 == hash2 {
-		t.Errorf("Expected different hashes for different salts, but got the same")
+		t.Error("Expected different hashes due to unique bcrypt salts")
+	}
+}
+
+func TestCheckPassword(t *testing.T) {
+	password := "securePassword123"
+
+	hash, err := HashPassword(password)
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
+	}
+
+	if !CheckPassword(password, hash) {
+		t.Error("CheckPassword should return true for correct password")
+	}
+
+	if CheckPassword("wrongPassword", hash) {
+		t.Error("CheckPassword should return false for incorrect password")
 	}
 }

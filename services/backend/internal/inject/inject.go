@@ -19,8 +19,9 @@ import (
 	"github.com/riverqueue/river"
 )
 
-// HTTPDoer is the interface for making HTTP requests. The existing
-// mocks.HTTPClientMock satisfies this via Go structural typing.
+// HTTPDoer is the interface for making HTTP requests.
+//
+//go:generate moq -out ../mocks/http_client_mock.go -pkg mocks . HTTPDoer
 type HTTPDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }

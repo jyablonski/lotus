@@ -4,31 +4,31 @@
 package mocks
 
 import (
-	"github.com/jyablonski/lotus/internal/grpc"
+	"github.com/jyablonski/lotus/internal/inject"
 	"net/http"
 	"sync"
 )
 
-// Ensure, that HTTPClientMock does implement grpc.HTTPClient.
+// Ensure, that HTTPDoerMock does implement inject.HTTPDoer.
 // If this is not the case, regenerate this file with moq.
-var _ grpc.HTTPClient = &HTTPClientMock{}
+var _ inject.HTTPDoer = &HTTPDoerMock{}
 
-// HTTPClientMock is a mock implementation of grpc.HTTPClient.
+// HTTPDoerMock is a mock implementation of inject.HTTPDoer.
 //
-//	func TestSomethingThatUsesHTTPClient(t *testing.T) {
+//	func TestSomethingThatUsesHTTPDoer(t *testing.T) {
 //
-//		// make and configure a mocked grpc.HTTPClient
-//		mockedHTTPClient := &HTTPClientMock{
+//		// make and configure a mocked inject.HTTPDoer
+//		mockedHTTPDoer := &HTTPDoerMock{
 //			DoFunc: func(req *http.Request) (*http.Response, error) {
 //				panic("mock out the Do method")
 //			},
 //		}
 //
-//		// use mockedHTTPClient in code that requires grpc.HTTPClient
+//		// use mockedHTTPDoer in code that requires inject.HTTPDoer
 //		// and then make assertions.
 //
 //	}
-type HTTPClientMock struct {
+type HTTPDoerMock struct {
 	// DoFunc mocks the Do method.
 	DoFunc func(req *http.Request) (*http.Response, error)
 
@@ -44,9 +44,9 @@ type HTTPClientMock struct {
 }
 
 // Do calls DoFunc.
-func (mock *HTTPClientMock) Do(req *http.Request) (*http.Response, error) {
+func (mock *HTTPDoerMock) Do(req *http.Request) (*http.Response, error) {
 	if mock.DoFunc == nil {
-		panic("HTTPClientMock.DoFunc: method is nil but HTTPClient.Do was just called")
+		panic("HTTPDoerMock.DoFunc: method is nil but HTTPDoer.Do was just called")
 	}
 	callInfo := struct {
 		Req *http.Request
@@ -62,8 +62,8 @@ func (mock *HTTPClientMock) Do(req *http.Request) (*http.Response, error) {
 // DoCalls gets all the calls that were made to Do.
 // Check the length with:
 //
-//	len(mockedHTTPClient.DoCalls())
-func (mock *HTTPClientMock) DoCalls() []struct {
+//	len(mockedHTTPDoer.DoCalls())
+func (mock *HTTPDoerMock) DoCalls() []struct {
 	Req *http.Request
 } {
 	var calls []struct {

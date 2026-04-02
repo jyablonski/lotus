@@ -312,8 +312,9 @@ func main() {
 	defer stop()
 
 	httpServer := &http.Server{
-		Addr:    ":8080",
-		Handler: rateLimitMiddleware(ctx, 20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, otelhttp.NewHandler(rootMux, "http")))),
+		Addr:              ":8080",
+		ReadHeaderTimeout: 10 * time.Second,
+		Handler:           rateLimitMiddleware(ctx, 20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, otelhttp.NewHandler(rootMux, "http")))),
 	}
 
 	g, gCtx := errgroup.WithContext(ctx)

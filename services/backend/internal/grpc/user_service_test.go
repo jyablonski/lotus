@@ -41,9 +41,9 @@ func TestUserServer_CreateUser_Success(t *testing.T) {
 		CreateUserFunc: func(ctx context.Context, arg db.CreateUserParams) (db.SourceUser, error) {
 			// Verify the email is passed correctly
 			assert.Equal(t, expectedEmail, arg.Email)
-			// Verify password and salt are set
+			// Verify password is set (bcrypt hash) and salt is not used
 			assert.True(t, arg.Password.Valid)
-			assert.True(t, arg.Salt.Valid)
+			assert.False(t, arg.Salt.Valid) // bcrypt embeds its own salt
 
 			return db.SourceUser{
 				ID:         expectedUserID,
