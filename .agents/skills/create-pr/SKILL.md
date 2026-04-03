@@ -61,24 +61,22 @@ Examples:
 
 #### PR Body Convention
 
-Follow the template from `.github/pull_request_template.md`. Keep it brief — a short description (1-3 sentences) and 3-5 bullet points max per section. Omit sections that don't apply.
+Follow the template from `.github/pull_request_template.md`. **Brevity is critical:**
+
+- **Description**: 1-2 sentences max. State what changed and why at a high level — do not enumerate individual files, functions, or implementation details.
+- **Added/Updated/Deleted**: 3-5 bullet points max **total across all sections**. Each bullet should be a short, high-level summary (e.g. "bcrypt password hashing" not "replaced SHA-256 HashPassword with bcrypt.GenerateFromPassword in utils.go"). Omit sections that don't apply — do not include a section just to write "None".
+
+The reviewer can read the diff for details. The PR body should only convey **what** and **why**, never **how**.
 
 ```
 ## Description
 
-Brief explanation of what this PR does and why.
-
-### Added
-
-- Item (only if something new was added)
+One-two sentence high-level summary.
 
 ### Updated
 
-- Item (only if something existing was changed)
-
-### Deleted
-
-- Item (only if something was removed)
+- Short bullet
+- Short bullet
 ```
 
 #### Command
