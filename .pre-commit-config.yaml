@@ -95,3 +95,14 @@ repos:
     hooks:
       - id: ruff-check
       - id: ruff-format
+
+  # Pre-push hooks — run via `pre-commit install --hook-type pre-push`
+  - repo: local
+    hooks:
+      - id: go-test-short
+        name: go test -short (backend)
+        entry: bash -c 'cd services/backend && go test -short -count=1 ./...'
+        language: system
+        stages: [pre-push]
+        files: ^services/backend/.*\.go$
+        pass_filenames: false
