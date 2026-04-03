@@ -69,6 +69,7 @@ jobs:
         with:
           sparse-checkout: |
             services/backend/**
+            services/django/**
             docker/**
             Makefile
           sparse-checkout-cone-mode: false
