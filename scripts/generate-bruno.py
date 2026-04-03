@@ -220,7 +220,7 @@ def generate_bru_content(
     lines.append(f"{method} {{")
     lines.append(f"  url: {url}")
     lines.append(f"  body: {body_type}")
-    lines.append("  auth: none")
+    lines.append("  auth: inherit")
     lines.append("}")
 
     # Query params block
@@ -418,13 +418,41 @@ def parse_openapi3_spec(spec_path: Path) -> list[dict]:
     return deduplicate_slugs(endpoints)
 
 
+_FOLDER_AUTH_TOKEN: dict[str, str] = {
+    "backend": "api_key",
+    "analyzer": "analyzer_api_key",
+}
+
+
+def _write_folder_bru(output_dir: Path) -> None:
+    """Create/overwrite folder.bru with bearer auth for the given service folder."""
+    token_var = _FOLDER_AUTH_TOKEN.get(output_dir.name, "api_key")
+    content = (
+        f"meta {{\n"
+        f"  name: {output_dir.name}\n"
+        f"  type: folder\n"
+        f"}}\n"
+        f"\n"
+        f"auth: bearer\n"
+        f"\n"
+        f"auth:bearer {{\n"
+        f"  token: {{{{{token_var}}}}}\n"
+        f"}}\n"
+    )
+    (output_dir / "folder.bru").write_text(content)
+
+
 def write_bru_files(endpoints: list[dict], output_dir: Path) -> None:
     """Write .bru files for a list of endpoints, clearing the output dir first."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Remove existing generated .bru files
+    # Remove existing generated .bru files, but preserve folder.bru
     for existing in output_dir.glob("*.bru"):
-        existing.unlink()
+        if existing.name != "folder.bru":
+            existing.unlink()
+
+    # Always regenerate folder.bru so auth config stays current
+    _write_folder_bru(output_dir)
 
     for ep in endpoints:
         content = generate_bru_content(
@@ -456,17 +484,21 @@ def write_collection_files(bruno_dir: Path) -> None:
     # collection.bru
     (bruno_dir / "collection.bru").write_text("headers {\n  Content-Type: application/json\n}\n")
 
-    # environments/local.bru
+    # environments/local.bru — skip if it already exists (contains local secrets)
     env_dir = bruno_dir / "environments"
     env_dir.mkdir(parents=True, exist_ok=True)
-    (env_dir / "local.bru").write_text(
-        "vars {\n"
-        "  backend_url: http://localhost:8080\n"
-        "  analyzer_url: http://localhost:8083\n"
-        "  user_id: 550e8400-e29b-41d4-a716-446655440000\n"
-        "  journal_id: 1\n"
-        "}\n"
-    )
+    local_bru = env_dir / "local.bru"
+    if not local_bru.exists():
+        local_bru.write_text(
+            "vars {\n"
+            "  backend_url: http://localhost:8080\n"
+            "  analyzer_url: http://localhost:8083\n"
+            "  user_id: 550e8400-e29b-41d4-a716-446655440000\n"
+            "  journal_id: 1\n"
+            "  api_key: \n"
+            "  analyzer_api_key: \n"
+            "}\n"
+        )
 
 
 def main() -> int:

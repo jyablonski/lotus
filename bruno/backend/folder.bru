@@ -3,6 +3,8 @@ meta {
   type: folder
 }
 
-headers {
-  Authorization: Bearer {{api_key}}
+auth: bearer
+
+auth:bearer {
+  token: {{api_key}}
 }
