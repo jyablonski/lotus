@@ -2,6 +2,7 @@
 
 import { useCreateJournal } from "@/hooks/useCreateJournal";
 import { CreateJournalForm } from "@/components/journal/CreateJournalForm";
+import { WritingPromptBox } from "@/components/journal/WritingPromptBox";
 import { SuccessMessage } from "@/components/journal/SuccessMessage";
 
 export default function CreateJournalPage() {
@@ -25,15 +26,22 @@ export default function CreateJournalPage() {
       {success ? (
         <SuccessMessage />
       ) : (
-        <CreateJournalForm
-          entry={entry}
-          setEntry={setEntry}
-          mood={mood}
-          setMood={setMood}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          error={error}
-        />
+        <div className="space-y-6">
+          <WritingPromptBox
+            onInsert={(text) => {
+              setEntry((prev) => (prev.trim() ? `${prev}\n\n${text}` : text));
+            }}
+          />
+          <CreateJournalForm
+            entry={entry}
+            setEntry={setEntry}
+            mood={mood}
+            setMood={setMood}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            error={error}
+          />
+        </div>
       )}
     </div>
   );

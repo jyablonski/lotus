@@ -292,3 +292,83 @@ func TestCreateJournalInvalidMoodValue(t *testing.T) {
 	})
 	assert.Error(t, err)
 }
+
+func TestGetJournalByID(t *testing.T) {
+	ctx, queries := newTestCtx(t)
+	ctx = withAnalyzer(ctx, "http://unused")
+	svc := &grpcServer.JournalServer{}
+
+	userID := createTestUser(t, queries)
+	row, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
+		UserID:      userID,
+		JournalText: "Detail view body",
+		MoodScore:   sql.NullInt32{Int32: 8, Valid: true},
+	})
+	require.NoError(t, err)
+
+	resp, err := svc.GetJournal(ctx, &pb.GetJournalRequest{
+		JournalId: strconv.Itoa(int(row.ID)),
+		UserId:    userID.String(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp.Journal)
+	assert.Equal(t, "Detail view body", resp.Journal.JournalText)
+	assert.Equal(t, "8", resp.Journal.UserMood)
+}
+
+func TestUpdateJournalIntegration(t *testing.T) {
+	ctx, queries := newTestCtx(t)
+	ctx = withRiverDeps(ctx)
+	svc := &grpcServer.JournalServer{}
+
+	userID := createTestUser(t, queries)
+	createResp, err := svc.CreateJournal(ctx, &pb.CreateJournalRequest{
+		UserId:      userID.String(),
+		JournalText: "Original",
+		UserMood:    "5",
+	})
+	require.NoError(t, err)
+
+	upd, err := svc.UpdateJournal(ctx, &pb.UpdateJournalRequest{
+		JournalId:   createResp.JournalId,
+		UserId:      userID.String(),
+		JournalText: "Updated body",
+		UserMood:    "9",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, upd.Journal)
+	assert.Equal(t, "Updated body", upd.Journal.JournalText)
+	assert.Equal(t, "9", upd.Journal.UserMood)
+
+	directQ := newDirectQueries(t)
+	jid, _ := strconv.Atoi(createResp.JournalId)
+	j, err := directQ.GetJournalById(context.Background(), int32(jid))
+	require.NoError(t, err)
+	assert.Equal(t, "Updated body", j.JournalText)
+	assert.Equal(t, int32(9), j.MoodScore.Int32)
+}
+
+func TestDeleteJournalIntegration(t *testing.T) {
+	ctx, queries := newTestCtx(t)
+	ctx = withRiverDeps(ctx)
+	svc := &grpcServer.JournalServer{}
+
+	userID := createTestUser(t, queries)
+	createResp, err := svc.CreateJournal(ctx, &pb.CreateJournalRequest{
+		UserId:      userID.String(),
+		JournalText: "To delete",
+		UserMood:    "4",
+	})
+	require.NoError(t, err)
+
+	delResp, err := svc.DeleteJournal(ctx, &pb.DeleteJournalRequest{
+		JournalId: createResp.JournalId,
+		UserId:    userID.String(),
+	})
+	require.NoError(t, err)
+	assert.True(t, delResp.Success)
+
+	jid, _ := strconv.Atoi(createResp.JournalId)
+	_, err = queries.GetJournalById(context.Background(), int32(jid))
+	assert.Error(t, err)
+}

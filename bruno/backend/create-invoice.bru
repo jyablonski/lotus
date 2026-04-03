@@ -1,0 +1,49 @@
+meta {
+  name: Create Invoice
+  type: http
+}
+
+post {
+  url: {{backend_url}}/v1/admin/invoices
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "userId": "string",
+  "invoice": {
+    "sender": {
+      "name": "string",
+      "addressLine1": "string",
+      "addressLine2": "string",
+      "email": "string"
+    },
+    "client": {
+      "name": "string",
+      "addressLine1": "string",
+      "addressLine2": "string",
+      "attention": "string"
+    },
+    "payment": {
+      "checkPayableTo": "string",
+      "achAccountNumber": "string",
+      "achRoutingNumber": "string"
+    },
+    "invoice": {
+      "number": "string",
+      "date": "string",
+      "dueDate": "string",
+      "terms": "string"
+    },
+    "lineItems": [
+      {
+        "description": "string",
+        "hours": 0.0,
+        "rate": 0.0,
+        "amount": 0.0
+      }
+    ]
+  }
+}
+}

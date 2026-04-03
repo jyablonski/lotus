@@ -1,0 +1,18 @@
+meta {
+  name: Update Journal
+  type: http
+}
+
+patch {
+  url: {{backend_url}}/v1/journals/{{journal_id}}
+  body: json
+  auth: none
+}
+
+body:json {
+{
+  "userId": "string",
+  "journalText": "string",
+  "userMood": "string"
+}
+}

@@ -75,3 +75,32 @@ message KeywordSearchResult {
   JournalEntry journal = 1;
   float rank = 2;  // ts_rank score from PostgreSQL full-text search
 }
+
+message GetJournalRequest {
+  string journal_id = 1;
+  string user_id = 2;
+}
+
+message GetJournalResponse {
+  JournalEntry journal = 1;
+}
+
+message UpdateJournalRequest {
+  string journal_id = 1;
+  string user_id = 2;
+  string journal_text = 3;
+  string user_mood = 4;
+}
+
+message UpdateJournalResponse {
+  JournalEntry journal = 1;
+}
+
+message DeleteJournalRequest {
+  string journal_id = 1;
+  string user_id = 2;
+}
+
+message DeleteJournalResponse {
+  bool success = 1;
+}

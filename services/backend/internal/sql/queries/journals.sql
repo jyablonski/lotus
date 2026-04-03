@@ -17,3 +17,6 @@ SELECT COUNT(*) FROM source.journals WHERE user_id = $1;
 
 -- name: GetJournalById :one
 SELECT * FROM source.journals WHERE id = $1;
+
+-- name: DeleteJournalForUser :execrows
+DELETE FROM source.journals WHERE id = $1 AND user_id = $2;

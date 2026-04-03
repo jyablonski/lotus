@@ -367,3 +367,91 @@ func TestJournalServer_TriggerJournalAnalysis_InvalidJournalId(t *testing.T) {
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrInvalidJournalID)
 }
+
+func TestJournalServer_DeleteJournal_Success(t *testing.T) {
+	userID := uuid.New()
+	j := db.SourceJournal{
+		ID:          1,
+		UserID:      userID,
+		JournalText: "x",
+		MoodScore:   sql.NullInt32{Int32: 7, Valid: true},
+		CreatedAt:   time.Now(),
+		ModifiedAt:  time.Now(),
+	}
+	mockQuerier := &mocks.QuerierMock{
+		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
+			return j, nil
+		},
+		DeleteJournalForUserFunc: func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
+			assert.Equal(t, int32(1), arg.ID)
+			assert.Equal(t, userID, arg.UserID)
+			return 1, nil
+		},
+	}
+	srv := &internalgrpc.JournalServer{}
+	resp, err := srv.DeleteJournal(journalTestCtx(mockQuerier, noopHTTPClient()), &pb.DeleteJournalRequest{
+		JournalId: "1",
+		UserId:    userID.String(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.True(t, resp.Success)
+}
+
+func TestJournalServer_GetJournal_Success(t *testing.T) {
+	userID := uuid.New()
+	now := time.Now()
+	j := db.SourceJournal{
+		ID:          7,
+		UserID:      userID,
+		JournalText: "Full text",
+		MoodScore:   sql.NullInt32{Int32: 5, Valid: true},
+		CreatedAt:   now,
+		ModifiedAt:  now,
+	}
+	mockQuerier := &mocks.QuerierMock{
+		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
+			assert.Equal(t, int32(7), id)
+			return j, nil
+		},
+		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
+			return []db.GetTopicsByJournalIdsRow{{JournalID: 7, TopicName: "work"}}, nil
+		},
+	}
+	srv := &internalgrpc.JournalServer{}
+	resp, err := srv.GetJournal(journalTestCtx(mockQuerier, noopHTTPClient()), &pb.GetJournalRequest{
+		JournalId: "7",
+		UserId:    userID.String(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp.Journal)
+	assert.Equal(t, "Full text", resp.Journal.JournalText)
+	assert.Equal(t, "5", resp.Journal.UserMood)
+	assert.Contains(t, resp.Journal.TopicNames, "work")
+}
+
+func TestJournalServer_GetJournal_Forbidden(t *testing.T) {
+	owner := uuid.New()
+	other := uuid.New()
+	j := db.SourceJournal{
+		ID:          1,
+		UserID:      owner,
+		JournalText: "x",
+		MoodScore:   sql.NullInt32{Int32: 7, Valid: true},
+		CreatedAt:   time.Now(),
+		ModifiedAt:  time.Now(),
+	}
+	mockQuerier := &mocks.QuerierMock{
+		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
+			return j, nil
+		},
+	}
+	srv := &internalgrpc.JournalServer{}
+	resp, err := srv.GetJournal(journalTestCtx(mockQuerier, noopHTTPClient()), &pb.GetJournalRequest{
+		JournalId: "1",
+		UserId:    other.String(),
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.ErrorIs(t, err, internalgrpc.ErrJournalForbidden)
+}

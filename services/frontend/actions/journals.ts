@@ -8,6 +8,7 @@ import { MOOD_MIN, MOOD_MAX } from "@/lib/utils/moodMapping";
 import { backendHeaders } from "@/lib/server/backendHeaders";
 import type { JournalEntry, BackendJournal } from "@/types/journal";
 import { transformBackendJournal } from "@/types/journal";
+import { fetchAllJournalsForUser } from "@/lib/server/journals";
 
 export interface CreateJournalInput {
   journalText: string;
@@ -112,6 +113,7 @@ export async function createJournal(
     revalidatePath(ROUTES.home);
     revalidatePath(ROUTES.journal.home);
     revalidatePath(ROUTES.journal.calendar);
+    revalidatePath(ROUTES.profile);
 
     return {
       success: true,
@@ -124,6 +126,127 @@ export async function createJournal(
       success: false,
       error:
         error instanceof Error ? error.message : "Failed to create journal",
+    };
+  }
+}
+
+/**
+ * Server action to update an existing journal entry.
+ */
+export async function updateJournal(
+  journalId: string,
+  input: CreateJournalInput,
+): Promise<CreateJournalResult> {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const { journalText, moodScore } = input;
+
+    if (!journalText || journalText.trim().length === 0) {
+      return { success: false, error: "Journal text is required" };
+    }
+
+    const mood = Number(moodScore);
+    if (!Number.isInteger(mood) || mood < MOOD_MIN || mood > MOOD_MAX) {
+      return {
+        success: false,
+        error: `Mood must be between ${MOOD_MIN} and ${MOOD_MAX}`,
+      };
+    }
+
+    const response = await fetch(
+      `${BACKEND_URL}/v1/journals/${encodeURIComponent(journalId)}`,
+      {
+        method: "PATCH",
+        headers: backendHeaders(),
+        body: JSON.stringify({
+          user_id: session.user.id,
+          journal_text: journalText,
+          user_mood: String(mood),
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Backend error updating journal:", errorText);
+      return {
+        success: false,
+        error: `Failed to update journal: ${response.status}`,
+      };
+    }
+
+    revalidatePath(ROUTES.home);
+    revalidatePath(ROUTES.journal.home);
+    revalidatePath(ROUTES.journal.calendar);
+    revalidatePath(ROUTES.profile);
+    revalidatePath(ROUTES.journal.detail(journalId));
+
+    return { success: true, journalId };
+  } catch (error) {
+    console.error("Error updating journal:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to update journal",
+    };
+  }
+}
+
+export interface DeleteJournalResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Server action to delete a journal entry.
+ */
+export async function deleteJournal(
+  journalId: string,
+): Promise<DeleteJournalResult> {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const response = await fetch(
+      `${BACKEND_URL}/v1/journals/${encodeURIComponent(journalId)}?user_id=${encodeURIComponent(session.user.id)}`,
+      {
+        method: "DELETE",
+        headers: backendHeaders(),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Backend error deleting journal:", errorText);
+      return {
+        success: false,
+        error: `Failed to delete journal: ${response.status}`,
+      };
+    }
+
+    revalidatePath(ROUTES.home);
+    revalidatePath(ROUTES.journal.home);
+    revalidatePath(ROUTES.journal.calendar);
+    revalidatePath(ROUTES.profile);
+    // Do not revalidate the detail URL: the client is often still on /journal/[id]
+    // when this returns; invalidating that path triggers an immediate RSC refetch
+    // and GetJournal for an id that was just deleted.
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting journal:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to delete journal",
     };
   }
 }
@@ -224,4 +347,90 @@ export async function keywordSearchJournals(
       error: error instanceof Error ? error.message : "Keyword search failed",
     };
   }
+}
+
+function escapeCsvField(s: string): string {
+  if (/[",\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+export type JournalExportResult =
+  | { content: string; filename: string; mimeType: string }
+  | { error: string };
+
+/**
+ * Build CSV of all journals for download (server-side).
+ */
+export async function exportJournalsAsCsv(): Promise<JournalExportResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" };
+  }
+
+  const { journals } = await fetchAllJournalsForUser(session.user.id);
+  const sorted = [...journals].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  const header = "id,created_at,mood,text\n";
+  const rows = sorted.map((j) =>
+    [
+      j.journalId,
+      j.createdAt,
+      String(j.userMood),
+      escapeCsvField(j.journalText),
+    ].join(","),
+  );
+
+  const filename = `lotus-journal-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  return {
+    content: header + rows.join("\n"),
+    filename,
+    mimeType: "text/csv;charset=utf-8",
+  };
+}
+
+/**
+ * Build Markdown export of all journals for download (server-side).
+ */
+export async function exportJournalsAsMarkdown(): Promise<JournalExportResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" };
+  }
+
+  const { journals } = await fetchAllJournalsForUser(session.user.id);
+  const sorted = [...journals].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  const lines: string[] = [
+    "# Lotus journal export",
+    "",
+    `Exported at: ${new Date().toISOString()}`,
+    "",
+    "---",
+    "",
+  ];
+
+  for (const j of sorted) {
+    lines.push(`## ${j.createdAt} — Mood ${j.userMood}`);
+    if (j.topicNames?.length) {
+      lines.push(`Topics: ${j.topicNames.join(", ")}`);
+    }
+    lines.push("");
+    lines.push(j.journalText);
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+  }
+
+  const filename = `lotus-journal-export-${new Date().toISOString().slice(0, 10)}.md`;
+  return {
+    content: lines.join("\n"),
+    filename,
+    mimeType: "text/markdown;charset=utf-8",
+  };
 }

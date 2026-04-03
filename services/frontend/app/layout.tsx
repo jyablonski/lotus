@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { AnalyticsUserProperties } from "@/components/analytics/AnalyticsUserProperties";
 import { AnalyticsAuthEvents } from "@/components/analytics/AnalyticsAuthEvents";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const workSans = localFont({
@@ -79,6 +80,7 @@ export default function RootLayout({
           <AnalyticsUserProperties />
           <AnalyticsAuthEvents />
           {children}
+          <Toaster richColors position="top-center" />
         </SessionProvider>
       </body>
     </html>

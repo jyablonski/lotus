@@ -5,7 +5,7 @@
  * it delegates correctly to calculateProfileStats.
  */
 
-import { fetchProfileStats } from "@/lib/server/profile";
+import { fetchProfilePageData, fetchProfileStats } from "@/lib/server/profile";
 
 // Mock the journals module that profile.ts depends on
 jest.mock("@/lib/server/journals", () => ({
@@ -73,5 +73,25 @@ describe("fetchProfileStats", () => {
     expect(stats.currentStreak).toBe(0);
     expect(stats.longestStreak).toBe(0);
     expect(stats.totalWords).toBe(0);
+  });
+});
+
+describe("fetchProfilePageData", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("returns stats and journals from a single fetch", async () => {
+    mockFetchAll.mockResolvedValueOnce({
+      journals: mockJournals,
+      totalCount: 2,
+      hasMore: false,
+    });
+
+    const data = await fetchProfilePageData("u1");
+
+    expect(mockFetchAll).toHaveBeenCalledTimes(1);
+    expect(data.journals).toHaveLength(2);
+    expect(data.stats.totalEntries).toBe(2);
   });
 });

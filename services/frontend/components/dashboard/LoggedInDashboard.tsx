@@ -19,7 +19,7 @@ import {
 import { RelativeDate } from "@/components/ui/RelativeDate";
 import { CardHeader } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
-import { ROUTES, journalDetailRoute } from "@/lib/routes";
+import { ROUTES } from "@/lib/routes";
 
 interface LoggedInDashboardProps {
   analytics: UserJournalSummary | null;
@@ -175,7 +175,7 @@ export const LoggedInDashboard = ({
                           {entry.preview}
                         </p>
                         <Link
-                          href={journalDetailRoute(entry.id)}
+                          href={ROUTES.journal.detail(entry.id)}
                           className="inline-block mt-2"
                         >
                           <span className="link-lotus text-sm">

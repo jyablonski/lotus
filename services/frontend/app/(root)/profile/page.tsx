@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { fetchProfileStats, fetchFeatureFlags } from "@/lib/server";
+import { fetchProfilePageData, fetchFeatureFlags } from "@/lib/server";
 import { ProfilePageClient } from "@/components/profile/ProfilePageClient";
 import { ROUTES } from "@/lib/routes";
 
@@ -22,8 +22,8 @@ export default async function ProfilePage() {
   const userRole = session.user?.role ?? "";
   const timezone = session.user?.timezone ?? "UTC";
 
-  const [stats, flags] = await Promise.all([
-    fetchProfileStats(session.user.id),
+  const [{ stats, journals }, flags] = await Promise.all([
+    fetchProfilePageData(session.user.id),
     fetchFeatureFlags(userRole),
   ]);
 
@@ -34,6 +34,7 @@ export default async function ProfilePage() {
       image={image}
       signupDate={signUpDate}
       stats={stats}
+      journals={journals}
       isAdmin={flags.frontend_admin ?? false}
       timezone={timezone}
     />

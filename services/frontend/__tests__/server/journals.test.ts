@@ -228,7 +228,7 @@ describe("fetchRecentJournals", () => {
 // fetchAllJournalsForUser
 // ---------------------------------------------------------------------------
 describe("fetchAllJournalsForUser", () => {
-  test("fetches with limit=1000 and offset=0", async () => {
+  test("paginates with limit=100 until hasMore is false", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -241,9 +241,34 @@ describe("fetchAllJournalsForUser", () => {
     const result = await fetchAllJournalsForUser("u1");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("limit=1000&offset=0"),
+      expect.stringContaining("limit=100&offset=0"),
       expect.anything(),
     );
+    expect(result.journals).toHaveLength(2);
+  });
+
+  test("loads multiple pages when hasMore is true", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          journals: [backendJournals[0]],
+          totalCount: "2",
+          hasMore: true,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          journals: [backendJournals[1]],
+          totalCount: "2",
+          hasMore: false,
+        }),
+      });
+
+    const result = await fetchAllJournalsForUser("u1");
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(result.journals).toHaveLength(2);
   });
 });

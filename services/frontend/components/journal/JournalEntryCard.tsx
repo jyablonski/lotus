@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { getMoodConfigByInt } from "@/lib/utils/moodMapping";
 import { JournalEntry } from "@/types/journal";
 import { trackEvent } from "@/lib/analytics";
 import { formatEntryDate } from "@/lib/utils/datetime";
+import { ROUTES } from "@/lib/routes";
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
@@ -36,8 +38,12 @@ export function JournalEntryCard({
       : entry.journalText;
 
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-      <div className="p-6">
+    <Card className="hover:shadow-md transition-shadow">
+      <Link
+        href={ROUTES.journal.detail(entry.journalId)}
+        className="block p-6 cursor-pointer"
+        aria-label="View full journal entry"
+      >
         <div className="flex justify-between items-start mb-4">
           <div>
             <p className="text-sm text-dark-400">{formattedDate}</p>
@@ -78,7 +84,10 @@ export function JournalEntryCard({
         {shouldTruncate && (
           <div className="mt-4 pt-4 border-t border-dark-600">
             <button
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const expanding = !isExpanded;
                 setIsExpanded(expanding);
 
@@ -99,7 +108,7 @@ export function JournalEntryCard({
             </button>
           </div>
         )}
-      </div>
+      </Link>
     </Card>
   );
 }
