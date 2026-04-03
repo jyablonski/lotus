@@ -204,17 +204,6 @@ func (s *JournalServer) UpdateJournal(ctx context.Context, req *pb.UpdateJournal
 	}
 
 	dbq := inject.DBFrom(ctx)
-	existing, err := dbq.GetJournalById(ctx, int32(journalID))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%w: %w", ErrJournalNotFound, err)
-		}
-		return nil, fmt.Errorf("failed to load journal: %w", err)
-	}
-	if existing.UserID != userID {
-		return nil, ErrJournalForbidden
-	}
-
 	pgxPool := inject.PgxPoolFrom(ctx)
 	riverClient := inject.RiverClientFrom(ctx)
 
@@ -269,19 +258,7 @@ func (s *JournalServer) DeleteJournal(ctx context.Context, req *pb.DeleteJournal
 		return nil, fmt.Errorf("%w: %w", ErrInvalidJournalID, err)
 	}
 
-	dbq := inject.DBFrom(ctx)
-	j, err := dbq.GetJournalById(ctx, int32(journalID))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%w: %w", ErrJournalNotFound, err)
-		}
-		return nil, fmt.Errorf("failed to load journal: %w", err)
-	}
-	if j.UserID != userID {
-		return nil, ErrJournalForbidden
-	}
-
-	n, err := dbq.DeleteJournalForUser(ctx, db.DeleteJournalForUserParams{
+	n, err := inject.DBFrom(ctx).DeleteJournalForUser(ctx, db.DeleteJournalForUserParams{
 		ID:     int32(journalID),
 		UserID: userID,
 	})

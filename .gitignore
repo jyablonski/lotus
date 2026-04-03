@@ -63,6 +63,9 @@ docker/mlflow/**
 lotus.code-workspace
 services/dagster/feast_repo/data
 
+# Bruno environment files (contain local secrets)
+bruno/environments/local.bru
+
 # Generated OpenAPI specs (intermediate files for Bruno generation)
 services/analyzer/openapi.json
 *.swagger.json
