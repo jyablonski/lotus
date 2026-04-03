@@ -19,7 +19,7 @@ jest.mock("next/link", () => {
 });
 
 import { auth } from "../../../auth";
-const mockAuth = auth as jest.MockedFunction<typeof auth>;
+const mockAuth = auth as jest.Mock;
 
 describe("UserAvatar", () => {
   beforeEach(() => {

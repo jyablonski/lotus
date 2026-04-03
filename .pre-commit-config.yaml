@@ -96,6 +96,15 @@ repos:
       - id: ruff-check
       - id: ruff-format
 
+  - repo: local
+    hooks:
+      - id: tsc-frontend
+        name: tsc (frontend)
+        entry: bash -c 'cd services/frontend && npm run typecheck'
+        language: system
+        files: ^services/frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
   # Pre-push hooks — run via `pre-commit install --hook-type pre-push`
   - repo: local
     hooks:

@@ -35,7 +35,7 @@ jest.mock("@/components/UserAvatar", () => {
 });
 
 import { auth } from "@/auth";
-const mockAuth = auth as jest.MockedFunction<typeof auth>;
+const mockAuth = auth as jest.Mock;
 
 describe("Navbar", () => {
   beforeEach(() => {

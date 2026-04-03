@@ -93,7 +93,7 @@ export function ProfileMoodChart({
                     borderRadius: "8px",
                   }}
                   labelStyle={{ color: "#e2e8f0" }}
-                  formatter={(value: number | undefined) => [
+                  formatter={(value) => [
                     value != null ? `${value}` : "",
                     "Avg mood",
                   ]}
