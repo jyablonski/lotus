@@ -55,25 +55,34 @@ func (s *GameServer) GetGameBalance(ctx context.Context, req *pb.GetGameBalanceR
 }
 
 // RecordBets inserts one row into user_game_bets for each BetEntry in the request.
+// All inserts happen in a single transaction so they either all succeed or all fail.
 func (s *GameServer) RecordBets(ctx context.Context, req *pb.RecordBetsRequest) (*pb.RecordBetsResponse, error) {
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
-	dbq := inject.DBFrom(ctx)
+	pgxPool := inject.PgxPoolFrom(ctx)
+
+	tx, err := pgxPool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // rollback is a no-op after commit
 
 	for _, entry := range req.Bets {
-		_, err := dbq.InsertUserGameBet(ctx, db.InsertUserGameBetParams{
-			UserID:     userID,
-			Zone:       entry.Zone,
-			Amount:     entry.Amount,
-			RollResult: entry.RollResult,
-			Payout:     entry.Payout,
-		})
+		_, err := tx.Exec(ctx,
+			`INSERT INTO source.user_game_bets (user_id, zone, amount, roll_result, payout)
+			 VALUES ($1, $2, $3, $4, $5)`,
+			userID, entry.Zone, entry.Amount, entry.RollResult, entry.Payout,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to record bet: %w", err)
 		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return &pb.RecordBetsResponse{Success: true}, nil
@@ -86,10 +95,7 @@ func (s *GameServer) GetBetHistory(ctx context.Context, req *pb.GetBetHistoryReq
 		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
-	limit := req.Limit
-	if limit <= 0 || limit > 100 {
-		limit = 20
-	}
+	limit := clampLimit(req.Limit, 20)
 
 	dbq := inject.DBFrom(ctx)
 

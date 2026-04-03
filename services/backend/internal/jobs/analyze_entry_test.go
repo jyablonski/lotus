@@ -47,7 +47,6 @@ func TestAnalyzeEntryInsertTx(t *testing.T) {
 	result, err := client.InsertTx(ctx, tx, jobs.AnalyzeEntryArgs{
 		EntryID: int64(journalID),
 		UserID:  "00000000-0000-0000-0000-000000000001",
-		Content: "tx test entry",
 	}, nil)
 	require.NoError(t, err)
 	require.NotNil(t, result.Job)
@@ -113,7 +112,6 @@ func TestAnalyzeEntryWorkerSuccess(t *testing.T) {
 	_, err = client.Insert(ctx, jobs.AnalyzeEntryArgs{
 		EntryID: 1001,
 		UserID:  "00000000-0000-0000-0000-000000000001",
-		Content: "success test",
 	}, nil)
 	require.NoError(t, err)
 
@@ -152,7 +150,6 @@ func TestAnalyzeEntryWorkerRetry(t *testing.T) {
 	_, err = client.Insert(ctx, jobs.AnalyzeEntryArgs{
 		EntryID: 2001,
 		UserID:  "00000000-0000-0000-0000-000000000001",
-		Content: "will fail",
 	}, &river.InsertOpts{MaxAttempts: 2, Queue: jobs.QueueAnalysis})
 	require.NoError(t, err)
 

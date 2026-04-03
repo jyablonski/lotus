@@ -15,7 +15,6 @@ import (
 type AnalyzeEntryArgs struct {
 	EntryID int64  `json:"entry_id"`
 	UserID  string `json:"user_id"` // UUID as string
-	Content string `json:"content"`
 }
 
 func (a AnalyzeEntryArgs) Kind() string { return "analyze_entry" }
@@ -96,7 +95,7 @@ func (w *AnalyzeEntryWorker) callEndpoint(ctx context.Context, entryID int64, pa
 	if err != nil {
 		return fmt.Errorf("http request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // best-effort cleanup
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("analyzer returned status %d", resp.StatusCode)

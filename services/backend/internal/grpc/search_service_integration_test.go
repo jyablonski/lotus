@@ -8,7 +8,6 @@ import (
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
-	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,15 +42,6 @@ func insertSearchUser(t *testing.T) uuid.UUID {
 		testPgxPool.Exec(context.Background(), `DELETE FROM source.users WHERE id = $1`, id)
 	})
 	return id
-}
-
-// searchCtx returns a context configured for search service integration tests.
-func searchCtx() context.Context {
-	ctx := context.Background()
-	ctx = inject.WithPgxPool(ctx, testPgxPool)
-	ctx = inject.WithLogger(ctx, testinfra.DiscardLogger())
-	// DB (sqlc querier) needed for topic hydration — use a pooled connection.
-	return ctx
 }
 
 func TestKeywordSearchJournals_ReturnsMatchingEntries(t *testing.T) {

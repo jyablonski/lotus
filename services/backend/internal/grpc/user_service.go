@@ -20,7 +20,7 @@ var (
 	ErrEmailRequired   = errors.New("email is required")
 	ErrUserNotFound    = errors.New("user not found")
 	ErrCreateUser      = errors.New("could not create user")
-	ErrGenerateSalt    = errors.New("failed to generate salt")
+	ErrHashPassword    = errors.New("failed to hash password")
 	ErrGetUserFailed   = errors.New("failed to get user")
 	ErrInvalidTimezone = errors.New("invalid timezone")
 	ErrUpdateTimezone  = errors.New("failed to update timezone")
@@ -35,23 +35,17 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 	logger := inject.LoggerFrom(ctx)
 	dbq := inject.DBFrom(ctx)
 
-	// Salt and password are only used for non-OAuth users.
-	salt, err := utils.GenerateSalt(24) // base64 encoding of 24 bytes = ~32 characters
+	// Hash the password using bcrypt (salt is embedded in the hash).
+	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		logger.Error("Failed to generate salt", "error", err)
-		return nil, status.Error(codes.Internal, ErrGenerateSalt.Error())
+		logger.Error("Failed to hash password", "error", err)
+		return nil, status.Error(codes.Internal, ErrHashPassword.Error())
 	}
-
-	hashed_password := utils.HashPassword(req.Password, salt)
-
-	// Using sql.NullString for nullable fields
-	password := sql.NullString{String: hashed_password, Valid: true}
-	saltStr := sql.NullString{String: salt, Valid: true}
 
 	user, err := dbq.CreateUser(ctx, db.CreateUserParams{
 		Email:    req.Email,
-		Password: password,
-		Salt:     saltStr,
+		Password: sql.NullString{String: hashedPassword, Valid: true},
+		Salt:     sql.NullString{Valid: false}, // bcrypt embeds its own salt
 	})
 	if err != nil {
 		logger.Error("Failed to create user", "email", req.Email, "error", err)
@@ -88,7 +82,8 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 		OauthProvider: oauthProvider, // e.g., "github"
 	})
 	if err != nil {
-		return nil, err
+		logger.Error("Failed to create OAuth user", "email", req.Email, "error", err)
+		return nil, status.Error(codes.Internal, ErrCreateUser.Error())
 	}
 
 	return &pb.CreateUserResponse{

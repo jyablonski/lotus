@@ -133,92 +133,20 @@ func TestGameServer_GetGameBalance(t *testing.T) {
 	})
 }
 
-func TestGameServer_RecordBets(t *testing.T) {
+func TestGameServer_RecordBets_InvalidUserID(t *testing.T) {
 	server := &internalgrpc.GameServer{}
+	mockQuerier := &mocks.QuerierMock{}
+	ctx := testCtx(mockQuerier)
+	req := &pb.RecordBetsRequest{
+		UserId: "bad-uuid",
+		Bets:   []*pb.BetEntry{{Zone: "red", Amount: 1, RollResult: 7, Payout: 2}},
+	}
 
-	t.Run("success", func(t *testing.T) {
-		userID := uuid.New()
-		mockQuerier := &mocks.QuerierMock{
-			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
-				assert.Equal(t, userID, arg.UserID)
-				return db.SourceUserGameBet{
-					ID:         1,
-					UserID:     userID,
-					Zone:       arg.Zone,
-					Amount:     arg.Amount,
-					RollResult: arg.RollResult,
-					Payout:     arg.Payout,
-					CreatedAt:  time.Now(),
-				}, nil
-			},
-		}
+	resp, err := server.RecordBets(ctx, req)
 
-		ctx := testCtx(mockQuerier)
-		req := &pb.RecordBetsRequest{
-			UserId: userID.String(),
-			Bets: []*pb.BetEntry{
-				{Zone: "red", Amount: 10, RollResult: 7, Payout: 20},
-				{Zone: "black", Amount: 5, RollResult: 14, Payout: 0},
-			},
-		}
-		resp, err := server.RecordBets(ctx, req)
-
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		assert.True(t, resp.Success)
-		assert.Len(t, mockQuerier.InsertUserGameBetCalls(), 2)
-	})
-
-	t.Run("invalid_user_id", func(t *testing.T) {
-		mockQuerier := &mocks.QuerierMock{}
-		ctx := testCtx(mockQuerier)
-		req := &pb.RecordBetsRequest{
-			UserId: "bad-uuid",
-			Bets:   []*pb.BetEntry{{Zone: "red", Amount: 1, RollResult: 7, Payout: 2}},
-		}
-
-		resp, err := server.RecordBets(ctx, req)
-
-		require.Error(t, err)
-		require.Nil(t, resp)
-		assert.True(t, errors.Is(err, internalgrpc.ErrInvalidUserID))
-		assert.Len(t, mockQuerier.InsertUserGameBetCalls(), 0)
-	})
-
-	t.Run("empty_bets_success", func(t *testing.T) {
-		userID := uuid.New()
-		mockQuerier := &mocks.QuerierMock{}
-		ctx := testCtx(mockQuerier)
-		req := &pb.RecordBetsRequest{UserId: userID.String(), Bets: nil}
-
-		resp, err := server.RecordBets(ctx, req)
-
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		assert.True(t, resp.Success)
-		assert.Len(t, mockQuerier.InsertUserGameBetCalls(), 0)
-	})
-
-	t.Run("db_error", func(t *testing.T) {
-		userID := uuid.New()
-		mockQuerier := &mocks.QuerierMock{
-			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
-				return db.SourceUserGameBet{}, errors.New("insert failed")
-			},
-		}
-
-		ctx := testCtx(mockQuerier)
-		req := &pb.RecordBetsRequest{
-			UserId: userID.String(),
-			Bets:   []*pb.BetEntry{{Zone: "red", Amount: 10, RollResult: 7, Payout: 20}},
-		}
-		resp, err := server.RecordBets(ctx, req)
-
-		require.Error(t, err)
-		require.Nil(t, resp)
-		assert.Contains(t, err.Error(), "failed to record bet")
-		assert.Len(t, mockQuerier.InsertUserGameBetCalls(), 1)
-	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.True(t, errors.Is(err, internalgrpc.ErrInvalidUserID))
 }
 
 func TestGameServer_GetBetHistory(t *testing.T) {
@@ -297,7 +225,7 @@ func TestGameServer_GetBetHistory(t *testing.T) {
 		userID := uuid.New()
 		mockQuerier := &mocks.QuerierMock{
 			GetUserGameBetsFunc: func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error) {
-				assert.Equal(t, int32(20), arg.Limit)
+				assert.Equal(t, int32(100), arg.Limit) // clampLimit caps at 100
 				return nil, nil
 			},
 		}

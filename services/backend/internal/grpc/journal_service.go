@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx) //nolint:errcheck — rollback is a no-op after commit
+	defer tx.Rollback(ctx) //nolint:errcheck // rollback is a no-op after commit
 
 	// Insert the journal row directly via pgx (same SQL as the sqlc-generated query).
 	var journalID int32
@@ -68,7 +69,6 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 	_, err = riverClient.InsertTx(ctx, tx, jobs.AnalyzeEntryArgs{
 		EntryID: int64(journalID),
 		UserID:  userID.String(),
-		Content: req.JournalText,
 	}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to enqueue analysis job: %w", err)
@@ -93,7 +93,7 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 	// Extract deps after input validation
 	dbq := inject.DBFrom(ctx)
 
-	// set default pagination valuesba
+	// set default pagination values
 	limit := req.Limit
 	if limit <= 0 {
 		limit = 50 // reasonable default
@@ -177,7 +177,6 @@ func (s *JournalServer) TriggerJournalAnalysis(ctx context.Context, req *pb.Trig
 	_, err = riverClient.Insert(ctx, jobs.AnalyzeEntryArgs{
 		EntryID: int64(journal.ID),
 		UserID:  journal.UserID.String(),
-		Content: journal.JournalText,
 	}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to enqueue analysis job: %w", err)
@@ -195,18 +194,7 @@ func formatVector(v []float64) string {
 	for i, f := range v {
 		parts[i] = strconv.FormatFloat(f, 'f', -1, 64)
 	}
-	return "[" + joinStrings(parts, ",") + "]"
-}
-
-func joinStrings(s []string, sep string) string {
-	if len(s) == 0 {
-		return ""
-	}
-	result := s[0]
-	for _, v := range s[1:] {
-		result += sep + v
-	}
-	return result
+	return "[" + strings.Join(parts, ",") + "]"
 }
 
 func int32ToString(val int32) string {

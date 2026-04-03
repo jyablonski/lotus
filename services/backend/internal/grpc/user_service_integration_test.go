@@ -25,7 +25,7 @@ func TestCreateUser(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, email, user.Email)
 	require.True(t, user.Password.Valid)
-	require.True(t, user.Salt.Valid)
+	require.False(t, user.Salt.Valid) // bcrypt embeds its own salt
 }
 
 func TestCreateUserOauth(t *testing.T) {

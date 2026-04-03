@@ -1,8 +1,7 @@
-# Minimal stack for k6 smoke tests in backend CI.
-# Postgres + backend only (no Django). Used when sparse checkout excludes services/django.
+# Stack for k6 smoke tests in backend CI: Postgres, Django (migrations), Redis, backend.
 #
 # Usage:
-#   docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --build --wait postgres backend
+#   docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --build --wait postgres redis django backend
 #   docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
 #   docker compose -f docker/docker-compose-k6.yaml --profile load-test down -v
 
@@ -33,6 +32,37 @@ services:
       timeout: 3s
       retries: 5
 
+  django:
+    build:
+      context: ../services/django
+      dockerfile: Dockerfile
+    container_name: k6-django
+    environment:
+      - DJANGO_SECRET_KEY=k6-django-secret-key
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,django
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - ANALYZER_BASE_URL=http://localhost:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/admin/login/')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
   backend:
     build:
       context: ../services/backend
@@ -51,6 +81,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      django:
         condition: service_healthy
 
   k6:

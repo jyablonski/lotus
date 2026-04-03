@@ -30,8 +30,8 @@ func journalTestCtx(dbMock db.Querier, httpMock inject.HTTPDoer) context.Context
 }
 
 // noopHTTPClient is a simple mock that returns 200 OK for all requests.
-func noopHTTPClient() *mocks.HTTPClientMock {
-	return &mocks.HTTPClientMock{
+func noopHTTPClient() *mocks.HTTPDoerMock {
+	return &mocks.HTTPDoerMock{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,

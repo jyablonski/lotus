@@ -1,0 +1,36 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  disable:
+    - errcheck # too noisy for deferred Close/Rollback/Terminate calls
+  enable:
+    - govet
+    - staticcheck
+    - unused
+    - gosec
+    - ineffassign
+    - gocritic
+    - bodyclose
+    - nilerr
+    - sqlclosecheck
+  settings:
+    gosec:
+      excludes:
+        - G102
+        - G104
+        - G109
+        - G112
+        - G115
+        - G304
+    gocritic:
+      disabled-checks:
+        - exitAfterDefer
+
+issues:
+  exclude-dirs:
+    - internal/pb
+    - internal/mocks
+    - internal/db
