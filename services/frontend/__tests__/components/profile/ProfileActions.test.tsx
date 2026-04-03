@@ -19,6 +19,10 @@ jest.mock("@/components/auth/LogoutButton", () => ({
   Logout: () => <button data-testid="logout-button">Sign Out</button>,
 }));
 
+jest.mock("@/components/profile/ProfileExportButtons", () => ({
+  ProfileExportButtons: () => <div data-testid="export-buttons" />,
+}));
+
 describe("ProfileActions", () => {
   it("renders 'Quick Actions' heading", () => {
     render(<ProfileActions />);
