@@ -225,7 +225,7 @@ func TestGameServer_GetBetHistory(t *testing.T) {
 		userID := uuid.New()
 		mockQuerier := &mocks.QuerierMock{
 			GetUserGameBetsFunc: func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error) {
-				assert.Equal(t, int32(20), arg.Limit)
+				assert.Equal(t, int32(100), arg.Limit) // clampLimit caps at 100
 				return nil, nil
 			},
 		}
