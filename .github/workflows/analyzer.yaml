@@ -25,6 +25,7 @@ env:
 jobs:
   analyzer-pipeline:
     runs-on: ubuntu-latest
+    name: Test Suite
 
     steps:
       - name: Checkout code

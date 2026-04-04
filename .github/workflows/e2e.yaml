@@ -1,5 +1,5 @@
 # Full-stack Playwright smoke tests. Runs once per PR when relevant services or docker/ change.
-name: E2E
+name: E2E Pipeline
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   e2e:
-    name: E2E Smoke Tests
+    name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

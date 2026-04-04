@@ -23,6 +23,7 @@ env:
 jobs:
   django-pipeline:
     runs-on: ubuntu-latest
+    name: Test Suite
 
     steps:
       - name: Checkout code

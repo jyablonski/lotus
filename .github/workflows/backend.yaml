@@ -19,6 +19,7 @@ concurrency:
 jobs:
   backend-pipeline:
     runs-on: ubuntu-latest
+    name: Test Suite
 
     steps:
       - name: Checkout code
@@ -62,6 +63,7 @@ jobs:
   k6-smoke:
     runs-on: ubuntu-latest
     needs: backend-pipeline
+    name: Load Tests
 
     steps:
       - name: Checkout code
