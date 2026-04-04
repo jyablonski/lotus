@@ -126,7 +126,7 @@ repos:
         pass_filenames: false
       - id: dbt-source-schema-sync
         name: dbt source schema sync (django)
-        entry: bash -c 'make generate-dbt-source-schema && git diff --exit-code -- docker/db/ci_source_schema.sql'
+        entry: bash -c 'make generate-dbt-source-schema && git diff --exit-code -- docker/db/generated/ci_source_schema.sql'
         language: system
         stages: [pre-push]
         files: ^(services/django/|services/dbt/models/sources/application_db/)

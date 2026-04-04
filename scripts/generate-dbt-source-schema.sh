@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUTPUT_FILE="${ROOT_DIR}/docker/db/ci_source_schema.sql"
+OUTPUT_FILE="${ROOT_DIR}/docker/db/generated/ci_source_schema.sql"
 TEMP_FILE="${OUTPUT_FILE}.tmp"
 TEMP_DB="dbt_schema_gen"
 

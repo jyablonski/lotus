@@ -41,7 +41,7 @@ SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
 # Path to the bootstrap SQL relative to the repo root, resolved from this file's location.
 # conftest.py lives at services/analyzer/tests/conftest.py → 3 parents up = repo root.
 _BOOTSTRAP_SQL = Path(__file__).parents[3] / "docker/db/01-bootstrap.sql"
-_SOURCE_SCHEMA_SQL = Path(__file__).parents[3] / "docker/db/ci_source_schema.sql"
+_SOURCE_SCHEMA_SQL = Path(__file__).parents[3] / "docker/db/generated/ci_source_schema.sql"
 
 _TEST_API_KEY = os.environ["ANALYZER_API_KEY"]
 
