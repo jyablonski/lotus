@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileDown, FileText } from "lucide-react";
-import {
-  exportJournalsAsCsv,
-  exportJournalsAsMarkdown,
-} from "@/actions/journals";
+import { requestJournalExport, pollJournalExport } from "@/actions/journals";
+
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 60000;
 
 function triggerDownload(
   content: string,
@@ -22,32 +22,99 @@ function triggerDownload(
 }
 
 export function ProfileExportButtons() {
-  const [busy, setBusy] = useState(false);
+  const [activeFormat, setActiveFormat] = useState<"csv" | "md" | null>(null);
+  const [lastDownload, setLastDownload] = useState<{
+    filename: string;
+    at: Date;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const run = async (kind: "csv" | "md") => {
-    setError(null);
-    setBusy(true);
-    try {
-      const result =
-        kind === "csv"
-          ? await exportJournalsAsCsv()
-          : await exportJournalsAsMarkdown();
+  const busy = activeFormat !== null;
+
+  const stopPolling = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => stopPolling, []);
+
+  const startPolling = (exportId: string) => {
+    intervalRef.current = setInterval(async () => {
+      const result = await pollJournalExport(exportId);
+
       if ("error" in result) {
+        stopPolling();
+        setActiveFormat(null);
         setError(result.error);
         return;
       }
-      triggerDownload(result.content, result.filename, result.mimeType);
-    } finally {
-      setBusy(false);
+
+      if (result.status === "complete") {
+        stopPolling();
+        setActiveFormat(null);
+        triggerDownload(result.content, result.filename, result.mimeType);
+        setLastDownload({ filename: result.filename, at: new Date() });
+        return;
+      }
+
+      if (result.status === "failed") {
+        stopPolling();
+        setActiveFormat(null);
+        setError("Export failed. Please try again.");
+      }
+    }, POLL_INTERVAL_MS);
+
+    timeoutRef.current = setTimeout(() => {
+      stopPolling();
+      setActiveFormat(null);
+      setError("Export timed out. Please try again.");
+    }, POLL_TIMEOUT_MS);
+  };
+
+  const run = async (kind: "csv" | "md") => {
+    setError(null);
+    setActiveFormat(kind);
+
+    const result = await requestJournalExport(
+      kind === "csv" ? "csv" : "markdown",
+    );
+
+    if ("error" in result) {
+      setActiveFormat(null);
+      setError(result.error);
+      return;
     }
+
+    startPolling(result.exportId);
   };
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-dark-400 mb-2">
-        Download everything you&apos;ve written in Lotus.
-      </p>
+      {lastDownload ? (
+        <p className="text-sm text-dark-400 mb-2">
+          <span className="text-green-400 font-medium">
+            {lastDownload.filename}
+          </span>{" "}
+          downloaded at{" "}
+          {lastDownload.at.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+          .
+        </p>
+      ) : (
+        <p className="text-sm text-dark-400 mb-2">
+          Download everything you&apos;ve written in Lotus.
+        </p>
+      )}
       {error && (
         <p className="text-sm text-red-400 mb-2" role="alert">
           {error}
@@ -61,7 +128,7 @@ export function ProfileExportButtons() {
           className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-dark-600 text-dark-200 hover:bg-dark-700/50 disabled:opacity-50"
         >
           <FileDown size={18} className="text-lotus-400" />
-          {busy ? "Preparing…" : "Export CSV"}
+          {activeFormat === "csv" ? "Preparing…" : "Export CSV"}
         </button>
         <button
           type="button"
@@ -70,7 +137,7 @@ export function ProfileExportButtons() {
           className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-dark-600 text-dark-200 hover:bg-dark-700/50 disabled:opacity-50"
         >
           <FileText size={18} className="text-lotus-400" />
-          {busy ? "Preparing…" : "Export Markdown"}
+          {activeFormat === "md" ? "Preparing…" : "Export Markdown"}
         </button>
       </div>
     </div>

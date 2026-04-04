@@ -272,6 +272,88 @@ func (s *JournalServer) DeleteJournal(ctx context.Context, req *pb.DeleteJournal
 	return &pb.DeleteJournalResponse{Success: true}, nil
 }
 
+func (s *JournalServer) RequestJournalExport(ctx context.Context, req *pb.RequestJournalExportRequest) (*pb.RequestJournalExportResponse, error) {
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
+	}
+
+	var format db.SourceExportFormat
+	switch req.Format {
+	case "markdown":
+		format = db.SourceExportFormatMarkdown
+	case "csv", "":
+		format = db.SourceExportFormatCsv
+	default:
+		return nil, fmt.Errorf("unsupported export format: %s", req.Format)
+	}
+
+	dbq := inject.DBFrom(ctx)
+	riverClient := inject.RiverClientFrom(ctx)
+
+	export, err := dbq.CreateJournalExport(ctx, db.CreateJournalExportParams{
+		UserID: userID,
+		Format: format,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create export record: %w", err)
+	}
+
+	_, err = riverClient.Insert(ctx, jobs.ExportJournalsArgs{
+		ExportID: export.ID.String(),
+		UserID:   userID.String(),
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enqueue export job: %w", err)
+	}
+
+	return &pb.RequestJournalExportResponse{
+		ExportId: export.ID.String(),
+		Status:   string(export.Status),
+	}, nil
+}
+
+func (s *JournalServer) GetJournalExport(ctx context.Context, req *pb.GetJournalExportRequest) (*pb.GetJournalExportResponse, error) {
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
+	}
+
+	exportID, err := uuid.Parse(req.ExportId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid export_id: %w", err)
+	}
+
+	dbq := inject.DBFrom(ctx)
+	export, err := dbq.GetJournalExport(ctx, db.GetJournalExportParams{
+		ID:     exportID,
+		UserID: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("export not found: %w", err)
+	}
+
+	resp := &pb.GetJournalExportResponse{
+		ExportId: export.ID.String(),
+		Status:   string(export.Status),
+	}
+
+	if export.Status == db.SourceExportStatusComplete && export.Content.Valid {
+		resp.Content = export.Content.String
+		date := export.CreatedAt.Format("2006-01-02")
+		switch export.Format {
+		case db.SourceExportFormatMarkdown:
+			resp.Filename = "lotus-journal-export-" + date + ".md"
+			resp.MimeType = "text/markdown;charset=utf-8"
+		default:
+			resp.Filename = "lotus-journal-export-" + date + ".csv"
+			resp.MimeType = "text/csv;charset=utf-8"
+		}
+	}
+
+	return resp, nil
+}
+
 // sourceJournalToPB maps a DB row to a protobuf JournalEntry.
 func sourceJournalToPB(j db.SourceJournal, topicNames []string) *pb.JournalEntry {
 	mood := ""

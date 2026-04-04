@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	CreateJournal(ctx context.Context, arg CreateJournalParams) (SourceJournal, error)
+	CreateJournalExport(ctx context.Context, arg CreateJournalExportParams) (SourceJournalExport, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (SourceUser, error)
 	CreateUserOauth(ctx context.Context, arg CreateUserOauthParams) (SourceUser, error)
 	DeleteJournalForUser(ctx context.Context, arg DeleteJournalForUserParams) (int64, error)
@@ -20,6 +21,7 @@ type Querier interface {
 	GetFeatureFlagByName(ctx context.Context, name string) (SourceWaffleFlag, error)
 	GetJournalById(ctx context.Context, id int32) (SourceJournal, error)
 	GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error)
+	GetJournalExport(ctx context.Context, arg GetJournalExportParams) (SourceJournalExport, error)
 	GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error)
 	GetJournalsByUserIdPaginated(ctx context.Context, arg GetJournalsByUserIdPaginatedParams) ([]SourceJournal, error)
 	GetRuntimeConfigByKey(ctx context.Context, key string) (SourceRuntimeConfig, error)
@@ -30,6 +32,9 @@ type Querier interface {
 	GetUserGameBets(ctx context.Context, arg GetUserGameBetsParams) ([]SourceUserGameBet, error)
 	GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (GoldUserJournalSummary, error)
 	InsertUserGameBet(ctx context.Context, arg InsertUserGameBetParams) (SourceUserGameBet, error)
+	UpdateJournalExportComplete(ctx context.Context, arg UpdateJournalExportCompleteParams) (SourceJournalExport, error)
+	UpdateJournalExportFailed(ctx context.Context, arg UpdateJournalExportFailedParams) (SourceJournalExport, error)
+	UpdateJournalExportProcessing(ctx context.Context, id uuid.UUID) (SourceJournalExport, error)
 	UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (SourceUser, error)
 	UpsertRuntimeConfigValue(ctx context.Context, arg UpsertRuntimeConfigValueParams) (SourceRuntimeConfig, error)
 	UpsertUserGameBalance(ctx context.Context, arg UpsertUserGameBalanceParams) (SourceUserGameBalance, error)

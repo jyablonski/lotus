@@ -18,6 +18,7 @@ import (
 const (
 	QueueAnalysis = "analysis"
 	QueueCron     = "cron"
+	QueueExport   = "export"
 )
 
 // RunMigrations applies River's internal schema migrations (river_job, river_leader, etc.)
@@ -90,11 +91,17 @@ func NewClientWithPeriodicInterval(
 		logger:  logger,
 	})
 
+	river.AddWorker(workers, &ExportJournalsWorker{
+		queries: queries,
+		logger:  logger,
+	})
+
 	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
 		Queues: map[string]river.QueueConfig{
 			river.QueueDefault: {MaxWorkers: 50},
 			QueueAnalysis:      {MaxWorkers: 10},
 			QueueCron:          {MaxWorkers: 5},
+			QueueExport:        {MaxWorkers: 5},
 		},
 		Workers: workers,
 		PeriodicJobs: []*river.PeriodicJob{

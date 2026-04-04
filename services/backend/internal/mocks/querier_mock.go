@@ -23,6 +23,9 @@ var _ db.Querier = &QuerierMock{}
 //			CreateJournalFunc: func(ctx context.Context, arg db.CreateJournalParams) (db.SourceJournal, error) {
 //				panic("mock out the CreateJournal method")
 //			},
+//			CreateJournalExportFunc: func(ctx context.Context, arg db.CreateJournalExportParams) (db.SourceJournalExport, error) {
+//				panic("mock out the CreateJournalExport method")
+//			},
 //			CreateUserFunc: func(ctx context.Context, arg db.CreateUserParams) (db.SourceUser, error) {
 //				panic("mock out the CreateUser method")
 //			},
@@ -46,6 +49,9 @@ var _ db.Querier = &QuerierMock{}
 //			},
 //			GetJournalCountByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (int64, error) {
 //				panic("mock out the GetJournalCountByUserId method")
+//			},
+//			GetJournalExportFunc: func(ctx context.Context, arg db.GetJournalExportParams) (db.SourceJournalExport, error) {
+//				panic("mock out the GetJournalExport method")
 //			},
 //			GetJournalsByUserIdFunc: func(ctx context.Context, userID uuid.UUID) ([]db.SourceJournal, error) {
 //				panic("mock out the GetJournalsByUserId method")
@@ -77,6 +83,15 @@ var _ db.Querier = &QuerierMock{}
 //			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
 //				panic("mock out the InsertUserGameBet method")
 //			},
+//			UpdateJournalExportCompleteFunc: func(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error) {
+//				panic("mock out the UpdateJournalExportComplete method")
+//			},
+//			UpdateJournalExportFailedFunc: func(ctx context.Context, arg db.UpdateJournalExportFailedParams) (db.SourceJournalExport, error) {
+//				panic("mock out the UpdateJournalExportFailed method")
+//			},
+//			UpdateJournalExportProcessingFunc: func(ctx context.Context, id uuid.UUID) (db.SourceJournalExport, error) {
+//				panic("mock out the UpdateJournalExportProcessing method")
+//			},
 //			UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
 //				panic("mock out the UpdateUserTimezone method")
 //			},
@@ -95,6 +110,9 @@ var _ db.Querier = &QuerierMock{}
 type QuerierMock struct {
 	// CreateJournalFunc mocks the CreateJournal method.
 	CreateJournalFunc func(ctx context.Context, arg db.CreateJournalParams) (db.SourceJournal, error)
+
+	// CreateJournalExportFunc mocks the CreateJournalExport method.
+	CreateJournalExportFunc func(ctx context.Context, arg db.CreateJournalExportParams) (db.SourceJournalExport, error)
 
 	// CreateUserFunc mocks the CreateUser method.
 	CreateUserFunc func(ctx context.Context, arg db.CreateUserParams) (db.SourceUser, error)
@@ -119,6 +137,9 @@ type QuerierMock struct {
 
 	// GetJournalCountByUserIdFunc mocks the GetJournalCountByUserId method.
 	GetJournalCountByUserIdFunc func(ctx context.Context, userID uuid.UUID) (int64, error)
+
+	// GetJournalExportFunc mocks the GetJournalExport method.
+	GetJournalExportFunc func(ctx context.Context, arg db.GetJournalExportParams) (db.SourceJournalExport, error)
 
 	// GetJournalsByUserIdFunc mocks the GetJournalsByUserId method.
 	GetJournalsByUserIdFunc func(ctx context.Context, userID uuid.UUID) ([]db.SourceJournal, error)
@@ -150,6 +171,15 @@ type QuerierMock struct {
 	// InsertUserGameBetFunc mocks the InsertUserGameBet method.
 	InsertUserGameBetFunc func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error)
 
+	// UpdateJournalExportCompleteFunc mocks the UpdateJournalExportComplete method.
+	UpdateJournalExportCompleteFunc func(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error)
+
+	// UpdateJournalExportFailedFunc mocks the UpdateJournalExportFailed method.
+	UpdateJournalExportFailedFunc func(ctx context.Context, arg db.UpdateJournalExportFailedParams) (db.SourceJournalExport, error)
+
+	// UpdateJournalExportProcessingFunc mocks the UpdateJournalExportProcessing method.
+	UpdateJournalExportProcessingFunc func(ctx context.Context, id uuid.UUID) (db.SourceJournalExport, error)
+
 	// UpdateUserTimezoneFunc mocks the UpdateUserTimezone method.
 	UpdateUserTimezoneFunc func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error)
 
@@ -167,6 +197,13 @@ type QuerierMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.CreateJournalParams
+		}
+		// CreateJournalExport holds details about calls to the CreateJournalExport method.
+		CreateJournalExport []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.CreateJournalExportParams
 		}
 		// CreateUser holds details about calls to the CreateUser method.
 		CreateUser []struct {
@@ -221,6 +258,13 @@ type QuerierMock struct {
 			Ctx context.Context
 			// UserID is the userID argument value.
 			UserID uuid.UUID
+		}
+		// GetJournalExport holds details about calls to the GetJournalExport method.
+		GetJournalExport []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetJournalExportParams
 		}
 		// GetJournalsByUserId holds details about calls to the GetJournalsByUserId method.
 		GetJournalsByUserId []struct {
@@ -292,6 +336,27 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertUserGameBetParams
 		}
+		// UpdateJournalExportComplete holds details about calls to the UpdateJournalExportComplete method.
+		UpdateJournalExportComplete []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateJournalExportCompleteParams
+		}
+		// UpdateJournalExportFailed holds details about calls to the UpdateJournalExportFailed method.
+		UpdateJournalExportFailed []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateJournalExportFailedParams
+		}
+		// UpdateJournalExportProcessing holds details about calls to the UpdateJournalExportProcessing method.
+		UpdateJournalExportProcessing []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uuid.UUID
+		}
 		// UpdateUserTimezone holds details about calls to the UpdateUserTimezone method.
 		UpdateUserTimezone []struct {
 			// Ctx is the ctx argument value.
@@ -315,6 +380,7 @@ type QuerierMock struct {
 		}
 	}
 	lockCreateJournal                 sync.RWMutex
+	lockCreateJournalExport           sync.RWMutex
 	lockCreateUser                    sync.RWMutex
 	lockCreateUserOauth               sync.RWMutex
 	lockDeleteJournalForUser          sync.RWMutex
@@ -323,6 +389,7 @@ type QuerierMock struct {
 	lockGetFeatureFlagByName          sync.RWMutex
 	lockGetJournalById                sync.RWMutex
 	lockGetJournalCountByUserId       sync.RWMutex
+	lockGetJournalExport              sync.RWMutex
 	lockGetJournalsByUserId           sync.RWMutex
 	lockGetJournalsByUserIdPaginated  sync.RWMutex
 	lockGetRuntimeConfigByKey         sync.RWMutex
@@ -333,6 +400,9 @@ type QuerierMock struct {
 	lockGetUserGameBets               sync.RWMutex
 	lockGetUserJournalSummaryByUserId sync.RWMutex
 	lockInsertUserGameBet             sync.RWMutex
+	lockUpdateJournalExportComplete   sync.RWMutex
+	lockUpdateJournalExportFailed     sync.RWMutex
+	lockUpdateJournalExportProcessing sync.RWMutex
 	lockUpdateUserTimezone            sync.RWMutex
 	lockUpsertRuntimeConfigValue      sync.RWMutex
 	lockUpsertUserGameBalance         sync.RWMutex
@@ -371,6 +441,42 @@ func (mock *QuerierMock) CreateJournalCalls() []struct {
 	mock.lockCreateJournal.RLock()
 	calls = mock.calls.CreateJournal
 	mock.lockCreateJournal.RUnlock()
+	return calls
+}
+
+// CreateJournalExport calls CreateJournalExportFunc.
+func (mock *QuerierMock) CreateJournalExport(ctx context.Context, arg db.CreateJournalExportParams) (db.SourceJournalExport, error) {
+	if mock.CreateJournalExportFunc == nil {
+		panic("QuerierMock.CreateJournalExportFunc: method is nil but Querier.CreateJournalExport was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.CreateJournalExportParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockCreateJournalExport.Lock()
+	mock.calls.CreateJournalExport = append(mock.calls.CreateJournalExport, callInfo)
+	mock.lockCreateJournalExport.Unlock()
+	return mock.CreateJournalExportFunc(ctx, arg)
+}
+
+// CreateJournalExportCalls gets all the calls that were made to CreateJournalExport.
+// Check the length with:
+//
+//	len(mockedQuerier.CreateJournalExportCalls())
+func (mock *QuerierMock) CreateJournalExportCalls() []struct {
+	Ctx context.Context
+	Arg db.CreateJournalExportParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.CreateJournalExportParams
+	}
+	mock.lockCreateJournalExport.RLock()
+	calls = mock.calls.CreateJournalExport
+	mock.lockCreateJournalExport.RUnlock()
 	return calls
 }
 
@@ -655,6 +761,42 @@ func (mock *QuerierMock) GetJournalCountByUserIdCalls() []struct {
 	mock.lockGetJournalCountByUserId.RLock()
 	calls = mock.calls.GetJournalCountByUserId
 	mock.lockGetJournalCountByUserId.RUnlock()
+	return calls
+}
+
+// GetJournalExport calls GetJournalExportFunc.
+func (mock *QuerierMock) GetJournalExport(ctx context.Context, arg db.GetJournalExportParams) (db.SourceJournalExport, error) {
+	if mock.GetJournalExportFunc == nil {
+		panic("QuerierMock.GetJournalExportFunc: method is nil but Querier.GetJournalExport was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetJournalExportParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetJournalExport.Lock()
+	mock.calls.GetJournalExport = append(mock.calls.GetJournalExport, callInfo)
+	mock.lockGetJournalExport.Unlock()
+	return mock.GetJournalExportFunc(ctx, arg)
+}
+
+// GetJournalExportCalls gets all the calls that were made to GetJournalExport.
+// Check the length with:
+//
+//	len(mockedQuerier.GetJournalExportCalls())
+func (mock *QuerierMock) GetJournalExportCalls() []struct {
+	Ctx context.Context
+	Arg db.GetJournalExportParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetJournalExportParams
+	}
+	mock.lockGetJournalExport.RLock()
+	calls = mock.calls.GetJournalExport
+	mock.lockGetJournalExport.RUnlock()
 	return calls
 }
 
@@ -1015,6 +1157,114 @@ func (mock *QuerierMock) InsertUserGameBetCalls() []struct {
 	mock.lockInsertUserGameBet.RLock()
 	calls = mock.calls.InsertUserGameBet
 	mock.lockInsertUserGameBet.RUnlock()
+	return calls
+}
+
+// UpdateJournalExportComplete calls UpdateJournalExportCompleteFunc.
+func (mock *QuerierMock) UpdateJournalExportComplete(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error) {
+	if mock.UpdateJournalExportCompleteFunc == nil {
+		panic("QuerierMock.UpdateJournalExportCompleteFunc: method is nil but Querier.UpdateJournalExportComplete was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateJournalExportCompleteParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateJournalExportComplete.Lock()
+	mock.calls.UpdateJournalExportComplete = append(mock.calls.UpdateJournalExportComplete, callInfo)
+	mock.lockUpdateJournalExportComplete.Unlock()
+	return mock.UpdateJournalExportCompleteFunc(ctx, arg)
+}
+
+// UpdateJournalExportCompleteCalls gets all the calls that were made to UpdateJournalExportComplete.
+// Check the length with:
+//
+//	len(mockedQuerier.UpdateJournalExportCompleteCalls())
+func (mock *QuerierMock) UpdateJournalExportCompleteCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateJournalExportCompleteParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateJournalExportCompleteParams
+	}
+	mock.lockUpdateJournalExportComplete.RLock()
+	calls = mock.calls.UpdateJournalExportComplete
+	mock.lockUpdateJournalExportComplete.RUnlock()
+	return calls
+}
+
+// UpdateJournalExportFailed calls UpdateJournalExportFailedFunc.
+func (mock *QuerierMock) UpdateJournalExportFailed(ctx context.Context, arg db.UpdateJournalExportFailedParams) (db.SourceJournalExport, error) {
+	if mock.UpdateJournalExportFailedFunc == nil {
+		panic("QuerierMock.UpdateJournalExportFailedFunc: method is nil but Querier.UpdateJournalExportFailed was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateJournalExportFailedParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateJournalExportFailed.Lock()
+	mock.calls.UpdateJournalExportFailed = append(mock.calls.UpdateJournalExportFailed, callInfo)
+	mock.lockUpdateJournalExportFailed.Unlock()
+	return mock.UpdateJournalExportFailedFunc(ctx, arg)
+}
+
+// UpdateJournalExportFailedCalls gets all the calls that were made to UpdateJournalExportFailed.
+// Check the length with:
+//
+//	len(mockedQuerier.UpdateJournalExportFailedCalls())
+func (mock *QuerierMock) UpdateJournalExportFailedCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateJournalExportFailedParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateJournalExportFailedParams
+	}
+	mock.lockUpdateJournalExportFailed.RLock()
+	calls = mock.calls.UpdateJournalExportFailed
+	mock.lockUpdateJournalExportFailed.RUnlock()
+	return calls
+}
+
+// UpdateJournalExportProcessing calls UpdateJournalExportProcessingFunc.
+func (mock *QuerierMock) UpdateJournalExportProcessing(ctx context.Context, id uuid.UUID) (db.SourceJournalExport, error) {
+	if mock.UpdateJournalExportProcessingFunc == nil {
+		panic("QuerierMock.UpdateJournalExportProcessingFunc: method is nil but Querier.UpdateJournalExportProcessing was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uuid.UUID
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockUpdateJournalExportProcessing.Lock()
+	mock.calls.UpdateJournalExportProcessing = append(mock.calls.UpdateJournalExportProcessing, callInfo)
+	mock.lockUpdateJournalExportProcessing.Unlock()
+	return mock.UpdateJournalExportProcessingFunc(ctx, id)
+}
+
+// UpdateJournalExportProcessingCalls gets all the calls that were made to UpdateJournalExportProcessing.
+// Check the length with:
+//
+//	len(mockedQuerier.UpdateJournalExportProcessingCalls())
+func (mock *QuerierMock) UpdateJournalExportProcessingCalls() []struct {
+	Ctx context.Context
+	ID  uuid.UUID
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uuid.UUID
+	}
+	mock.lockUpdateJournalExportProcessing.RLock()
+	calls = mock.calls.UpdateJournalExportProcessing
+	mock.lockUpdateJournalExportProcessing.RUnlock()
 	return calls
 }
 

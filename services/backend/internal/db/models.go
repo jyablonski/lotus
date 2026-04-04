@@ -6,12 +6,100 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
 )
+
+type SourceExportFormat string
+
+const (
+	SourceExportFormatCsv      SourceExportFormat = "csv"
+	SourceExportFormatMarkdown SourceExportFormat = "markdown"
+)
+
+func (e *SourceExportFormat) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SourceExportFormat(s)
+	case string:
+		*e = SourceExportFormat(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SourceExportFormat: %T", src)
+	}
+	return nil
+}
+
+type NullSourceExportFormat struct {
+	SourceExportFormat SourceExportFormat
+	Valid              bool // Valid is true if SourceExportFormat is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSourceExportFormat) Scan(value interface{}) error {
+	if value == nil {
+		ns.SourceExportFormat, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SourceExportFormat.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSourceExportFormat) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SourceExportFormat), nil
+}
+
+type SourceExportStatus string
+
+const (
+	SourceExportStatusPending    SourceExportStatus = "pending"
+	SourceExportStatusProcessing SourceExportStatus = "processing"
+	SourceExportStatusComplete   SourceExportStatus = "complete"
+	SourceExportStatusFailed     SourceExportStatus = "failed"
+)
+
+func (e *SourceExportStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SourceExportStatus(s)
+	case string:
+		*e = SourceExportStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SourceExportStatus: %T", src)
+	}
+	return nil
+}
+
+type NullSourceExportStatus struct {
+	SourceExportStatus SourceExportStatus
+	Valid              bool // Valid is true if SourceExportStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSourceExportStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.SourceExportStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SourceExportStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSourceExportStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SourceExportStatus), nil
+}
 
 type ActiveMlModel struct {
 	ID         int32
@@ -77,6 +165,17 @@ type SourceJournalEmbedding struct {
 	Embedding    interface{}
 	ModelVersion string
 	CreatedAt    time.Time
+}
+
+type SourceJournalExport struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Format      SourceExportFormat
+	Status      SourceExportStatus
+	Content     sql.NullString
+	ErrorMsg    sql.NullString
+	CreatedAt   time.Time
+	CompletedAt sql.NullTime
 }
 
 type SourceJournalSentiment struct {

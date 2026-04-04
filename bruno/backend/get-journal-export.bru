@@ -1,0 +1,14 @@
+meta {
+  name: Get Journal Export
+  type: http
+}
+
+get {
+  url: {{backend_url}}/v1/journals/export/{{exportId}}?userId=
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~userId:
+}
