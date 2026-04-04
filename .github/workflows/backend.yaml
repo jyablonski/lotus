@@ -62,8 +62,9 @@ jobs:
           format: golang
 
       - name: Enforce ${{ env.COVERAGE_THRESHOLD }}% coverage threshold
+        working-directory: services/backend
         run: |
-          total=$(go tool cover -func=services/backend/coverage.out | awk '/^total:/{print $NF}' | tr -d '%')
+          total=$(go tool cover -func=coverage.out | awk '/^total:/{print $NF}' | tr -d '%')
           echo "Total coverage: ${total}%"
           awk -v t="$total" -v threshold="$COVERAGE_THRESHOLD" 'BEGIN { if (t+0 < threshold+0) { print "Coverage " t "% is below " threshold "% threshold"; exit 1 } }'
 

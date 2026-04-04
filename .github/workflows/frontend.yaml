@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  COVERAGE_THRESHOLD: 65
+  COVERAGE_THRESHOLD: 75
 
 jobs:
   frontend-pipeline:
