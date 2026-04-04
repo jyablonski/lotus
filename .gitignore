@@ -75,3 +75,6 @@ docs/plans/**
 # Pact contract test output (generated artifacts)
 services/frontend/pacts/
 services/backend/pacts/
+
+# ai bullshit
+.codex
