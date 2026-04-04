@@ -2,10 +2,11 @@ package grpc_test
 
 import (
 	"context"
-	"database/sql"
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
@@ -13,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func integPgUUID(u uuid.UUID) pgtype.UUID { return pgtype.UUID{Bytes: u, Valid: true} }
 
 func TestCreateJournal(t *testing.T) {
 	ctx, queries := newTestCtx(t)
@@ -35,7 +38,7 @@ func TestCreateJournal(t *testing.T) {
 
 	// CreateJournal commits its own pgx tx; use a direct connection to see the row.
 	directQ := newDirectQueries(t)
-	journals, err := directQ.GetJournalsByUserId(context.Background(), userID)
+	journals, err := directQ.GetJournalsByUserId(context.Background(), integPgUUID(userID))
 	require.NoError(t, err)
 
 	var created *db.SourceJournal
@@ -48,7 +51,8 @@ func TestCreateJournal(t *testing.T) {
 	require.NotNil(t, created, "created journal should be present")
 	assert.Equal(t, userID.String(), created.UserID.String())
 	assert.Equal(t, "This is a test journal entry", created.JournalText)
-	assert.Equal(t, int32(7), created.MoodScore.Int32)
+	require.NotNil(t, created.MoodScore)
+	assert.Equal(t, int32(7), *created.MoodScore)
 }
 
 // TestCreateJournalSucceedsWithAnalysisDeferred verifies CreateJournal commits the
@@ -71,7 +75,7 @@ func TestCreateJournalSucceedsWithAnalysisDeferred(t *testing.T) {
 	assert.NotEmpty(t, resp.JournalId)
 
 	directQ := newDirectQueries(t)
-	journals, err := directQ.GetJournalsByUserId(context.Background(), userID)
+	journals, err := directQ.GetJournalsByUserId(context.Background(), integPgUUID(userID))
 	require.NoError(t, err)
 	assert.Len(t, journals, 1)
 }
@@ -100,10 +104,11 @@ func TestGetJournals(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
+	ms := int32(5)
 	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      userID,
+		UserID:      integPgUUID(userID),
 		JournalText: "Test journal entry",
-		MoodScore:   sql.NullInt32{Int32: 5, Valid: true},
+		MoodScore:   &ms,
 	})
 	require.NoError(t, err)
 
@@ -126,10 +131,11 @@ func TestGetJournalsPagination(t *testing.T) {
 	userID := createTestUser(t, queries)
 
 	for i := 0; i < 5; i++ {
+		mood := int32(i + 1)
 		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-			UserID:      userID,
+			UserID:      integPgUUID(userID),
 			JournalText: "Test journal entry " + strconv.Itoa(i+1),
-			MoodScore:   sql.NullInt32{Int32: int32(i + 1), Valid: true},
+			MoodScore:   &mood,
 		})
 		require.NoError(t, err)
 	}
@@ -164,10 +170,11 @@ func TestGetJournalsPaginationDefaults(t *testing.T) {
 	userID := createTestUser(t, queries)
 
 	for i := 0; i < 2; i++ {
+		mood := int32(i + 1)
 		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-			UserID:      userID,
+			UserID:      integPgUUID(userID),
 			JournalText: "Test journal entry " + strconv.Itoa(i+1),
-			MoodScore:   sql.NullInt32{Int32: int32(i + 1), Valid: true},
+			MoodScore:   &mood,
 		})
 		require.NoError(t, err)
 	}
@@ -193,10 +200,11 @@ func TestGetJournalsPaginationLimitEnforcement(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
+	ms := int32(5)
 	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      userID,
+		UserID:      integPgUUID(userID),
 		JournalText: "Test journal entry",
-		MoodScore:   sql.NullInt32{Int32: 5, Valid: true},
+		MoodScore:   &ms,
 	})
 	require.NoError(t, err)
 
@@ -213,10 +221,11 @@ func TestTriggerJournalAnalysis(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
+	ms := int32(6)
 	journal, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      userID,
+		UserID:      integPgUUID(userID),
 		JournalText: "Manual analysis test",
-		MoodScore:   sql.NullInt32{Int32: 6, Valid: true},
+		MoodScore:   &ms,
 	})
 	require.NoError(t, err)
 
@@ -280,6 +289,7 @@ func TestCreateJournalInvalidMoodScore(t *testing.T) {
 
 func TestCreateJournalInvalidMoodValue(t *testing.T) {
 	ctx, queries := newTestCtx(t)
+	ctx = withRiverDeps(ctx)
 	srv := testinfra.MockAnalyzerServer(t)
 	ctx = withAnalyzer(ctx, srv.URL)
 	svc := &grpcServer.JournalServer{}
@@ -299,10 +309,11 @@ func TestGetJournalByID(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
+	ms := int32(8)
 	row, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      userID,
+		UserID:      integPgUUID(userID),
 		JournalText: "Detail view body",
-		MoodScore:   sql.NullInt32{Int32: 8, Valid: true},
+		MoodScore:   &ms,
 	})
 	require.NoError(t, err)
 
@@ -345,7 +356,8 @@ func TestUpdateJournalIntegration(t *testing.T) {
 	j, err := directQ.GetJournalById(context.Background(), int32(jid))
 	require.NoError(t, err)
 	assert.Equal(t, "Updated body", j.JournalText)
-	assert.Equal(t, int32(9), j.MoodScore.Int32)
+	require.NotNil(t, j.MoodScore)
+	assert.Equal(t, int32(9), *j.MoodScore)
 }
 
 func TestDeleteJournalIntegration(t *testing.T) {

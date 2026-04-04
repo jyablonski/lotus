@@ -26,6 +26,8 @@ const (
 	JournalService_DeleteJournal_FullMethodName          = "/journal.JournalService/DeleteJournal"
 	JournalService_TriggerJournalAnalysis_FullMethodName = "/journal.JournalService/TriggerJournalAnalysis"
 	JournalService_SearchJournals_FullMethodName         = "/journal.JournalService/SearchJournals"
+	JournalService_RequestJournalExport_FullMethodName   = "/journal.JournalService/RequestJournalExport"
+	JournalService_GetJournalExport_FullMethodName       = "/journal.JournalService/GetJournalExport"
 	JournalService_KeywordSearchJournals_FullMethodName  = "/journal.JournalService/KeywordSearchJournals"
 )
 
@@ -41,6 +43,8 @@ type JournalServiceClient interface {
 	DeleteJournal(ctx context.Context, in *DeleteJournalRequest, opts ...grpc.CallOption) (*DeleteJournalResponse, error)
 	TriggerJournalAnalysis(ctx context.Context, in *TriggerAnalysisRequest, opts ...grpc.CallOption) (*TriggerAnalysisResponse, error)
 	SearchJournals(ctx context.Context, in *SearchJournalsRequest, opts ...grpc.CallOption) (*SearchJournalsResponse, error)
+	RequestJournalExport(ctx context.Context, in *RequestJournalExportRequest, opts ...grpc.CallOption) (*RequestJournalExportResponse, error)
+	GetJournalExport(ctx context.Context, in *GetJournalExportRequest, opts ...grpc.CallOption) (*GetJournalExportResponse, error)
 	KeywordSearchJournals(ctx context.Context, in *KeywordSearchJournalsRequest, opts ...grpc.CallOption) (*KeywordSearchJournalsResponse, error)
 }
 
@@ -122,6 +126,26 @@ func (c *journalServiceClient) SearchJournals(ctx context.Context, in *SearchJou
 	return out, nil
 }
 
+func (c *journalServiceClient) RequestJournalExport(ctx context.Context, in *RequestJournalExportRequest, opts ...grpc.CallOption) (*RequestJournalExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestJournalExportResponse)
+	err := c.cc.Invoke(ctx, JournalService_RequestJournalExport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *journalServiceClient) GetJournalExport(ctx context.Context, in *GetJournalExportRequest, opts ...grpc.CallOption) (*GetJournalExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetJournalExportResponse)
+	err := c.cc.Invoke(ctx, JournalService_GetJournalExport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *journalServiceClient) KeywordSearchJournals(ctx context.Context, in *KeywordSearchJournalsRequest, opts ...grpc.CallOption) (*KeywordSearchJournalsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(KeywordSearchJournalsResponse)
@@ -144,6 +168,8 @@ type JournalServiceServer interface {
 	DeleteJournal(context.Context, *DeleteJournalRequest) (*DeleteJournalResponse, error)
 	TriggerJournalAnalysis(context.Context, *TriggerAnalysisRequest) (*TriggerAnalysisResponse, error)
 	SearchJournals(context.Context, *SearchJournalsRequest) (*SearchJournalsResponse, error)
+	RequestJournalExport(context.Context, *RequestJournalExportRequest) (*RequestJournalExportResponse, error)
+	GetJournalExport(context.Context, *GetJournalExportRequest) (*GetJournalExportResponse, error)
 	KeywordSearchJournals(context.Context, *KeywordSearchJournalsRequest) (*KeywordSearchJournalsResponse, error)
 }
 
@@ -174,6 +200,12 @@ func (UnimplementedJournalServiceServer) TriggerJournalAnalysis(context.Context,
 }
 func (UnimplementedJournalServiceServer) SearchJournals(context.Context, *SearchJournalsRequest) (*SearchJournalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchJournals not implemented")
+}
+func (UnimplementedJournalServiceServer) RequestJournalExport(context.Context, *RequestJournalExportRequest) (*RequestJournalExportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestJournalExport not implemented")
+}
+func (UnimplementedJournalServiceServer) GetJournalExport(context.Context, *GetJournalExportRequest) (*GetJournalExportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetJournalExport not implemented")
 }
 func (UnimplementedJournalServiceServer) KeywordSearchJournals(context.Context, *KeywordSearchJournalsRequest) (*KeywordSearchJournalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KeywordSearchJournals not implemented")
@@ -324,6 +356,42 @@ func _JournalService_SearchJournals_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _JournalService_RequestJournalExport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestJournalExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JournalServiceServer).RequestJournalExport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: JournalService_RequestJournalExport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JournalServiceServer).RequestJournalExport(ctx, req.(*RequestJournalExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _JournalService_GetJournalExport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetJournalExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JournalServiceServer).GetJournalExport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: JournalService_GetJournalExport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JournalServiceServer).GetJournalExport(ctx, req.(*GetJournalExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _JournalService_KeywordSearchJournals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(KeywordSearchJournalsRequest)
 	if err := dec(in); err != nil {
@@ -376,6 +444,14 @@ var JournalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchJournals",
 			Handler:    _JournalService_SearchJournals_Handler,
+		},
+		{
+			MethodName: "RequestJournalExport",
+			Handler:    _JournalService_RequestJournalExport_Handler,
+		},
+		{
+			MethodName: "GetJournalExport",
+			Handler:    _JournalService_GetJournalExport_Handler,
 		},
 		{
 			MethodName: "KeywordSearchJournals",

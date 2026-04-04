@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	"github.com/jyablonski/lotus/internal/jobs"
@@ -55,17 +55,16 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // rollback is a no-op after commit
 
-	// Insert the journal row directly via pgx (same SQL as the sqlc-generated query).
-	var journalID int32
-	err = tx.QueryRow(ctx,
-		`INSERT INTO source.journals(user_id, journal_text, mood_score)
-		 VALUES ($1, $2, $3)
-		 RETURNING id`,
-		userID, req.JournalText, moodScore,
-	).Scan(&journalID)
+	ms := int32(moodScore)
+	journal, err := db.New(tx).CreateJournal(ctx, db.CreateJournalParams{
+		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
+		JournalText: req.JournalText,
+		MoodScore:   &ms,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create journal: %w", err)
 	}
+	journalID := journal.ID
 
 	// Enqueue the analysis job in the same transaction.
 	_, err = riverClient.InsertTx(ctx, tx, jobs.AnalyzeEntryArgs{
@@ -110,15 +109,17 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 		offset = 0
 	}
 
+	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
+
 	// fetch total count and paginated journals (separate calls)
-	totalCount, err := dbq.GetJournalCountByUserId(ctx, userID)
+	totalCount, err := dbq.GetJournalCountByUserId(ctx, pgUserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get journal count: %w", err)
 	}
 
 	// Use the generated params struct
 	journals, err := dbq.GetJournalsByUserIdPaginated(ctx, db.GetJournalsByUserIdPaginatedParams{
-		UserID: userID,
+		UserID: pgUserID,
 		Limit:  limit,
 		Offset: offset,
 	})
@@ -165,12 +166,12 @@ func (s *JournalServer) GetJournal(ctx context.Context, req *pb.GetJournalReques
 	dbq := inject.DBFrom(ctx)
 	j, err := dbq.GetJournalById(ctx, int32(journalID))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("%w: %w", ErrJournalNotFound, err)
 		}
 		return nil, fmt.Errorf("failed to load journal: %w", err)
 	}
-	if j.UserID != userID {
+	if uuid.UUID(j.UserID.Bytes) != userID {
 		return nil, ErrJournalForbidden
 	}
 
@@ -213,15 +214,17 @@ func (s *JournalServer) UpdateJournal(ctx context.Context, req *pb.UpdateJournal
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // rollback is a no-op after commit
 
-	cmdTag, err := tx.Exec(ctx,
-		`UPDATE source.journals SET journal_text = $1, mood_score = $2, modified_at = NOW()
-		 WHERE id = $3 AND user_id = $4`,
-		req.JournalText, moodScore, int32(journalID), userID,
-	)
+	ms := int32(moodScore)
+	n, err := db.New(tx).UpdateJournalForUser(ctx, db.UpdateJournalForUserParams{
+		JournalText: req.JournalText,
+		MoodScore:   &ms,
+		ID:          int32(journalID),
+		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update journal: %w", err)
 	}
-	if cmdTag.RowsAffected() == 0 {
+	if n == 0 {
 		return nil, fmt.Errorf("%w: %w", ErrJournalNotFound, pgx.ErrNoRows)
 	}
 
@@ -260,7 +263,7 @@ func (s *JournalServer) DeleteJournal(ctx context.Context, req *pb.DeleteJournal
 
 	n, err := inject.DBFrom(ctx).DeleteJournalForUser(ctx, db.DeleteJournalForUserParams{
 		ID:     int32(journalID),
-		UserID: userID,
+		UserID: pgtype.UUID{Bytes: userID, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete journal: %w", err)
@@ -272,18 +275,117 @@ func (s *JournalServer) DeleteJournal(ctx context.Context, req *pb.DeleteJournal
 	return &pb.DeleteJournalResponse{Success: true}, nil
 }
 
+func (s *JournalServer) RequestJournalExport(ctx context.Context, req *pb.RequestJournalExportRequest) (*pb.RequestJournalExportResponse, error) {
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
+	}
+
+	var format db.SourceExportFormat
+	switch req.Format {
+	case "markdown":
+		format = db.SourceExportFormatMarkdown
+	case "csv", "":
+		format = db.SourceExportFormatCsv
+	default:
+		return nil, fmt.Errorf("unsupported export format: %s", req.Format)
+	}
+
+	pgxPool := inject.PgxPoolFrom(ctx)
+	riverClient := inject.RiverClientFrom(ctx)
+
+	tx, err := pgxPool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // rollback is a no-op after commit
+
+	export, err := db.New(tx).CreateJournalExport(ctx, db.CreateJournalExportParams{
+		UserID: pgtype.UUID{Bytes: userID, Valid: true},
+		Format: format,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create export record: %w", err)
+	}
+
+	_, err = riverClient.InsertTx(ctx, tx, jobs.ExportJournalsArgs{
+		ExportID: export.ID.String(),
+		UserID:   userID.String(),
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enqueue export job: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return &pb.RequestJournalExportResponse{
+		ExportId: export.ID.String(),
+		Status:   string(export.Status),
+	}, nil
+}
+
+func (s *JournalServer) GetJournalExport(ctx context.Context, req *pb.GetJournalExportRequest) (*pb.GetJournalExportResponse, error) {
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
+	}
+
+	exportID, err := uuid.Parse(req.ExportId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid export_id: %w", err)
+	}
+
+	dbq := inject.DBFrom(ctx)
+	export, err := dbq.GetJournalExport(ctx, db.GetJournalExportParams{
+		ID:     pgtype.UUID{Bytes: exportID, Valid: true},
+		UserID: pgtype.UUID{Bytes: userID, Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("export not found: %w", err)
+	}
+
+	resp := &pb.GetJournalExportResponse{
+		ExportId: export.ID.String(),
+		Status:   string(export.Status),
+	}
+
+	if export.Status == db.SourceExportStatusComplete && export.Content != nil {
+		resp.Content = *export.Content
+		date := ""
+		if export.CreatedAt.Valid {
+			date = export.CreatedAt.Time.Format("2006-01-02")
+		}
+		switch export.Format {
+		case db.SourceExportFormatMarkdown:
+			resp.Filename = "lotus-journal-export-" + date + ".md"
+			resp.MimeType = "text/markdown;charset=utf-8"
+		default:
+			resp.Filename = "lotus-journal-export-" + date + ".csv"
+			resp.MimeType = "text/csv;charset=utf-8"
+		}
+	}
+
+	return resp, nil
+}
+
 // sourceJournalToPB maps a DB row to a protobuf JournalEntry.
 func sourceJournalToPB(j db.SourceJournal, topicNames []string) *pb.JournalEntry {
 	mood := ""
-	if j.MoodScore.Valid {
-		mood = int32ToString(j.MoodScore.Int32)
+	if j.MoodScore != nil {
+		mood = int32ToString(*j.MoodScore)
+	}
+	createdAt := ""
+	if j.CreatedAt.Valid {
+		createdAt = j.CreatedAt.Time.Format(time.RFC3339)
 	}
 	entry := &pb.JournalEntry{
 		JournalId:   strconv.Itoa(int(j.ID)),
 		UserId:      j.UserID.String(),
 		JournalText: j.JournalText,
 		UserMood:    mood,
-		CreatedAt:   j.CreatedAt.Format(time.RFC3339),
+		CreatedAt:   createdAt,
 	}
 	if len(topicNames) > 0 {
 		entry.TopicNames = topicNames

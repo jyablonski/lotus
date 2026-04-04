@@ -19,6 +19,7 @@ concurrency:
 jobs:
   frontend-pipeline:
     runs-on: ubuntu-latest
+    name: Test Suite
 
     steps:
       - name: Checkout repository
@@ -53,7 +54,3 @@ jobs:
       - name: Build project
         working-directory: services/frontend
         run: npm run build
-
-  e2e:
-    needs: frontend-pipeline
-    uses: ./.github/workflows/e2e.yaml

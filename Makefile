@@ -52,8 +52,12 @@ bruno-generate: ## Generate Bruno API collection from OpenAPI specs
 .PHONY: generate
 generate: sqlc-generate buf-generate moq-generate ## Run all code generation (sqlc, buf, moq)
 
+.PHONY: generate-dbt-source-schema
+generate-dbt-source-schema: ## Generate dbt CI source schema from Django migrations
+	@./scripts/generate-dbt-source-schema.sh
+
 .PHONY: e2e-up
-e2e-up: ## Start e2e stack (postgres, backend, frontend)
+e2e-up: ## Start e2e stack (postgres, django, backend, frontend)
 	@docker compose -f docker/docker-compose-e2e.yaml up -d --build
 
 .PHONY: e2e-down

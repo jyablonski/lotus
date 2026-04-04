@@ -61,7 +61,7 @@ class Journal(models.Model):
     """Journal model matching the existing journals table."""
 
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column="user_id")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column="user_id", db_index=False)
     journal_text = models.TextField()
     mood_score = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(
@@ -269,6 +269,47 @@ class UserGameBet(models.Model):
 
     def __str__(self):
         return f"{self.user.email} bet ${self.amount} on {self.zone} (roll={self.roll_result})"
+
+
+class JournalExport(models.Model):
+    """Tracks async journal export jobs enqueued via River."""
+
+    FORMAT_CHOICES = [
+        ("csv", "CSV"),
+        ("markdown", "Markdown"),
+    ]
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("processing", "Processing"),
+        ("complete", "Complete"),
+        ("failed", "Failed"),
+    ]
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="journal_exports",
+    )
+    format = models.CharField(max_length=20, choices=FORMAT_CHOICES, default="csv")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    content = models.TextField(null=True, blank=True)
+    error_msg = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "journal_exports"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Export {self.id} ({self.format}) — {self.status}"
 
 
 class RuntimeConfig(models.Model):

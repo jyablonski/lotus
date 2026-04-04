@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
@@ -16,32 +18,38 @@ import (
 // Returns the journal ID.
 func insertSearchJournal(t *testing.T, userID uuid.UUID, text string, mood int32) int32 {
 	t.Helper()
-	var id int32
-	err := testPgxPool.QueryRow(context.Background(),
-		`INSERT INTO source.journals(user_id, journal_text, mood_score) VALUES ($1, $2, $3) RETURNING id`,
-		userID, text, mood,
-	).Scan(&id)
+	q := db.New(testPgxPool)
+	ms := mood
+	j, err := q.CreateJournal(context.Background(), db.CreateJournalParams{
+		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
+		JournalText: text,
+		MoodScore:   &ms,
+	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		testPgxPool.Exec(context.Background(), `DELETE FROM source.journals WHERE id = $1`, id)
+		_, _ = q.DeleteJournalForUser(context.Background(), db.DeleteJournalForUserParams{
+			ID:     j.ID,
+			UserID: pgtype.UUID{Bytes: userID, Valid: true},
+		})
 	})
-	return id
+	return j.ID
 }
 
 // insertSearchUser creates a user directly via pgxPool (committed) and returns the UUID.
 func insertSearchUser(t *testing.T) uuid.UUID {
 	t.Helper()
-	var id uuid.UUID
+	q := db.New(testPgxPool)
 	email := "search-test-" + uuid.New().String() + "@test.example"
-	err := testPgxPool.QueryRow(context.Background(),
-		`INSERT INTO source.users(email, oauth_provider) VALUES ($1, $2) RETURNING id`,
-		email, "test",
-	).Scan(&id)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		testPgxPool.Exec(context.Background(), `DELETE FROM source.users WHERE id = $1`, id)
+	op := "test"
+	u, err := q.CreateUserOauth(context.Background(), db.CreateUserOauthParams{
+		Email: email, OauthProvider: &op,
 	})
-	return id
+	require.NoError(t, err)
+	uid := uuid.UUID(u.ID.Bytes)
+	t.Cleanup(func() {
+		_ = q.DeleteUserById(context.Background(), u.ID)
+	})
+	return uid
 }
 
 func TestKeywordSearchJournals_ReturnsMatchingEntries(t *testing.T) {

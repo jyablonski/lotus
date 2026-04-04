@@ -7,29 +7,38 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CreateJournal(ctx context.Context, arg CreateJournalParams) (SourceJournal, error)
+	CreateJournalExport(ctx context.Context, arg CreateJournalExportParams) (SourceJournalExport, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (SourceUser, error)
 	CreateUserOauth(ctx context.Context, arg CreateUserOauthParams) (SourceUser, error)
 	DeleteJournalForUser(ctx context.Context, arg DeleteJournalForUserParams) (int64, error)
+	DeleteUserById(ctx context.Context, id pgtype.UUID) error
 	GetActiveFeatureFlags(ctx context.Context) ([]SourceWaffleFlag, error)
 	GetActiveMLModel(ctx context.Context, mlModel string) (bool, error)
 	GetFeatureFlagByName(ctx context.Context, name string) (SourceWaffleFlag, error)
 	GetJournalById(ctx context.Context, id int32) (SourceJournal, error)
-	GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error)
-	GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error)
+	GetJournalCountByUserId(ctx context.Context, userID pgtype.UUID) (int64, error)
+	GetJournalExport(ctx context.Context, arg GetJournalExportParams) (SourceJournalExport, error)
+	GetJournalsByUserId(ctx context.Context, userID pgtype.UUID) ([]SourceJournal, error)
 	GetJournalsByUserIdPaginated(ctx context.Context, arg GetJournalsByUserIdPaginatedParams) ([]SourceJournal, error)
 	GetRuntimeConfigByKey(ctx context.Context, key string) (SourceRuntimeConfig, error)
 	GetTopicsByJournalIds(ctx context.Context, dollar_1 []int32) ([]GetTopicsByJournalIdsRow, error)
 	GetUserByEmail(ctx context.Context, email string) (SourceUser, error)
-	GetUserById(ctx context.Context, id uuid.UUID) (SourceUser, error)
-	GetUserGameBalance(ctx context.Context, userID uuid.UUID) (SourceUserGameBalance, error)
+	GetUserById(ctx context.Context, id pgtype.UUID) (SourceUser, error)
+	GetUserGameBalance(ctx context.Context, userID pgtype.UUID) (SourceUserGameBalance, error)
 	GetUserGameBets(ctx context.Context, arg GetUserGameBetsParams) ([]SourceUserGameBet, error)
-	GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (GoldUserJournalSummary, error)
+	GetUserJournalSummaryByUserId(ctx context.Context, userID pgtype.UUID) (GoldUserJournalSummary, error)
 	InsertUserGameBet(ctx context.Context, arg InsertUserGameBetParams) (SourceUserGameBet, error)
+	SearchJournalsKeyword(ctx context.Context, arg SearchJournalsKeywordParams) ([]SearchJournalsKeywordRow, error)
+	SearchJournalsSemantic(ctx context.Context, arg SearchJournalsSemanticParams) ([]SearchJournalsSemanticRow, error)
+	UpdateJournalExportComplete(ctx context.Context, arg UpdateJournalExportCompleteParams) (SourceJournalExport, error)
+	UpdateJournalExportFailed(ctx context.Context, arg UpdateJournalExportFailedParams) (SourceJournalExport, error)
+	UpdateJournalExportProcessing(ctx context.Context, id pgtype.UUID) (SourceJournalExport, error)
+	UpdateJournalForUser(ctx context.Context, arg UpdateJournalForUserParams) (int64, error)
 	UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (SourceUser, error)
 	UpsertRuntimeConfigValue(ctx context.Context, arg UpsertRuntimeConfigValueParams) (SourceRuntimeConfig, error)
 	UpsertUserGameBalance(ctx context.Context, arg UpsertUserGameBalanceParams) (SourceUserGameBalance, error)

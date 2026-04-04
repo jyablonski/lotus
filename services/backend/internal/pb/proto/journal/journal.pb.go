@@ -1059,6 +1059,242 @@ func (x *DeleteJournalResponse) GetSuccess() bool {
 	return false
 }
 
+type RequestJournalExportRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Format string `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"` // "csv" or "markdown"
+}
+
+func (x *RequestJournalExportRequest) Reset() {
+	*x = RequestJournalExportRequest{}
+	mi := &file_proto_journal_journal_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestJournalExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestJournalExportRequest) ProtoMessage() {}
+
+func (x *RequestJournalExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestJournalExportRequest.ProtoReflect.Descriptor instead.
+func (*RequestJournalExportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *RequestJournalExportRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *RequestJournalExportRequest) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
+type RequestJournalExportResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ExportId string `protobuf:"bytes,1,opt,name=export_id,json=exportId,proto3" json:"export_id,omitempty"`
+	Status   string `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // "pending"
+}
+
+func (x *RequestJournalExportResponse) Reset() {
+	*x = RequestJournalExportResponse{}
+	mi := &file_proto_journal_journal_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestJournalExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestJournalExportResponse) ProtoMessage() {}
+
+func (x *RequestJournalExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestJournalExportResponse.ProtoReflect.Descriptor instead.
+func (*RequestJournalExportResponse) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *RequestJournalExportResponse) GetExportId() string {
+	if x != nil {
+		return x.ExportId
+	}
+	return ""
+}
+
+func (x *RequestJournalExportResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type GetJournalExportRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId   string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ExportId string `protobuf:"bytes,2,opt,name=export_id,json=exportId,proto3" json:"export_id,omitempty"`
+}
+
+func (x *GetJournalExportRequest) Reset() {
+	*x = GetJournalExportRequest{}
+	mi := &file_proto_journal_journal_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetJournalExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetJournalExportRequest) ProtoMessage() {}
+
+func (x *GetJournalExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetJournalExportRequest.ProtoReflect.Descriptor instead.
+func (*GetJournalExportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetJournalExportRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GetJournalExportRequest) GetExportId() string {
+	if x != nil {
+		return x.ExportId
+	}
+	return ""
+}
+
+type GetJournalExportResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ExportId string `protobuf:"bytes,1,opt,name=export_id,json=exportId,proto3" json:"export_id,omitempty"`
+	Status   string `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`                     // "pending", "processing", "complete", "failed"
+	Content  string `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`                   // populated when status=complete
+	Filename string `protobuf:"bytes,4,opt,name=filename,proto3" json:"filename,omitempty"`                 // populated when status=complete
+	MimeType string `protobuf:"bytes,5,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"` // populated when status=complete
+}
+
+func (x *GetJournalExportResponse) Reset() {
+	*x = GetJournalExportResponse{}
+	mi := &file_proto_journal_journal_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetJournalExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetJournalExportResponse) ProtoMessage() {}
+
+func (x *GetJournalExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetJournalExportResponse.ProtoReflect.Descriptor instead.
+func (*GetJournalExportResponse) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetJournalExportResponse) GetExportId() string {
+	if x != nil {
+		return x.ExportId
+	}
+	return ""
+}
+
+func (x *GetJournalExportResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *GetJournalExportResponse) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *GetJournalExportResponse) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *GetJournalExportResponse) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
 var File_proto_journal_journal_proto protoreflect.FileDescriptor
 
 var file_proto_journal_journal_proto_rawDesc = []byte{
@@ -1177,11 +1413,37 @@ var file_proto_journal_journal_proto_rawDesc = []byte{
 	0x22, 0x31, 0x0a, 0x15, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61,
 	0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63,
 	0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63,
-	0x65, 0x73, 0x73, 0x42, 0x42, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x6a, 0x79, 0x61, 0x62, 0x6c, 0x6f, 0x6e, 0x73, 0x6b, 0x69, 0x2f, 0x6c, 0x6f, 0x74,
-	0x75, 0x73, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x2f, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x3b, 0x6a, 0x6f, 0x75,
-	0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x73, 0x73, 0x22, 0x4e, 0x0a, 0x1b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x4a, 0x6f,
+	0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x66,
+	0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x6f, 0x72,
+	0x6d, 0x61, 0x74, 0x22, 0x53, 0x0a, 0x1c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x4a, 0x6f,
+	0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x49, 0x64,
+	0x12, 0x16, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x22, 0x4f, 0x0a, 0x17, 0x47, 0x65, 0x74, 0x4a,
+	0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x1b, 0x0a, 0x09,
+	0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x08, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x49, 0x64, 0x22, 0xa2, 0x01, 0x0a, 0x18, 0x47, 0x65,
+	0x74, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
+	0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x65, 0x78, 0x70, 0x6f, 0x72,
+	0x74, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x63,
+	0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f,
+	0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x6e, 0x61, 0x6d,
+	0x65, 0x12, 0x1b, 0x0a, 0x09, 0x6d, 0x69, 0x6d, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x6d, 0x69, 0x6d, 0x65, 0x54, 0x79, 0x70, 0x65, 0x42, 0x42,
+	0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6a, 0x79, 0x61,
+	0x62, 0x6c, 0x6f, 0x6e, 0x73, 0x6b, 0x69, 0x2f, 0x6c, 0x6f, 0x74, 0x75, 0x73, 0x2f, 0x69, 0x6e,
+	0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
+	0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x3b, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x5f,
+	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1196,7 +1458,7 @@ func file_proto_journal_journal_proto_rawDescGZIP() []byte {
 	return file_proto_journal_journal_proto_rawDescData
 }
 
-var file_proto_journal_journal_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_proto_journal_journal_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_proto_journal_journal_proto_goTypes = []any{
 	(*CreateJournalRequest)(nil),          // 0: journal.CreateJournalRequest
 	(*CreateJournalResponse)(nil),         // 1: journal.CreateJournalResponse
@@ -1217,6 +1479,10 @@ var file_proto_journal_journal_proto_goTypes = []any{
 	(*UpdateJournalResponse)(nil),         // 16: journal.UpdateJournalResponse
 	(*DeleteJournalRequest)(nil),          // 17: journal.DeleteJournalRequest
 	(*DeleteJournalResponse)(nil),         // 18: journal.DeleteJournalResponse
+	(*RequestJournalExportRequest)(nil),   // 19: journal.RequestJournalExportRequest
+	(*RequestJournalExportResponse)(nil),  // 20: journal.RequestJournalExportResponse
+	(*GetJournalExportRequest)(nil),       // 21: journal.GetJournalExportRequest
+	(*GetJournalExportResponse)(nil),      // 22: journal.GetJournalExportResponse
 }
 var file_proto_journal_journal_proto_depIdxs = []int32{
 	3,  // 0: journal.GetJournalsResponse.journals:type_name -> journal.JournalEntry
@@ -1244,7 +1510,7 @@ func file_proto_journal_journal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_journal_journal_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

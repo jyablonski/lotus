@@ -3,12 +3,12 @@ package grpc
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/util"
@@ -40,12 +40,12 @@ func (s *UtilServer) GenerateRandomString(ctx context.Context, req *pb.GenerateR
 	// This is just an example of how to read and write from the runtime_config table
 	// Read the current runtime config for the "ml" key and log the last run timestamp
 	config, err := dbq.GetRuntimeConfigByKey(ctx, runtimeConfigKey)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		logger.Error("Failed to read runtime config", "key", runtimeConfigKey, "error", err)
 		return nil, status.Error(codes.Internal, "failed to read runtime config")
 	}
 
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Info("No runtime config found, first run", "key", runtimeConfigKey)
 	} else {
 		var configVal runtimeConfigValue

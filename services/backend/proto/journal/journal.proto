@@ -104,3 +104,26 @@ message DeleteJournalRequest {
 message DeleteJournalResponse {
   bool success = 1;
 }
+
+message RequestJournalExportRequest {
+  string user_id = 1;
+  string format = 2;  // "csv" or "markdown"
+}
+
+message RequestJournalExportResponse {
+  string export_id = 1;
+  string status = 2;  // "pending"
+}
+
+message GetJournalExportRequest {
+  string user_id = 1;
+  string export_id = 2;
+}
+
+message GetJournalExportResponse {
+  string export_id = 1;
+  string status = 2;     // "pending", "processing", "complete", "failed"
+  string content = 3;    // populated when status=complete
+  string filename = 4;   // populated when status=complete
+  string mime_type = 5;  // populated when status=complete
+}

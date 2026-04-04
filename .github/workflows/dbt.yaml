@@ -23,6 +23,7 @@ env:
 jobs:
   dbt-pipeline:
     runs-on: ubuntu-latest
+    name: Test Suite
 
     steps:
       - name: Checkout code
@@ -45,6 +46,23 @@ jobs:
 
       - name: Start Services
         run: make start-postgres
+
+      - name: Initialize dbt Source Schema
+        run: |
+          for _ in {1..60}; do
+            if docker inspect -f '{{.State.Running}}' postgres 2>/dev/null | grep -q true; then
+              if docker exec postgres pg_isready -U postgres -d postgres; then
+                break
+              fi
+            else
+              echo "Postgres container is not running. Dumping logs..."
+              docker logs postgres || true
+              exit 1
+            fi
+            echo "Waiting for postgres to be ready..."
+            sleep 1
+          done
+          docker exec -i postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres < docker/db/generated/ci_source_schema.sql
 
       - name: Install dbt Dependencies
         working-directory: services/dbt

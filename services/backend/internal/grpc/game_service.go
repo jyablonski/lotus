@@ -2,11 +2,12 @@ package grpc
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/game"
@@ -31,13 +32,15 @@ func (s *GameServer) GetGameBalance(ctx context.Context, req *pb.GetGameBalanceR
 
 	dbq := inject.DBFrom(ctx)
 
-	row, err := dbq.GetUserGameBalance(ctx, userID)
+	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
+
+	row, err := dbq.GetUserGameBalance(ctx, pgUserID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			// First visit — seed the default balance via upsert so it persists.
 			const defaultBalance = 100
 			row, err = dbq.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-				UserID:  userID,
+				UserID:  pgUserID,
 				Balance: defaultBalance,
 			})
 			if err != nil {
@@ -49,7 +52,7 @@ func (s *GameServer) GetGameBalance(ctx context.Context, req *pb.GetGameBalanceR
 	}
 
 	return &pb.GetGameBalanceResponse{
-		UserId:  row.UserID.String(),
+		UserId:  uuid.UUID(row.UserID.Bytes).String(),
 		Balance: row.Balance,
 	}, nil
 }
@@ -70,12 +73,16 @@ func (s *GameServer) RecordBets(ctx context.Context, req *pb.RecordBetsRequest) 
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // rollback is a no-op after commit
 
+	txq := db.New(tx)
+	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
 	for _, entry := range req.Bets {
-		_, err := tx.Exec(ctx,
-			`INSERT INTO source.user_game_bets (user_id, zone, amount, roll_result, payout)
-			 VALUES ($1, $2, $3, $4, $5)`,
-			userID, entry.Zone, entry.Amount, entry.RollResult, entry.Payout,
-		)
+		_, err := txq.InsertUserGameBet(ctx, db.InsertUserGameBetParams{
+			UserID:     pgUserID,
+			Zone:       entry.Zone,
+			Amount:     entry.Amount,
+			RollResult: entry.RollResult,
+			Payout:     entry.Payout,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to record bet: %w", err)
 		}
@@ -100,7 +107,7 @@ func (s *GameServer) GetBetHistory(ctx context.Context, req *pb.GetBetHistoryReq
 	dbq := inject.DBFrom(ctx)
 
 	rows, err := dbq.GetUserGameBets(ctx, db.GetUserGameBetsParams{
-		UserID: userID,
+		UserID: pgtype.UUID{Bytes: userID, Valid: true},
 		Limit:  limit,
 		Offset: req.Offset,
 	})
@@ -110,13 +117,17 @@ func (s *GameServer) GetBetHistory(ctx context.Context, req *pb.GetBetHistoryReq
 
 	bets := make([]*pb.BetRecord, 0, len(rows))
 	for _, row := range rows {
+		createdAt := ""
+		if row.CreatedAt.Valid {
+			createdAt = row.CreatedAt.Time.Format("2006-01-02T15:04:05Z")
+		}
 		bets = append(bets, &pb.BetRecord{
 			Id:         int32(row.ID),
 			Zone:       row.Zone,
 			Amount:     row.Amount,
 			RollResult: row.RollResult,
 			Payout:     row.Payout,
-			CreatedAt:  row.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			CreatedAt:  createdAt,
 		})
 	}
 
@@ -137,7 +148,7 @@ func (s *GameServer) UpdateGameBalance(ctx context.Context, req *pb.UpdateGameBa
 	dbq := inject.DBFrom(ctx)
 
 	row, err := dbq.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-		UserID:  userID,
+		UserID:  pgtype.UUID{Bytes: userID, Valid: true},
 		Balance: req.Balance,
 	})
 	if err != nil {

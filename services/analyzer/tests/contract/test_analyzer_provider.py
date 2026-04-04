@@ -13,7 +13,9 @@ To run:
 For CI, use the Pact Broker instead of local files.
 """
 
+import os
 from pathlib import Path
+import socket
 
 from pact import Verifier
 import pytest
@@ -32,6 +34,22 @@ def pact_file():
             "cd services/backend && go test ./internal/grpc/contract_test/ -v"
         )
     return PACT_FILE
+
+
+@pytest.fixture(scope="module", autouse=True)
+def require_contract_env_and_provider():
+    """Skip by default unless contract verification is explicitly requested."""
+    if os.environ.get("RUN_PACT_PROVIDER_VERIFY", "").lower() not in {"1", "true", "yes"}:
+        pytest.skip(
+            "Skipping provider contract verification. Set RUN_PACT_PROVIDER_VERIFY=true to enable."
+        )
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        if sock.connect_ex(("127.0.0.1", 8083)) != 0:
+            pytest.skip(
+                "Analyzer provider is not running on localhost:8083. "
+                "Start it with PACT_TESTING=true before running this test."
+            )
 
 
 def test_analyzer_satisfies_backend_contract(pact_file):

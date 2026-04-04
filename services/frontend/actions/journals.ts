@@ -8,7 +8,6 @@ import { MOOD_MIN, MOOD_MAX } from "@/lib/utils/moodMapping";
 import { backendHeaders } from "@/lib/server/backendHeaders";
 import type { JournalEntry, BackendJournal } from "@/types/journal";
 import { transformBackendJournal } from "@/types/journal";
-import { fetchAllJournalsForUser } from "@/lib/server/journals";
 
 export interface CreateJournalInput {
   journalText: string;
@@ -349,88 +348,84 @@ export async function keywordSearchJournals(
   }
 }
 
-function escapeCsvField(s: string): string {
-  if (/[",\n\r]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
+export type RequestExportResult = { exportId: string } | { error: string };
+
+export async function requestJournalExport(
+  format: "csv" | "markdown",
+): Promise<RequestExportResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" };
   }
-  return s;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/v1/journals/export`, {
+      method: "POST",
+      headers: { ...backendHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: session.user.id, format }),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return { error: `Export request failed: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return { exportId: data.exportId };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Export request failed",
+    };
+  }
 }
 
-export type JournalExportResult =
-  | { content: string; filename: string; mimeType: string }
+export type PollExportResult =
+  | { status: "pending" | "processing" }
+  | { status: "complete"; content: string; filename: string; mimeType: string }
+  | { status: "failed" }
   | { error: string };
 
-/**
- * Build CSV of all journals for download (server-side).
- */
-export async function exportJournalsAsCsv(): Promise<JournalExportResult> {
+export async function pollJournalExport(
+  exportId: string,
+): Promise<PollExportResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Unauthorized" };
   }
 
-  const { journals } = await fetchAllJournalsForUser(session.user.id);
-  const sorted = [...journals].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/v1/journals/export/${exportId}?user_id=${session.user.id}`,
+      {
+        method: "GET",
+        headers: backendHeaders(),
+        cache: "no-store",
+      },
+    );
 
-  const header = "id,created_at,mood,text\n";
-  const rows = sorted.map((j) =>
-    [
-      j.journalId,
-      j.createdAt,
-      String(j.userMood),
-      escapeCsvField(j.journalText),
-    ].join(","),
-  );
-
-  const filename = `lotus-journal-export-${new Date().toISOString().slice(0, 10)}.csv`;
-  return {
-    content: header + rows.join("\n"),
-    filename,
-    mimeType: "text/csv;charset=utf-8",
-  };
-}
-
-/**
- * Build Markdown export of all journals for download (server-side).
- */
-export async function exportJournalsAsMarkdown(): Promise<JournalExportResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "Unauthorized" };
-  }
-
-  const { journals } = await fetchAllJournalsForUser(session.user.id);
-  const sorted = [...journals].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-
-  const lines: string[] = [
-    "# Lotus journal export",
-    "",
-    `Exported at: ${new Date().toISOString()}`,
-    "",
-    "---",
-    "",
-  ];
-
-  for (const j of sorted) {
-    lines.push(`## ${j.createdAt} — Mood ${j.userMood}`);
-    if (j.topicNames?.length) {
-      lines.push(`Topics: ${j.topicNames.join(", ")}`);
+    if (!response.ok) {
+      return { error: `Poll failed: ${response.status}` };
     }
-    lines.push("");
-    lines.push(j.journalText);
-    lines.push("");
-    lines.push("---");
-    lines.push("");
-  }
 
-  const filename = `lotus-journal-export-${new Date().toISOString().slice(0, 10)}.md`;
-  return {
-    content: lines.join("\n"),
-    filename,
-    mimeType: "text/markdown;charset=utf-8",
-  };
+    const data = await response.json();
+
+    if (data.status === "complete") {
+      return {
+        status: "complete",
+        content: data.content,
+        filename: data.filename,
+        mimeType: data.mimeType,
+      };
+    }
+
+    if (data.status === "failed") {
+      return { status: "failed" };
+    }
+
+    return { status: data.status as "pending" | "processing" };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Poll failed",
+    };
+  }
 }

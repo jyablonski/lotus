@@ -24,8 +24,8 @@ func TestCreateUser(t *testing.T) {
 	user, err := queries.GetUserByEmail(ctx, email)
 	require.NoError(t, err)
 	require.Equal(t, email, user.Email)
-	require.True(t, user.Password.Valid)
-	require.False(t, user.Salt.Valid) // bcrypt embeds its own salt
+	require.NotNil(t, user.Password)
+	require.Nil(t, user.Salt) // bcrypt embeds its own salt
 }
 
 func TestCreateUserOauth(t *testing.T) {
@@ -43,10 +43,10 @@ func TestCreateUserOauth(t *testing.T) {
 	user, err := queries.GetUserByEmail(ctx, email)
 	require.NoError(t, err)
 	require.Equal(t, email, user.Email)
-	require.True(t, user.OauthProvider.Valid)
-	require.Equal(t, "github", user.OauthProvider.String)
-	require.False(t, user.Password.Valid)
-	require.False(t, user.Salt.Valid)
+	require.NotNil(t, user.OauthProvider)
+	require.Equal(t, "github", *user.OauthProvider)
+	require.Nil(t, user.Password)
+	require.Nil(t, user.Salt)
 }
 
 func TestGetUser(t *testing.T) {

@@ -3,13 +3,14 @@ package grpc_test
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"io"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
@@ -18,6 +19,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func int32Ptr(v int32) *int32 { return &v }
+
+func journalPgUUID(u uuid.UUID) pgtype.UUID { return pgtype.UUID{Bytes: u, Valid: true} }
+
+func journalPgTS(t time.Time) pgtype.Timestamp { return pgtype.Timestamp{Time: t, Valid: true} }
 
 // journalTestCtx returns a context with all deps needed by the journal service.
 func journalTestCtx(dbMock db.Querier, httpMock inject.HTTPDoer) context.Context {
@@ -93,29 +100,29 @@ func TestJournalServer_GetJournals_Success(t *testing.T) {
 	journals := []db.SourceJournal{
 		{
 			ID:          1,
-			UserID:      userID,
+			UserID:      journalPgUUID(userID),
 			JournalText: "First journal entry",
-			MoodScore:   sql.NullInt32{Int32: 7, Valid: true},
-			CreatedAt:   now,
-			ModifiedAt:  now,
+			MoodScore:   int32Ptr(7),
+			CreatedAt:   journalPgTS(now),
+			ModifiedAt:  journalPgTS(now),
 		},
 		{
 			ID:          2,
-			UserID:      userID,
+			UserID:      journalPgUUID(userID),
 			JournalText: "Second journal entry",
-			MoodScore:   sql.NullInt32{Int32: 8, Valid: true},
-			CreatedAt:   now.Add(-time.Hour),
-			ModifiedAt:  now.Add(-time.Hour),
+			MoodScore:   int32Ptr(8),
+			CreatedAt:   journalPgTS(now.Add(-time.Hour)),
+			ModifiedAt:  journalPgTS(now.Add(-time.Hour)),
 		},
 	}
 
 	mockQuerier := &mocks.QuerierMock{
-		GetJournalCountByUserIdFunc: func(ctx context.Context, uid uuid.UUID) (int64, error) {
-			assert.Equal(t, userID, uid)
+		GetJournalCountByUserIdFunc: func(ctx context.Context, uid pgtype.UUID) (int64, error) {
+			assert.Equal(t, journalPgUUID(userID), uid)
 			return 2, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
-			assert.Equal(t, userID, arg.UserID)
+			assert.Equal(t, journalPgUUID(userID), arg.UserID)
 			return journals, nil
 		},
 		GetTopicsByJournalIdsFunc: func(ctx context.Context, ids []int32) ([]db.GetTopicsByJournalIdsRow, error) {
@@ -152,8 +159,8 @@ func TestJournalServer_GetJournals_WithTopics(t *testing.T) {
 	userID := uuid.New()
 	now := time.Now()
 	journals := []db.SourceJournal{
-		{ID: 1, UserID: userID, JournalText: "Entry one", MoodScore: sql.NullInt32{Int32: 5, Valid: true}, CreatedAt: now, ModifiedAt: now},
-		{ID: 2, UserID: userID, JournalText: "Entry two", MoodScore: sql.NullInt32{Int32: 6, Valid: true}, CreatedAt: now, ModifiedAt: now},
+		{ID: 1, UserID: journalPgUUID(userID), JournalText: "Entry one", MoodScore: int32Ptr(5), CreatedAt: journalPgTS(now), ModifiedAt: journalPgTS(now)},
+		{ID: 2, UserID: journalPgUUID(userID), JournalText: "Entry two", MoodScore: int32Ptr(6), CreatedAt: journalPgTS(now), ModifiedAt: journalPgTS(now)},
 	}
 	topics := []db.GetTopicsByJournalIdsRow{
 		{JournalID: 1, TopicName: "productivity"},
@@ -162,7 +169,7 @@ func TestJournalServer_GetJournals_WithTopics(t *testing.T) {
 	}
 
 	mockQuerier := &mocks.QuerierMock{
-		GetJournalCountByUserIdFunc: func(ctx context.Context, uid uuid.UUID) (int64, error) {
+		GetJournalCountByUserIdFunc: func(ctx context.Context, uid pgtype.UUID) (int64, error) {
 			return 2, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
@@ -194,16 +201,16 @@ func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		journals[i] = db.SourceJournal{
 			ID:          int32(i + 1),
-			UserID:      userID,
+			UserID:      journalPgUUID(userID),
 			JournalText: "Journal entry",
-			MoodScore:   sql.NullInt32{Int32: 5, Valid: true},
-			CreatedAt:   now,
-			ModifiedAt:  now,
+			MoodScore:   int32Ptr(5),
+			CreatedAt:   journalPgTS(now),
+			ModifiedAt:  journalPgTS(now),
 		}
 	}
 
 	mockQuerier := &mocks.QuerierMock{
-		GetJournalCountByUserIdFunc: func(ctx context.Context, uid uuid.UUID) (int64, error) {
+		GetJournalCountByUserIdFunc: func(ctx context.Context, uid pgtype.UUID) (int64, error) {
 			return 25, nil // Total of 25 journals
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
@@ -241,7 +248,7 @@ func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
 	userID := uuid.New()
 
 	mockQuerier := &mocks.QuerierMock{
-		GetJournalCountByUserIdFunc: func(ctx context.Context, uid uuid.UUID) (int64, error) {
+		GetJournalCountByUserIdFunc: func(ctx context.Context, uid pgtype.UUID) (int64, error) {
 			return 0, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
@@ -276,7 +283,7 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 	userID := uuid.New()
 
 	mockQuerier := &mocks.QuerierMock{
-		GetJournalCountByUserIdFunc: func(ctx context.Context, uid uuid.UUID) (int64, error) {
+		GetJournalCountByUserIdFunc: func(ctx context.Context, uid pgtype.UUID) (int64, error) {
 			return 0, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
@@ -315,10 +322,10 @@ func TestJournalServer_TriggerJournalAnalysis_Success(t *testing.T) {
 			assert.Equal(t, journalID, id)
 			return db.SourceJournal{
 				ID:          journalID,
-				UserID:      userID,
+				UserID:      journalPgUUID(userID),
 				JournalText: "Test journal",
-				CreatedAt:   time.Now(),
-				ModifiedAt:  time.Now(),
+				CreatedAt:   journalPgTS(time.Now()),
+				ModifiedAt:  journalPgTS(time.Now()),
 			}, nil
 		},
 	}
@@ -336,7 +343,7 @@ func TestJournalServer_TriggerJournalAnalysis_Success(t *testing.T) {
 func TestJournalServer_TriggerJournalAnalysis_JournalNotFound(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
-			return db.SourceJournal{}, sql.ErrNoRows
+			return db.SourceJournal{}, pgx.ErrNoRows
 		},
 	}
 
@@ -372,11 +379,11 @@ func TestJournalServer_DeleteJournal_Success(t *testing.T) {
 	userID := uuid.New()
 	j := db.SourceJournal{
 		ID:          1,
-		UserID:      userID,
+		UserID:      journalPgUUID(userID),
 		JournalText: "x",
-		MoodScore:   sql.NullInt32{Int32: 7, Valid: true},
-		CreatedAt:   time.Now(),
-		ModifiedAt:  time.Now(),
+		MoodScore:   int32Ptr(7),
+		CreatedAt:   journalPgTS(time.Now()),
+		ModifiedAt:  journalPgTS(time.Now()),
 	}
 	mockQuerier := &mocks.QuerierMock{
 		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
@@ -384,7 +391,7 @@ func TestJournalServer_DeleteJournal_Success(t *testing.T) {
 		},
 		DeleteJournalForUserFunc: func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
 			assert.Equal(t, int32(1), arg.ID)
-			assert.Equal(t, userID, arg.UserID)
+			assert.Equal(t, journalPgUUID(userID), arg.UserID)
 			return 1, nil
 		},
 	}
@@ -403,11 +410,11 @@ func TestJournalServer_GetJournal_Success(t *testing.T) {
 	now := time.Now()
 	j := db.SourceJournal{
 		ID:          7,
-		UserID:      userID,
+		UserID:      journalPgUUID(userID),
 		JournalText: "Full text",
-		MoodScore:   sql.NullInt32{Int32: 5, Valid: true},
-		CreatedAt:   now,
-		ModifiedAt:  now,
+		MoodScore:   int32Ptr(5),
+		CreatedAt:   journalPgTS(now),
+		ModifiedAt:  journalPgTS(now),
 	}
 	mockQuerier := &mocks.QuerierMock{
 		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
@@ -435,11 +442,11 @@ func TestJournalServer_GetJournal_Forbidden(t *testing.T) {
 	other := uuid.New()
 	j := db.SourceJournal{
 		ID:          1,
-		UserID:      owner,
+		UserID:      journalPgUUID(owner),
 		JournalText: "x",
-		MoodScore:   sql.NullInt32{Int32: 7, Valid: true},
-		CreatedAt:   time.Now(),
-		ModifiedAt:  time.Now(),
+		MoodScore:   int32Ptr(7),
+		CreatedAt:   journalPgTS(time.Now()),
+		ModifiedAt:  journalPgTS(time.Now()),
 	}
 	mockQuerier := &mocks.QuerierMock{
 		GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {

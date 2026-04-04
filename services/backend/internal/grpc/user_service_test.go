@@ -2,7 +2,6 @@ package grpc_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"io"
 	"log/slog"
@@ -10,6 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
@@ -41,17 +42,17 @@ func TestUserServer_CreateUser_Success(t *testing.T) {
 		CreateUserFunc: func(ctx context.Context, arg db.CreateUserParams) (db.SourceUser, error) {
 			// Verify the email is passed correctly
 			assert.Equal(t, expectedEmail, arg.Email)
-			// Verify password is set (bcrypt hash) and salt is not used
-			assert.True(t, arg.Password.Valid)
-			assert.False(t, arg.Salt.Valid) // bcrypt embeds its own salt
+			require.NotNil(t, arg.Password)
+			assert.Nil(t, arg.Salt) // bcrypt embeds its own salt
 
+			now := time.Now()
 			return db.SourceUser{
-				ID:         expectedUserID,
+				ID:         pgtype.UUID{Bytes: expectedUserID, Valid: true},
 				Email:      expectedEmail,
 				Role:       "user",
 				Timezone:   "UTC",
-				CreatedAt:  time.Now(),
-				ModifiedAt: time.Now(),
+				CreatedAt:  pgtype.Timestamp{Time: now, Valid: true},
+				ModifiedAt: pgtype.Timestamp{Time: now, Valid: true},
 			}, nil
 		},
 	}
@@ -112,12 +113,12 @@ func TestUserServer_GetUser_Success(t *testing.T) {
 		GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
 			assert.Equal(t, expectedEmail, email)
 			return db.SourceUser{
-				ID:         expectedUserID,
+				ID:         pgtype.UUID{Bytes: expectedUserID, Valid: true},
 				Email:      expectedEmail,
 				Role:       expectedRole,
 				Timezone:   expectedTimezone,
-				CreatedAt:  expectedCreatedAt,
-				ModifiedAt: expectedModifiedAt,
+				CreatedAt:  pgtype.Timestamp{Time: expectedCreatedAt, Valid: true},
+				ModifiedAt: pgtype.Timestamp{Time: expectedModifiedAt, Valid: true},
 			}, nil
 		},
 	}
@@ -147,7 +148,7 @@ func TestUserServer_GetUser_NotFound(t *testing.T) {
 	// Arrange
 	mockQuerier := &mocks.QuerierMock{
 		GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
-			return db.SourceUser{}, sql.ErrNoRows
+			return db.SourceUser{}, pgx.ErrNoRows
 		},
 	}
 
@@ -199,17 +200,19 @@ func TestUserServer_CreateUserOauth_Success(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		CreateUserOauthFunc: func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error) {
 			assert.Equal(t, expectedEmail, arg.Email)
-			assert.True(t, arg.OauthProvider.Valid)
-			assert.Equal(t, expectedProvider, arg.OauthProvider.String)
+			require.NotNil(t, arg.OauthProvider)
+			assert.Equal(t, expectedProvider, *arg.OauthProvider)
 
+			now := time.Now()
+			op := expectedProvider
 			return db.SourceUser{
-				ID:            expectedUserID,
+				ID:            pgtype.UUID{Bytes: expectedUserID, Valid: true},
 				Email:         expectedEmail,
-				OauthProvider: sql.NullString{String: expectedProvider, Valid: true},
+				OauthProvider: &op,
 				Role:          "user",
 				Timezone:      "UTC",
-				CreatedAt:     time.Now(),
-				ModifiedAt:    time.Now(),
+				CreatedAt:     pgtype.Timestamp{Time: now, Valid: true},
+				ModifiedAt:    pgtype.Timestamp{Time: now, Valid: true},
 			}, nil
 		},
 	}
@@ -239,12 +242,12 @@ func TestUserServer_UpdateUserTimezone_Success(t *testing.T) {
 
 	mockQuerier := &mocks.QuerierMock{
 		UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
-			assert.Equal(t, expectedUserID, arg.ID)
+			assert.Equal(t, pgtype.UUID{Bytes: expectedUserID, Valid: true}, arg.ID)
 			assert.Equal(t, expectedTimezone, arg.Timezone)
 			return db.SourceUser{
-				ID:         expectedUserID,
+				ID:         pgtype.UUID{Bytes: expectedUserID, Valid: true},
 				Timezone:   expectedTimezone,
-				ModifiedAt: time.Now(),
+				ModifiedAt: pgtype.Timestamp{Time: time.Now(), Valid: true},
 			}, nil
 		},
 	}

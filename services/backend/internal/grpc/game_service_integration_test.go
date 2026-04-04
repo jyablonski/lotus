@@ -23,7 +23,7 @@ func TestIntegration_GetGameBalance(t *testing.T) {
 		require.Equal(t, userID.String(), resp.UserId)
 		require.Equal(t, int32(100), resp.Balance)
 
-		row, err := queries.GetUserGameBalance(ctx, userID)
+		row, err := queries.GetUserGameBalance(ctx, integPgUUID(userID))
 		require.NoError(t, err)
 		require.Equal(t, int32(100), row.Balance)
 	})
@@ -34,7 +34,7 @@ func TestIntegration_GetGameBalance(t *testing.T) {
 		svc := &grpcServer.GameServer{}
 
 		_, err := queries.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-			UserID:  userID,
+			UserID:  integPgUUID(userID),
 			Balance: 250,
 		})
 		require.NoError(t, err)
@@ -64,7 +64,7 @@ func TestIntegration_UpdateGameBalance(t *testing.T) {
 		require.Equal(t, userID.String(), resp.UserId)
 		require.Equal(t, int32(300), resp.Balance)
 
-		row, err := queries.GetUserGameBalance(ctx, userID)
+		row, err := queries.GetUserGameBalance(ctx, integPgUUID(userID))
 		require.NoError(t, err)
 		require.Equal(t, int32(300), row.Balance)
 	})
@@ -75,7 +75,7 @@ func TestIntegration_UpdateGameBalance(t *testing.T) {
 		svc := &grpcServer.GameServer{}
 
 		_, err := queries.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-			UserID:  userID,
+			UserID:  integPgUUID(userID),
 			Balance: 100,
 		})
 		require.NoError(t, err)
@@ -84,7 +84,7 @@ func TestIntegration_UpdateGameBalance(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, int32(75), resp.Balance)
 
-		row, err := queries.GetUserGameBalance(ctx, userID)
+		row, err := queries.GetUserGameBalance(ctx, integPgUUID(userID))
 		require.NoError(t, err)
 		require.Equal(t, int32(75), row.Balance)
 	})
@@ -106,18 +106,17 @@ func TestIntegration_RecordBets_AndGetBetHistory(t *testing.T) {
 	ctx, _ := newTestCtx(t)
 	ctx = withRiverDeps(ctx)
 
-	// Create user directly via pgxPool so RecordBets' separate tx can see it.
-	var userID string
-	err := testPgxPool.QueryRow(context.Background(),
-		`INSERT INTO source.users (email) VALUES ($1) RETURNING id`,
-		"record-bets-"+t.Name()+"@test.example",
-	).Scan(&userID)
+	// Create user via sqlc so RecordBets' separate tx can see it; CASCADE removes bets/balance.
+	pq := db.New(testPgxPool)
+	email := "record-bets-" + t.Name() + "@test.example"
+	op := "test"
+	u, err := pq.CreateUserOauth(context.Background(), db.CreateUserOauthParams{
+		Email: email, OauthProvider: &op,
+	})
 	require.NoError(t, err)
+	userID := u.ID.String()
 	t.Cleanup(func() {
-		// Clean up committed rows after test.
-		testPgxPool.Exec(context.Background(), `DELETE FROM source.user_game_bets WHERE user_id = $1`, userID)
-		testPgxPool.Exec(context.Background(), `DELETE FROM source.user_game_balance WHERE user_id = $1`, userID)
-		testPgxPool.Exec(context.Background(), `DELETE FROM source.users WHERE id = $1`, userID)
+		_ = pq.DeleteUserById(context.Background(), u.ID)
 	})
 
 	svc := &grpcServer.GameServer{}
@@ -155,14 +154,14 @@ func TestIntegration_GetBetHistory(t *testing.T) {
 		svc := &grpcServer.GameServer{}
 
 		_, err := queries.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-			UserID:  userID,
+			UserID:  integPgUUID(userID),
 			Balance: 1000,
 		})
 		require.NoError(t, err)
 
 		for i := 0; i < 5; i++ {
 			_, err := queries.InsertUserGameBet(ctx, db.InsertUserGameBetParams{
-				UserID:     userID,
+				UserID:     integPgUUID(userID),
 				Zone:       "red",
 				Amount:     int32(10 + i),
 				RollResult: 7,

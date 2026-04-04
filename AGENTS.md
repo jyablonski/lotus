@@ -176,6 +176,7 @@ Each service has its own GitHub Actions workflow in `.github/workflows/`:
 - `dagster.yaml` - Dagster service tests
 - `dbt.yaml` - dbt service tests
 - `django.yaml` - Django service tests
+- `e2e.yaml` - Full-stack Playwright E2E (PRs only; path-scoped to backend, frontend, analyzer, django, docker)
 - `experiments.yaml` - Experiments service tests
 - `frontend.yaml` - Frontend service tests
 
@@ -200,7 +201,7 @@ Use the template in `.github/pull_request_template.md`:
 
 ```
 lotus/
-├── .github/workflows/     # CI/CD workflows (one per service)
+├── .github/workflows/     # CI/CD workflows (per service + shared jobs, e.g. E2E)
 ├── docker/                # Docker Compose configs and DB bootstrap scripts
 ├── services/              # All application services
 │   ├── analyzer/          # FastAPI ML inference service

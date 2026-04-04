@@ -1,0 +1,17 @@
+meta {
+  name: Request Journal Export
+  type: http
+}
+
+post {
+  url: {{backend_url}}/v1/journals/export
+  body: json
+  auth: inherit
+}
+
+body:json {
+{
+  "userId": "string",
+  "format": "string"
+}
+}

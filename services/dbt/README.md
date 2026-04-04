@@ -105,3 +105,19 @@ Available groups:
 - `product`: Product-specific models
 
 Groups are assigned to models via the `+group` config in `dbt_project.yml` or individual model configs.
+
+## Source Schema in CI
+
+`dbt` CI expects source tables to exist before running `dbt build`. The schema file used in CI is:
+
+- `docker/db/generated/ci_source_schema.sql`
+
+This file is generated from Django migrations and should not be edited manually.
+
+Regenerate it with:
+
+```bash
+make generate-dbt-source-schema
+```
+
+Source of truth remains Django migrations in `services/django/core/migrations/`.

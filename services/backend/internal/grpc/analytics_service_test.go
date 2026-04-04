@@ -2,7 +2,6 @@ package grpc_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"io"
 	"log/slog"
@@ -10,6 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
@@ -18,6 +19,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func anaUUID(u uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{Bytes: u, Valid: true}
+}
+
+func anaTS(tm time.Time) pgtype.Timestamp {
+	return pgtype.Timestamp{Time: tm, Valid: true}
+}
+
+func anaNum(s string) pgtype.Numeric {
+	var n pgtype.Numeric
+	if err := n.Scan(s); err != nil {
+		panic(err)
+	}
+	return n
+}
+
+func strp(s string) *string { return &s }
+
+func i32p(v int32) *int32 { return &v }
 
 // newAnalyticsTestLogger creates a logger that discards output for testing
 func newAnalyticsTestLogger() *slog.Logger {
@@ -33,58 +54,52 @@ func analyticsTestCtx(mock db.Querier) context.Context {
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
 	now := time.Now()
 	firstJournal := now.Add(-30 * 24 * time.Hour)
 	lastJournal := now.Add(-1 * time.Hour)
 
 	mockQuerier := &mocks.QuerierMock{
-		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id uuid.UUID) (db.GoldUserJournalSummary, error) {
-			assert.Equal(t, userID, id)
+		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id pgtype.UUID) (db.GoldUserJournalSummary, error) {
+			assert.Equal(t, anaUUID(userID), id)
 			return db.GoldUserJournalSummary{
-				UserID:                         userID,
-				UserEmail:                      sql.NullString{String: "test@example.com", Valid: true},
-				UserRole:                       sql.NullString{String: "user", Valid: true},
-				UserTimezone:                   sql.NullString{String: "America/New_York", Valid: true},
-				UserCreatedAt:                  sql.NullTime{Time: firstJournal, Valid: true},
+				UserID:                         anaUUID(userID),
+				UserEmail:                      strp("test@example.com"),
+				UserRole:                       strp("user"),
+				UserTimezone:                   strp("America/New_York"),
+				UserCreatedAt:                  anaTS(firstJournal),
 				TotalJournals:                  25,
 				ActiveDays:                     20,
-				AvgMoodScore:                   sql.NullString{String: "7.5", Valid: true},
-				MinMoodScore:                   sql.NullInt32{Int32: 3, Valid: true},
-				MaxMoodScore:                   sql.NullInt32{Int32: 10, Valid: true},
-				MoodScoreStddev:                sql.NullString{String: "1.5", Valid: true},
+				AvgMoodScore:                   anaNum("7.5"),
+				MinMoodScore:                   i32p(3),
+				MaxMoodScore:                   i32p(10),
+				MoodScoreStddev:                anaNum("1.5"),
 				PositiveEntries:                15,
 				NegativeEntries:                5,
 				NeutralEntries:                 5,
-				AvgSentimentScore:              sql.NullString{String: "0.65", Valid: true},
-				AvgJournalLength:               sql.NullString{String: "250.5", Valid: true},
-				FirstJournalAt:                 sql.NullTime{Time: firstJournal, Valid: true},
-				LastJournalAt:                  sql.NullTime{Time: lastJournal, Valid: true},
-				LastModifiedAt:                 sql.NullTime{Time: now, Valid: true},
+				AvgSentimentScore:              anaNum("0.65"),
+				AvgJournalLength:               anaNum("250.5"),
+				FirstJournalAt:                 anaTS(firstJournal),
+				LastJournalAt:                  anaTS(lastJournal),
+				LastModifiedAt:                 anaTS(now),
 				TotalJournals30d:               10,
-				AvgMoodScore30d:                sql.NullString{String: "8.0", Valid: true},
-				MinMoodScore30d:                sql.NullInt32{Int32: 5, Valid: true},
-				MaxMoodScore30d:                sql.NullInt32{Int32: 10, Valid: true},
+				AvgMoodScore30d:                anaNum("8.0"),
+				MinMoodScore30d:                i32p(5),
+				MaxMoodScore30d:                i32p(10),
 				DailyStreak:                    7,
-				PositivePercentage:             sql.NullString{String: "60.0", Valid: true},
-				DaysSinceLastJournal:           sql.NullInt32{Int32: 0, Valid: true},
-				DaysBetweenFirstAndLastJournal: sql.NullInt32{Int32: 30, Valid: true},
-				JournalsPerActiveDay:           sql.NullString{String: "1.25", Valid: true},
+				PositivePercentage:             anaNum("60.0"),
+				DaysSinceLastJournal:           i32p(0),
+				DaysBetweenFirstAndLastJournal: i32p(30),
+				JournalsPerActiveDay:           anaNum("1.25"),
 			}, nil
 		},
 	}
 
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: userID.String()}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: userID.String(),
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.NotNil(t, resp.Summary)
@@ -102,7 +117,6 @@ func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
 	assert.Equal(t, int32(10), summary.TotalJournals_30D)
 	assert.Equal(t, int32(7), summary.DailyStreak)
 
-	// Check nullable fields
 	require.NotNil(t, summary.AvgMoodScore)
 	assert.Equal(t, 7.5, *summary.AvgMoodScore)
 	require.NotNil(t, summary.MinMoodScore)
@@ -116,7 +130,6 @@ func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
 	require.NotNil(t, summary.AvgJournalLength)
 	assert.Equal(t, 250.5, *summary.AvgJournalLength)
 
-	// 30-day metrics
 	require.NotNil(t, summary.AvgMoodScore_30D)
 	assert.Equal(t, 8.0, *summary.AvgMoodScore_30D)
 	require.NotNil(t, summary.MinMoodScore_30D)
@@ -124,7 +137,6 @@ func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
 	require.NotNil(t, summary.MaxMoodScore_30D)
 	assert.Equal(t, int32(10), *summary.MaxMoodScore_30D)
 
-	// Calculated fields
 	require.NotNil(t, summary.PositivePercentage)
 	assert.Equal(t, 60.0, *summary.PositivePercentage)
 	require.NotNil(t, summary.DaysSinceLastJournal)
@@ -134,171 +146,126 @@ func TestAnalyticsServer_GetUserJournalSummary_Success(t *testing.T) {
 	require.NotNil(t, summary.JournalsPerActiveDay)
 	assert.Equal(t, 1.25, *summary.JournalsPerActiveDay)
 
-	// Verify mock was called
 	assert.Len(t, mockQuerier.GetUserJournalSummaryByUserIdCalls(), 1)
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_InvalidUserID(t *testing.T) {
-	// Arrange
 	mockQuerier := &mocks.QuerierMock{}
-
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: "not-a-valid-uuid"}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: "not-a-valid-uuid",
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
-
-	// Verify mock was NOT called (validation should fail first)
 	assert.Len(t, mockQuerier.GetUserJournalSummaryByUserIdCalls(), 0)
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_EmptyUserID(t *testing.T) {
-	// Arrange
 	mockQuerier := &mocks.QuerierMock{}
-
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: ""}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: "",
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
-
-	// Verify mock was NOT called
 	assert.Len(t, mockQuerier.GetUserJournalSummaryByUserIdCalls(), 0)
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_DBError(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
-
 	mockQuerier := &mocks.QuerierMock{
-		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id uuid.UUID) (db.GoldUserJournalSummary, error) {
+		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id pgtype.UUID) (db.GoldUserJournalSummary, error) {
 			return db.GoldUserJournalSummary{}, errors.New("database connection failed")
 		},
 	}
 
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: userID.String()}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: userID.String(),
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "failed to get user journal summary")
-
-	// Verify mock was called
 	assert.Len(t, mockQuerier.GetUserJournalSummaryByUserIdCalls(), 1)
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_NotFound(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
-
 	mockQuerier := &mocks.QuerierMock{
-		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id uuid.UUID) (db.GoldUserJournalSummary, error) {
-			return db.GoldUserJournalSummary{}, sql.ErrNoRows
+		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id pgtype.UUID) (db.GoldUserJournalSummary, error) {
+			return db.GoldUserJournalSummary{}, pgx.ErrNoRows
 		},
 	}
 
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: userID.String()}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: userID.String(),
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "failed to get user journal summary")
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_NullableFieldsAreNil(t *testing.T) {
-	// Arrange - Test when nullable fields are null in DB
 	userID := uuid.New()
-
 	mockQuerier := &mocks.QuerierMock{
-		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id uuid.UUID) (db.GoldUserJournalSummary, error) {
+		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id pgtype.UUID) (db.GoldUserJournalSummary, error) {
 			return db.GoldUserJournalSummary{
-				UserID:                         userID,
-				UserEmail:                      sql.NullString{Valid: false},
-				UserRole:                       sql.NullString{Valid: false},
-				UserTimezone:                   sql.NullString{Valid: false},
-				UserCreatedAt:                  sql.NullTime{Valid: false},
+				UserID:                         anaUUID(userID),
+				UserEmail:                      nil,
+				UserRole:                       nil,
+				UserTimezone:                   nil,
+				UserCreatedAt:                  pgtype.Timestamp{},
 				TotalJournals:                  0,
 				ActiveDays:                     0,
-				AvgMoodScore:                   sql.NullString{Valid: false},
-				MinMoodScore:                   sql.NullInt32{Valid: false},
-				MaxMoodScore:                   sql.NullInt32{Valid: false},
-				MoodScoreStddev:                sql.NullString{Valid: false},
+				AvgMoodScore:                   pgtype.Numeric{},
+				MinMoodScore:                   nil,
+				MaxMoodScore:                   nil,
+				MoodScoreStddev:                pgtype.Numeric{},
 				PositiveEntries:                0,
 				NegativeEntries:                0,
 				NeutralEntries:                 0,
-				AvgSentimentScore:              sql.NullString{Valid: false},
-				AvgJournalLength:               sql.NullString{Valid: false},
-				FirstJournalAt:                 sql.NullTime{Valid: false},
-				LastJournalAt:                  sql.NullTime{Valid: false},
-				LastModifiedAt:                 sql.NullTime{Valid: false},
+				AvgSentimentScore:              pgtype.Numeric{},
+				AvgJournalLength:               pgtype.Numeric{},
+				FirstJournalAt:                 pgtype.Timestamp{},
+				LastJournalAt:                  pgtype.Timestamp{},
+				LastModifiedAt:                 pgtype.Timestamp{},
 				TotalJournals30d:               0,
-				AvgMoodScore30d:                sql.NullString{Valid: false},
-				MinMoodScore30d:                sql.NullInt32{Valid: false},
-				MaxMoodScore30d:                sql.NullInt32{Valid: false},
+				AvgMoodScore30d:                pgtype.Numeric{},
+				MinMoodScore30d:                nil,
+				MaxMoodScore30d:                nil,
 				DailyStreak:                    0,
-				PositivePercentage:             sql.NullString{Valid: false},
-				DaysSinceLastJournal:           sql.NullInt32{Valid: false},
-				DaysBetweenFirstAndLastJournal: sql.NullInt32{Valid: false},
-				JournalsPerActiveDay:           sql.NullString{Valid: false},
+				PositivePercentage:             pgtype.Numeric{},
+				DaysSinceLastJournal:           nil,
+				DaysBetweenFirstAndLastJournal: nil,
+				JournalsPerActiveDay:           pgtype.Numeric{},
 			}, nil
 		},
 	}
 
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: userID.String()}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: userID.String(),
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.NotNil(t, resp.Summary)
 
 	summary := resp.Summary
 	assert.Equal(t, userID.String(), summary.UserId)
-	// Nullable strings should be empty
 	assert.Equal(t, "", summary.UserEmail)
 	assert.Equal(t, "", summary.UserRole)
 	assert.Equal(t, "", summary.UserTimezone)
 	assert.Equal(t, "", summary.UserCreatedAt)
-	// Required fields should be zero
 	assert.Equal(t, int32(0), summary.TotalJournals)
 	assert.Equal(t, int32(0), summary.ActiveDays)
-	// Nullable fields should be nil
 	assert.Nil(t, summary.AvgMoodScore)
 	assert.Nil(t, summary.MinMoodScore)
 	assert.Nil(t, summary.MaxMoodScore)
@@ -318,55 +285,49 @@ func TestAnalyticsServer_GetUserJournalSummary_NullableFieldsAreNil(t *testing.T
 }
 
 func TestAnalyticsServer_GetUserJournalSummary_PartialNullableFields(t *testing.T) {
-	// Arrange - Test when some nullable fields are set and some are null
 	userID := uuid.New()
 	now := time.Now()
 
 	mockQuerier := &mocks.QuerierMock{
-		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id uuid.UUID) (db.GoldUserJournalSummary, error) {
+		GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, id pgtype.UUID) (db.GoldUserJournalSummary, error) {
 			return db.GoldUserJournalSummary{
-				UserID:                         userID,
-				UserEmail:                      sql.NullString{String: "partial@example.com", Valid: true},
-				UserRole:                       sql.NullString{Valid: false}, // null
-				UserTimezone:                   sql.NullString{String: "UTC", Valid: true},
-				UserCreatedAt:                  sql.NullTime{Valid: false}, // null
+				UserID:                         anaUUID(userID),
+				UserEmail:                      strp("partial@example.com"),
+				UserRole:                       nil,
+				UserTimezone:                   strp("UTC"),
+				UserCreatedAt:                  pgtype.Timestamp{},
 				TotalJournals:                  5,
 				ActiveDays:                     3,
-				AvgMoodScore:                   sql.NullString{String: "6.5", Valid: true},
-				MinMoodScore:                   sql.NullInt32{Valid: false}, // null
-				MaxMoodScore:                   sql.NullInt32{Int32: 9, Valid: true},
-				MoodScoreStddev:                sql.NullString{Valid: false}, // null
+				AvgMoodScore:                   anaNum("6.5"),
+				MinMoodScore:                   nil,
+				MaxMoodScore:                   i32p(9),
+				MoodScoreStddev:                pgtype.Numeric{},
 				PositiveEntries:                3,
 				NegativeEntries:                1,
 				NeutralEntries:                 1,
-				AvgSentimentScore:              sql.NullString{Valid: false},
-				AvgJournalLength:               sql.NullString{String: "100.0", Valid: true},
-				FirstJournalAt:                 sql.NullTime{Time: now.Add(-7 * 24 * time.Hour), Valid: true},
-				LastJournalAt:                  sql.NullTime{Valid: false}, // null
-				LastModifiedAt:                 sql.NullTime{Time: now, Valid: true},
+				AvgSentimentScore:              pgtype.Numeric{},
+				AvgJournalLength:               anaNum("100.0"),
+				FirstJournalAt:                 anaTS(now.Add(-7 * 24 * time.Hour)),
+				LastJournalAt:                  pgtype.Timestamp{},
+				LastModifiedAt:                 anaTS(now),
 				TotalJournals30d:               5,
-				AvgMoodScore30d:                sql.NullString{Valid: false},
-				MinMoodScore30d:                sql.NullInt32{Valid: false},
-				MaxMoodScore30d:                sql.NullInt32{Valid: false},
+				AvgMoodScore30d:                pgtype.Numeric{},
+				MinMoodScore30d:                nil,
+				MaxMoodScore30d:                nil,
 				DailyStreak:                    3,
-				PositivePercentage:             sql.NullString{String: "60.0", Valid: true},
-				DaysSinceLastJournal:           sql.NullInt32{Valid: false},
-				DaysBetweenFirstAndLastJournal: sql.NullInt32{Int32: 7, Valid: true},
-				JournalsPerActiveDay:           sql.NullString{Valid: false},
+				PositivePercentage:             anaNum("60.0"),
+				DaysSinceLastJournal:           nil,
+				DaysBetweenFirstAndLastJournal: i32p(7),
+				JournalsPerActiveDay:           pgtype.Numeric{},
 			}, nil
 		},
 	}
 
 	server := &internalgrpc.AnalyticsServer{}
+	req := &pb.GetUserJournalSummaryRequest{UserId: userID.String()}
 
-	req := &pb.GetUserJournalSummaryRequest{
-		UserId: userID.String(),
-	}
-
-	// Act
 	resp, err := server.GetUserJournalSummary(analyticsTestCtx(mockQuerier), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.NotNil(t, resp.Summary)
@@ -374,15 +335,14 @@ func TestAnalyticsServer_GetUserJournalSummary_PartialNullableFields(t *testing.
 	summary := resp.Summary
 	assert.Equal(t, userID.String(), summary.UserId)
 	assert.Equal(t, "partial@example.com", summary.UserEmail)
-	assert.Equal(t, "", summary.UserRole) // null -> empty string
+	assert.Equal(t, "", summary.UserRole)
 	assert.Equal(t, "UTC", summary.UserTimezone)
-	assert.Equal(t, "", summary.UserCreatedAt) // null -> empty string
+	assert.Equal(t, "", summary.UserCreatedAt)
 	assert.Equal(t, int32(5), summary.TotalJournals)
 	assert.Equal(t, int32(3), summary.ActiveDays)
 	assert.Equal(t, int32(5), summary.TotalJournals_30D)
 	assert.Equal(t, int32(3), summary.DailyStreak)
 
-	// Check mixed nullable fields
 	require.NotNil(t, summary.AvgMoodScore)
 	assert.Equal(t, 6.5, *summary.AvgMoodScore)
 	assert.Nil(t, summary.MinMoodScore)

@@ -7,9 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -20,12 +19,12 @@ RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_
 
 type CreateUserParams struct {
 	Email    string
-	Password sql.NullString
-	Salt     sql.NullString
+	Password *string
+	Salt     *string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.Password, arg.Salt)
+	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Password, arg.Salt)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,
@@ -49,11 +48,11 @@ RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_
 
 type CreateUserOauthParams struct {
 	Email         string
-	OauthProvider sql.NullString
+	OauthProvider *string
 }
 
 func (q *Queries) CreateUserOauth(ctx context.Context, arg CreateUserOauthParams) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, createUserOauth, arg.Email, arg.OauthProvider)
+	row := q.db.QueryRow(ctx, createUserOauth, arg.Email, arg.OauthProvider)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,
@@ -69,12 +68,21 @@ func (q *Queries) CreateUserOauth(ctx context.Context, arg CreateUserOauthParams
 	return i, err
 }
 
+const deleteUserById = `-- name: DeleteUserById :exec
+DELETE FROM source.users WHERE id = $1
+`
+
+func (q *Queries) DeleteUserById(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserById, id)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone FROM source.users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,
@@ -94,8 +102,8 @@ const getUserById = `-- name: GetUserById :one
 SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone FROM source.users WHERE id = $1
 `
 
-func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, getUserById, id)
+func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (SourceUser, error) {
+	row := q.db.QueryRow(ctx, getUserById, id)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,
@@ -119,12 +127,12 @@ RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_
 `
 
 type UpdateUserTimezoneParams struct {
-	ID       uuid.UUID
+	ID       pgtype.UUID
 	Timezone string
 }
 
 func (q *Queries) UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (SourceUser, error) {
-	row := q.db.QueryRowContext(ctx, updateUserTimezone, arg.ID, arg.Timezone)
+	row := q.db.QueryRow(ctx, updateUserTimezone, arg.ID, arg.Timezone)
 	var i SourceUser
 	err := row.Scan(
 		&i.ID,

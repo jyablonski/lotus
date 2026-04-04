@@ -5,70 +5,154 @@
 package db
 
 import (
-	"database/sql"
-	"encoding/json"
-	"time"
+	"database/sql/driver"
+	"fmt"
 
-	"github.com/google/uuid"
-	"github.com/sqlc-dev/pqtype"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type SourceExportFormat string
+
+const (
+	SourceExportFormatCsv      SourceExportFormat = "csv"
+	SourceExportFormatMarkdown SourceExportFormat = "markdown"
+)
+
+func (e *SourceExportFormat) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SourceExportFormat(s)
+	case string:
+		*e = SourceExportFormat(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SourceExportFormat: %T", src)
+	}
+	return nil
+}
+
+type NullSourceExportFormat struct {
+	SourceExportFormat SourceExportFormat
+	Valid              bool // Valid is true if SourceExportFormat is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSourceExportFormat) Scan(value interface{}) error {
+	if value == nil {
+		ns.SourceExportFormat, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SourceExportFormat.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSourceExportFormat) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SourceExportFormat), nil
+}
+
+type SourceExportStatus string
+
+const (
+	SourceExportStatusPending    SourceExportStatus = "pending"
+	SourceExportStatusProcessing SourceExportStatus = "processing"
+	SourceExportStatusComplete   SourceExportStatus = "complete"
+	SourceExportStatusFailed     SourceExportStatus = "failed"
+)
+
+func (e *SourceExportStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SourceExportStatus(s)
+	case string:
+		*e = SourceExportStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SourceExportStatus: %T", src)
+	}
+	return nil
+}
+
+type NullSourceExportStatus struct {
+	SourceExportStatus SourceExportStatus
+	Valid              bool // Valid is true if SourceExportStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSourceExportStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.SourceExportStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SourceExportStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSourceExportStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SourceExportStatus), nil
+}
 
 type ActiveMlModel struct {
 	ID         int32
 	MlModel    string
 	IsEnabled  bool
-	CreatedAt  time.Time
-	ModifiedAt time.Time
+	CreatedAt  pgtype.Timestamptz
+	ModifiedAt pgtype.Timestamptz
 }
 
 type GoldUserJournalSummary struct {
-	UserID                         uuid.UUID
-	UserEmail                      sql.NullString
-	UserRole                       sql.NullString
-	UserTimezone                   sql.NullString
-	UserCreatedAt                  sql.NullTime
+	UserID                         pgtype.UUID
+	UserEmail                      *string
+	UserRole                       *string
+	UserTimezone                   *string
+	UserCreatedAt                  pgtype.Timestamp
 	TotalJournals                  int32
 	ActiveDays                     int32
-	AvgMoodScore                   sql.NullString
-	MinMoodScore                   sql.NullInt32
-	MaxMoodScore                   sql.NullInt32
-	MoodScoreStddev                sql.NullString
+	AvgMoodScore                   pgtype.Numeric
+	MinMoodScore                   *int32
+	MaxMoodScore                   *int32
+	MoodScoreStddev                pgtype.Numeric
 	PositiveEntries                int32
 	NegativeEntries                int32
 	NeutralEntries                 int32
-	AvgSentimentScore              sql.NullString
-	AvgJournalLength               sql.NullString
-	FirstJournalAt                 sql.NullTime
-	LastJournalAt                  sql.NullTime
-	LastModifiedAt                 sql.NullTime
+	AvgSentimentScore              pgtype.Numeric
+	AvgJournalLength               pgtype.Numeric
+	FirstJournalAt                 pgtype.Timestamp
+	LastJournalAt                  pgtype.Timestamp
+	LastModifiedAt                 pgtype.Timestamp
 	TotalJournals30d               int32
-	AvgMoodScore30d                sql.NullString
-	MinMoodScore30d                sql.NullInt32
-	MaxMoodScore30d                sql.NullInt32
+	AvgMoodScore30d                pgtype.Numeric
+	MinMoodScore30d                *int32
+	MaxMoodScore30d                *int32
 	DailyStreak                    int32
-	PositivePercentage             sql.NullString
-	DaysSinceLastJournal           sql.NullInt32
-	DaysBetweenFirstAndLastJournal sql.NullInt32
-	JournalsPerActiveDay           sql.NullString
+	PositivePercentage             pgtype.Numeric
+	DaysSinceLastJournal           *int32
+	DaysBetweenFirstAndLastJournal *int32
+	JournalsPerActiveDay           pgtype.Numeric
 }
 
 type SourceJournal struct {
 	ID           int32
-	UserID       uuid.UUID
+	UserID       pgtype.UUID
 	JournalText  string
-	MoodScore    sql.NullInt32
-	CreatedAt    time.Time
-	ModifiedAt   time.Time
+	MoodScore    *int32
+	CreatedAt    pgtype.Timestamp
+	ModifiedAt   pgtype.Timestamp
 	SearchVector interface{}
 }
 
 type SourceJournalDetail struct {
 	JournalID      int32
-	SentimentScore sql.NullFloat64
-	MoodLabel      sql.NullString
+	SentimentScore *float64
+	MoodLabel      *string
 	Keywords       []string
-	CreatedAt      time.Time
-	ModifiedAt     time.Time
+	CreatedAt      pgtype.Timestamp
+	ModifiedAt     pgtype.Timestamp
 }
 
 type SourceJournalEmbedding struct {
@@ -76,75 +160,86 @@ type SourceJournalEmbedding struct {
 	JournalID    int32
 	Embedding    interface{}
 	ModelVersion string
-	CreatedAt    time.Time
+	CreatedAt    pgtype.Timestamp
+}
+
+type SourceJournalExport struct {
+	ID          pgtype.UUID
+	UserID      pgtype.UUID
+	Format      SourceExportFormat
+	Status      SourceExportStatus
+	Content     *string
+	ErrorMsg    *string
+	CreatedAt   pgtype.Timestamp
+	CompletedAt pgtype.Timestamp
 }
 
 type SourceJournalSentiment struct {
 	ID              int32
-	JournalID       sql.NullInt32
+	JournalID       *int32
 	Sentiment       string
-	Confidence      string
+	Confidence      pgtype.Numeric
 	ConfidenceLevel string
 	IsReliable      bool
 	MlModelVersion  string
-	CreatedAt       sql.NullTime
-	AllScores       pqtype.NullRawMessage
+	CreatedAt       pgtype.Timestamp
+	AllScores       []byte
 }
 
 type SourceJournalTopic struct {
 	ID             int32
 	JournalID      int32
 	TopicName      string
-	Confidence     string
+	Confidence     pgtype.Numeric
 	MlModelVersion string
-	CreatedAt      sql.NullTime
+	CreatedAt      pgtype.Timestamp
 }
 
 type SourceRuntimeConfig struct {
 	ID          int32
 	Key         string
-	Value       json.RawMessage
+	Value       []byte
 	Service     string
 	Description string
-	CreatedAt   time.Time
-	ModifiedAt  time.Time
+	CreatedAt   pgtype.Timestamp
+	ModifiedAt  pgtype.Timestamp
 }
 
 type SourceUser struct {
-	ID            uuid.UUID
+	ID            pgtype.UUID
 	Email         string
-	Password      sql.NullString
-	Salt          sql.NullString
-	OauthProvider sql.NullString
+	Password      *string
+	Salt          *string
+	OauthProvider *string
 	Role          string
-	CreatedAt     time.Time
-	ModifiedAt    time.Time
+	CreatedAt     pgtype.Timestamp
+	ModifiedAt    pgtype.Timestamp
 	Timezone      string
 }
 
 type SourceUserGameBalance struct {
 	ID         int32
-	UserID     uuid.UUID
+	UserID     pgtype.UUID
 	Balance    int32
-	CreatedAt  time.Time
-	ModifiedAt time.Time
+	CreatedAt  pgtype.Timestamp
+	ModifiedAt pgtype.Timestamp
 }
 
 type SourceUserGameBet struct {
 	ID         int32
-	UserID     uuid.UUID
+	UserID     pgtype.UUID
 	Zone       string
 	Amount     int32
 	RollResult int32
 	Payout     int32
-	CreatedAt  time.Time
+	CreatedAt  pgtype.Timestamp
 }
 
 type SourceWaffleFlag struct {
 	ID            int32
 	Name          string
 	Everyone      bool
-	Percent       sql.NullString
+	Percent       pgtype.Numeric
 	Testing       bool
 	Superusers    bool
 	Staff         bool
@@ -152,6 +247,6 @@ type SourceWaffleFlag struct {
 	Languages     string
 	Rollout       bool
 	Note          string
-	Created       time.Time
-	Modified      time.Time
+	Created       pgtype.Timestamptz
+	Modified      pgtype.Timestamptz
 }

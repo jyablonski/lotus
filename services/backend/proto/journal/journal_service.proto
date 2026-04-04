@@ -54,6 +54,19 @@ service JournalService {
     };
   }
 
+  rpc RequestJournalExport(RequestJournalExportRequest) returns (RequestJournalExportResponse) {
+    option (google.api.http) = {
+      post: "/v1/journals/export"
+      body: "*"
+    };
+  }
+
+  rpc GetJournalExport(GetJournalExportRequest) returns (GetJournalExportResponse) {
+    option (google.api.http) = {
+      get: "/v1/journals/export/{export_id}"
+    };
+  }
+
   rpc KeywordSearchJournals(KeywordSearchJournalsRequest) returns (KeywordSearchJournalsResponse) {
     option (google.api.http) = {
       post: "/v1/journals/keyword-search"

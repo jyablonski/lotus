@@ -1,13 +1,23 @@
-# Reusable E2E workflow. Not triggered by events; called by frontend, backend,
-# and django pipelines at the end of each. Exercises full stack with Playwright.
-name: E2E
+# Full-stack Playwright smoke tests. Runs once per PR when relevant services or docker/ change.
+name: E2E Pipeline
 
 on:
-  workflow_call:
+  pull_request:
+    paths:
+      - "services/backend/**"
+      - "services/frontend/**"
+      - "services/analyzer/**"
+      - "services/django/**"
+      - "docker/**"
+      - ".github/workflows/e2e.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
-    name: E2E Smoke Tests
+    name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
