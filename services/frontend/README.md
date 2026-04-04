@@ -121,7 +121,7 @@ These tests run automatically on every PR that touches `services/frontend/` via 
 
 ### End-to-End Tests (Playwright)
 
-Playwright tests run against the full stack (frontend + backend + PostgreSQL) in Docker containers. Tests cover the landing page, authenticated dashboard, navigation, journal creation form, and profile page.
+Playwright tests run against the full stack in Docker (PostgreSQL, Django for migrations, backend, frontend) as defined in `docker/docker-compose-e2e.yaml`. Tests cover the landing page, authenticated dashboard, navigation, journal creation form, and profile page.
 
 Authenticated tests bypass GitHub OAuth by injecting a valid NextAuth JWT session cookie using the `e2e/helpers/auth.ts` helper.
 
@@ -133,11 +133,11 @@ npm run test:e2e:ui   # Interactive Playwright UI mode
 make e2e-down         # Tear down containers and volumes
 ```
 
-The `AUTH_SECRET` env var must be set to the same value the frontend container uses. The default in `docker-compose-e2e.yaml` is `e2e-test-secret-at-least-32-characters-long`.
+The `AUTH_SECRET` env var must be set to the same value the frontend container uses. The default in `docker/docker-compose-e2e.yaml` is `e2e-test-secret-at-least-32-characters-long`.
 
-### Triggering E2E Tests in CI
+### E2E tests in CI
 
-E2E tests do not run on every PR. To trigger them, add the `e2e` label to your pull request. This runs the Frontend E2E Tests workflow (`.github/workflows/e2e.yaml`), which:
+The **E2E** GitHub Actions workflow (`.github/workflows/e2e.yaml`) runs on pull requests when the diff touches `services/backend/`, `services/frontend/`, `services/analyzer/`, `services/django/`, `docker/`, or the workflow file itself. It is separate from the per-service pipelines so the full stack is exercised at most once per PR for those changes. The job:
 
 1. Starts the full stack via `docker compose -f docker/docker-compose-e2e.yaml`
 2. Waits for the frontend to be healthy

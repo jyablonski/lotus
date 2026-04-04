@@ -157,7 +157,7 @@ The project uses a multi-layered testing strategy to ensure correctness at every
 
 **Contract Tests** — Consumer-driven contract tests using [Pact](https://pact.io/) verify that services agree on the shape of data exchanged between them. Consumer services (frontend, backend) generate pact files defining their expectations, and provider services verify they satisfy those contracts. These run in a dedicated workflow triggered by changes to any service involved in a contract, or by adding the `contract-tests` label to a PR.
 
-**End-to-End Tests** — Playwright-based E2E tests run against the frontend to verify that complete user flows work as expected across the full stack.
+**End-to-End Tests** — Playwright-based E2E tests run against the frontend and verify complete user flows across the full stack (Docker Compose). On GitHub Actions, the dedicated **E2E** workflow (`.github/workflows/e2e.yaml`) runs on pull requests when changes land under `services/backend/`, `services/frontend/`, `services/analyzer/`, `services/django/`, or `docker/`.
 
 **Load Tests** — [k6](https://k6.io/) load tests target the backend service to validate performance characteristics and ensure the system holds up under concurrent usage.
 
@@ -165,7 +165,7 @@ The project uses a multi-layered testing strategy to ensure correctness at every
 
 Each service has a dedicated GitHub Actions workflow file in `.github/workflows/`. Workflows are path-scoped so they only trigger when relevant files change, keeping CI fast and focused.
 
-Workflows trigger in two scenarios: on pull requests for pre-merge validation, and on pushes to `main` (i.e. after a PR merge) to verify the post-merge state. Each workflow includes its own workflow file in the path filter so changes to the pipeline itself are also validated.
+Workflows trigger in two scenarios: on pull requests for pre-merge validation, and on pushes to `main` (i.e. after a PR merge) to verify the post-merge state. Each workflow includes its own workflow file in the path filter so changes to the pipeline itself are also validated. The E2E workflow is pull-request only and uses the path filters described in the Testing section above.
 
 Sparse checkout is used to only clone the files each workflow needs rather than the full monorepo, reducing checkout time and keeping jobs lean.
 
