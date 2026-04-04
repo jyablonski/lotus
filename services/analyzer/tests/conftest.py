@@ -42,6 +42,7 @@ SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
 # conftest.py lives at services/analyzer/tests/conftest.py → 3 parents up = repo root.
 _BOOTSTRAP_SQL = Path(__file__).parents[3] / "docker/db/01-bootstrap.sql"
 _SOURCE_SCHEMA_SQL = Path(__file__).parents[3] / "docker/db/generated/ci_source_schema.sql"
+_SEED_DATA_SQL = Path(__file__).parent / "fixtures/sql/seed_source_data.sql"
 
 _TEST_API_KEY = os.environ["ANALYZER_API_KEY"]
 
@@ -192,6 +193,7 @@ def postgres_container():
             )
             cur.execute(bootstrap_sql)
             cur.execute(_SOURCE_SCHEMA_SQL.read_text())
+            cur.execute(_SEED_DATA_SQL.read_text())
         conn.close()
         yield pg
 
