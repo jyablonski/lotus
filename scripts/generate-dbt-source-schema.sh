@@ -72,7 +72,7 @@ docker exec postgres pg_dump \
   --no-owner \
   --no-privileges \
   "${table_args[@]}" \
-  | sed '/^-- Dumped from database version /d; /^-- Dumped by pg_dump version /d; /^\\restrict /d; /^\\unrestrict /d' \
+  | sed '/^-- Dumped from database version /d; /^-- Dumped by pg_dump version /d; /^\\restrict /d; /^\\unrestrict /d; /^CREATE TRIGGER trg_journals_search_vector /d; /journals_search_vector_trigger()/d' \
   > "${TEMP_FILE}"
 
 cat >"${OUTPUT_FILE}" <<'SQL'
@@ -84,6 +84,16 @@ SQL
 
 cat "${TEMP_FILE}" >> "${OUTPUT_FILE}"
 rm -f "${TEMP_FILE}"
+
+# Normalize EOF to avoid formatter churn from trailing blank lines.
+awk '
+  { lines[++n] = $0 }
+  END {
+    while (n > 0 && lines[n] == "") n--
+    for (i = 1; i <= n; i++) print lines[i]
+  }
+' "${OUTPUT_FILE}" > "${OUTPUT_FILE}.normalized"
+mv "${OUTPUT_FILE}.normalized" "${OUTPUT_FILE}"
 
 docker exec -i postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres <<SQL
 DROP DATABASE IF EXISTS ${TEMP_DB};

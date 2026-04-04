@@ -346,7 +346,6 @@ CREATE INDEX users_email_0ea73cca_like ON source.users USING btree (email varcha
 -- Name: journals trg_journals_search_vector; Type: TRIGGER; Schema: source; Owner: -
 --
 
-CREATE TRIGGER trg_journals_search_vector BEFORE INSERT OR UPDATE OF journal_text ON source.journals FOR EACH ROW EXECUTE FUNCTION source.journals_search_vector_trigger();
 
 
 --
