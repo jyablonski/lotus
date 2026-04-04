@@ -39,6 +39,23 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (S
 	return i, err
 }
 
+const deleteJournalForUser = `-- name: DeleteJournalForUser :execrows
+DELETE FROM source.journals WHERE id = $1 AND user_id = $2
+`
+
+type DeleteJournalForUserParams struct {
+	ID     int32
+	UserID uuid.UUID
+}
+
+func (q *Queries) DeleteJournalForUser(ctx context.Context, arg DeleteJournalForUserParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteJournalForUser, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getJournalById = `-- name: GetJournalById :one
 SELECT id, user_id, journal_text, mood_score, created_at, modified_at, search_vector FROM source.journals WHERE id = $1
 `

@@ -22,6 +22,25 @@ service JournalService {
     };
   }
 
+  rpc GetJournal(GetJournalRequest) returns (GetJournalResponse) {
+    option (google.api.http) = {
+      get: "/v1/journals/{journal_id}"
+    };
+  }
+
+  rpc UpdateJournal(UpdateJournalRequest) returns (UpdateJournalResponse) {
+    option (google.api.http) = {
+      patch: "/v1/journals/{journal_id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteJournal(DeleteJournalRequest) returns (DeleteJournalResponse) {
+    option (google.api.http) = {
+      delete: "/v1/journals/{journal_id}"
+    };
+  }
+
   rpc TriggerJournalAnalysis(TriggerAnalysisRequest) returns (TriggerAnalysisResponse) {
     option (google.api.http) = {
       post: "/v1/journals/{journal_id}/analysis"

@@ -66,10 +66,14 @@ export function createPact(): PactV3Like {
         .given(state)
         .uponReceiving(uponReceivingVal)
         .withRequest(
-          withRequestVal as Parameters<Interaction["withRequest"]>[0],
+          withRequestVal as unknown as Parameters<
+            Interaction["withRequest"]
+          >[0],
         )
         .willRespondWith(
-          willRespondWithVal as Parameters<Interaction["willRespondWith"]>[0],
+          willRespondWithVal as unknown as Parameters<
+            Interaction["willRespondWith"]
+          >[0],
         );
       await provider.addInteraction(interaction);
       const baseUrl = `http://${provider.opts.host}:${provider.opts.port}`;

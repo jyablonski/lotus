@@ -71,14 +71,71 @@ export async function fetchRecentJournals(
 
 /**
  * Fetch all journals for a user (for journal home, calendar, profile views).
- * Uses uncached fetch so topic tags and list are always up to date.
+ * Paginates until all rows are loaded (backend caps each page at 100).
  */
 export async function fetchAllJournalsForUser(
   userId: string,
 ): Promise<JournalsResponse> {
-  return fetchJournalsForUser(userId, {
-    limit: 1000,
-    offset: 0,
-    cache: "no-store",
-  });
+  const journals: JournalEntry[] = [];
+  let offset = 0;
+  const limit = 100;
+  let totalCount = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const page = await fetchJournalsForUser(userId, {
+      limit,
+      offset,
+      cache: "no-store",
+    });
+    journals.push(...page.journals);
+    totalCount = page.totalCount;
+    hasMore = page.hasMore;
+    offset += limit;
+  }
+
+  return {
+    journals,
+    totalCount,
+    hasMore: false,
+  };
+}
+
+/**
+ * Load a single journal entry (for detail page).
+ */
+export async function fetchJournalById(
+  userId: string,
+  journalId: string,
+): Promise<JournalEntry | null> {
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/v1/journals/${encodeURIComponent(journalId)}?user_id=${encodeURIComponent(userId)}`,
+      {
+        method: "GET",
+        headers: backendHeaders(),
+        cache: "no-store",
+      },
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      console.error(`Backend journal by id error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const raw = data.journal;
+    if (!raw) {
+      return null;
+    }
+
+    return transformBackendJournal(raw as BackendJournal);
+  } catch (error) {
+    console.error("Error fetching journal by id:", error);
+    return null;
+  }
 }

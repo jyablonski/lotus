@@ -7,5 +7,5 @@ export {
   fetchAllJournalsForUser,
 } from "./journals";
 export type { JournalsResponse } from "./journals";
-export { fetchProfileStats } from "./profile";
+export { fetchProfileStats, fetchProfilePageData } from "./profile";
 export type { ProfileStats } from "./profile";

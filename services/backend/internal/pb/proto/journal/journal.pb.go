@@ -749,6 +749,316 @@ func (x *KeywordSearchResult) GetRank() float32 {
 	return 0
 }
 
+type GetJournalRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	JournalId string `protobuf:"bytes,1,opt,name=journal_id,json=journalId,proto3" json:"journal_id,omitempty"`
+	UserId    string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+}
+
+func (x *GetJournalRequest) Reset() {
+	*x = GetJournalRequest{}
+	mi := &file_proto_journal_journal_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetJournalRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetJournalRequest) ProtoMessage() {}
+
+func (x *GetJournalRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetJournalRequest.ProtoReflect.Descriptor instead.
+func (*GetJournalRequest) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetJournalRequest) GetJournalId() string {
+	if x != nil {
+		return x.JournalId
+	}
+	return ""
+}
+
+func (x *GetJournalRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetJournalResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Journal *JournalEntry `protobuf:"bytes,1,opt,name=journal,proto3" json:"journal,omitempty"`
+}
+
+func (x *GetJournalResponse) Reset() {
+	*x = GetJournalResponse{}
+	mi := &file_proto_journal_journal_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetJournalResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetJournalResponse) ProtoMessage() {}
+
+func (x *GetJournalResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetJournalResponse.ProtoReflect.Descriptor instead.
+func (*GetJournalResponse) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetJournalResponse) GetJournal() *JournalEntry {
+	if x != nil {
+		return x.Journal
+	}
+	return nil
+}
+
+type UpdateJournalRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	JournalId   string `protobuf:"bytes,1,opt,name=journal_id,json=journalId,proto3" json:"journal_id,omitempty"`
+	UserId      string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	JournalText string `protobuf:"bytes,3,opt,name=journal_text,json=journalText,proto3" json:"journal_text,omitempty"`
+	UserMood    string `protobuf:"bytes,4,opt,name=user_mood,json=userMood,proto3" json:"user_mood,omitempty"`
+}
+
+func (x *UpdateJournalRequest) Reset() {
+	*x = UpdateJournalRequest{}
+	mi := &file_proto_journal_journal_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateJournalRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateJournalRequest) ProtoMessage() {}
+
+func (x *UpdateJournalRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateJournalRequest.ProtoReflect.Descriptor instead.
+func (*UpdateJournalRequest) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *UpdateJournalRequest) GetJournalId() string {
+	if x != nil {
+		return x.JournalId
+	}
+	return ""
+}
+
+func (x *UpdateJournalRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateJournalRequest) GetJournalText() string {
+	if x != nil {
+		return x.JournalText
+	}
+	return ""
+}
+
+func (x *UpdateJournalRequest) GetUserMood() string {
+	if x != nil {
+		return x.UserMood
+	}
+	return ""
+}
+
+type UpdateJournalResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Journal *JournalEntry `protobuf:"bytes,1,opt,name=journal,proto3" json:"journal,omitempty"`
+}
+
+func (x *UpdateJournalResponse) Reset() {
+	*x = UpdateJournalResponse{}
+	mi := &file_proto_journal_journal_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateJournalResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateJournalResponse) ProtoMessage() {}
+
+func (x *UpdateJournalResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateJournalResponse.ProtoReflect.Descriptor instead.
+func (*UpdateJournalResponse) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *UpdateJournalResponse) GetJournal() *JournalEntry {
+	if x != nil {
+		return x.Journal
+	}
+	return nil
+}
+
+type DeleteJournalRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	JournalId string `protobuf:"bytes,1,opt,name=journal_id,json=journalId,proto3" json:"journal_id,omitempty"`
+	UserId    string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+}
+
+func (x *DeleteJournalRequest) Reset() {
+	*x = DeleteJournalRequest{}
+	mi := &file_proto_journal_journal_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteJournalRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteJournalRequest) ProtoMessage() {}
+
+func (x *DeleteJournalRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteJournalRequest.ProtoReflect.Descriptor instead.
+func (*DeleteJournalRequest) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *DeleteJournalRequest) GetJournalId() string {
+	if x != nil {
+		return x.JournalId
+	}
+	return ""
+}
+
+func (x *DeleteJournalRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type DeleteJournalResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+}
+
+func (x *DeleteJournalResponse) Reset() {
+	*x = DeleteJournalResponse{}
+	mi := &file_proto_journal_journal_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteJournalResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteJournalResponse) ProtoMessage() {}
+
+func (x *DeleteJournalResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_journal_journal_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteJournalResponse.ProtoReflect.Descriptor instead.
+func (*DeleteJournalResponse) Descriptor() ([]byte, []int) {
+	return file_proto_journal_journal_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DeleteJournalResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_proto_journal_journal_proto protoreflect.FileDescriptor
 
 var file_proto_journal_journal_proto_rawDesc = []byte{
@@ -836,11 +1146,42 @@ var file_proto_journal_journal_proto_rawDesc = []byte{
 	0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45,
 	0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x12, 0x12, 0x0a,
 	0x04, 0x72, 0x61, 0x6e, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28, 0x02, 0x52, 0x04, 0x72, 0x61, 0x6e,
-	0x6b, 0x42, 0x42, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x6a, 0x79, 0x61, 0x62, 0x6c, 0x6f, 0x6e, 0x73, 0x6b, 0x69, 0x2f, 0x6c, 0x6f, 0x74, 0x75, 0x73,
-	0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x2f, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x2f, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x3b, 0x6a, 0x6f, 0x75, 0x72, 0x6e,
-	0x61, 0x6c, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6b, 0x22, 0x4b, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61,
+	0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6a, 0x6f, 0x75, 0x72,
+	0x6e, 0x61, 0x6c, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x22, 0x45,
+	0x0a, 0x12, 0x47, 0x65, 0x74, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2f, 0x0a, 0x07, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x2e,
+	0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x6a, 0x6f,
+	0x75, 0x72, 0x6e, 0x61, 0x6c, 0x22, 0x8e, 0x01, 0x0a, 0x14, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d,
+	0x0a, 0x0a, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x09, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x49, 0x64, 0x12, 0x17, 0x0a,
+	0x07, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
+	0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x21, 0x0a, 0x0c, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61,
+	0x6c, 0x5f, 0x74, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x6a, 0x6f,
+	0x75, 0x72, 0x6e, 0x61, 0x6c, 0x54, 0x65, 0x78, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x75, 0x73, 0x65,
+	0x72, 0x5f, 0x6d, 0x6f, 0x6f, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75, 0x73,
+	0x65, 0x72, 0x4d, 0x6f, 0x6f, 0x64, 0x22, 0x48, 0x0a, 0x15, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x2f, 0x0a, 0x07, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x15, 0x2e, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x4a, 0x6f, 0x75, 0x72, 0x6e,
+	0x61, 0x6c, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c,
+	0x22, 0x4e, 0x0a, 0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61,
+	0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x6a, 0x6f, 0x75, 0x72,
+	0x6e, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6a, 0x6f,
+	0x75, 0x72, 0x6e, 0x61, 0x6c, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72, 0x5f,
+	0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64,
+	0x22, 0x31, 0x0a, 0x15, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4a, 0x6f, 0x75, 0x72, 0x6e, 0x61,
+	0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63,
+	0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63,
+	0x65, 0x73, 0x73, 0x42, 0x42, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x6a, 0x79, 0x61, 0x62, 0x6c, 0x6f, 0x6e, 0x73, 0x6b, 0x69, 0x2f, 0x6c, 0x6f, 0x74,
+	0x75, 0x73, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x2f, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x6a, 0x6f, 0x75, 0x72, 0x6e, 0x61, 0x6c, 0x3b, 0x6a, 0x6f, 0x75,
+	0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -855,7 +1196,7 @@ func file_proto_journal_journal_proto_rawDescGZIP() []byte {
 	return file_proto_journal_journal_proto_rawDescData
 }
 
-var file_proto_journal_journal_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_journal_journal_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_proto_journal_journal_proto_goTypes = []any{
 	(*CreateJournalRequest)(nil),          // 0: journal.CreateJournalRequest
 	(*CreateJournalResponse)(nil),         // 1: journal.CreateJournalResponse
@@ -870,6 +1211,12 @@ var file_proto_journal_journal_proto_goTypes = []any{
 	(*KeywordSearchJournalsRequest)(nil),  // 10: journal.KeywordSearchJournalsRequest
 	(*KeywordSearchJournalsResponse)(nil), // 11: journal.KeywordSearchJournalsResponse
 	(*KeywordSearchResult)(nil),           // 12: journal.KeywordSearchResult
+	(*GetJournalRequest)(nil),             // 13: journal.GetJournalRequest
+	(*GetJournalResponse)(nil),            // 14: journal.GetJournalResponse
+	(*UpdateJournalRequest)(nil),          // 15: journal.UpdateJournalRequest
+	(*UpdateJournalResponse)(nil),         // 16: journal.UpdateJournalResponse
+	(*DeleteJournalRequest)(nil),          // 17: journal.DeleteJournalRequest
+	(*DeleteJournalResponse)(nil),         // 18: journal.DeleteJournalResponse
 }
 var file_proto_journal_journal_proto_depIdxs = []int32{
 	3,  // 0: journal.GetJournalsResponse.journals:type_name -> journal.JournalEntry
@@ -877,11 +1224,13 @@ var file_proto_journal_journal_proto_depIdxs = []int32{
 	3,  // 2: journal.JournalSearchResult.journal:type_name -> journal.JournalEntry
 	12, // 3: journal.KeywordSearchJournalsResponse.results:type_name -> journal.KeywordSearchResult
 	3,  // 4: journal.KeywordSearchResult.journal:type_name -> journal.JournalEntry
-	5,  // [5:5] is the sub-list for method output_type
-	5,  // [5:5] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	3,  // 5: journal.GetJournalResponse.journal:type_name -> journal.JournalEntry
+	3,  // 6: journal.UpdateJournalResponse.journal:type_name -> journal.JournalEntry
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_journal_journal_proto_init() }
@@ -895,7 +1244,7 @@ func file_proto_journal_journal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_journal_journal_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

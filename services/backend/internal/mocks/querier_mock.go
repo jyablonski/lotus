@@ -29,6 +29,9 @@ var _ db.Querier = &QuerierMock{}
 //			CreateUserOauthFunc: func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error) {
 //				panic("mock out the CreateUserOauth method")
 //			},
+//			DeleteJournalForUserFunc: func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
+//				panic("mock out the DeleteJournalForUser method")
+//			},
 //			GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 //				panic("mock out the GetActiveFeatureFlags method")
 //			},
@@ -98,6 +101,9 @@ type QuerierMock struct {
 
 	// CreateUserOauthFunc mocks the CreateUserOauth method.
 	CreateUserOauthFunc func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error)
+
+	// DeleteJournalForUserFunc mocks the DeleteJournalForUser method.
+	DeleteJournalForUserFunc func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error)
 
 	// GetActiveFeatureFlagsFunc mocks the GetActiveFeatureFlags method.
 	GetActiveFeatureFlagsFunc func(ctx context.Context) ([]db.SourceWaffleFlag, error)
@@ -175,6 +181,13 @@ type QuerierMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.CreateUserOauthParams
+		}
+		// DeleteJournalForUser holds details about calls to the DeleteJournalForUser method.
+		DeleteJournalForUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.DeleteJournalForUserParams
 		}
 		// GetActiveFeatureFlags holds details about calls to the GetActiveFeatureFlags method.
 		GetActiveFeatureFlags []struct {
@@ -304,6 +317,7 @@ type QuerierMock struct {
 	lockCreateJournal                 sync.RWMutex
 	lockCreateUser                    sync.RWMutex
 	lockCreateUserOauth               sync.RWMutex
+	lockDeleteJournalForUser          sync.RWMutex
 	lockGetActiveFeatureFlags         sync.RWMutex
 	lockGetActiveMLModel              sync.RWMutex
 	lockGetFeatureFlagByName          sync.RWMutex
@@ -429,6 +443,42 @@ func (mock *QuerierMock) CreateUserOauthCalls() []struct {
 	mock.lockCreateUserOauth.RLock()
 	calls = mock.calls.CreateUserOauth
 	mock.lockCreateUserOauth.RUnlock()
+	return calls
+}
+
+// DeleteJournalForUser calls DeleteJournalForUserFunc.
+func (mock *QuerierMock) DeleteJournalForUser(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
+	if mock.DeleteJournalForUserFunc == nil {
+		panic("QuerierMock.DeleteJournalForUserFunc: method is nil but Querier.DeleteJournalForUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.DeleteJournalForUserParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockDeleteJournalForUser.Lock()
+	mock.calls.DeleteJournalForUser = append(mock.calls.DeleteJournalForUser, callInfo)
+	mock.lockDeleteJournalForUser.Unlock()
+	return mock.DeleteJournalForUserFunc(ctx, arg)
+}
+
+// DeleteJournalForUserCalls gets all the calls that were made to DeleteJournalForUser.
+// Check the length with:
+//
+//	len(mockedQuerier.DeleteJournalForUserCalls())
+func (mock *QuerierMock) DeleteJournalForUserCalls() []struct {
+	Ctx context.Context
+	Arg db.DeleteJournalForUserParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.DeleteJournalForUserParams
+	}
+	mock.lockDeleteJournalForUser.RLock()
+	calls = mock.calls.DeleteJournalForUser
+	mock.lockDeleteJournalForUser.RUnlock()
 	return calls
 }
 

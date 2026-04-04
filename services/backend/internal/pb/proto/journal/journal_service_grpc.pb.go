@@ -21,6 +21,9 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	JournalService_CreateJournal_FullMethodName          = "/journal.JournalService/CreateJournal"
 	JournalService_GetJournals_FullMethodName            = "/journal.JournalService/GetJournals"
+	JournalService_GetJournal_FullMethodName             = "/journal.JournalService/GetJournal"
+	JournalService_UpdateJournal_FullMethodName          = "/journal.JournalService/UpdateJournal"
+	JournalService_DeleteJournal_FullMethodName          = "/journal.JournalService/DeleteJournal"
 	JournalService_TriggerJournalAnalysis_FullMethodName = "/journal.JournalService/TriggerJournalAnalysis"
 	JournalService_SearchJournals_FullMethodName         = "/journal.JournalService/SearchJournals"
 	JournalService_KeywordSearchJournals_FullMethodName  = "/journal.JournalService/KeywordSearchJournals"
@@ -33,6 +36,9 @@ type JournalServiceClient interface {
 	CreateJournal(ctx context.Context, in *CreateJournalRequest, opts ...grpc.CallOption) (*CreateJournalResponse, error)
 	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE&limit=10&offset=20
 	GetJournals(ctx context.Context, in *GetJournalsRequest, opts ...grpc.CallOption) (*GetJournalsResponse, error)
+	GetJournal(ctx context.Context, in *GetJournalRequest, opts ...grpc.CallOption) (*GetJournalResponse, error)
+	UpdateJournal(ctx context.Context, in *UpdateJournalRequest, opts ...grpc.CallOption) (*UpdateJournalResponse, error)
+	DeleteJournal(ctx context.Context, in *DeleteJournalRequest, opts ...grpc.CallOption) (*DeleteJournalResponse, error)
 	TriggerJournalAnalysis(ctx context.Context, in *TriggerAnalysisRequest, opts ...grpc.CallOption) (*TriggerAnalysisResponse, error)
 	SearchJournals(ctx context.Context, in *SearchJournalsRequest, opts ...grpc.CallOption) (*SearchJournalsResponse, error)
 	KeywordSearchJournals(ctx context.Context, in *KeywordSearchJournalsRequest, opts ...grpc.CallOption) (*KeywordSearchJournalsResponse, error)
@@ -60,6 +66,36 @@ func (c *journalServiceClient) GetJournals(ctx context.Context, in *GetJournalsR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetJournalsResponse)
 	err := c.cc.Invoke(ctx, JournalService_GetJournals_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *journalServiceClient) GetJournal(ctx context.Context, in *GetJournalRequest, opts ...grpc.CallOption) (*GetJournalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetJournalResponse)
+	err := c.cc.Invoke(ctx, JournalService_GetJournal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *journalServiceClient) UpdateJournal(ctx context.Context, in *UpdateJournalRequest, opts ...grpc.CallOption) (*UpdateJournalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateJournalResponse)
+	err := c.cc.Invoke(ctx, JournalService_UpdateJournal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *journalServiceClient) DeleteJournal(ctx context.Context, in *DeleteJournalRequest, opts ...grpc.CallOption) (*DeleteJournalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteJournalResponse)
+	err := c.cc.Invoke(ctx, JournalService_DeleteJournal_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +139,9 @@ type JournalServiceServer interface {
 	CreateJournal(context.Context, *CreateJournalRequest) (*CreateJournalResponse, error)
 	// GET http://localhost:8080/v1/journals?user_id=USER_ID_HERE&limit=10&offset=20
 	GetJournals(context.Context, *GetJournalsRequest) (*GetJournalsResponse, error)
+	GetJournal(context.Context, *GetJournalRequest) (*GetJournalResponse, error)
+	UpdateJournal(context.Context, *UpdateJournalRequest) (*UpdateJournalResponse, error)
+	DeleteJournal(context.Context, *DeleteJournalRequest) (*DeleteJournalResponse, error)
 	TriggerJournalAnalysis(context.Context, *TriggerAnalysisRequest) (*TriggerAnalysisResponse, error)
 	SearchJournals(context.Context, *SearchJournalsRequest) (*SearchJournalsResponse, error)
 	KeywordSearchJournals(context.Context, *KeywordSearchJournalsRequest) (*KeywordSearchJournalsResponse, error)
@@ -120,6 +159,15 @@ func (UnimplementedJournalServiceServer) CreateJournal(context.Context, *CreateJ
 }
 func (UnimplementedJournalServiceServer) GetJournals(context.Context, *GetJournalsRequest) (*GetJournalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetJournals not implemented")
+}
+func (UnimplementedJournalServiceServer) GetJournal(context.Context, *GetJournalRequest) (*GetJournalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetJournal not implemented")
+}
+func (UnimplementedJournalServiceServer) UpdateJournal(context.Context, *UpdateJournalRequest) (*UpdateJournalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateJournal not implemented")
+}
+func (UnimplementedJournalServiceServer) DeleteJournal(context.Context, *DeleteJournalRequest) (*DeleteJournalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteJournal not implemented")
 }
 func (UnimplementedJournalServiceServer) TriggerJournalAnalysis(context.Context, *TriggerAnalysisRequest) (*TriggerAnalysisResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerJournalAnalysis not implemented")
@@ -182,6 +230,60 @@ func _JournalService_GetJournals_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(JournalServiceServer).GetJournals(ctx, req.(*GetJournalsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _JournalService_GetJournal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetJournalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JournalServiceServer).GetJournal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: JournalService_GetJournal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JournalServiceServer).GetJournal(ctx, req.(*GetJournalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _JournalService_UpdateJournal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateJournalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JournalServiceServer).UpdateJournal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: JournalService_UpdateJournal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JournalServiceServer).UpdateJournal(ctx, req.(*UpdateJournalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _JournalService_DeleteJournal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteJournalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JournalServiceServer).DeleteJournal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: JournalService_DeleteJournal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JournalServiceServer).DeleteJournal(ctx, req.(*DeleteJournalRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -254,6 +356,18 @@ var JournalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetJournals",
 			Handler:    _JournalService_GetJournals_Handler,
+		},
+		{
+			MethodName: "GetJournal",
+			Handler:    _JournalService_GetJournal_Handler,
+		},
+		{
+			MethodName: "UpdateJournal",
+			Handler:    _JournalService_UpdateJournal_Handler,
+		},
+		{
+			MethodName: "DeleteJournal",
+			Handler:    _JournalService_DeleteJournal_Handler,
 		},
 		{
 			MethodName: "TriggerJournalAnalysis",

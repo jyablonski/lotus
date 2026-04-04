@@ -10,6 +10,9 @@ interface CreateJournalFormProps {
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   error: string | null;
+  submitLabel?: string;
+  /** When false, hides the Clear button (e.g. edit mode). */
+  showClearButton?: boolean;
 }
 
 export function CreateJournalForm({
@@ -20,6 +23,8 @@ export function CreateJournalForm({
   onSubmit,
   isSubmitting,
   error,
+  submitLabel = "Save Entry",
+  showClearButton = true,
 }: CreateJournalFormProps) {
   return (
     <Card>
@@ -54,20 +59,22 @@ export function CreateJournalForm({
                   Saving...
                 </>
               ) : (
-                "Save Entry"
+                submitLabel
               )}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setEntry("");
-                setMood(5);
-              }}
-              className="btn-outline"
-            >
-              Clear
-            </button>
+            {showClearButton && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEntry("");
+                  setMood(5);
+                }}
+                className="btn-outline"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </form>
       </CardContent>

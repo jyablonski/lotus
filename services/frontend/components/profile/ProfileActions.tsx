@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Logout } from "@/components/auth/LogoutButton";
+import { ProfileExportButtons } from "@/components/profile/ProfileExportButtons";
 import { ROUTES } from "@/lib/routes";
 
 interface ProfileActionsProps {
@@ -56,6 +57,10 @@ export function ProfileActions({ isAdmin = false }: ProfileActionsProps) {
             <span className="text-dark-200">Settings</span>
           </button>
         </Link>
+
+        <div className="pt-2 border-t border-dark-600 mt-2">
+          <ProfileExportButtons />
+        </div>
 
         <hr className="my-4 border-dark-600" />
 

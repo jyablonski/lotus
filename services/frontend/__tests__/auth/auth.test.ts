@@ -294,8 +294,8 @@ describe("jwt callback", () => {
       user: { backendId: "b-123", createdAt: "2025-01-01T00:00:00Z" },
     } as never);
 
-    expect(result.backendId).toBe("b-123");
-    expect(result.createdAt).toBe("2025-01-01T00:00:00Z");
+    expect(result!.backendId).toBe("b-123");
+    expect(result!.createdAt).toBe("2025-01-01T00:00:00Z");
   });
 
   test("preserves existing token when no user (subsequent requests)", async () => {
@@ -309,8 +309,8 @@ describe("jwt callback", () => {
       user: undefined,
     } as never);
 
-    expect(result.backendId).toBe("existing-id");
-    expect(result.createdAt).toBe("2025-01-01");
+    expect(result!.backendId).toBe("existing-id");
+    expect(result!.createdAt).toBe("2025-01-01");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -320,7 +320,7 @@ describe("jwt callback", () => {
       user: {},
     } as never);
 
-    expect(result.backendId).toBe("original");
+    expect(result!.backendId).toBe("original");
   });
 });
 
@@ -462,8 +462,8 @@ describe("jwt callback - magic link fallback paths", () => {
       user: { id: "adapter-uuid-999", email: "adapter@example.com" },
     } as never);
 
-    expect(result.backendId).toBe("adapter-uuid-999");
-    expect(result.email).toBe("adapter@example.com");
+    expect(result!.backendId).toBe("adapter-uuid-999");
+    expect(result!.email).toBe("adapter@example.com");
   });
 
   test("looks up backend user by email when backendId is still missing", async () => {
@@ -484,8 +484,8 @@ describe("jwt callback - magic link fallback paths", () => {
       user: undefined,
     } as never);
 
-    expect(result.backendId).toBe("looked-up-id");
-    expect(result.createdAt).toBe("2025-07-01T00:00:00Z");
+    expect(result!.backendId).toBe("looked-up-id");
+    expect(result!.createdAt).toBe("2025-07-01T00:00:00Z");
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
@@ -523,8 +523,8 @@ describe("jwt callback - magic link fallback paths", () => {
       user: undefined,
     } as never);
 
-    expect(result.backendId).toBe("auto-created-id");
-    expect(result.createdAt).toBe("2025-08-01T00:00:00Z");
+    expect(result!.backendId).toBe("auto-created-id");
+    expect(result!.createdAt).toBe("2025-08-01T00:00:00Z");
   });
 
   test("handles failed email lookup and failed creation gracefully", async () => {
@@ -543,7 +543,7 @@ describe("jwt callback - magic link fallback paths", () => {
     } as never);
 
     // backendId should remain unset — no crash
-    expect(result.backendId).toBeUndefined();
+    expect(result!.backendId).toBeUndefined();
   });
 
   test("does not fetch when backendId is already on the token", async () => {
@@ -553,7 +553,7 @@ describe("jwt callback - magic link fallback paths", () => {
       user: undefined,
     } as never);
 
-    expect(result.backendId).toBe("already-set");
+    expect(result!.backendId).toBe("already-set");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });

@@ -220,7 +220,7 @@ def generate_bru_content(
     lines.append(f"{method} {{")
     lines.append(f"  url: {url}")
     lines.append(f"  body: {body_type}")
-    lines.append("  auth: none")
+    lines.append("  auth: inherit")
     lines.append("}")
 
     # Query params block
@@ -418,13 +418,80 @@ def parse_openapi3_spec(spec_path: Path) -> list[dict]:
     return deduplicate_slugs(endpoints)
 
 
+_COLLECTION_CONFIG: dict[str, dict] = {
+    "backend": {
+        "name": "Lotus Backend API",
+        "token_var": "api_key",
+        "url_var": "backend_url",
+        "url_default": "http://localhost:8080",
+    },
+    "analyzer": {
+        "name": "Lotus Analyzer API",
+        "token_var": "analyzer_api_key",
+        "url_var": "analyzer_url",
+        "url_default": "http://localhost:8083",
+    },
+}
+
+
+def write_collection_files(collection_dir: Path, service: str) -> None:
+    """Write bruno.json, collection.bru, folder.bru, and environments/local.bru for a service collection."""
+    cfg = _COLLECTION_CONFIG[service]
+    collection_dir.mkdir(parents=True, exist_ok=True)
+
+    # bruno.json
+    (collection_dir / "bruno.json").write_text(
+        "{\n"
+        '  "version": "1",\n'
+        f'  "name": "{cfg["name"]}",\n'
+        '  "type": "collection",\n'
+        '  "ignore": ["node_modules", ".git"]\n'
+        "}\n"
+    )
+
+    # collection.bru — Content-Type header only; auth lives in folder.bru
+    (collection_dir / "collection.bru").write_text(
+        "headers {\n  Content-Type: application/json\n}\n"
+    )
+
+    # folder.bru — bearer auth so endpoint files can use auth: inherit
+    token = cfg["token_var"]
+    (collection_dir / "folder.bru").write_text(
+        f"meta {{\n"
+        f"  name: {service}\n"
+        f"  type: folder\n"
+        f"}}\n"
+        f"\n"
+        f"auth: bearer\n"
+        f"\n"
+        f"auth:bearer {{\n"
+        f"  token: {{{{{token}}}}}\n"
+        f"}}\n"
+    )
+
+    # environments/local.bru — skip if it already exists (contains local secrets)
+    env_dir = collection_dir / "environments"
+    env_dir.mkdir(parents=True, exist_ok=True)
+    local_bru = env_dir / "local.bru"
+    if not local_bru.exists():
+        local_bru.write_text(
+            "vars {\n"
+            f"  {cfg['url_var']}: {cfg['url_default']}\n"
+            "  user_id: 550e8400-e29b-41d4-a716-446655440000\n"
+            "  journal_id: 1\n"
+            f"  {cfg['token_var']}: \n"
+            "}\n"
+        )
+
+
 def write_bru_files(endpoints: list[dict], output_dir: Path) -> None:
     """Write .bru files for a list of endpoints, clearing the output dir first."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Remove existing generated .bru files
+    # Remove existing generated endpoint .bru files; preserve collection.bru and folder.bru
     for existing in output_dir.glob("*.bru"):
-        existing.unlink()
+        if existing.name not in ("collection.bru", "folder.bru"):
+            existing.unlink()
 
     for ep in endpoints:
         content = generate_bru_content(
@@ -438,39 +505,12 @@ def write_bru_files(endpoints: list[dict], output_dir: Path) -> None:
         filepath.write_text(content)
 
 
-def write_collection_files(bruno_dir: Path) -> None:
-    """Write the collection-level bruno.json, collection.bru, and environment files."""
-    # bruno.json
-    # Write with manual formatting to match prettier output and avoid
-    # pre-commit flip-flopping between json.dumps and prettier styles.
-    content = (
-        "{\n"
-        '  "version": "1",\n'
-        '  "name": "Lotus API",\n'
-        '  "type": "collection",\n'
-        '  "ignore": ["node_modules", ".git"]\n'
-        "}\n"
-    )
-    (bruno_dir / "bruno.json").write_text(content)
-
-    # collection.bru
-    (bruno_dir / "collection.bru").write_text("headers {\n  Content-Type: application/json\n}\n")
-
-    # environments/local.bru
-    env_dir = bruno_dir / "environments"
-    env_dir.mkdir(parents=True, exist_ok=True)
-    (env_dir / "local.bru").write_text(
-        "vars {\n"
-        "  backend_url: http://localhost:8080\n"
-        "  analyzer_url: http://localhost:8083\n"
-        "  user_id: 550e8400-e29b-41d4-a716-446655440000\n"
-        "  journal_id: 1\n"
-        "}\n"
-    )
-
-
 def main() -> int:
+    import shutil
+
     bruno_dir = REPO_ROOT / "bruno"
+    backend_dir = bruno_dir / "backend"
+    analyzer_dir = bruno_dir / "analyzer"
     backend_swagger_dir = REPO_ROOT / "services" / "backend" / "internal" / "pb" / "proto"
     analyzer_spec_path = REPO_ROOT / "services" / "analyzer" / "openapi.json"
 
@@ -498,15 +538,24 @@ def main() -> int:
     analyzer_endpoints = parse_openapi3_spec(analyzer_spec_path)
     print(f"Analyzer: found {len(analyzer_endpoints)} endpoints")
 
-    # --- Write collection files ---
-    write_collection_files(bruno_dir)
+    # --- Write per-service collections ---
+    write_collection_files(backend_dir, "backend")
+    write_bru_files(backend_endpoints, backend_dir)
 
-    # --- Write .bru files ---
-    write_bru_files(backend_endpoints, bruno_dir / "backend")
-    write_bru_files(analyzer_endpoints, bruno_dir / "analyzer")
+    write_collection_files(analyzer_dir, "analyzer")
+    write_bru_files(analyzer_endpoints, analyzer_dir)
+
+    # --- Clean up old top-level collection files (one-time migration) ---
+    for old_file in ["bruno.json", "collection.bru"]:
+        p = bruno_dir / old_file
+        if p.exists():
+            p.unlink()
+    old_env_dir = bruno_dir / "environments"
+    if old_env_dir.exists():
+        shutil.rmtree(old_env_dir)
 
     total = len(backend_endpoints) + len(analyzer_endpoints)
-    print(f"Generated {total} Bruno files in {bruno_dir}")
+    print(f"Generated {total} Bruno files in {bruno_dir / 'backend'} and {bruno_dir / 'analyzer'}")
     return 0
 
 

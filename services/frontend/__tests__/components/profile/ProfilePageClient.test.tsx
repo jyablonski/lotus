@@ -27,6 +27,18 @@ jest.mock("@/components/profile/ProfileActions", () => ({
   ProfileActions: () => <div data-testid="profile-actions">Actions</div>,
 }));
 
+jest.mock("@/components/profile/ProfileMoodChart", () => ({
+  ProfileMoodChart: () => <div data-testid="mood-chart" />,
+}));
+
+jest.mock("@/components/profile/ProfileStreakCelebration", () => ({
+  ProfileStreakCelebration: () => null,
+}));
+
+jest.mock("@/components/profile/ProfileAchievements", () => ({
+  ProfileAchievements: () => <div data-testid="achievements" />,
+}));
+
 describe("ProfilePageClient", () => {
   const mockStats: ProfileStats = {
     totalEntries: 42,
@@ -47,6 +59,7 @@ describe("ProfilePageClient", () => {
     image: "https://example.com/avatar.jpg",
     signupDate: "2025-01-15T00:00:00Z",
     stats: mockStats,
+    journals: [],
     timezone: "UTC",
   };
 

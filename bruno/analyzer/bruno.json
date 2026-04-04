@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Lotus Analyzer API",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

@@ -7,6 +7,10 @@ import { ProfileInsights } from "./ProfileInsights";
 import { ProfileActions } from "./ProfileActions";
 import { trackEvent } from "@/lib/analytics";
 import type { ProfileStats as ProfileStatsType } from "@/lib/server/profile";
+import type { JournalEntry } from "@/types/journal";
+import { ProfileMoodChart } from "./ProfileMoodChart";
+import { ProfileStreakCelebration } from "./ProfileStreakCelebration";
+import { ProfileAchievements } from "./ProfileAchievements";
 
 interface ProfilePageClientProps {
   name: string;
@@ -14,6 +18,7 @@ interface ProfilePageClientProps {
   image: string | null;
   signupDate: string;
   stats: ProfileStatsType;
+  journals: JournalEntry[];
   isAdmin?: boolean;
   timezone: string;
 }
@@ -24,6 +29,7 @@ export function ProfilePageClient({
   image,
   signupDate,
   stats,
+  journals,
   isAdmin = false,
   timezone,
 }: ProfilePageClientProps) {
@@ -51,6 +57,7 @@ export function ProfilePageClient({
 
   return (
     <div className="page-container">
+      <ProfileStreakCelebration currentStreak={currentStreak} />
       <div className="content-container space-y-8">
         {/* Profile Header */}
         <ProfileHeader
@@ -76,6 +83,8 @@ export function ProfilePageClient({
           />
         </div>
 
+        <ProfileMoodChart journals={journals} timezone={timezone} />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ProfileInsights
             averageMood={averageMood}
@@ -85,6 +94,11 @@ export function ProfilePageClient({
 
           <ProfileActions isAdmin={isAdmin} />
         </div>
+
+        <ProfileAchievements
+          totalEntries={totalEntries}
+          longestStreak={longestStreak}
+        />
       </div>
     </div>
   );

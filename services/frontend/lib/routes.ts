@@ -10,6 +10,7 @@ export const ROUTES = {
     home: "/journal/home",
     create: "/journal/create",
     calendar: "/journal/calendar",
+    detail: (id: string | number) => `/journal/${id}`,
   },
   profile: "/profile",
   profileSettings: "/profile/settings",
@@ -20,7 +21,7 @@ export const ROUTES = {
   errorDemo: "/error-demo",
 } as const;
 
-/** Helper to build a journal detail route (currently unused, placeholder for future). */
+/** @deprecated Use ROUTES.journal.detail */
 export function journalDetailRoute(journalId: string | number): string {
-  return `/journal/${journalId}`;
+  return ROUTES.journal.detail(journalId);
 }
