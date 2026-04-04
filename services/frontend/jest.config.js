@@ -32,7 +32,7 @@ const customJestConfig = {
     "!**/jest.setup.js",
   ],
   coverageDirectory: "coverage",
-  coverageReporters: ["text", "text-summary", "lcov"],
+  coverageReporters: ["text", "text-summary", "lcov", "json-summary"],
   // Threshold check disabled: Jest's CoverageReporter uses glob in a way that breaks with
   // some resolution setups. Re-enable after verifying npm run test:coverage completes.
   // coverageThreshold: {

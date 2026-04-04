@@ -16,10 +16,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  COVERAGE_THRESHOLD: 65
+
 jobs:
   backend-pipeline:
     runs-on: ubuntu-latest
     name: Test Suite
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -48,11 +54,18 @@ jobs:
       - name: Run Backend Tests
         run: make test-backend
 
-      # - name: Upload coverage report
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: backend-coverage
-      #     path: services/backend/coverage.out
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: services/backend/coverage.out
+          format: golang
+
+      - name: Enforce ${{ env.COVERAGE_THRESHOLD }}% coverage threshold
+        run: |
+          total=$(go tool cover -func=services/backend/coverage.out | awk '/^total:/{print $NF}' | tr -d '%')
+          echo "Total coverage: ${total}%"
+          awk -v t="$total" -v threshold="$COVERAGE_THRESHOLD" 'BEGIN { if (t+0 < threshold+0) { print "Coverage " t "% is below " threshold "% threshold"; exit 1 } }'
 
       - name: Run contract tests
         working-directory: services/backend
