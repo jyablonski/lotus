@@ -2,11 +2,12 @@ package grpc_test
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/mocks"
@@ -21,6 +22,8 @@ func newRuntimeConfigMock(lastRunTimestamp string) *mocks.QuerierMock {
 		"LAST_RUN_TIMESTAMP": lastRunTimestamp,
 	})
 
+	now := time.Now()
+	ts := pgtype.Timestamp{Time: now, Valid: true}
 	return &mocks.QuerierMock{
 		GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
 			return db.SourceRuntimeConfig{
@@ -29,8 +32,8 @@ func newRuntimeConfigMock(lastRunTimestamp string) *mocks.QuerierMock {
 				Value:       configValue,
 				Service:     "backend",
 				Description: "Runtime config managed by GenerateRandomString",
-				CreatedAt:   time.Now(),
-				ModifiedAt:  time.Now(),
+				CreatedAt:   ts,
+				ModifiedAt:  ts,
 			}, nil
 		},
 		UpsertRuntimeConfigValueFunc: func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
@@ -40,8 +43,8 @@ func newRuntimeConfigMock(lastRunTimestamp string) *mocks.QuerierMock {
 				Value:       arg.Value,
 				Service:     arg.Service,
 				Description: arg.Description,
-				CreatedAt:   time.Now(),
-				ModifiedAt:  time.Now(),
+				CreatedAt:   ts,
+				ModifiedAt:  ts,
 			}, nil
 		},
 	}
@@ -99,17 +102,19 @@ func TestUtilServer_GenerateRandomString_NoExistingConfig(t *testing.T) {
 	// Simulate first run where no config exists yet
 	mockQuerier := &mocks.QuerierMock{
 		GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
-			return db.SourceRuntimeConfig{}, sql.ErrNoRows
+			return db.SourceRuntimeConfig{}, pgx.ErrNoRows
 		},
 		UpsertRuntimeConfigValueFunc: func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
+			now := time.Now()
+			ts := pgtype.Timestamp{Time: now, Valid: true}
 			return db.SourceRuntimeConfig{
 				ID:          1,
 				Key:         arg.Key,
 				Value:       arg.Value,
 				Service:     arg.Service,
 				Description: arg.Description,
-				CreatedAt:   time.Now(),
-				ModifiedAt:  time.Now(),
+				CreatedAt:   ts,
+				ModifiedAt:  ts,
 			}, nil
 		},
 	}

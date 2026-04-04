@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jyablonski/lotus/internal/testinfra"
-	_ "github.com/lib/pq"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 )

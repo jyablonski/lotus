@@ -1,69 +1,31 @@
 package grpc
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestParseNumericToFloat64(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    string
-		expected float64
-	}{
-		{"valid integer", "42", 42.0},
-		{"valid float", "3.14159", 3.14159},
-		{"negative number", "-5.5", -5.5},
-		{"zero", "0", 0.0},
-		{"invalid string", "not-a-number", 0.0},
-		{"empty string", "", 0.0},
-	}
+func TestNumericToFloat64(t *testing.T) {
+	var valid pgtype.Numeric
+	require.NoError(t, valid.Scan("7.5"))
+	assert.Equal(t, 7.5, numericToFloat64(valid))
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, parseNumericToFloat64(tc.input))
-		})
-	}
+	var invalid pgtype.Numeric
+	assert.Equal(t, 0.0, numericToFloat64(invalid))
 }
 
-func TestNullStringToString(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    sql.NullString
-		expected string
-	}{
-		{"valid string", sql.NullString{String: "hello", Valid: true}, "hello"},
-		{"empty valid string", sql.NullString{String: "", Valid: true}, ""},
-		{"null string", sql.NullString{String: "", Valid: false}, ""},
-		{"null string with value", sql.NullString{String: "ignored", Valid: false}, ""},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, nullStringToString(tc.input))
-		})
-	}
+func TestDerefString(t *testing.T) {
+	s := "hello"
+	assert.Equal(t, "hello", derefString(&s))
+	assert.Equal(t, "", derefString(nil))
 }
 
-func TestNullTimeToString(t *testing.T) {
-	testTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
-
-	cases := []struct {
-		name     string
-		input    sql.NullTime
-		expected string
-	}{
-		{"valid time", sql.NullTime{Time: testTime, Valid: true}, "2024-01-15T10:30:00Z"},
-		{"null time", sql.NullTime{Time: time.Time{}, Valid: false}, ""},
-		{"null time with value", sql.NullTime{Time: testTime, Valid: false}, ""},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, nullTimeToString(tc.input))
-		})
-	}
+func TestPgTimestampToString(t *testing.T) {
+	ts := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	assert.Equal(t, "2024-01-15T10:30:00Z", pgTimestampToString(pgtype.Timestamp{Time: ts, Valid: true}))
+	assert.Equal(t, "", pgTimestampToString(pgtype.Timestamp{}))
 }

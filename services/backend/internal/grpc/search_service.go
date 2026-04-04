@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
@@ -61,6 +62,28 @@ func buildJournalEntry(userID string, r searchRow, topics []string) *pb.JournalE
 		entry.TopicNames = topics
 	}
 	return entry
+}
+
+func searchRowFromSemantic(r db.SearchJournalsSemanticRow) searchRow {
+	var createdAt time.Time
+	if r.CreatedAt.Valid {
+		createdAt = r.CreatedAt.Time
+	}
+	return searchRow{
+		ID: r.ID, JournalText: r.JournalText, MoodScore: r.MoodScore,
+		CreatedAt: createdAt, Score: r.Similarity,
+	}
+}
+
+func searchRowFromKeyword(r db.SearchJournalsKeywordRow) searchRow {
+	var createdAt time.Time
+	if r.CreatedAt.Valid {
+		createdAt = r.CreatedAt.Time
+	}
+	return searchRow{
+		ID: r.ID, JournalText: r.JournalText, MoodScore: r.MoodScore,
+		CreatedAt: createdAt, Score: r.Rank,
+	}
 }
 
 // searchCacheKey builds a deterministic Redis key for search result caching.
@@ -146,33 +169,21 @@ func (s *JournalServer) SearchJournals(ctx context.Context, req *pb.SearchJourna
 		return nil, fmt.Errorf("decode encode response: %w", err)
 	}
 
-	// Step 2: Run pgvector cosine similarity search directly via pgx.
 	embeddingStr := formatVector(encodeResp.Embedding)
 
-	rows, err := pgxPool.Query(ctx, `
-		SELECT j.id, j.journal_text, j.mood_score, j.created_at,
-		       1 - (je.embedding <=> $1::public.vector) AS similarity
-		FROM source.journals j
-		JOIN source.journal_embeddings je ON j.id = je.journal_id
-		WHERE j.user_id = $2
-		ORDER BY je.embedding <=> $1::public.vector ASC
-		LIMIT $3
-	`, embeddingStr, userID, limit)
+	dbPool := db.New(pgxPool)
+	semanticRows, err := dbPool.SearchJournalsSemantic(ctx, db.SearchJournalsSemanticParams{
+		EmbeddingLiteral: embeddingStr,
+		UserID:           pgtype.UUID{Bytes: userID, Valid: true},
+		ResultLimit:      limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("semantic search query failed: %w", err)
 	}
-	defer rows.Close()
 
-	var searchResults []searchRow
-	for rows.Next() {
-		var r searchRow
-		if err := rows.Scan(&r.ID, &r.JournalText, &r.MoodScore, &r.CreatedAt, &r.Score); err != nil {
-			return nil, fmt.Errorf("scan search row: %w", err)
-		}
-		searchResults = append(searchResults, r)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("semantic search rows iteration: %w", err)
+	searchResults := make([]searchRow, 0, len(semanticRows))
+	for _, row := range semanticRows {
+		searchResults = append(searchResults, searchRowFromSemantic(row))
 	}
 
 	// Hydrate topic names for the returned journals.
@@ -235,30 +246,18 @@ func (s *JournalServer) KeywordSearchJournals(ctx context.Context, req *pb.Keywo
 
 	logger.Info("keyword search cache miss, querying database", "query", query)
 
-	rows, err := pgxPool.Query(ctx, `
-		SELECT j.id, j.journal_text, j.mood_score, j.created_at,
-		       ts_rank(j.search_vector, plainto_tsquery('english', $1)) AS rank
-		FROM source.journals j
-		WHERE j.user_id = $2
-		  AND j.search_vector @@ plainto_tsquery('english', $1)
-		ORDER BY rank DESC
-		LIMIT $3
-	`, query, userID, limit)
+	keywordRows, err := db.New(pgxPool).SearchJournalsKeyword(ctx, db.SearchJournalsKeywordParams{
+		QueryText:   query,
+		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
+		ResultLimit: limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("keyword search query failed: %w", err)
 	}
-	defer rows.Close()
 
-	var searchResults []searchRow
-	for rows.Next() {
-		var r searchRow
-		if err := rows.Scan(&r.ID, &r.JournalText, &r.MoodScore, &r.CreatedAt, &r.Score); err != nil {
-			return nil, fmt.Errorf("scan keyword search row: %w", err)
-		}
-		searchResults = append(searchResults, r)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("keyword search rows iteration: %w", err)
+	searchResults := make([]searchRow, 0, len(keywordRows))
+	for _, row := range keywordRows {
+		searchResults = append(searchResults, searchRowFromKeyword(row))
 	}
 
 	// Hydrate topic names for the returned journals.

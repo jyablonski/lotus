@@ -8,7 +8,7 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getUserGameBets = `-- name: GetUserGameBets :many
@@ -19,13 +19,13 @@ LIMIT $2 OFFSET $3
 `
 
 type GetUserGameBetsParams struct {
-	UserID uuid.UUID
+	UserID pgtype.UUID
 	Limit  int32
 	Offset int32
 }
 
 func (q *Queries) GetUserGameBets(ctx context.Context, arg GetUserGameBetsParams) ([]SourceUserGameBet, error) {
-	rows, err := q.db.QueryContext(ctx, getUserGameBets, arg.UserID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, getUserGameBets, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +46,6 @@ func (q *Queries) GetUserGameBets(ctx context.Context, arg GetUserGameBetsParams
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -62,7 +59,7 @@ RETURNING id, user_id, zone, amount, roll_result, payout, created_at
 `
 
 type InsertUserGameBetParams struct {
-	UserID     uuid.UUID
+	UserID     pgtype.UUID
 	Zone       string
 	Amount     int32
 	RollResult int32
@@ -70,7 +67,7 @@ type InsertUserGameBetParams struct {
 }
 
 func (q *Queries) InsertUserGameBet(ctx context.Context, arg InsertUserGameBetParams) (SourceUserGameBet, error) {
-	row := q.db.QueryRowContext(ctx, insertUserGameBet,
+	row := q.db.QueryRow(ctx, insertUserGameBet,
 		arg.UserID,
 		arg.Zone,
 		arg.Amount,

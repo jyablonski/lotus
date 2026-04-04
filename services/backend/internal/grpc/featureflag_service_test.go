@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/mocks"
@@ -15,6 +16,8 @@ import (
 )
 
 func newWaffleFlag(name string, everyone, superusers, staff, authenticated bool) db.SourceWaffleFlag {
+	now := time.Now()
+	ts := pgtype.Timestamptz{Time: now, Valid: true}
 	return db.SourceWaffleFlag{
 		ID:            1,
 		Name:          name,
@@ -22,8 +25,8 @@ func newWaffleFlag(name string, everyone, superusers, staff, authenticated bool)
 		Superusers:    superusers,
 		Staff:         staff,
 		Authenticated: authenticated,
-		Created:       time.Now(),
-		Modified:      time.Now(),
+		Created:       ts,
+		Modified:      ts,
 	}
 }
 

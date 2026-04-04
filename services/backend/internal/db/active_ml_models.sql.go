@@ -14,7 +14,7 @@ SELECT is_enabled FROM active_ml_models WHERE ml_model = $1
 `
 
 func (q *Queries) GetActiveMLModel(ctx context.Context, mlModel string) (bool, error) {
-	row := q.db.QueryRowContext(ctx, getActiveMLModel, mlModel)
+	row := q.db.QueryRow(ctx, getActiveMLModel, mlModel)
 	var is_enabled bool
 	err := row.Scan(&is_enabled)
 	return is_enabled, err

@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/riverqueue/river"
 )
@@ -53,29 +53,33 @@ func (w *ExportJournalsWorker) Work(ctx context.Context, job *river.Job[ExportJo
 		"attempt", job.Attempt,
 	)
 
-	export, err := w.queries.UpdateJournalExportProcessing(ctx, exportID)
+	pgExportID := pgtype.UUID{Bytes: exportID, Valid: true}
+	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
+
+	export, err := w.queries.UpdateJournalExportProcessing(ctx, pgExportID)
 	if err != nil {
 		return fmt.Errorf("mark processing: %w", err)
 	}
 
-	content, err := w.buildContent(ctx, userID, export.Format)
+	content, err := w.buildContent(ctx, pgUserID, export.Format)
 	if err != nil {
 		w.logger.Error("export_journals: build failed",
 			"export_id", exportID,
 			"error", err,
 		)
 		if job.Attempt >= job.MaxAttempts {
+			errMsg := err.Error()
 			_, _ = w.queries.UpdateJournalExportFailed(ctx, db.UpdateJournalExportFailedParams{
-				ID:       exportID,
-				ErrorMsg: sql.NullString{String: err.Error(), Valid: true},
+				ID:       pgExportID,
+				ErrorMsg: &errMsg,
 			})
 		}
 		return fmt.Errorf("build content: %w", err)
 	}
 
 	_, err = w.queries.UpdateJournalExportComplete(ctx, db.UpdateJournalExportCompleteParams{
-		ID:      exportID,
-		Content: sql.NullString{String: content, Valid: true},
+		ID:      pgExportID,
+		Content: &content,
 	})
 	if err != nil {
 		return fmt.Errorf("mark complete: %w", err)
@@ -89,7 +93,7 @@ func (w *ExportJournalsWorker) Work(ctx context.Context, job *river.Job[ExportJo
 	return nil
 }
 
-func (w *ExportJournalsWorker) buildContent(ctx context.Context, userID uuid.UUID, format db.SourceExportFormat) (string, error) {
+func (w *ExportJournalsWorker) buildContent(ctx context.Context, userID pgtype.UUID, format db.SourceExportFormat) (string, error) {
 	journals, err := w.queries.GetJournalsByUserId(ctx, userID)
 	if err != nil {
 		return "", fmt.Errorf("fetch journals: %w", err)
@@ -123,12 +127,12 @@ func buildCSV(journals []db.SourceJournal) string {
 	sb.WriteString("id,created_at,mood,text\n")
 	for _, j := range journals {
 		mood := ""
-		if j.MoodScore.Valid {
-			mood = strconv.Itoa(int(j.MoodScore.Int32))
+		if j.MoodScore != nil {
+			mood = strconv.Itoa(int(*j.MoodScore))
 		}
 		row := strings.Join([]string{
 			strconv.Itoa(int(j.ID)),
-			j.CreatedAt.Format(time.RFC3339),
+			j.CreatedAt.Time.Format(time.RFC3339),
 			mood,
 			escapeCsvField(j.JournalText),
 		}, ",")
@@ -145,10 +149,10 @@ func buildMarkdown(journals []db.SourceJournal, topicsByJournal map[int32][]stri
 
 	for _, j := range journals {
 		mood := ""
-		if j.MoodScore.Valid {
-			mood = strconv.Itoa(int(j.MoodScore.Int32))
+		if j.MoodScore != nil {
+			mood = strconv.Itoa(int(*j.MoodScore))
 		}
-		fmt.Fprintf(&sb, "## %s — Mood %s\n", j.CreatedAt.Format(time.RFC3339), mood)
+		fmt.Fprintf(&sb, "## %s — Mood %s\n", j.CreatedAt.Time.Format(time.RFC3339), mood)
 		if topics := topicsByJournal[j.ID]; len(topics) > 0 {
 			fmt.Fprintf(&sb, "Topics: %s\n", strings.Join(topics, ", "))
 		}

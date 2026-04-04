@@ -8,7 +8,7 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getUserJournalSummaryByUserId = `-- name: GetUserJournalSummaryByUserId :one
@@ -45,8 +45,8 @@ FROM gold.user_journal_summary
 WHERE user_id = $1
 `
 
-func (q *Queries) GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (GoldUserJournalSummary, error) {
-	row := q.db.QueryRowContext(ctx, getUserJournalSummaryByUserId, userID)
+func (q *Queries) GetUserJournalSummaryByUserId(ctx context.Context, userID pgtype.UUID) (GoldUserJournalSummary, error) {
+	row := q.db.QueryRow(ctx, getUserJournalSummaryByUserId, userID)
 	var i GoldUserJournalSummary
 	err := row.Scan(
 		&i.UserID,

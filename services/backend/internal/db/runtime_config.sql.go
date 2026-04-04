@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"encoding/json"
 )
 
 const getRuntimeConfigByKey = `-- name: GetRuntimeConfigByKey :one
@@ -15,7 +14,7 @@ SELECT id, key, value, service, description, created_at, modified_at FROM source
 `
 
 func (q *Queries) GetRuntimeConfigByKey(ctx context.Context, key string) (SourceRuntimeConfig, error) {
-	row := q.db.QueryRowContext(ctx, getRuntimeConfigByKey, key)
+	row := q.db.QueryRow(ctx, getRuntimeConfigByKey, key)
 	var i SourceRuntimeConfig
 	err := row.Scan(
 		&i.ID,
@@ -39,13 +38,13 @@ RETURNING id, key, value, service, description, created_at, modified_at
 
 type UpsertRuntimeConfigValueParams struct {
 	Key         string
-	Value       json.RawMessage
+	Value       []byte
 	Service     string
 	Description string
 }
 
 func (q *Queries) UpsertRuntimeConfigValue(ctx context.Context, arg UpsertRuntimeConfigValueParams) (SourceRuntimeConfig, error) {
-	row := q.db.QueryRowContext(ctx, upsertRuntimeConfigValue,
+	row := q.db.QueryRow(ctx, upsertRuntimeConfigValue,
 		arg.Key,
 		arg.Value,
 		arg.Service,

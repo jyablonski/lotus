@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"database/sql"
-
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,8 +27,6 @@ import (
 	grpcSrv "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
 	"github.com/jyablonski/lotus/internal/jobs"
-
-	_ "github.com/lib/pq"
 )
 
 func allowCORS(origin string, h http.Handler) http.Handler {
@@ -196,33 +192,15 @@ func main() {
 		corsOrigin = "http://localhost:3000"
 	}
 
-	// ── Database (database/sql + lib/pq) ──────────────────────────────
-	dbConn, err := sql.Open("postgres", connStr)
-	if err != nil {
-		logger.Error("Failed to open database connection", "error", err)
-		os.Exit(1)
-	}
-	defer dbConn.Close()
-
-	if err := dbConn.Ping(); err != nil {
-		logger.Error("Failed to ping database", "error", err)
-		os.Exit(1)
-	}
-
-	dbConn.SetMaxOpenConns(25)
-	dbConn.SetMaxIdleConns(5)
-	dbConn.SetConnMaxLifetime(5 * time.Minute)
-	dbConn.SetConnMaxIdleTime(1 * time.Minute)
-
-	queries := db.New(dbConn)
-
-	// ── pgxpool (used by River) ────────────────────────────────────────
+	// ── pgxpool ────────────────────────────────────────────────────────
 	pgxPool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
 		logger.Error("Failed to create pgxpool", "error", err)
 		os.Exit(1)
 	}
 	defer pgxPool.Close()
+
+	queries := db.New(pgxPool)
 
 	// ── River migrations ───────────────────────────────────────────────
 	if err := jobs.RunMigrations(context.Background(), pgxPool, logger); err != nil {

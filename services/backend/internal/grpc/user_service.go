@@ -2,12 +2,13 @@ package grpc
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/user"
@@ -44,8 +45,8 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 
 	user, err := dbq.CreateUser(ctx, db.CreateUserParams{
 		Email:    req.Email,
-		Password: sql.NullString{String: hashedPassword, Valid: true},
-		Salt:     sql.NullString{Valid: false}, // bcrypt embeds its own salt
+		Password: &hashedPassword,
+		Salt:     nil,
 	})
 	if err != nil {
 		logger.Error("Failed to create user", "email", req.Email, "error", err)
@@ -73,13 +74,11 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 		),
 	)
 
-	// For OAuth, no password is required; we store the email and OAuth provider.
-	// Using sql.NullString for nullable OAuth provider field
-	oauthProvider := sql.NullString{String: req.OauthProvider, Valid: true}
+	oauthProvider := req.OauthProvider
 
 	user, err := dbq.CreateUserOauth(ctx, db.CreateUserOauthParams{
 		Email:         req.Email,
-		OauthProvider: oauthProvider, // e.g., "github"
+		OauthProvider: &oauthProvider,
 	})
 	if err != nil {
 		logger.Error("Failed to create OAuth user", "email", req.Email, "error", err)
@@ -102,10 +101,19 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 
 	u, err := dbq.GetUserByEmail(ctx, email)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, status.Error(codes.NotFound, ErrUserNotFound.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "%s: %v", ErrGetUserFailed.Error(), err)
+	}
+
+	createdAt := ""
+	if u.CreatedAt.Valid {
+		createdAt = u.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00")
+	}
+	updatedAt := ""
+	if u.ModifiedAt.Valid {
+		updatedAt = u.ModifiedAt.Time.Format("2006-01-02T15:04:05Z07:00")
 	}
 
 	return &pb.GetUserResponse{
@@ -113,8 +121,8 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 		Email:     u.Email,
 		Role:      u.Role,
 		Timezone:  u.Timezone,
-		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: u.ModifiedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
 	}, nil
 }
 
@@ -136,7 +144,7 @@ func (s *UserServer) UpdateUserTimezone(ctx context.Context, req *pb.UpdateUserT
 	dbq := inject.DBFrom(ctx)
 
 	u, err := dbq.UpdateUserTimezone(ctx, db.UpdateUserTimezoneParams{
-		ID:       userID,
+		ID:       pgtype.UUID{Bytes: userID, Valid: true},
 		Timezone: tz,
 	})
 	if err != nil {
@@ -146,9 +154,14 @@ func (s *UserServer) UpdateUserTimezone(ctx context.Context, req *pb.UpdateUserT
 
 	logger.Info("User timezone updated", "user_id", u.ID.String(), "timezone", u.Timezone)
 
+	updatedAt := ""
+	if u.ModifiedAt.Valid {
+		updatedAt = u.ModifiedAt.Time.Format(time.RFC3339)
+	}
+
 	return &pb.UpdateUserTimezoneResponse{
 		UserId:    u.ID.String(),
 		Timezone:  u.Timezone,
-		UpdatedAt: u.ModifiedAt.Format(time.RFC3339),
+		UpdatedAt: updatedAt,
 	}, nil
 }

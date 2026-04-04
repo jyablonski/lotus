@@ -5,7 +5,7 @@ package mocks
 
 import (
 	"context"
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"sync"
 )
@@ -35,6 +35,9 @@ var _ db.Querier = &QuerierMock{}
 //			DeleteJournalForUserFunc: func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
 //				panic("mock out the DeleteJournalForUser method")
 //			},
+//			DeleteUserByIdFunc: func(ctx context.Context, id pgtype.UUID) error {
+//				panic("mock out the DeleteUserById method")
+//			},
 //			GetActiveFeatureFlagsFunc: func(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 //				panic("mock out the GetActiveFeatureFlags method")
 //			},
@@ -47,13 +50,13 @@ var _ db.Querier = &QuerierMock{}
 //			GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
 //				panic("mock out the GetJournalById method")
 //			},
-//			GetJournalCountByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (int64, error) {
+//			GetJournalCountByUserIdFunc: func(ctx context.Context, userID pgtype.UUID) (int64, error) {
 //				panic("mock out the GetJournalCountByUserId method")
 //			},
 //			GetJournalExportFunc: func(ctx context.Context, arg db.GetJournalExportParams) (db.SourceJournalExport, error) {
 //				panic("mock out the GetJournalExport method")
 //			},
-//			GetJournalsByUserIdFunc: func(ctx context.Context, userID uuid.UUID) ([]db.SourceJournal, error) {
+//			GetJournalsByUserIdFunc: func(ctx context.Context, userID pgtype.UUID) ([]db.SourceJournal, error) {
 //				panic("mock out the GetJournalsByUserId method")
 //			},
 //			GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
@@ -68,20 +71,26 @@ var _ db.Querier = &QuerierMock{}
 //			GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
 //				panic("mock out the GetUserByEmail method")
 //			},
-//			GetUserByIdFunc: func(ctx context.Context, id uuid.UUID) (db.SourceUser, error) {
+//			GetUserByIdFunc: func(ctx context.Context, id pgtype.UUID) (db.SourceUser, error) {
 //				panic("mock out the GetUserById method")
 //			},
-//			GetUserGameBalanceFunc: func(ctx context.Context, userID uuid.UUID) (db.SourceUserGameBalance, error) {
+//			GetUserGameBalanceFunc: func(ctx context.Context, userID pgtype.UUID) (db.SourceUserGameBalance, error) {
 //				panic("mock out the GetUserGameBalance method")
 //			},
 //			GetUserGameBetsFunc: func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error) {
 //				panic("mock out the GetUserGameBets method")
 //			},
-//			GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
+//			GetUserJournalSummaryByUserIdFunc: func(ctx context.Context, userID pgtype.UUID) (db.GoldUserJournalSummary, error) {
 //				panic("mock out the GetUserJournalSummaryByUserId method")
 //			},
 //			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
 //				panic("mock out the InsertUserGameBet method")
+//			},
+//			SearchJournalsKeywordFunc: func(ctx context.Context, arg db.SearchJournalsKeywordParams) ([]db.SearchJournalsKeywordRow, error) {
+//				panic("mock out the SearchJournalsKeyword method")
+//			},
+//			SearchJournalsSemanticFunc: func(ctx context.Context, arg db.SearchJournalsSemanticParams) ([]db.SearchJournalsSemanticRow, error) {
+//				panic("mock out the SearchJournalsSemantic method")
 //			},
 //			UpdateJournalExportCompleteFunc: func(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error) {
 //				panic("mock out the UpdateJournalExportComplete method")
@@ -89,8 +98,11 @@ var _ db.Querier = &QuerierMock{}
 //			UpdateJournalExportFailedFunc: func(ctx context.Context, arg db.UpdateJournalExportFailedParams) (db.SourceJournalExport, error) {
 //				panic("mock out the UpdateJournalExportFailed method")
 //			},
-//			UpdateJournalExportProcessingFunc: func(ctx context.Context, id uuid.UUID) (db.SourceJournalExport, error) {
+//			UpdateJournalExportProcessingFunc: func(ctx context.Context, id pgtype.UUID) (db.SourceJournalExport, error) {
 //				panic("mock out the UpdateJournalExportProcessing method")
+//			},
+//			UpdateJournalForUserFunc: func(ctx context.Context, arg db.UpdateJournalForUserParams) (int64, error) {
+//				panic("mock out the UpdateJournalForUser method")
 //			},
 //			UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
 //				panic("mock out the UpdateUserTimezone method")
@@ -123,6 +135,9 @@ type QuerierMock struct {
 	// DeleteJournalForUserFunc mocks the DeleteJournalForUser method.
 	DeleteJournalForUserFunc func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error)
 
+	// DeleteUserByIdFunc mocks the DeleteUserById method.
+	DeleteUserByIdFunc func(ctx context.Context, id pgtype.UUID) error
+
 	// GetActiveFeatureFlagsFunc mocks the GetActiveFeatureFlags method.
 	GetActiveFeatureFlagsFunc func(ctx context.Context) ([]db.SourceWaffleFlag, error)
 
@@ -136,13 +151,13 @@ type QuerierMock struct {
 	GetJournalByIdFunc func(ctx context.Context, id int32) (db.SourceJournal, error)
 
 	// GetJournalCountByUserIdFunc mocks the GetJournalCountByUserId method.
-	GetJournalCountByUserIdFunc func(ctx context.Context, userID uuid.UUID) (int64, error)
+	GetJournalCountByUserIdFunc func(ctx context.Context, userID pgtype.UUID) (int64, error)
 
 	// GetJournalExportFunc mocks the GetJournalExport method.
 	GetJournalExportFunc func(ctx context.Context, arg db.GetJournalExportParams) (db.SourceJournalExport, error)
 
 	// GetJournalsByUserIdFunc mocks the GetJournalsByUserId method.
-	GetJournalsByUserIdFunc func(ctx context.Context, userID uuid.UUID) ([]db.SourceJournal, error)
+	GetJournalsByUserIdFunc func(ctx context.Context, userID pgtype.UUID) ([]db.SourceJournal, error)
 
 	// GetJournalsByUserIdPaginatedFunc mocks the GetJournalsByUserIdPaginated method.
 	GetJournalsByUserIdPaginatedFunc func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error)
@@ -157,19 +172,25 @@ type QuerierMock struct {
 	GetUserByEmailFunc func(ctx context.Context, email string) (db.SourceUser, error)
 
 	// GetUserByIdFunc mocks the GetUserById method.
-	GetUserByIdFunc func(ctx context.Context, id uuid.UUID) (db.SourceUser, error)
+	GetUserByIdFunc func(ctx context.Context, id pgtype.UUID) (db.SourceUser, error)
 
 	// GetUserGameBalanceFunc mocks the GetUserGameBalance method.
-	GetUserGameBalanceFunc func(ctx context.Context, userID uuid.UUID) (db.SourceUserGameBalance, error)
+	GetUserGameBalanceFunc func(ctx context.Context, userID pgtype.UUID) (db.SourceUserGameBalance, error)
 
 	// GetUserGameBetsFunc mocks the GetUserGameBets method.
 	GetUserGameBetsFunc func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error)
 
 	// GetUserJournalSummaryByUserIdFunc mocks the GetUserJournalSummaryByUserId method.
-	GetUserJournalSummaryByUserIdFunc func(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error)
+	GetUserJournalSummaryByUserIdFunc func(ctx context.Context, userID pgtype.UUID) (db.GoldUserJournalSummary, error)
 
 	// InsertUserGameBetFunc mocks the InsertUserGameBet method.
 	InsertUserGameBetFunc func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error)
+
+	// SearchJournalsKeywordFunc mocks the SearchJournalsKeyword method.
+	SearchJournalsKeywordFunc func(ctx context.Context, arg db.SearchJournalsKeywordParams) ([]db.SearchJournalsKeywordRow, error)
+
+	// SearchJournalsSemanticFunc mocks the SearchJournalsSemantic method.
+	SearchJournalsSemanticFunc func(ctx context.Context, arg db.SearchJournalsSemanticParams) ([]db.SearchJournalsSemanticRow, error)
 
 	// UpdateJournalExportCompleteFunc mocks the UpdateJournalExportComplete method.
 	UpdateJournalExportCompleteFunc func(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error)
@@ -178,7 +199,10 @@ type QuerierMock struct {
 	UpdateJournalExportFailedFunc func(ctx context.Context, arg db.UpdateJournalExportFailedParams) (db.SourceJournalExport, error)
 
 	// UpdateJournalExportProcessingFunc mocks the UpdateJournalExportProcessing method.
-	UpdateJournalExportProcessingFunc func(ctx context.Context, id uuid.UUID) (db.SourceJournalExport, error)
+	UpdateJournalExportProcessingFunc func(ctx context.Context, id pgtype.UUID) (db.SourceJournalExport, error)
+
+	// UpdateJournalForUserFunc mocks the UpdateJournalForUser method.
+	UpdateJournalForUserFunc func(ctx context.Context, arg db.UpdateJournalForUserParams) (int64, error)
 
 	// UpdateUserTimezoneFunc mocks the UpdateUserTimezone method.
 	UpdateUserTimezoneFunc func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error)
@@ -226,6 +250,13 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.DeleteJournalForUserParams
 		}
+		// DeleteUserById holds details about calls to the DeleteUserById method.
+		DeleteUserById []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID pgtype.UUID
+		}
 		// GetActiveFeatureFlags holds details about calls to the GetActiveFeatureFlags method.
 		GetActiveFeatureFlags []struct {
 			// Ctx is the ctx argument value.
@@ -257,7 +288,7 @@ type QuerierMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// UserID is the userID argument value.
-			UserID uuid.UUID
+			UserID pgtype.UUID
 		}
 		// GetJournalExport holds details about calls to the GetJournalExport method.
 		GetJournalExport []struct {
@@ -271,7 +302,7 @@ type QuerierMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// UserID is the userID argument value.
-			UserID uuid.UUID
+			UserID pgtype.UUID
 		}
 		// GetJournalsByUserIdPaginated holds details about calls to the GetJournalsByUserIdPaginated method.
 		GetJournalsByUserIdPaginated []struct {
@@ -306,14 +337,14 @@ type QuerierMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ID is the id argument value.
-			ID uuid.UUID
+			ID pgtype.UUID
 		}
 		// GetUserGameBalance holds details about calls to the GetUserGameBalance method.
 		GetUserGameBalance []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// UserID is the userID argument value.
-			UserID uuid.UUID
+			UserID pgtype.UUID
 		}
 		// GetUserGameBets holds details about calls to the GetUserGameBets method.
 		GetUserGameBets []struct {
@@ -327,7 +358,7 @@ type QuerierMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// UserID is the userID argument value.
-			UserID uuid.UUID
+			UserID pgtype.UUID
 		}
 		// InsertUserGameBet holds details about calls to the InsertUserGameBet method.
 		InsertUserGameBet []struct {
@@ -335,6 +366,20 @@ type QuerierMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.InsertUserGameBetParams
+		}
+		// SearchJournalsKeyword holds details about calls to the SearchJournalsKeyword method.
+		SearchJournalsKeyword []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.SearchJournalsKeywordParams
+		}
+		// SearchJournalsSemantic holds details about calls to the SearchJournalsSemantic method.
+		SearchJournalsSemantic []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.SearchJournalsSemanticParams
 		}
 		// UpdateJournalExportComplete holds details about calls to the UpdateJournalExportComplete method.
 		UpdateJournalExportComplete []struct {
@@ -355,7 +400,14 @@ type QuerierMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ID is the id argument value.
-			ID uuid.UUID
+			ID pgtype.UUID
+		}
+		// UpdateJournalForUser holds details about calls to the UpdateJournalForUser method.
+		UpdateJournalForUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateJournalForUserParams
 		}
 		// UpdateUserTimezone holds details about calls to the UpdateUserTimezone method.
 		UpdateUserTimezone []struct {
@@ -384,6 +436,7 @@ type QuerierMock struct {
 	lockCreateUser                    sync.RWMutex
 	lockCreateUserOauth               sync.RWMutex
 	lockDeleteJournalForUser          sync.RWMutex
+	lockDeleteUserById                sync.RWMutex
 	lockGetActiveFeatureFlags         sync.RWMutex
 	lockGetActiveMLModel              sync.RWMutex
 	lockGetFeatureFlagByName          sync.RWMutex
@@ -400,9 +453,12 @@ type QuerierMock struct {
 	lockGetUserGameBets               sync.RWMutex
 	lockGetUserJournalSummaryByUserId sync.RWMutex
 	lockInsertUserGameBet             sync.RWMutex
+	lockSearchJournalsKeyword         sync.RWMutex
+	lockSearchJournalsSemantic        sync.RWMutex
 	lockUpdateJournalExportComplete   sync.RWMutex
 	lockUpdateJournalExportFailed     sync.RWMutex
 	lockUpdateJournalExportProcessing sync.RWMutex
+	lockUpdateJournalForUser          sync.RWMutex
 	lockUpdateUserTimezone            sync.RWMutex
 	lockUpsertRuntimeConfigValue      sync.RWMutex
 	lockUpsertUserGameBalance         sync.RWMutex
@@ -588,6 +644,42 @@ func (mock *QuerierMock) DeleteJournalForUserCalls() []struct {
 	return calls
 }
 
+// DeleteUserById calls DeleteUserByIdFunc.
+func (mock *QuerierMock) DeleteUserById(ctx context.Context, id pgtype.UUID) error {
+	if mock.DeleteUserByIdFunc == nil {
+		panic("QuerierMock.DeleteUserByIdFunc: method is nil but Querier.DeleteUserById was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  pgtype.UUID
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteUserById.Lock()
+	mock.calls.DeleteUserById = append(mock.calls.DeleteUserById, callInfo)
+	mock.lockDeleteUserById.Unlock()
+	return mock.DeleteUserByIdFunc(ctx, id)
+}
+
+// DeleteUserByIdCalls gets all the calls that were made to DeleteUserById.
+// Check the length with:
+//
+//	len(mockedQuerier.DeleteUserByIdCalls())
+func (mock *QuerierMock) DeleteUserByIdCalls() []struct {
+	Ctx context.Context
+	ID  pgtype.UUID
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  pgtype.UUID
+	}
+	mock.lockDeleteUserById.RLock()
+	calls = mock.calls.DeleteUserById
+	mock.lockDeleteUserById.RUnlock()
+	return calls
+}
+
 // GetActiveFeatureFlags calls GetActiveFeatureFlagsFunc.
 func (mock *QuerierMock) GetActiveFeatureFlags(ctx context.Context) ([]db.SourceWaffleFlag, error) {
 	if mock.GetActiveFeatureFlagsFunc == nil {
@@ -729,13 +821,13 @@ func (mock *QuerierMock) GetJournalByIdCalls() []struct {
 }
 
 // GetJournalCountByUserId calls GetJournalCountByUserIdFunc.
-func (mock *QuerierMock) GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error) {
+func (mock *QuerierMock) GetJournalCountByUserId(ctx context.Context, userID pgtype.UUID) (int64, error) {
 	if mock.GetJournalCountByUserIdFunc == nil {
 		panic("QuerierMock.GetJournalCountByUserIdFunc: method is nil but Querier.GetJournalCountByUserId was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}{
 		Ctx:    ctx,
 		UserID: userID,
@@ -752,11 +844,11 @@ func (mock *QuerierMock) GetJournalCountByUserId(ctx context.Context, userID uui
 //	len(mockedQuerier.GetJournalCountByUserIdCalls())
 func (mock *QuerierMock) GetJournalCountByUserIdCalls() []struct {
 	Ctx    context.Context
-	UserID uuid.UUID
+	UserID pgtype.UUID
 } {
 	var calls []struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}
 	mock.lockGetJournalCountByUserId.RLock()
 	calls = mock.calls.GetJournalCountByUserId
@@ -801,13 +893,13 @@ func (mock *QuerierMock) GetJournalExportCalls() []struct {
 }
 
 // GetJournalsByUserId calls GetJournalsByUserIdFunc.
-func (mock *QuerierMock) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]db.SourceJournal, error) {
+func (mock *QuerierMock) GetJournalsByUserId(ctx context.Context, userID pgtype.UUID) ([]db.SourceJournal, error) {
 	if mock.GetJournalsByUserIdFunc == nil {
 		panic("QuerierMock.GetJournalsByUserIdFunc: method is nil but Querier.GetJournalsByUserId was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}{
 		Ctx:    ctx,
 		UserID: userID,
@@ -824,11 +916,11 @@ func (mock *QuerierMock) GetJournalsByUserId(ctx context.Context, userID uuid.UU
 //	len(mockedQuerier.GetJournalsByUserIdCalls())
 func (mock *QuerierMock) GetJournalsByUserIdCalls() []struct {
 	Ctx    context.Context
-	UserID uuid.UUID
+	UserID pgtype.UUID
 } {
 	var calls []struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}
 	mock.lockGetJournalsByUserId.RLock()
 	calls = mock.calls.GetJournalsByUserId
@@ -981,13 +1073,13 @@ func (mock *QuerierMock) GetUserByEmailCalls() []struct {
 }
 
 // GetUserById calls GetUserByIdFunc.
-func (mock *QuerierMock) GetUserById(ctx context.Context, id uuid.UUID) (db.SourceUser, error) {
+func (mock *QuerierMock) GetUserById(ctx context.Context, id pgtype.UUID) (db.SourceUser, error) {
 	if mock.GetUserByIdFunc == nil {
 		panic("QuerierMock.GetUserByIdFunc: method is nil but Querier.GetUserById was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		ID  uuid.UUID
+		ID  pgtype.UUID
 	}{
 		Ctx: ctx,
 		ID:  id,
@@ -1004,11 +1096,11 @@ func (mock *QuerierMock) GetUserById(ctx context.Context, id uuid.UUID) (db.Sour
 //	len(mockedQuerier.GetUserByIdCalls())
 func (mock *QuerierMock) GetUserByIdCalls() []struct {
 	Ctx context.Context
-	ID  uuid.UUID
+	ID  pgtype.UUID
 } {
 	var calls []struct {
 		Ctx context.Context
-		ID  uuid.UUID
+		ID  pgtype.UUID
 	}
 	mock.lockGetUserById.RLock()
 	calls = mock.calls.GetUserById
@@ -1017,13 +1109,13 @@ func (mock *QuerierMock) GetUserByIdCalls() []struct {
 }
 
 // GetUserGameBalance calls GetUserGameBalanceFunc.
-func (mock *QuerierMock) GetUserGameBalance(ctx context.Context, userID uuid.UUID) (db.SourceUserGameBalance, error) {
+func (mock *QuerierMock) GetUserGameBalance(ctx context.Context, userID pgtype.UUID) (db.SourceUserGameBalance, error) {
 	if mock.GetUserGameBalanceFunc == nil {
 		panic("QuerierMock.GetUserGameBalanceFunc: method is nil but Querier.GetUserGameBalance was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}{
 		Ctx:    ctx,
 		UserID: userID,
@@ -1040,11 +1132,11 @@ func (mock *QuerierMock) GetUserGameBalance(ctx context.Context, userID uuid.UUI
 //	len(mockedQuerier.GetUserGameBalanceCalls())
 func (mock *QuerierMock) GetUserGameBalanceCalls() []struct {
 	Ctx    context.Context
-	UserID uuid.UUID
+	UserID pgtype.UUID
 } {
 	var calls []struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}
 	mock.lockGetUserGameBalance.RLock()
 	calls = mock.calls.GetUserGameBalance
@@ -1089,13 +1181,13 @@ func (mock *QuerierMock) GetUserGameBetsCalls() []struct {
 }
 
 // GetUserJournalSummaryByUserId calls GetUserJournalSummaryByUserIdFunc.
-func (mock *QuerierMock) GetUserJournalSummaryByUserId(ctx context.Context, userID uuid.UUID) (db.GoldUserJournalSummary, error) {
+func (mock *QuerierMock) GetUserJournalSummaryByUserId(ctx context.Context, userID pgtype.UUID) (db.GoldUserJournalSummary, error) {
 	if mock.GetUserJournalSummaryByUserIdFunc == nil {
 		panic("QuerierMock.GetUserJournalSummaryByUserIdFunc: method is nil but Querier.GetUserJournalSummaryByUserId was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}{
 		Ctx:    ctx,
 		UserID: userID,
@@ -1112,11 +1204,11 @@ func (mock *QuerierMock) GetUserJournalSummaryByUserId(ctx context.Context, user
 //	len(mockedQuerier.GetUserJournalSummaryByUserIdCalls())
 func (mock *QuerierMock) GetUserJournalSummaryByUserIdCalls() []struct {
 	Ctx    context.Context
-	UserID uuid.UUID
+	UserID pgtype.UUID
 } {
 	var calls []struct {
 		Ctx    context.Context
-		UserID uuid.UUID
+		UserID pgtype.UUID
 	}
 	mock.lockGetUserJournalSummaryByUserId.RLock()
 	calls = mock.calls.GetUserJournalSummaryByUserId
@@ -1157,6 +1249,78 @@ func (mock *QuerierMock) InsertUserGameBetCalls() []struct {
 	mock.lockInsertUserGameBet.RLock()
 	calls = mock.calls.InsertUserGameBet
 	mock.lockInsertUserGameBet.RUnlock()
+	return calls
+}
+
+// SearchJournalsKeyword calls SearchJournalsKeywordFunc.
+func (mock *QuerierMock) SearchJournalsKeyword(ctx context.Context, arg db.SearchJournalsKeywordParams) ([]db.SearchJournalsKeywordRow, error) {
+	if mock.SearchJournalsKeywordFunc == nil {
+		panic("QuerierMock.SearchJournalsKeywordFunc: method is nil but Querier.SearchJournalsKeyword was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.SearchJournalsKeywordParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockSearchJournalsKeyword.Lock()
+	mock.calls.SearchJournalsKeyword = append(mock.calls.SearchJournalsKeyword, callInfo)
+	mock.lockSearchJournalsKeyword.Unlock()
+	return mock.SearchJournalsKeywordFunc(ctx, arg)
+}
+
+// SearchJournalsKeywordCalls gets all the calls that were made to SearchJournalsKeyword.
+// Check the length with:
+//
+//	len(mockedQuerier.SearchJournalsKeywordCalls())
+func (mock *QuerierMock) SearchJournalsKeywordCalls() []struct {
+	Ctx context.Context
+	Arg db.SearchJournalsKeywordParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.SearchJournalsKeywordParams
+	}
+	mock.lockSearchJournalsKeyword.RLock()
+	calls = mock.calls.SearchJournalsKeyword
+	mock.lockSearchJournalsKeyword.RUnlock()
+	return calls
+}
+
+// SearchJournalsSemantic calls SearchJournalsSemanticFunc.
+func (mock *QuerierMock) SearchJournalsSemantic(ctx context.Context, arg db.SearchJournalsSemanticParams) ([]db.SearchJournalsSemanticRow, error) {
+	if mock.SearchJournalsSemanticFunc == nil {
+		panic("QuerierMock.SearchJournalsSemanticFunc: method is nil but Querier.SearchJournalsSemantic was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.SearchJournalsSemanticParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockSearchJournalsSemantic.Lock()
+	mock.calls.SearchJournalsSemantic = append(mock.calls.SearchJournalsSemantic, callInfo)
+	mock.lockSearchJournalsSemantic.Unlock()
+	return mock.SearchJournalsSemanticFunc(ctx, arg)
+}
+
+// SearchJournalsSemanticCalls gets all the calls that were made to SearchJournalsSemantic.
+// Check the length with:
+//
+//	len(mockedQuerier.SearchJournalsSemanticCalls())
+func (mock *QuerierMock) SearchJournalsSemanticCalls() []struct {
+	Ctx context.Context
+	Arg db.SearchJournalsSemanticParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.SearchJournalsSemanticParams
+	}
+	mock.lockSearchJournalsSemantic.RLock()
+	calls = mock.calls.SearchJournalsSemantic
+	mock.lockSearchJournalsSemantic.RUnlock()
 	return calls
 }
 
@@ -1233,13 +1397,13 @@ func (mock *QuerierMock) UpdateJournalExportFailedCalls() []struct {
 }
 
 // UpdateJournalExportProcessing calls UpdateJournalExportProcessingFunc.
-func (mock *QuerierMock) UpdateJournalExportProcessing(ctx context.Context, id uuid.UUID) (db.SourceJournalExport, error) {
+func (mock *QuerierMock) UpdateJournalExportProcessing(ctx context.Context, id pgtype.UUID) (db.SourceJournalExport, error) {
 	if mock.UpdateJournalExportProcessingFunc == nil {
 		panic("QuerierMock.UpdateJournalExportProcessingFunc: method is nil but Querier.UpdateJournalExportProcessing was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		ID  uuid.UUID
+		ID  pgtype.UUID
 	}{
 		Ctx: ctx,
 		ID:  id,
@@ -1256,15 +1420,51 @@ func (mock *QuerierMock) UpdateJournalExportProcessing(ctx context.Context, id u
 //	len(mockedQuerier.UpdateJournalExportProcessingCalls())
 func (mock *QuerierMock) UpdateJournalExportProcessingCalls() []struct {
 	Ctx context.Context
-	ID  uuid.UUID
+	ID  pgtype.UUID
 } {
 	var calls []struct {
 		Ctx context.Context
-		ID  uuid.UUID
+		ID  pgtype.UUID
 	}
 	mock.lockUpdateJournalExportProcessing.RLock()
 	calls = mock.calls.UpdateJournalExportProcessing
 	mock.lockUpdateJournalExportProcessing.RUnlock()
+	return calls
+}
+
+// UpdateJournalForUser calls UpdateJournalForUserFunc.
+func (mock *QuerierMock) UpdateJournalForUser(ctx context.Context, arg db.UpdateJournalForUserParams) (int64, error) {
+	if mock.UpdateJournalForUserFunc == nil {
+		panic("QuerierMock.UpdateJournalForUserFunc: method is nil but Querier.UpdateJournalForUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateJournalForUserParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateJournalForUser.Lock()
+	mock.calls.UpdateJournalForUser = append(mock.calls.UpdateJournalForUser, callInfo)
+	mock.lockUpdateJournalForUser.Unlock()
+	return mock.UpdateJournalForUserFunc(ctx, arg)
+}
+
+// UpdateJournalForUserCalls gets all the calls that were made to UpdateJournalForUser.
+// Check the length with:
+//
+//	len(mockedQuerier.UpdateJournalForUserCalls())
+func (mock *QuerierMock) UpdateJournalForUserCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateJournalForUserParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateJournalForUserParams
+	}
+	mock.lockUpdateJournalForUser.RLock()
+	calls = mock.calls.UpdateJournalForUser
+	mock.lockUpdateJournalForUser.RUnlock()
 	return calls
 }
 

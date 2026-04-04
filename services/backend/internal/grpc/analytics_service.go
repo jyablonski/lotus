@@ -2,12 +2,12 @@ package grpc
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 )
@@ -17,28 +17,24 @@ type AnalyticsServer struct {
 }
 
 func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.GetUserJournalSummaryRequest) (*pb.GetUserJournalSummaryResponse, error) {
-	// Parse user_id from string to UUID
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
-	// Extract deps after input validation
 	dbq := inject.DBFrom(ctx)
 
-	// Fetch the user journal summary from the database
-	summary, err := dbq.GetUserJournalSummaryByUserId(ctx, userID)
+	summary, err := dbq.GetUserJournalSummaryByUserId(ctx, pgtype.UUID{Bytes: userID, Valid: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user journal summary: %w", err)
 	}
 
-	// Convert database model to protobuf response
 	pbSummary := &pb.UserJournalSummary{
-		UserId:            summary.UserID.String(),
-		UserEmail:         nullStringToString(summary.UserEmail),
-		UserRole:          nullStringToString(summary.UserRole),
-		UserTimezone:      nullStringToString(summary.UserTimezone),
-		UserCreatedAt:     nullTimeToString(summary.UserCreatedAt),
+		UserId:            uuid.UUID(summary.UserID.Bytes).String(),
+		UserEmail:         derefString(summary.UserEmail),
+		UserRole:          derefString(summary.UserRole),
+		UserTimezone:      derefString(summary.UserTimezone),
+		UserCreatedAt:     pgTimestampToString(summary.UserCreatedAt),
 		TotalJournals:     summary.TotalJournals,
 		ActiveDays:        summary.ActiveDays,
 		PositiveEntries:   summary.PositiveEntries,
@@ -50,27 +46,25 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 
 	// Handle nullable numeric fields
 	if summary.AvgMoodScore.Valid {
-		val := parseNumericToFloat64(summary.AvgMoodScore.String)
+		val := numericToFloat64(summary.AvgMoodScore)
 		pbSummary.AvgMoodScore = &val
 	}
-	if summary.MinMoodScore.Valid {
-		val := summary.MinMoodScore.Int32
-		pbSummary.MinMoodScore = &val
+	if summary.MinMoodScore != nil {
+		pbSummary.MinMoodScore = summary.MinMoodScore
 	}
-	if summary.MaxMoodScore.Valid {
-		val := summary.MaxMoodScore.Int32
-		pbSummary.MaxMoodScore = &val
+	if summary.MaxMoodScore != nil {
+		pbSummary.MaxMoodScore = summary.MaxMoodScore
 	}
 	if summary.MoodScoreStddev.Valid {
-		val := parseNumericToFloat64(summary.MoodScoreStddev.String)
+		val := numericToFloat64(summary.MoodScoreStddev)
 		pbSummary.MoodScoreStddev = &val
 	}
 	if summary.AvgSentimentScore.Valid {
-		val := parseNumericToFloat64(summary.AvgSentimentScore.String)
+		val := numericToFloat64(summary.AvgSentimentScore)
 		pbSummary.AvgSentimentScore = &val
 	}
 	if summary.AvgJournalLength.Valid {
-		val := parseNumericToFloat64(summary.AvgJournalLength.String)
+		val := numericToFloat64(summary.AvgJournalLength)
 		pbSummary.AvgJournalLength = &val
 	}
 
@@ -90,33 +84,29 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 
 	// Handle 30-day metrics
 	if summary.AvgMoodScore30d.Valid {
-		val := parseNumericToFloat64(summary.AvgMoodScore30d.String)
+		val := numericToFloat64(summary.AvgMoodScore30d)
 		pbSummary.AvgMoodScore_30D = &val
 	}
-	if summary.MinMoodScore30d.Valid {
-		val := summary.MinMoodScore30d.Int32
-		pbSummary.MinMoodScore_30D = &val
+	if summary.MinMoodScore30d != nil {
+		pbSummary.MinMoodScore_30D = summary.MinMoodScore30d
 	}
-	if summary.MaxMoodScore30d.Valid {
-		val := summary.MaxMoodScore30d.Int32
-		pbSummary.MaxMoodScore_30D = &val
+	if summary.MaxMoodScore30d != nil {
+		pbSummary.MaxMoodScore_30D = summary.MaxMoodScore30d
 	}
 
 	// Handle calculated fields
 	if summary.PositivePercentage.Valid {
-		val := parseNumericToFloat64(summary.PositivePercentage.String)
+		val := numericToFloat64(summary.PositivePercentage)
 		pbSummary.PositivePercentage = &val
 	}
-	if summary.DaysSinceLastJournal.Valid {
-		val := summary.DaysSinceLastJournal.Int32
-		pbSummary.DaysSinceLastJournal = &val
+	if summary.DaysSinceLastJournal != nil {
+		pbSummary.DaysSinceLastJournal = summary.DaysSinceLastJournal
 	}
-	if summary.DaysBetweenFirstAndLastJournal.Valid {
-		val := summary.DaysBetweenFirstAndLastJournal.Int32
-		pbSummary.DaysBetweenFirstAndLastJournal = &val
+	if summary.DaysBetweenFirstAndLastJournal != nil {
+		pbSummary.DaysBetweenFirstAndLastJournal = summary.DaysBetweenFirstAndLastJournal
 	}
 	if summary.JournalsPerActiveDay.Valid {
-		val := parseNumericToFloat64(summary.JournalsPerActiveDay.String)
+		val := numericToFloat64(summary.JournalsPerActiveDay)
 		pbSummary.JournalsPerActiveDay = &val
 	}
 
@@ -125,27 +115,35 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 	}, nil
 }
 
-// Helper function to parse numeric string to float64
-func parseNumericToFloat64(s string) float64 {
-	val, err := strconv.ParseFloat(s, 64)
-	if err != nil {
+// numericToFloat64 converts a pgtype.Numeric to float64, returning 0 if invalid.
+func numericToFloat64(n pgtype.Numeric) float64 {
+	if !n.Valid {
 		return 0
 	}
+	v, err := n.Value()
+	if err != nil || v == nil {
+		return 0
+	}
+	str, ok := v.(string)
+	if !ok {
+		return 0
+	}
+	val, _ := strconv.ParseFloat(str, 64)
 	return val
 }
 
-// Helper function to convert sql.NullString to string
-func nullStringToString(ns sql.NullString) string {
-	if ns.Valid {
-		return ns.String
+// derefString returns the string value of a pointer, or "" if nil.
+func derefString(s *string) string {
+	if s == nil {
+		return ""
 	}
-	return ""
+	return *s
 }
 
-// Helper function to convert sql.NullTime to RFC3339 string
-func nullTimeToString(nt sql.NullTime) string {
-	if nt.Valid {
-		return nt.Time.Format(time.RFC3339)
+// pgTimestampToString formats a pgtype.Timestamp as RFC3339, or "" if invalid.
+func pgTimestampToString(ts pgtype.Timestamp) string {
+	if !ts.Valid {
+		return ""
 	}
-	return ""
+	return ts.Time.Format(time.RFC3339)
 }

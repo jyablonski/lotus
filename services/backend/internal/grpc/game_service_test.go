@@ -2,12 +2,13 @@ package grpc_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	internalgrpc "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/mocks"
@@ -15,6 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func gamePgUUID(u uuid.UUID) pgtype.UUID { return pgtype.UUID{Bytes: u, Valid: true} }
+
+func gamePgTS(t time.Time) pgtype.Timestamp { return pgtype.Timestamp{Time: t, Valid: true} }
 
 func TestGameServer_GetGameBalance(t *testing.T) {
 	server := &internalgrpc.GameServer{}
@@ -24,14 +29,15 @@ func TestGameServer_GetGameBalance(t *testing.T) {
 		balance := int32(250)
 
 		mockQuerier := &mocks.QuerierMock{
-			GetUserGameBalanceFunc: func(ctx context.Context, uid uuid.UUID) (db.SourceUserGameBalance, error) {
-				assert.Equal(t, userID, uid)
+			GetUserGameBalanceFunc: func(ctx context.Context, uid pgtype.UUID) (db.SourceUserGameBalance, error) {
+				assert.Equal(t, gamePgUUID(userID), uid)
+				now := time.Now()
 				return db.SourceUserGameBalance{
 					ID:         1,
-					UserID:     userID,
+					UserID:     gamePgUUID(userID),
 					Balance:    balance,
-					CreatedAt:  time.Now(),
-					ModifiedAt: time.Now(),
+					CreatedAt:  gamePgTS(now),
+					ModifiedAt: gamePgTS(now),
 				}, nil
 			},
 		}
@@ -52,18 +58,19 @@ func TestGameServer_GetGameBalance(t *testing.T) {
 		userID := uuid.New()
 
 		mockQuerier := &mocks.QuerierMock{
-			GetUserGameBalanceFunc: func(ctx context.Context, uid uuid.UUID) (db.SourceUserGameBalance, error) {
-				return db.SourceUserGameBalance{}, sql.ErrNoRows
+			GetUserGameBalanceFunc: func(ctx context.Context, uid pgtype.UUID) (db.SourceUserGameBalance, error) {
+				return db.SourceUserGameBalance{}, pgx.ErrNoRows
 			},
 			UpsertUserGameBalanceFunc: func(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error) {
-				assert.Equal(t, userID, arg.UserID)
+				assert.Equal(t, gamePgUUID(userID), arg.UserID)
 				assert.Equal(t, int32(100), arg.Balance)
+				now := time.Now()
 				return db.SourceUserGameBalance{
 					ID:         1,
-					UserID:     userID,
+					UserID:     gamePgUUID(userID),
 					Balance:    100,
-					CreatedAt:  time.Now(),
-					ModifiedAt: time.Now(),
+					CreatedAt:  gamePgTS(now),
+					ModifiedAt: gamePgTS(now),
 				}, nil
 			},
 		}
@@ -96,7 +103,7 @@ func TestGameServer_GetGameBalance(t *testing.T) {
 	t.Run("db_error", func(t *testing.T) {
 		userID := uuid.New()
 		mockQuerier := &mocks.QuerierMock{
-			GetUserGameBalanceFunc: func(ctx context.Context, uid uuid.UUID) (db.SourceUserGameBalance, error) {
+			GetUserGameBalanceFunc: func(ctx context.Context, uid pgtype.UUID) (db.SourceUserGameBalance, error) {
 				return db.SourceUserGameBalance{}, errors.New("connection refused")
 			},
 		}
@@ -114,8 +121,8 @@ func TestGameServer_GetGameBalance(t *testing.T) {
 	t.Run("first_visit_upsert_error", func(t *testing.T) {
 		userID := uuid.New()
 		mockQuerier := &mocks.QuerierMock{
-			GetUserGameBalanceFunc: func(ctx context.Context, uid uuid.UUID) (db.SourceUserGameBalance, error) {
-				return db.SourceUserGameBalance{}, sql.ErrNoRows
+			GetUserGameBalanceFunc: func(ctx context.Context, uid pgtype.UUID) (db.SourceUserGameBalance, error) {
+				return db.SourceUserGameBalance{}, pgx.ErrNoRows
 			},
 			UpsertUserGameBalanceFunc: func(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error) {
 				return db.SourceUserGameBalance{}, errors.New("unique violation")
@@ -157,18 +164,18 @@ func TestGameServer_GetBetHistory(t *testing.T) {
 		now := time.Now()
 		mockQuerier := &mocks.QuerierMock{
 			GetUserGameBetsFunc: func(ctx context.Context, arg db.GetUserGameBetsParams) ([]db.SourceUserGameBet, error) {
-				assert.Equal(t, userID, arg.UserID)
+				assert.Equal(t, gamePgUUID(userID), arg.UserID)
 				assert.Equal(t, int32(20), arg.Limit)
 				assert.Equal(t, int32(0), arg.Offset)
 				return []db.SourceUserGameBet{
 					{
 						ID:         1,
-						UserID:     userID,
+						UserID:     gamePgUUID(userID),
 						Zone:       "red",
 						Amount:     10,
 						RollResult: 7,
 						Payout:     20,
-						CreatedAt:  now,
+						CreatedAt:  gamePgTS(now),
 					},
 				}, nil
 			},
@@ -266,14 +273,15 @@ func TestGameServer_UpdateGameBalance(t *testing.T) {
 		balance := int32(500)
 		mockQuerier := &mocks.QuerierMock{
 			UpsertUserGameBalanceFunc: func(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error) {
-				assert.Equal(t, userID, arg.UserID)
+				assert.Equal(t, gamePgUUID(userID), arg.UserID)
 				assert.Equal(t, balance, arg.Balance)
+				now := time.Now()
 				return db.SourceUserGameBalance{
 					ID:         1,
-					UserID:     userID,
+					UserID:     gamePgUUID(userID),
 					Balance:    balance,
-					CreatedAt:  time.Now(),
-					ModifiedAt: time.Now(),
+					CreatedAt:  gamePgTS(now),
+					ModifiedAt: gamePgTS(now),
 				}, nil
 			},
 		}
@@ -321,12 +329,13 @@ func TestGameServer_UpdateGameBalance(t *testing.T) {
 		mockQuerier := &mocks.QuerierMock{
 			UpsertUserGameBalanceFunc: func(ctx context.Context, arg db.UpsertUserGameBalanceParams) (db.SourceUserGameBalance, error) {
 				assert.Equal(t, int32(0), arg.Balance)
+				now := time.Now()
 				return db.SourceUserGameBalance{
 					ID:         1,
-					UserID:     userID,
+					UserID:     gamePgUUID(userID),
 					Balance:    0,
-					CreatedAt:  time.Now(),
-					ModifiedAt: time.Now(),
+					CreatedAt:  gamePgTS(now),
+					ModifiedAt: gamePgTS(now),
 				}, nil
 			},
 		}

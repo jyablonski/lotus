@@ -7,9 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createJournal = `-- name: CreateJournal :one
@@ -19,13 +18,13 @@ RETURNING id, user_id, journal_text, mood_score, created_at, modified_at, search
 `
 
 type CreateJournalParams struct {
-	UserID      uuid.UUID
+	UserID      pgtype.UUID
 	JournalText string
-	MoodScore   sql.NullInt32
+	MoodScore   *int32
 }
 
 func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (SourceJournal, error) {
-	row := q.db.QueryRowContext(ctx, createJournal, arg.UserID, arg.JournalText, arg.MoodScore)
+	row := q.db.QueryRow(ctx, createJournal, arg.UserID, arg.JournalText, arg.MoodScore)
 	var i SourceJournal
 	err := row.Scan(
 		&i.ID,
@@ -45,15 +44,15 @@ DELETE FROM source.journals WHERE id = $1 AND user_id = $2
 
 type DeleteJournalForUserParams struct {
 	ID     int32
-	UserID uuid.UUID
+	UserID pgtype.UUID
 }
 
 func (q *Queries) DeleteJournalForUser(ctx context.Context, arg DeleteJournalForUserParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteJournalForUser, arg.ID, arg.UserID)
+	result, err := q.db.Exec(ctx, deleteJournalForUser, arg.ID, arg.UserID)
 	if err != nil {
 		return 0, err
 	}
-	return result.RowsAffected()
+	return result.RowsAffected(), nil
 }
 
 const getJournalById = `-- name: GetJournalById :one
@@ -61,7 +60,7 @@ SELECT id, user_id, journal_text, mood_score, created_at, modified_at, search_ve
 `
 
 func (q *Queries) GetJournalById(ctx context.Context, id int32) (SourceJournal, error) {
-	row := q.db.QueryRowContext(ctx, getJournalById, id)
+	row := q.db.QueryRow(ctx, getJournalById, id)
 	var i SourceJournal
 	err := row.Scan(
 		&i.ID,
@@ -79,8 +78,8 @@ const getJournalCountByUserId = `-- name: GetJournalCountByUserId :one
 SELECT COUNT(*) FROM source.journals WHERE user_id = $1
 `
 
-func (q *Queries) GetJournalCountByUserId(ctx context.Context, userID uuid.UUID) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getJournalCountByUserId, userID)
+func (q *Queries) GetJournalCountByUserId(ctx context.Context, userID pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getJournalCountByUserId, userID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -90,8 +89,8 @@ const getJournalsByUserId = `-- name: GetJournalsByUserId :many
 SELECT id, user_id, journal_text, mood_score, created_at, modified_at, search_vector FROM source.journals WHERE user_id = $1 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]SourceJournal, error) {
-	rows, err := q.db.QueryContext(ctx, getJournalsByUserId, userID)
+func (q *Queries) GetJournalsByUserId(ctx context.Context, userID pgtype.UUID) ([]SourceJournal, error) {
+	rows, err := q.db.Query(ctx, getJournalsByUserId, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,9 +110,6 @@ func (q *Queries) GetJournalsByUserId(ctx context.Context, userID uuid.UUID) ([]
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -129,13 +125,13 @@ LIMIT $2 OFFSET $3
 `
 
 type GetJournalsByUserIdPaginatedParams struct {
-	UserID uuid.UUID
+	UserID pgtype.UUID
 	Limit  int32
 	Offset int32
 }
 
 func (q *Queries) GetJournalsByUserIdPaginated(ctx context.Context, arg GetJournalsByUserIdPaginatedParams) ([]SourceJournal, error) {
-	rows, err := q.db.QueryContext(ctx, getJournalsByUserIdPaginated, arg.UserID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, getJournalsByUserIdPaginated, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -156,11 +152,142 @@ func (q *Queries) GetJournalsByUserIdPaginated(ctx context.Context, arg GetJourn
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+	return items, nil
+}
+
+const searchJournalsKeyword = `-- name: SearchJournalsKeyword :many
+SELECT
+    j.id,
+    j.journal_text,
+    j.mood_score,
+    j.created_at,
+    ts_rank(j.search_vector, plainto_tsquery('english', $1))::float8 AS rank
+FROM source.journals j
+WHERE j.user_id = $2
+  AND j.search_vector @@ plainto_tsquery('english', $1)
+ORDER BY ts_rank(j.search_vector, plainto_tsquery('english', $1)) DESC
+LIMIT $3
+`
+
+type SearchJournalsKeywordParams struct {
+	QueryText   string
+	UserID      pgtype.UUID
+	ResultLimit int32
+}
+
+type SearchJournalsKeywordRow struct {
+	ID          int32
+	JournalText string
+	MoodScore   *int32
+	CreatedAt   pgtype.Timestamp
+	Rank        float64
+}
+
+func (q *Queries) SearchJournalsKeyword(ctx context.Context, arg SearchJournalsKeywordParams) ([]SearchJournalsKeywordRow, error) {
+	rows, err := q.db.Query(ctx, searchJournalsKeyword, arg.QueryText, arg.UserID, arg.ResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchJournalsKeywordRow
+	for rows.Next() {
+		var i SearchJournalsKeywordRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JournalText,
+			&i.MoodScore,
+			&i.CreatedAt,
+			&i.Rank,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return items, nil
+}
+
+const searchJournalsSemantic = `-- name: SearchJournalsSemantic :many
+SELECT
+    j.id,
+    j.journal_text,
+    j.mood_score,
+    j.created_at,
+    (1 - (je.embedding <=> $1::public.vector))::float8 AS similarity
+FROM source.journals j
+INNER JOIN source.journal_embeddings je ON j.id = je.journal_id
+WHERE j.user_id = $2
+ORDER BY je.embedding <=> $1::public.vector
+LIMIT $3
+`
+
+type SearchJournalsSemanticParams struct {
+	EmbeddingLiteral interface{}
+	UserID           pgtype.UUID
+	ResultLimit      int32
+}
+
+type SearchJournalsSemanticRow struct {
+	ID          int32
+	JournalText string
+	MoodScore   *int32
+	CreatedAt   pgtype.Timestamp
+	Similarity  float64
+}
+
+func (q *Queries) SearchJournalsSemantic(ctx context.Context, arg SearchJournalsSemanticParams) ([]SearchJournalsSemanticRow, error) {
+	rows, err := q.db.Query(ctx, searchJournalsSemantic, arg.EmbeddingLiteral, arg.UserID, arg.ResultLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchJournalsSemanticRow
+	for rows.Next() {
+		var i SearchJournalsSemanticRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.JournalText,
+			&i.MoodScore,
+			&i.CreatedAt,
+			&i.Similarity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateJournalForUser = `-- name: UpdateJournalForUser :execrows
+UPDATE source.journals
+SET journal_text = $1, mood_score = $2, modified_at = NOW()
+WHERE id = $3 AND user_id = $4
+`
+
+type UpdateJournalForUserParams struct {
+	JournalText string
+	MoodScore   *int32
+	ID          int32
+	UserID      pgtype.UUID
+}
+
+func (q *Queries) UpdateJournalForUser(ctx context.Context, arg UpdateJournalForUserParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateJournalForUser,
+		arg.JournalText,
+		arg.MoodScore,
+		arg.ID,
+		arg.UserID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

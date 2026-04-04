@@ -2,7 +2,6 @@ package jobs_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"testing"
@@ -12,14 +11,12 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/jobs"
 	"github.com/jyablonski/lotus/internal/testinfra"
-	_ "github.com/lib/pq"
 	"github.com/riverqueue/river"
 )
 
 // package-level test state set by TestMain.
 var (
 	testPgxPool     *pgxpool.Pool
-	testSQLDB       *sql.DB
 	testQueries     *db.Queries
 	testRiverClient *river.Client[pgx.Tx]
 )
@@ -35,17 +32,9 @@ func TestMain(m *testing.M) {
 
 	testPgxPool = testDB.Pool
 	testRiverClient = testDB.RiverClient
-
-	testSQLDB, err = sql.Open("postgres", testDB.ConnStr)
-	if err != nil {
-		testDB.Close(ctx)
-		fmt.Fprintf(os.Stderr, "failed to open sql.DB: %v\n", err)
-		os.Exit(1)
-	}
-	testQueries = db.New(testSQLDB)
+	testQueries = db.New(testPgxPool)
 
 	code := m.Run()
-	testSQLDB.Close()
 	testDB.Close(ctx)
 	os.Exit(code)
 }

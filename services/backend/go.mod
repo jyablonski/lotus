@@ -6,7 +6,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/lib/pq v1.10.9
 	github.com/matryer/moq v0.6.0
 	github.com/pact-foundation/pact-go/v2 v2.4.2
 	github.com/pressly/goose/v3 v3.27.0
@@ -14,7 +13,6 @@ require (
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/riverqueue/river v0.31.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.31.0
-	github.com/sqlc-dev/pqtype v0.3.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
 	github.com/testcontainers/testcontainers-go/modules/redis v0.41.0

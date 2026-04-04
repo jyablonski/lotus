@@ -14,7 +14,7 @@ SELECT id, name, everyone, percent, testing, superusers, staff, authenticated, l
 `
 
 func (q *Queries) GetActiveFeatureFlags(ctx context.Context) ([]SourceWaffleFlag, error) {
-	rows, err := q.db.QueryContext(ctx, getActiveFeatureFlags)
+	rows, err := q.db.Query(ctx, getActiveFeatureFlags)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +41,6 @@ func (q *Queries) GetActiveFeatureFlags(ctx context.Context) ([]SourceWaffleFlag
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -55,7 +52,7 @@ SELECT id, name, everyone, percent, testing, superusers, staff, authenticated, l
 `
 
 func (q *Queries) GetFeatureFlagByName(ctx context.Context, name string) (SourceWaffleFlag, error) {
-	row := q.db.QueryRowContext(ctx, getFeatureFlagByName, name)
+	row := q.db.QueryRow(ctx, getFeatureFlagByName, name)
 	var i SourceWaffleFlag
 	err := row.Scan(
 		&i.ID,

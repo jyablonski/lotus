@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/jobs"
 	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/riverqueue/river"
@@ -33,16 +34,33 @@ func TestAnalyzeEntryInsertTx(t *testing.T) {
 	ctx := context.Background()
 	client := newInsertOnlyClient(t)
 
+	pq := db.New(testPgxPool)
+	email := "analyze-entry-tx-" + t.Name() + "@test.example"
+	op := "test"
+	u, err := pq.CreateUserOauth(ctx, db.CreateUserOauthParams{Email: email, OauthProvider: &op})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = pq.DeleteUserById(ctx, u.ID)
+	})
+
 	tx, err := testPgxPool.Begin(ctx)
 	require.NoError(t, err)
 	defer tx.Rollback(ctx) //nolint:errcheck
 
-	var journalID int32
-	require.NoError(t, tx.QueryRow(ctx,
-		`INSERT INTO source.journals(user_id, journal_text, mood_score)
-		 VALUES (gen_random_uuid(), $1, $2) RETURNING id`,
-		"tx test entry", 5,
-	).Scan(&journalID))
+	ms := int32(5)
+	journal, err := db.New(tx).CreateJournal(ctx, db.CreateJournalParams{
+		UserID:      u.ID,
+		JournalText: "tx test entry",
+		MoodScore:   &ms,
+	})
+	require.NoError(t, err)
+	journalID := journal.ID
+	t.Cleanup(func() {
+		_, _ = pq.DeleteJournalForUser(ctx, db.DeleteJournalForUserParams{
+			ID:     journalID,
+			UserID: u.ID,
+		})
+	})
 
 	result, err := client.InsertTx(ctx, tx, jobs.AnalyzeEntryArgs{
 		EntryID: int64(journalID),

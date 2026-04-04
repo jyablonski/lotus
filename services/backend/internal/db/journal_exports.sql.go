@@ -7,9 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createJournalExport = `-- name: CreateJournalExport :one
@@ -19,12 +18,12 @@ RETURNING id, user_id, format, status, content, error_msg, created_at, completed
 `
 
 type CreateJournalExportParams struct {
-	UserID uuid.UUID
+	UserID pgtype.UUID
 	Format SourceExportFormat
 }
 
 func (q *Queries) CreateJournalExport(ctx context.Context, arg CreateJournalExportParams) (SourceJournalExport, error) {
-	row := q.db.QueryRowContext(ctx, createJournalExport, arg.UserID, arg.Format)
+	row := q.db.QueryRow(ctx, createJournalExport, arg.UserID, arg.Format)
 	var i SourceJournalExport
 	err := row.Scan(
 		&i.ID,
@@ -45,12 +44,12 @@ WHERE id = $1 AND user_id = $2
 `
 
 type GetJournalExportParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID     pgtype.UUID
+	UserID pgtype.UUID
 }
 
 func (q *Queries) GetJournalExport(ctx context.Context, arg GetJournalExportParams) (SourceJournalExport, error) {
-	row := q.db.QueryRowContext(ctx, getJournalExport, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getJournalExport, arg.ID, arg.UserID)
 	var i SourceJournalExport
 	err := row.Scan(
 		&i.ID,
@@ -75,12 +74,12 @@ RETURNING id, user_id, format, status, content, error_msg, created_at, completed
 `
 
 type UpdateJournalExportCompleteParams struct {
-	ID      uuid.UUID
-	Content sql.NullString
+	ID      pgtype.UUID
+	Content *string
 }
 
 func (q *Queries) UpdateJournalExportComplete(ctx context.Context, arg UpdateJournalExportCompleteParams) (SourceJournalExport, error) {
-	row := q.db.QueryRowContext(ctx, updateJournalExportComplete, arg.ID, arg.Content)
+	row := q.db.QueryRow(ctx, updateJournalExportComplete, arg.ID, arg.Content)
 	var i SourceJournalExport
 	err := row.Scan(
 		&i.ID,
@@ -104,12 +103,12 @@ RETURNING id, user_id, format, status, content, error_msg, created_at, completed
 `
 
 type UpdateJournalExportFailedParams struct {
-	ID       uuid.UUID
-	ErrorMsg sql.NullString
+	ID       pgtype.UUID
+	ErrorMsg *string
 }
 
 func (q *Queries) UpdateJournalExportFailed(ctx context.Context, arg UpdateJournalExportFailedParams) (SourceJournalExport, error) {
-	row := q.db.QueryRowContext(ctx, updateJournalExportFailed, arg.ID, arg.ErrorMsg)
+	row := q.db.QueryRow(ctx, updateJournalExportFailed, arg.ID, arg.ErrorMsg)
 	var i SourceJournalExport
 	err := row.Scan(
 		&i.ID,
@@ -131,8 +130,8 @@ WHERE id = $1
 RETURNING id, user_id, format, status, content, error_msg, created_at, completed_at
 `
 
-func (q *Queries) UpdateJournalExportProcessing(ctx context.Context, id uuid.UUID) (SourceJournalExport, error) {
-	row := q.db.QueryRowContext(ctx, updateJournalExportProcessing, id)
+func (q *Queries) UpdateJournalExportProcessing(ctx context.Context, id pgtype.UUID) (SourceJournalExport, error) {
+	row := q.db.QueryRow(ctx, updateJournalExportProcessing, id)
 	var i SourceJournalExport
 	err := row.Scan(
 		&i.ID,

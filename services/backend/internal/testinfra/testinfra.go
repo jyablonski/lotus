@@ -17,8 +17,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jyablonski/lotus/internal/jobs"
-	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
@@ -146,7 +146,7 @@ func ApplyExtraSQL(connStr, filePath string) error {
 	if err != nil {
 		return fmt.Errorf("read %s: %w", filePath, err)
 	}
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return fmt.Errorf("open db: %w", err)
 	}
@@ -186,7 +186,7 @@ func FailingAnalyzerServer(t *testing.T) *httptest.Server {
 }
 
 func applyGooseMigrations(connStr, schemaDir string) error {
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return fmt.Errorf("open db: %w", err)
 	}
@@ -203,7 +203,7 @@ func applyGooseMigrations(connStr, schemaDir string) error {
 }
 
 func waitForDB(connStr string) error {
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return err
 	}

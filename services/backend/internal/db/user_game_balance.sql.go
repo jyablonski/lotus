@@ -8,15 +8,15 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getUserGameBalance = `-- name: GetUserGameBalance :one
 SELECT id, user_id, balance, created_at, modified_at FROM source.user_game_balances WHERE user_id = $1
 `
 
-func (q *Queries) GetUserGameBalance(ctx context.Context, userID uuid.UUID) (SourceUserGameBalance, error) {
-	row := q.db.QueryRowContext(ctx, getUserGameBalance, userID)
+func (q *Queries) GetUserGameBalance(ctx context.Context, userID pgtype.UUID) (SourceUserGameBalance, error) {
+	row := q.db.QueryRow(ctx, getUserGameBalance, userID)
 	var i SourceUserGameBalance
 	err := row.Scan(
 		&i.ID,
@@ -38,12 +38,12 @@ RETURNING id, user_id, balance, created_at, modified_at
 `
 
 type UpsertUserGameBalanceParams struct {
-	UserID  uuid.UUID
+	UserID  pgtype.UUID
 	Balance int32
 }
 
 func (q *Queries) UpsertUserGameBalance(ctx context.Context, arg UpsertUserGameBalanceParams) (SourceUserGameBalance, error) {
-	row := q.db.QueryRowContext(ctx, upsertUserGameBalance, arg.UserID, arg.Balance)
+	row := q.db.QueryRow(ctx, upsertUserGameBalance, arg.UserID, arg.Balance)
 	var i SourceUserGameBalance
 	err := row.Scan(
 		&i.ID,

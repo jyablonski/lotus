@@ -7,8 +7,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/lib/pq"
 )
 
 const getTopicsByJournalIds = `-- name: GetTopicsByJournalIds :many
@@ -24,7 +22,7 @@ type GetTopicsByJournalIdsRow struct {
 }
 
 func (q *Queries) GetTopicsByJournalIds(ctx context.Context, dollar_1 []int32) ([]GetTopicsByJournalIdsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getTopicsByJournalIds, pq.Array(dollar_1))
+	rows, err := q.db.Query(ctx, getTopicsByJournalIds, dollar_1)
 	if err != nil {
 		return nil, err
 	}
@@ -36,9 +34,6 @@ func (q *Queries) GetTopicsByJournalIds(ctx context.Context, dollar_1 []int32) (
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
