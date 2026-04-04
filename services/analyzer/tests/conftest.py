@@ -41,6 +41,7 @@ SENTIMENT_MODEL_PATH = TEST_FIXTURES_DIR / "sentiment_test_model.pkl"
 # Path to the bootstrap SQL relative to the repo root, resolved from this file's location.
 # conftest.py lives at services/analyzer/tests/conftest.py → 3 parents up = repo root.
 _BOOTSTRAP_SQL = Path(__file__).parents[3] / "docker/db/01-bootstrap.sql"
+_SOURCE_SCHEMA_SQL = Path(__file__).parents[3] / "docker/db/ci_source_schema.sql"
 
 _TEST_API_KEY = os.environ["ANALYZER_API_KEY"]
 
@@ -181,21 +182,16 @@ def postgres_container():
         )
         conn.autocommit = True
         with conn.cursor() as cur:
-            # Filter out CREATE DATABASE lines and execute the rest in one
-            # call.  Splitting on ";" would fragment the dollar-quoted
-            # PL/pgSQL function body (truncate_integration_tables) and
-            # produce empty / partial statements.  All remaining SQL
-            # (CREATE SCHEMA/TABLE/INDEX/FUNCTION, INSERT …) is
-            # transaction-safe.  CREATE DATABASE is skipped entirely —
-            # the testcontainer already provides its own database; the
-            # extras (dagster, mlflow, etc.) are only needed for the
-            # full local dev stack.
-            sql = "\n".join(
+            # Apply bootstrap (schemas/extensions) first, then the generated
+            # source schema artifact (tables/constraints). CREATE DATABASE is
+            # skipped because testcontainers already provides its own DB.
+            bootstrap_sql = "\n".join(
                 line
                 for line in _BOOTSTRAP_SQL.read_text().splitlines()
                 if not line.strip().upper().startswith("CREATE DATABASE")
             )
-            cur.execute(sql)
+            cur.execute(bootstrap_sql)
+            cur.execute(_SOURCE_SCHEMA_SQL.read_text())
         conn.close()
         yield pg
 

@@ -31,7 +31,9 @@ jobs:
         with:
           sparse-checkout: |
             services/django/**
+            services/dbt/models/sources/application_db/**
             docker/**
+            scripts/generate-dbt-source-schema.sh
             Makefile
           sparse-checkout-cone-mode: false
 
@@ -50,6 +52,11 @@ jobs:
       - name: Run Test Suite
         working-directory: services/django
         run: uv run pytest
+
+      - name: Verify dbt Source Schema Artifact
+        run: |
+          make generate-dbt-source-schema
+          git diff --exit-code -- docker/db/ci_source_schema.sql
 
       - name: Shutdown Services
         if: always()

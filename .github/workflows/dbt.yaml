@@ -53,7 +53,7 @@ jobs:
             echo "Waiting for postgres to be ready..."
             sleep 1
           done
-          docker exec -i postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres < services/dbt/sql/ci_source_schema.sql
+          docker exec -i postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres < docker/db/ci_source_schema.sql
 
       - name: Install dbt Dependencies
         working-directory: services/dbt

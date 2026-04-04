@@ -110,7 +110,7 @@ Groups are assigned to models via the `+group` config in `dbt_project.yml` or in
 
 `dbt` CI expects source tables to exist before running `dbt build`. The schema file used in CI is:
 
-- `services/dbt/sql/ci_source_schema.sql`
+- `docker/db/ci_source_schema.sql`
 
 This file is generated from Django migrations and should not be edited manually.
 
