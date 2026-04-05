@@ -168,7 +168,7 @@ def test_nonexistent_journal_analysis(client_fixture, real_sentiment_client):
         )
 
         assert response.status_code == 404
-        assert "this doesn't exist hoe" in response.json()["detail"]
+        assert "Journal entry not found" in response.json()["detail"]
 
     finally:
         app.dependency_overrides.clear()

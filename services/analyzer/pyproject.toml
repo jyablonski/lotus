@@ -42,6 +42,9 @@ filterwarnings = [
 ]
 testpaths = ["tests"]
 markers = [
+    "unit: fast unit tests with mocks/direct function calls",
+    "integration: tests that exercise HTTP handlers, database integration, or app wiring",
+    "contract: Pact/provider contract verification tests",
     "wip: work in progress",
     "infrastructure: mocks for dummy data (sql db, http endpoint etc)",
 ]

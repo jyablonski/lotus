@@ -298,7 +298,7 @@ def sentiment_service_health(sentiment_client: SentimentClient = Depends(get_sen
     """Health check endpoint for the sentiment analysis service."""
     if sentiment_client.is_ready():
         model_info = sentiment_client.get_model_info()
-        return {"status": "healthy", "service": "sentiment_analysis", **model_info}
+        return {**model_info, "status": "healthy", "service": "sentiment_analysis"}
     raise HTTPException(
         status_code=503,
         detail={"status": "unhealthy", "service": "sentiment_analysis"},

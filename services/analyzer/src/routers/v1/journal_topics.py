@@ -1,24 +1,63 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from opentelemetry import trace
-from sqlalchemy.orm import Session
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.clients.ml_topic_client import TopicClient
+from src.content_safety import (
+    ContentFlagAnalyzer,
+    ContentSafetyDetectionResult,
+    ContentSafetyDetector,
+)
+from src.crud.journal_content_flags import create_journal_content_flag
 from src.crud.journal_topics import create_or_update_topics, get_topics_by_journal_id
 from src.crud.journals import get_journal_by_id
-from src.dependencies import get_db, get_topic_client
+from src.dependencies import (
+    get_content_flag_analyzer,
+    get_content_safety_detector,
+    get_db,
+    get_topic_client,
+)
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 router = APIRouter()
 
 
+def persist_content_flags(
+    journal_id: int,
+    detection_result: ContentSafetyDetectionResult,
+    analyzer: ContentFlagAnalyzer,
+    engine: Engine,
+) -> None:
+    session_factory = sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
+        future=True,
+    )
+    db = session_factory()
+    try:
+        for detection in detection_result.flags:
+            analysis = analyzer.analyze(detection)
+            create_journal_content_flag(db, journal_id, analysis)
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to persist content flags for journal_id=%s", journal_id)
+    finally:
+        db.close()
+
+
 @router.post("/journals/{journal_id}/topics/internal", status_code=status.HTTP_204_NO_CONTENT)
 def extract_journal_topics(
     journal_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     topic_client: TopicClient = Depends(get_topic_client),
+    content_safety_detector: ContentSafetyDetector = Depends(get_content_safety_detector),
+    content_flag_analyzer: ContentFlagAnalyzer = Depends(get_content_flag_analyzer),
 ):
     """Extract topics from a journal entry."""
     if not topic_client.is_ready():
@@ -30,6 +69,14 @@ def extract_journal_topics(
         if not journal:
             raise HTTPException(status_code=404, detail="Journal not found")
 
+        with tracer.start_as_current_span("content_safety.detect") as span:
+            span.set_attribute("journal.id", journal_id)
+            detection_result = content_safety_detector.detect(journal.journal_text)
+            span.set_attribute("flags.count", len(detection_result.flags))
+            span.set_attribute(
+                "flags.types", ",".join(flag.flag_type for flag in detection_result.flags)
+            )
+
         # Extract topics from the journal content (includes model version)
         with tracer.start_as_current_span("topics.extract") as span:
             span.set_attribute("journal.id", journal_id)
@@ -40,11 +87,22 @@ def extract_journal_topics(
         # Store topics in database
         create_or_update_topics(db, journal_id, topics)
 
+        if detection_result.flags:
+            background_tasks.add_task(
+                persist_content_flags,
+                journal_id,
+                detection_result,
+                content_flag_analyzer,
+                db.get_bind(),
+            )
+
         logger.info(
             f"Extracted {len(topics)} topics for journal {journal_id} using version "
             f"{topic_client.model_version}"
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error extracting topics for journal {journal_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from None
@@ -88,7 +146,7 @@ def topic_service_health(topic_client: TopicClient = Depends(get_topic_client)):
     """Health check endpoint for the topic extraction service."""
     if topic_client.is_ready():
         model_info = topic_client.get_model_info()
-        return {"status": "healthy", "service": "topic_extraction", **model_info}
+        return {**model_info, "status": "healthy", "service": "topic_extraction"}
     raise HTTPException(
         status_code=503,
         detail={"status": "unhealthy", "service": "topic_extraction_internal"},

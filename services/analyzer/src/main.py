@@ -128,4 +128,5 @@ async def health():
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc):
-    return JSONResponse(status_code=404, content={"detail": "this doesn't exist hoe"})
+    detail = getattr(exc, "detail", "this doesn't exist hoe")
+    return JSONResponse(status_code=404, content={"detail": detail})

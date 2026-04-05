@@ -79,3 +79,4 @@ services/backend/pacts/
 # ai bullshit
 .codex
 coverage.out
+docs/brainstorms/**

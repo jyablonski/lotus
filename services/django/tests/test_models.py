@@ -1,5 +1,6 @@
 from core.models import (
     Journal,
+    JournalContentFlag,
     JournalDetail,
     JournalSentiment,
     JournalTopic,
@@ -70,3 +71,19 @@ class TestJournalSentiment:
         )
         assert "positive" in str(sentiment)
         assert "high" in str(sentiment)
+
+
+@pytest.mark.django_db
+class TestJournalContentFlag:
+    def test_journal_content_flag_str(self):
+        user = User.objects.create(email="test@example.com")
+        journal = Journal.objects.create(user=user, journal_text="Test entry")
+        content_flag = JournalContentFlag.objects.create(
+            journal=journal,
+            flag_type="crisis",
+            severity="high",
+            matched_terms=["self-harm"],
+            analysis_summary="Detected crisis-oriented language.",
+        )
+        assert "crisis" in str(content_flag)
+        assert "high" in str(content_flag)
