@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  COVERAGE_THRESHOLD: 80
   UV_VERSION: "0.10.9"
   PYTHON_VERSION: "3.13"
 
@@ -52,6 +53,14 @@ jobs:
       - name: Run Test Suite
         working-directory: services/django
         run: uv run pytest
+
+      - name: Enforce ${{ env.COVERAGE_THRESHOLD }}% coverage threshold
+        working-directory: services/django
+        run: |
+          uv run coverage json -o coverage.json
+          total=$(uv run python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])")
+          echo "Total coverage: ${total}%"
+          awk -v t="$total" -v threshold="$COVERAGE_THRESHOLD" 'BEGIN { if (t+0 < threshold+0) { print "Coverage " t "% is below " threshold "% threshold"; exit 1 } }'
 
       - name: Shutdown Services
         if: always()
