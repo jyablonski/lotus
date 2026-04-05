@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  COVERAGE_THRESHOLD: 80
   UV_VERSION: "0.10.9"
   PYTHON_VERSION: "3.13"
 
@@ -32,8 +33,6 @@ jobs:
           sparse-checkout: |
             services/dagster/**
             services/dbt/**
-            docker/**
-            Makefile
           sparse-checkout-cone-mode: false
 
       - name: Install uv
@@ -45,17 +44,14 @@ jobs:
           prune-cache: false
           working-directory: services/dagster
 
-      - name: Start Services
-        run: make start-postgres
-
-      - name: Wait for Postgres
-        run: |
-          timeout 30 bash -c 'until docker exec postgres pg_isready -U postgres; do sleep 1; done'
-
       - name: Run Tests
         working-directory: services/dagster
         run: uv run pytest
 
-      - name: Shutdown Services
-        if: always()
-        run: make stop-postgres
+      - name: Enforce ${{ env.COVERAGE_THRESHOLD }}% coverage threshold
+        working-directory: services/dagster
+        run: |
+          uv run coverage json -o coverage.json
+          total=$(uv run python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])")
+          echo "Total coverage: ${total}%"
+          awk -v t="$total" -v threshold="$COVERAGE_THRESHOLD" 'BEGIN { if (t+0 < threshold+0) { print "Coverage " t "% is below " threshold "% threshold"; exit 1 } }'

@@ -1,6 +1,5 @@
 """Pytest configuration and shared fixtures for Dagster tests."""
 
-import os
 from unittest.mock import MagicMock
 
 from dagster import build_op_context
@@ -9,6 +8,11 @@ import pytest
 
 from dagster_project.resources import PostgresResource
 from dagster_project.resources.example_api import ApiClientResource
+
+try:
+    from testcontainers.postgres import PostgresContainer
+except ModuleNotFoundError:
+    PostgresContainer = None
 
 
 @pytest.fixture
@@ -44,48 +48,46 @@ def asset_context():
     return build_op_context()
 
 
+@pytest.fixture(scope="session")
+def postgres_container():
+    """Spin up an isolated Postgres container for Dagster integration tests."""
+    if PostgresContainer is None:
+        pytest.skip(
+            "Skipping Postgres integration tests: testcontainers is not installed"
+        )
+
+    try:
+        with PostgresContainer(
+            "postgres:16-alpine",
+            username="postgres",
+            password="postgres",
+            dbname="postgres",
+        ) as postgres:
+            yield postgres
+    except Exception as exc:
+        pytest.skip(
+            f"Skipping Postgres integration tests: testcontainer unavailable ({exc})"
+        )
+
+
 @pytest.fixture
-def postgres_resource():
-    """Create a real PostgresResource for integration tests.
-
-    Assumes Docker Compose postgres service is running and available.
-    Uses the same connection settings as docker-compose-local.yaml:
-    - host: localhost (from host machine) or postgres (from within Docker network)
-    - port: 5432
-    - user: postgres
-    - password: postgres
-    - database: postgres
-    - schema: test (for test isolation)
-
-    To start the postgres service:
-        docker-compose -f docker/docker-compose-local.yaml up -d postgres
-    """
-    # Allow override via env vars, but default to Docker Compose postgres settings
-    # For tests, use os.getenv() directly instead of EnvVar() since we need immediate evaluation
-    # EnvVar() defers resolution until Dagster uses the resource, but tests need immediate access
+def postgres_resource(postgres_container):
+    """Create a PostgresResource backed by a testcontainer-managed Postgres instance."""
     return PostgresResource(
-        host=os.getenv("TEST_POSTGRES_HOST", "localhost"),
-        port=int(os.getenv("TEST_POSTGRES_PORT", "5432")),
-        user=os.getenv("TEST_POSTGRES_USER", "postgres"),
-        password=os.getenv("TEST_POSTGRES_PASSWORD", "postgres"),
-        database=os.getenv("TEST_POSTGRES_DB", "postgres"),
-        schema_=os.getenv("TEST_POSTGRES_SCHEMA", "test"),
+        host=postgres_container.get_container_host_ip(),
+        port=int(postgres_container.get_exposed_port(5432)),
+        user=postgres_container.username,
+        password=postgres_container.password,
+        database=postgres_container.dbname,
+        schema_="test",
     )
 
 
 @pytest.fixture
 def postgres_resource_with_cleanup(postgres_resource):
-    """PostgresResource fixture that ensures test schema exists.
-
-    Creates the test schema if it doesn't exist. No cleanup is performed.
-    """
-    # Ensure test schema exists
-    # Get schema name from env var since EnvVar defers resolution
-    # When the resource is used (get_connection), Dagster will resolve it, but for tests
-    # we need immediate access, so use os.getenv directly
-    schema_name = os.getenv("TEST_POSTGRES_SCHEMA", "test")
+    """Ensure the isolated test schema exists before an integration test runs."""
     with postgres_resource.get_connection() as conn, conn.cursor() as cur:
-        cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+        cur.execute("CREATE SCHEMA IF NOT EXISTS test")
         conn.commit()
 
     return postgres_resource
