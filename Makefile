@@ -31,7 +31,7 @@ test-analyzer: ## Run analyzer tests with coverage (testcontainers spins up an i
 
 .PHONY: test-backend
 test-backend: ## Run backend tests with coverage (testcontainers spins up an isolated Postgres automatically)
-	@cd services/backend && go tool gotestsum --format testdox -- ./... -coverprofile=/tmp/backend-coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils && go tool cover -func=/tmp/backend-coverage.out; rm -f /tmp/backend-coverage.out
+	@cd services/backend && go tool gotestsum --format testdox -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils && go tool cover -func=coverage.out
 
 .PHONY: sqlc-generate
 sqlc-generate: ## Generate Go code from SQL using sqlc
