@@ -9,6 +9,12 @@ from src.clients.embedding_client import EmbeddingClient
 from src.clients.ml_sentiment_client import SentimentClient
 from src.clients.ml_topic_client import TopicClient
 from src.clients.openai_topic_client import OpenAITopicClient
+from src.content_safety import (
+    ContentFlagAnalyzer,
+    ContentSafetyDetector,
+    RegexContentSafetyDetector,
+    RuleBasedContentFlagAnalyzer,
+)
 from src.database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -102,3 +108,17 @@ def get_embedding_client() -> EmbeddingClient:
     """Dependency to get the singleton EmbeddingClient instance."""
     logger.info("Creating EmbeddingClient instance")
     return EmbeddingClient()
+
+
+@lru_cache
+def get_content_safety_detector() -> ContentSafetyDetector:
+    """Dependency to get the singleton content safety detector."""
+    logger.info("Creating ContentSafetyDetector instance")
+    return RegexContentSafetyDetector()
+
+
+@lru_cache
+def get_content_flag_analyzer() -> ContentFlagAnalyzer:
+    """Dependency to get the singleton content flag analyzer."""
+    logger.info("Creating ContentFlagAnalyzer instance")
+    return RuleBasedContentFlagAnalyzer()

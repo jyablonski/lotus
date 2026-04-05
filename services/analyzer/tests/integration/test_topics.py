@@ -1,5 +1,10 @@
+import logging
+from unittest.mock import Mock
+
 from src.dependencies import get_topic_client
 from src.main import app
+from src.models.journal_content_flags import JournalContentFlags
+from src.models.journals import Journals
 
 
 def test_extract_work_topics(client_fixture, real_topic_client):
@@ -208,5 +213,123 @@ def test_topic_confidence_values(client_fixture, real_topic_client):
             assert 0 <= confidence <= 1
             assert isinstance(confidence, (int, float))
 
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_flagged_content_writes_background_record_and_log(
+    client_fixture,
+    test_db_session,
+    real_topic_client,
+    caplog,
+):
+    flagged_journal = Journals(
+        user_id="a7f3e8b2-4d91-4c3a-9f2e-1b8c5d6e7f8a",
+        journal_text="I feel like I want to end my life. Everything is shit.",
+    )
+    test_db_session.add(flagged_journal)
+    test_db_session.commit()
+    test_db_session.refresh(flagged_journal)
+
+    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
+
+    try:
+        with caplog.at_level(logging.ERROR):
+            response = client_fixture.post(f"/v1/journals/{flagged_journal.id}/topics/internal")
+
+        assert response.status_code == 204
+
+        records = (
+            test_db_session.query(JournalContentFlags)
+            .filter(JournalContentFlags.journal_id == flagged_journal.id)
+            .order_by(JournalContentFlags.flag_type.asc())
+            .all()
+        )
+
+        assert len(records) == 2
+        assert [record.flag_type for record in records] == ["crisis", "profanity"]
+        assert records[0].severity == "high"
+        assert records[1].severity == "low"
+        assert any("journal_content_flag_written" in message for message in caplog.messages)
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_unflagged_content_does_not_write_content_flag_records(
+    client_fixture,
+    test_db_session,
+    real_topic_client,
+):
+    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
+
+    try:
+        response = client_fixture.post("/v1/journals/1/topics/internal")
+
+        assert response.status_code == 204
+
+        records = (
+            test_db_session.query(JournalContentFlags)
+            .filter(JournalContentFlags.journal_id == 1)
+            .all()
+        )
+        assert records == []
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_internal_topic_extraction_returns_404_for_missing_journal(
+    client_fixture, real_topic_client
+):
+    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
+
+    try:
+        response = client_fixture.post("/v1/journals/99999/topics/internal")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Journal not found"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_internal_topic_extraction_returns_500_when_model_fails(client_fixture):
+    failing_client = Mock()
+    failing_client.is_ready.return_value = True
+    failing_client.model_version = "test_v1"
+    failing_client.extract_topics.side_effect = RuntimeError("boom")
+
+    app.dependency_overrides[get_topic_client] = lambda: failing_client
+
+    try:
+        response = client_fixture.post("/v1/journals/1/topics/internal")
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == "Internal server error"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_get_journal_topics_returns_404_for_missing_journal(client_fixture, real_topic_client):
+    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
+
+    try:
+        response = client_fixture.get("/v1/journals/99999/topics")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Journal not found"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_topic_health_endpoint_healthy(client_fixture, real_topic_client):
+    app.dependency_overrides[get_topic_client] = lambda: real_topic_client
+
+    try:
+        response = client_fixture.get("/v1/health/topics/internal")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert data["service"] == "topic_extraction"
+        assert data["model_version"] == real_topic_client.model_version
     finally:
         app.dependency_overrides.clear()

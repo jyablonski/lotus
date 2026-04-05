@@ -12,6 +12,7 @@ from waffle.models import Flag, Sample, Switch
 
 from .models import (
     ActiveMLModel,
+    JournalContentFlag,
     RuntimeConfig,
     User as LotusUser,
 )
@@ -134,6 +135,19 @@ class LotusUserAdmin(ModelAdmin):
         (None, {"fields": ("id", "email", "role", "timezone")}),
         ("Authentication", {"fields": ("password", "salt", "oauth_provider")}),
         ("Timestamps", {"fields": ("created_at", "modified_at")}),
+    )
+
+
+@admin.register(JournalContentFlag, site=admin_site)
+class JournalContentFlagAdmin(ModelAdmin):
+    list_display = ("journal", "flag_type", "severity", "created_at")
+    list_filter = ("flag_type", "severity", "created_at")
+    search_fields = ("journal__id", "analysis_summary", "matched_terms")
+    readonly_fields = ("id", "created_at")
+    fieldsets = (
+        (None, {"fields": ("id", "journal", "flag_type", "severity")}),
+        ("Analysis", {"fields": ("matched_terms", "analysis_summary")}),
+        ("Timestamps", {"fields": ("created_at",)}),
     )
 
 

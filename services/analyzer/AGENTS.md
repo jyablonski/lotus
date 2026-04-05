@@ -102,7 +102,9 @@ src/
 - Tests are in `tests/` directory
 - Use `pytest` with `pytest-cov` for coverage
 - Test fixtures in `tests/conftest.py`
+- Unit tests in `tests/unit/`
 - Integration tests in `tests/integration/`
+- Contract tests in `tests/contract/`
 
 ### Test Markers
 
@@ -114,9 +116,6 @@ src/
 ```bash
 # From service directory
 pytest
-
-# With coverage
-pytest --cov=src --cov-report=term-missing
 ```
 
 ## Configuration

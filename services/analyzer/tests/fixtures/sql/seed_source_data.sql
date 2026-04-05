@@ -27,3 +27,15 @@ INSERT INTO source.journal_sentiments (
 VALUES
     (1, 'positive', 0.8234, 'high', TRUE, 'v1.0.0', '{"positive": 0.8234, "negative": 0.1234, "neutral": 0.0532}')
 ON CONFLICT (journal_id, ml_model_version) DO NOTHING;
+
+SELECT setval(
+    'source.journals_id_seq',
+    COALESCE((SELECT MAX(id) FROM source.journals), 1),
+    true
+);
+
+SELECT setval(
+    'source.journal_sentiments_id_seq',
+    COALESCE((SELECT MAX(id) FROM source.journal_sentiments), 1),
+    true
+);

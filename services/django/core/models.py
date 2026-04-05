@@ -193,6 +193,31 @@ class JournalEmbedding(models.Model):
         return f"Embedding ({self.model_version}) for Journal {self.journal.id}"
 
 
+class JournalContentFlag(models.Model):
+    """Audit record for sensitive or inappropriate journal content."""
+
+    id = models.AutoField(primary_key=True)
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, db_column="journal_id")
+    flag_type = models.CharField(max_length=32)
+    severity = models.CharField(max_length=16)
+    matched_terms = ArrayField(models.TextField(), default=list)
+    analysis_summary = models.TextField()
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_default=Now(),
+    )
+
+    class Meta:
+        db_table = "journal_content_flags"
+        indexes = [
+            models.Index(fields=["journal"], name="idx_jcf_journal_id"),
+            models.Index(fields=["flag_type"], name="idx_jcf_flag_type"),
+        ]
+
+    def __str__(self):
+        return f"{self.flag_type} ({self.severity}) for Journal {self.journal.id}"
+
+
 class ActiveMLModel(models.Model):
     """Model for tracking which ML models are currently enabled for the application."""
 
