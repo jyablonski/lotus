@@ -1,13 +1,12 @@
 """Integration tests for Dagster assets and jobs.
 
-These tests require the Docker Compose postgres service to be running.
-Start it with: docker-compose -f ../../docker/docker-compose-local.yaml up -d postgres
-
+Postgres-backed integration tests use a testcontainer-managed database.
 Run with: pytest -m integration
 """
 
 from dagster import build_asset_context
 import pytest
+import requests
 
 from dagster_project.assets.ingestion.get_api_assets import (
     get_api_users,
@@ -23,7 +22,10 @@ class TestIntegration:
     def test_get_api_users_integration(self):
         """Test get_api_users asset with real API call."""
         context = build_asset_context()
-        result = get_api_users(context)
+        try:
+            result = get_api_users(context)
+        except requests.RequestException as exc:
+            pytest.skip(f"External API unavailable for integration test: {exc}")
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -32,11 +34,7 @@ class TestIntegration:
         assert "email" in result[0]
 
     def test_users_in_postgres_integration(self, postgres_resource_with_cleanup):
-        """Test users_in_postgres asset with real Docker Postgres database.
-
-        Uses the postgres service from docker-compose-local.yaml.
-        No cleanup is performed - test data persists after the test.
-        """
+        """Test users_in_postgres asset with a real Postgres testcontainer."""
         # Create test users
         test_users = [
             {

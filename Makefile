@@ -33,6 +33,10 @@ test-analyzer: ## Run analyzer tests with coverage (testcontainers spins up an i
 test-backend: ## Run backend tests with coverage (testcontainers spins up an isolated Postgres automatically)
 	@cd services/backend && go tool gotestsum --format testdox -- ./... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/grpc,./internal/http,./internal/utils && go tool cover -func=coverage.out
 
+.PHONY: test-dagster
+test-dagster: ## Run Dagster tests with coverage (testcontainers spins up an isolated Postgres automatically)
+	@cd services/dagster && if command -v uv >/dev/null 2>&1; then uv run pytest; else .venv/bin/pytest; fi
+
 .PHONY: sqlc-generate
 sqlc-generate: ## Generate Go code from SQL using sqlc
 	@cd services/backend && sqlc generate
