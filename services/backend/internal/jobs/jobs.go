@@ -50,7 +50,7 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger)
 // The caller is responsible for calling Start and Stop on the returned client.
 func NewClient(
 	pool *pgxpool.Pool,
-	queries db.Querier,
+	queries *db.Queries,
 	httpClient *http.Client,
 	analyzerURL string,
 	analyzerAPIKey string,
@@ -63,7 +63,7 @@ func NewClient(
 // schedule. Useful in tests where a 15-minute interval would be impractical.
 func NewClientWithPeriodicInterval(
 	pool *pgxpool.Pool,
-	queries db.Querier,
+	queries *db.Queries,
 	httpClient *http.Client,
 	analyzerURL string,
 	analyzerAPIKey string,
@@ -77,14 +77,19 @@ func NewClientWithPeriodicInterval(
 	}
 
 	workers := river.NewWorkers()
+	producer, err := NewInsertOnlyClient(pool)
+	if err != nil {
+		return nil, fmt.Errorf("create job producer: %w", err)
+	}
 
-	river.AddWorker(workers, &AnalyzeEntryWorker{
-		httpClient:      httpClient,
-		analyzerURL:     analyzerURL,
-		analyzerAPIKey:  analyzerAPIKey,
-		logger:          logger,
-		useOpenAITopics: useOpenAITopics,
-	})
+	river.AddWorker(workers, NewAnalyzeEntryWorker(
+		httpClient,
+		analyzerURL,
+		analyzerAPIKey,
+		logger,
+		useOpenAITopics,
+		producer,
+	))
 
 	river.AddWorker(workers, &HelloCronWorker{
 		queries: queries,
@@ -95,6 +100,10 @@ func NewClientWithPeriodicInterval(
 		queries: queries,
 		logger:  logger,
 	})
+
+	river.AddWorker(workers, NewRefreshCommunityProjectionWorker(queries, logger, producer))
+	river.AddWorker(workers, NewRefreshCommunityRollupsWorker(queries, logger))
+	river.AddWorker(workers, NewRepairCommunityDataWorker(queries, logger, producer))
 
 	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -109,6 +118,13 @@ func NewClientWithPeriodicInterval(
 				river.PeriodicInterval(cronInterval),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return HelloCronArgs{}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(cronInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return RepairCommunityDataArgs{DaysBack: 35}, nil
 				},
 				&river.PeriodicJobOpts{RunOnStart: true},
 			),

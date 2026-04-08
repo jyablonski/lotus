@@ -112,13 +112,19 @@ func TestUserServer_GetUser_Success(t *testing.T) {
 	mockQuerier := &mocks.QuerierMock{
 		GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
 			assert.Equal(t, expectedEmail, email)
+			country := "US"
+			region := "US-CA"
 			return db.SourceUser{
-				ID:         pgtype.UUID{Bytes: expectedUserID, Valid: true},
-				Email:      expectedEmail,
-				Role:       expectedRole,
-				Timezone:   expectedTimezone,
-				CreatedAt:  pgtype.Timestamp{Time: expectedCreatedAt, Valid: true},
-				ModifiedAt: pgtype.Timestamp{Time: expectedModifiedAt, Valid: true},
+				ID:                     pgtype.UUID{Bytes: expectedUserID, Valid: true},
+				Email:                  expectedEmail,
+				Role:                   expectedRole,
+				Timezone:               expectedTimezone,
+				CreatedAt:              pgtype.Timestamp{Time: expectedCreatedAt, Valid: true},
+				ModifiedAt:             pgtype.Timestamp{Time: expectedModifiedAt, Valid: true},
+				CommunityInsightsOptIn: true,
+				CommunityLocationOptIn: true,
+				CommunityCountryCode:   &country,
+				CommunityRegionCode:    &region,
 			}, nil
 		},
 	}
@@ -139,6 +145,10 @@ func TestUserServer_GetUser_Success(t *testing.T) {
 	assert.Equal(t, expectedEmail, resp.Email)
 	assert.Equal(t, expectedRole, resp.Role)
 	assert.Equal(t, expectedTimezone, resp.Timezone)
+	assert.True(t, resp.CommunityInsightsOptIn)
+	assert.True(t, resp.CommunityLocationOptIn)
+	assert.Equal(t, "US", resp.CommunityCountryCode)
+	assert.Equal(t, "US-CA", resp.CommunityRegionCode)
 
 	// Verify the mock was called
 	assert.Len(t, mockQuerier.GetUserByEmailCalls(), 1)
@@ -322,4 +332,65 @@ func TestUserServer_UpdateUserTimezone_DBError(t *testing.T) {
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "failed to update timezone")
 	assert.Len(t, mockQuerier.UpdateUserTimezoneCalls(), 1)
+}
+
+func TestUserServer_UpdateCommunitySettings_Success(t *testing.T) {
+	expectedUserID := uuid.New()
+	country := "US"
+	region := "US-CA"
+
+	mockQuerier := &mocks.QuerierMock{
+		UpdateCommunitySettingsByUserIdFunc: func(ctx context.Context, arg db.UpdateCommunitySettingsByUserIdParams) (db.SourceUser, error) {
+			assert.Equal(t, pgtype.UUID{Bytes: expectedUserID, Valid: true}, arg.ID)
+			assert.True(t, arg.CommunityInsightsOptIn)
+			assert.True(t, arg.CommunityLocationOptIn)
+			require.NotNil(t, arg.CommunityCountryCode)
+			require.NotNil(t, arg.CommunityRegionCode)
+			assert.Equal(t, "US", *arg.CommunityCountryCode)
+			assert.Equal(t, "US-CA", *arg.CommunityRegionCode)
+
+			return db.SourceUser{
+				ID:                     pgtype.UUID{Bytes: expectedUserID, Valid: true},
+				CommunityInsightsOptIn: true,
+				CommunityLocationOptIn: true,
+				CommunityCountryCode:   &country,
+				CommunityRegionCode:    &region,
+				ModifiedAt:             pgtype.Timestamp{Time: time.Now(), Valid: true},
+			}, nil
+		},
+	}
+
+	server := &internalgrpc.UserServer{}
+	req := &pb.UpdateCommunitySettingsRequest{
+		UserId:                 expectedUserID.String(),
+		CommunityInsightsOptIn: true,
+		CommunityLocationOptIn: true,
+		CommunityCountryCode:   "US",
+		CommunityRegionCode:    "US-CA",
+	}
+
+	resp, err := server.UpdateCommunitySettings(testCtx(mockQuerier), req)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, expectedUserID.String(), resp.UserId)
+	assert.True(t, resp.CommunityInsightsOptIn)
+	assert.True(t, resp.CommunityLocationOptIn)
+	assert.Equal(t, "US", resp.CommunityCountryCode)
+	assert.Equal(t, "US-CA", resp.CommunityRegionCode)
+	assert.Len(t, mockQuerier.UpdateCommunitySettingsByUserIdCalls(), 1)
+}
+
+func TestUserServer_UpdateCommunitySettings_InvalidUserID(t *testing.T) {
+	mockQuerier := &mocks.QuerierMock{}
+	server := &internalgrpc.UserServer{}
+
+	resp, err := server.UpdateCommunitySettings(testCtx(mockQuerier), &pb.UpdateCommunitySettingsRequest{
+		UserId: "not-a-uuid",
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "invalid user ID")
+	assert.Len(t, mockQuerier.UpdateCommunitySettingsByUserIdCalls(), 0)
 }

@@ -136,6 +136,62 @@ type GoldUserJournalSummary struct {
 	JournalsPerActiveDay           pgtype.Numeric
 }
 
+type SourceCommunityMoodRollup struct {
+	ID              int32
+	BucketDate      pgtype.Date
+	TimeGrain       string
+	ScopeType       string
+	ScopeValue      string
+	MoodName        string
+	EntryCount      int32
+	UniqueUserCount int32
+	Rank            int32
+	DeltaVsPrevious pgtype.Numeric
+	UpdatedAt       pgtype.Timestamp
+}
+
+type SourceCommunityPromptSet struct {
+	ID               int32
+	BucketDate       pgtype.Date
+	TimeGrain        string
+	ScopeType        string
+	ScopeValue       string
+	PromptSetJson    []byte
+	SourceThemeNames []string
+	SourceMoodNames  []string
+	GenerationMethod string
+	UpdatedAt        pgtype.Timestamp
+	CreatedAt        pgtype.Timestamp
+}
+
+type SourceCommunitySummary struct {
+	ID               int32
+	BucketDate       pgtype.Date
+	TimeGrain        string
+	ScopeType        string
+	ScopeValue       string
+	SummaryText      string
+	SourceThemeNames []string
+	SourceMoodNames  []string
+	GenerationMethod string
+	UpdatedAt        pgtype.Timestamp
+	CreatedAt        pgtype.Timestamp
+}
+
+type SourceCommunityThemeRollup struct {
+	ID              int32
+	BucketDate      pgtype.Date
+	TimeGrain       string
+	ScopeType       string
+	ScopeValue      string
+	ThemeName       string
+	EntryCount      int32
+	UniqueUserCount int32
+	Rank            int32
+	DeltaVsPrevious pgtype.Numeric
+	UpdatedAt       pgtype.Timestamp
+}
+
 type SourceJournal struct {
 	ID           int32
 	UserID       pgtype.UUID
@@ -144,6 +200,21 @@ type SourceJournal struct {
 	CreatedAt    pgtype.Timestamp
 	ModifiedAt   pgtype.Timestamp
 	SearchVector interface{}
+}
+
+type SourceJournalCommunityProjection struct {
+	JournalID            int32
+	UserID               pgtype.UUID
+	EligibleForCommunity bool
+	EntryLocalDate       pgtype.Date
+	PrimaryMood          *string
+	PrimarySentiment     *string
+	ThemeNames           []string
+	CountryCode          *string
+	RegionCode           *string
+	AnalysisVersion      string
+	UpdatedAt            pgtype.Timestamp
+	CreatedAt            pgtype.Timestamp
 }
 
 type SourceJournalDetail struct {
@@ -206,15 +277,19 @@ type SourceRuntimeConfig struct {
 }
 
 type SourceUser struct {
-	ID            pgtype.UUID
-	Email         string
-	Password      *string
-	Salt          *string
-	OauthProvider *string
-	Role          string
-	CreatedAt     pgtype.Timestamp
-	ModifiedAt    pgtype.Timestamp
-	Timezone      string
+	ID                     pgtype.UUID
+	Email                  string
+	Password               *string
+	Salt                   *string
+	OauthProvider          *string
+	Role                   string
+	CreatedAt              pgtype.Timestamp
+	ModifiedAt             pgtype.Timestamp
+	Timezone               string
+	CommunityInsightsOptIn bool
+	CommunityLocationOptIn bool
+	CommunityCountryCode   *string
+	CommunityRegionCode    *string
 }
 
 type SourceUserGameBalance struct {

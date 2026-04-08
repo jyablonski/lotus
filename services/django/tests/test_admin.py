@@ -1,5 +1,14 @@
 from core.admin import admin_site
-from core.models import Journal, JournalContentFlag, User
+from core.models import (
+    CommunityMoodRollup,
+    CommunityPromptSet,
+    CommunitySummary,
+    CommunityThemeRollup,
+    Journal,
+    JournalCommunityProjection,
+    JournalContentFlag,
+    User,
+)
 from django.urls import reverse
 import pytest
 from waffle.models import Flag
@@ -48,3 +57,32 @@ class TestJournalContentFlagAdmin:
         response = admin_client.get(url)
         assert response.status_code == 200
         assert "profanity" in response.content.decode()
+
+
+@pytest.mark.django_db
+class TestCommunityAdmin:
+    def test_new_models_registered_in_admin(self):
+        assert JournalCommunityProjection in admin_site._registry
+        assert CommunityThemeRollup in admin_site._registry
+        assert CommunityMoodRollup in admin_site._registry
+        assert CommunitySummary in admin_site._registry
+        assert CommunityPromptSet in admin_site._registry
+
+    def test_lotus_user_admin_page_renders_community_fields(self, admin_client):
+        lotus_user = User.objects.create(
+            email="community-admin@example.com",
+            community_insights_opt_in=True,
+            community_location_opt_in=True,
+            community_country_code="US",
+            community_region_code="US-CA",
+        )
+
+        url = reverse("lotus_admin:core_user_change", args=[lotus_user.pk])
+        response = admin_client.get(url)
+
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert "community_insights_opt_in" in content
+        assert "community_location_opt_in" in content
+        assert "community_country_code" in content
+        assert "community_region_code" in content

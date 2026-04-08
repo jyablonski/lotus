@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 )
 
@@ -36,12 +37,20 @@ type AnalyzeEntryWorker struct {
 	analyzerAPIKey  string
 	logger          *slog.Logger
 	useOpenAITopics bool
+	producer        *river.Client[pgx.Tx]
 }
 
 // NewAnalyzeEntryWorker constructs an AnalyzeEntryWorker with the provided dependencies.
 // Exposed so tests can create workers with custom HTTP servers.
-func NewAnalyzeEntryWorker(httpClient *http.Client, analyzerURL, analyzerAPIKey string, logger *slog.Logger, useOpenAITopics bool) *AnalyzeEntryWorker {
-	return &AnalyzeEntryWorker{httpClient: httpClient, analyzerURL: analyzerURL, analyzerAPIKey: analyzerAPIKey, logger: logger, useOpenAITopics: useOpenAITopics}
+func NewAnalyzeEntryWorker(httpClient *http.Client, analyzerURL, analyzerAPIKey string, logger *slog.Logger, useOpenAITopics bool, producer *river.Client[pgx.Tx]) *AnalyzeEntryWorker {
+	return &AnalyzeEntryWorker{
+		httpClient:      httpClient,
+		analyzerURL:     analyzerURL,
+		analyzerAPIKey:  analyzerAPIKey,
+		logger:          logger,
+		useOpenAITopics: useOpenAITopics,
+		producer:        producer,
+	}
 }
 
 func (w *AnalyzeEntryWorker) Work(ctx context.Context, job *river.Job[AnalyzeEntryArgs]) error {
@@ -60,8 +69,20 @@ func (w *AnalyzeEntryWorker) Work(ctx context.Context, job *river.Job[AnalyzeEnt
 		return fmt.Errorf("topic analysis failed: %w", err)
 	}
 
+	if err := w.callEndpoint(ctx, job.Args.EntryID, "sentiment/analyze", http.MethodPost); err != nil {
+		return fmt.Errorf("sentiment analysis failed: %w", err)
+	}
+
 	if err := w.callEndpoint(ctx, job.Args.EntryID, "embeddings", http.MethodPost); err != nil {
 		return fmt.Errorf("embedding generation failed: %w", err)
+	}
+
+	if w.producer != nil {
+		if _, err := w.producer.Insert(ctx, RefreshCommunityProjectionArgs{
+			JournalID: job.Args.EntryID,
+		}, nil); err != nil {
+			return fmt.Errorf("enqueue community projection refresh: %w", err)
+		}
 	}
 
 	w.logger.Info("analyze_entry: finished",

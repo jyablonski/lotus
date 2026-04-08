@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName         = "/user.UserService/CreateUser"
-	UserService_CreateUserOauth_FullMethodName    = "/user.UserService/CreateUserOauth"
-	UserService_GetUser_FullMethodName            = "/user.UserService/GetUser"
-	UserService_UpdateUserTimezone_FullMethodName = "/user.UserService/UpdateUserTimezone"
+	UserService_CreateUser_FullMethodName              = "/user.UserService/CreateUser"
+	UserService_CreateUserOauth_FullMethodName         = "/user.UserService/CreateUserOauth"
+	UserService_GetUser_FullMethodName                 = "/user.UserService/GetUser"
+	UserService_UpdateUserTimezone_FullMethodName      = "/user.UserService/UpdateUserTimezone"
+	UserService_UpdateCommunitySettings_FullMethodName = "/user.UserService/UpdateCommunitySettings"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -34,6 +35,7 @@ type UserServiceClient interface {
 	// GET http://localhost:8080/v1/users?email=EMAIL_HERE
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	UpdateUserTimezone(ctx context.Context, in *UpdateUserTimezoneRequest, opts ...grpc.CallOption) (*UpdateUserTimezoneResponse, error)
+	UpdateCommunitySettings(ctx context.Context, in *UpdateCommunitySettingsRequest, opts ...grpc.CallOption) (*UpdateCommunitySettingsResponse, error)
 }
 
 type userServiceClient struct {
@@ -84,6 +86,16 @@ func (c *userServiceClient) UpdateUserTimezone(ctx context.Context, in *UpdateUs
 	return out, nil
 }
 
+func (c *userServiceClient) UpdateCommunitySettings(ctx context.Context, in *UpdateCommunitySettingsRequest, opts ...grpc.CallOption) (*UpdateCommunitySettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCommunitySettingsResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateCommunitySettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations should embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -93,6 +105,7 @@ type UserServiceServer interface {
 	// GET http://localhost:8080/v1/users?email=EMAIL_HERE
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	UpdateUserTimezone(context.Context, *UpdateUserTimezoneRequest) (*UpdateUserTimezoneResponse, error)
+	UpdateCommunitySettings(context.Context, *UpdateCommunitySettingsRequest) (*UpdateCommunitySettingsResponse, error)
 }
 
 // UnimplementedUserServiceServer should be embedded to have
@@ -113,6 +126,9 @@ func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) 
 }
 func (UnimplementedUserServiceServer) UpdateUserTimezone(context.Context, *UpdateUserTimezoneRequest) (*UpdateUserTimezoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserTimezone not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateCommunitySettings(context.Context, *UpdateCommunitySettingsRequest) (*UpdateCommunitySettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCommunitySettings not implemented")
 }
 func (UnimplementedUserServiceServer) testEmbeddedByValue() {}
 
@@ -206,6 +222,24 @@ func _UserService_UpdateUserTimezone_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UpdateCommunitySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCommunitySettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateCommunitySettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateCommunitySettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateCommunitySettings(ctx, req.(*UpdateCommunitySettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +262,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserTimezone",
 			Handler:    _UserService_UpdateUserTimezone_Handler,
+		},
+		{
+			MethodName: "UpdateCommunitySettings",
+			Handler:    _UserService_UpdateCommunitySettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

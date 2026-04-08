@@ -1,0 +1,15 @@
+meta {
+  name: Get Today Together
+  type: http
+}
+
+get {
+  url: {{backend_url}}/v1/community/today-together?viewerUserId=&scopePreference=
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~viewerUserId:
+  ~scopePreference:
+}

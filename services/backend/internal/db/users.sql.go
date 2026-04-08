@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO source.users(email, password, salt)
 VALUES ($1, $2, $3)
-RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code
 `
 
 type CreateUserParams struct {
@@ -36,6 +36,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceU
 		&i.CreatedAt,
 		&i.ModifiedAt,
 		&i.Timezone,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
 	)
 	return i, err
 }
@@ -43,7 +47,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (SourceU
 const createUserOauth = `-- name: CreateUserOauth :one
 INSERT INTO source.users(email, oauth_provider)
 VALUES ($1, $2)
-RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code
 `
 
 type CreateUserOauthParams struct {
@@ -64,6 +68,10 @@ func (q *Queries) CreateUserOauth(ctx context.Context, arg CreateUserOauthParams
 		&i.CreatedAt,
 		&i.ModifiedAt,
 		&i.Timezone,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
 	)
 	return i, err
 }
@@ -77,8 +85,43 @@ func (q *Queries) DeleteUserById(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const getCommunitySettingsByUserId = `-- name: GetCommunitySettingsByUserId :one
+SELECT
+    id,
+    community_insights_opt_in,
+    community_location_opt_in,
+    community_country_code,
+    community_region_code,
+    modified_at
+FROM source.users
+WHERE id = $1
+`
+
+type GetCommunitySettingsByUserIdRow struct {
+	ID                     pgtype.UUID
+	CommunityInsightsOptIn bool
+	CommunityLocationOptIn bool
+	CommunityCountryCode   *string
+	CommunityRegionCode    *string
+	ModifiedAt             pgtype.Timestamp
+}
+
+func (q *Queries) GetCommunitySettingsByUserId(ctx context.Context, id pgtype.UUID) (GetCommunitySettingsByUserIdRow, error) {
+	row := q.db.QueryRow(ctx, getCommunitySettingsByUserId, id)
+	var i GetCommunitySettingsByUserIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone FROM source.users WHERE email = $1
+SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code FROM source.users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (SourceUser, error) {
@@ -94,12 +137,16 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (SourceUser,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 		&i.Timezone,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone FROM source.users WHERE id = $1
+SELECT id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code FROM source.users WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (SourceUser, error) {
@@ -115,6 +162,57 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (SourceUser, 
 		&i.CreatedAt,
 		&i.ModifiedAt,
 		&i.Timezone,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
+	)
+	return i, err
+}
+
+const updateCommunitySettingsByUserId = `-- name: UpdateCommunitySettingsByUserId :one
+UPDATE source.users
+SET
+    community_insights_opt_in = $2,
+    community_location_opt_in = $3,
+    community_country_code = $4,
+    community_region_code = $5,
+    modified_at = NOW()
+WHERE id = $1
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code
+`
+
+type UpdateCommunitySettingsByUserIdParams struct {
+	ID                     pgtype.UUID
+	CommunityInsightsOptIn bool
+	CommunityLocationOptIn bool
+	CommunityCountryCode   *string
+	CommunityRegionCode    *string
+}
+
+func (q *Queries) UpdateCommunitySettingsByUserId(ctx context.Context, arg UpdateCommunitySettingsByUserIdParams) (SourceUser, error) {
+	row := q.db.QueryRow(ctx, updateCommunitySettingsByUserId,
+		arg.ID,
+		arg.CommunityInsightsOptIn,
+		arg.CommunityLocationOptIn,
+		arg.CommunityCountryCode,
+		arg.CommunityRegionCode,
+	)
+	var i SourceUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Salt,
+		&i.OauthProvider,
+		&i.Role,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+		&i.Timezone,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
 	)
 	return i, err
 }
@@ -123,7 +221,7 @@ const updateUserTimezone = `-- name: UpdateUserTimezone :one
 UPDATE source.users
 SET timezone = $2, modified_at = NOW()
 WHERE id = $1
-RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone
+RETURNING id, email, password, salt, oauth_provider, role, created_at, modified_at, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code
 `
 
 type UpdateUserTimezoneParams struct {
@@ -144,6 +242,10 @@ func (q *Queries) UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezone
 		&i.CreatedAt,
 		&i.ModifiedAt,
 		&i.Timezone,
+		&i.CommunityInsightsOptIn,
+		&i.CommunityLocationOptIn,
+		&i.CommunityCountryCode,
+		&i.CommunityRegionCode,
 	)
 	return i, err
 }

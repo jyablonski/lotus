@@ -7,6 +7,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	pb_analytics "github.com/jyablonski/lotus/internal/pb/proto/analytics"
+	pb_community "github.com/jyablonski/lotus/internal/pb/proto/community"
 	pb_featureflag "github.com/jyablonski/lotus/internal/pb/proto/featureflag"
 	pb_game "github.com/jyablonski/lotus/internal/pb/proto/game"
 	pb_journal "github.com/jyablonski/lotus/internal/pb/proto/journal"
@@ -54,6 +55,7 @@ func RegisterServices(s *grpc.Server) {
 	pb_user.RegisterUserServiceServer(s, &UserServer{})
 	pb_journal.RegisterJournalServiceServer(s, &JournalServer{})
 	pb_analytics.RegisterAnalyticsServiceServer(s, &AnalyticsServer{})
+	pb_community.RegisterCommunityServiceServer(s, &CommunityServer{})
 	pb_util.RegisterUtilServiceServer(s, &UtilServer{})
 	pb_featureflag.RegisterFeatureFlagServiceServer(s, &FeatureFlagServer{})
 	pb_game.RegisterGameServiceServer(s, &GameServer{})
@@ -67,6 +69,7 @@ func RegisterGateway(ctx context.Context, mux *runtime.ServeMux, endpoint string
 		pb_user.RegisterUserServiceHandlerFromEndpoint,
 		pb_journal.RegisterJournalServiceHandlerFromEndpoint,
 		pb_analytics.RegisterAnalyticsServiceHandlerFromEndpoint,
+		pb_community.RegisterCommunityServiceHandlerFromEndpoint,
 		pb_util.RegisterUtilServiceHandlerFromEndpoint,
 		pb_featureflag.RegisterFeatureFlagServiceHandlerFromEndpoint,
 		pb_game.RegisterGameServiceHandlerFromEndpoint,

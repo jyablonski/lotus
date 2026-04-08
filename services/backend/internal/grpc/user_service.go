@@ -25,6 +25,7 @@ var (
 	ErrGetUserFailed   = errors.New("failed to get user")
 	ErrInvalidTimezone = errors.New("invalid timezone")
 	ErrUpdateTimezone  = errors.New("failed to update timezone")
+	ErrUpdateCommunity = errors.New("failed to update community settings")
 )
 
 type UserServer struct {
@@ -117,12 +118,16 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 	}
 
 	return &pb.GetUserResponse{
-		UserId:    u.ID.String(),
-		Email:     u.Email,
-		Role:      u.Role,
-		Timezone:  u.Timezone,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		UserId:                 u.ID.String(),
+		Email:                  u.Email,
+		Role:                   u.Role,
+		Timezone:               u.Timezone,
+		CreatedAt:              createdAt,
+		UpdatedAt:              updatedAt,
+		CommunityInsightsOptIn: u.CommunityInsightsOptIn,
+		CommunityLocationOptIn: u.CommunityLocationOptIn,
+		CommunityCountryCode:   stringOrEmpty(u.CommunityCountryCode),
+		CommunityRegionCode:    stringOrEmpty(u.CommunityRegionCode),
 	}, nil
 }
 
@@ -164,4 +169,55 @@ func (s *UserServer) UpdateUserTimezone(ctx context.Context, req *pb.UpdateUserT
 		Timezone:  u.Timezone,
 		UpdatedAt: updatedAt,
 	}, nil
+}
+
+func (s *UserServer) UpdateCommunitySettings(ctx context.Context, req *pb.UpdateCommunitySettingsRequest) (*pb.UpdateCommunitySettingsResponse, error) {
+	logger := inject.LoggerFrom(ctx)
+
+	userID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, ErrInvalidUserID.Error())
+	}
+
+	dbq := inject.DBFrom(ctx)
+
+	u, err := dbq.UpdateCommunitySettingsByUserId(ctx, db.UpdateCommunitySettingsByUserIdParams{
+		ID:                     pgtype.UUID{Bytes: userID, Valid: true},
+		CommunityInsightsOptIn: req.GetCommunityInsightsOptIn(),
+		CommunityLocationOptIn: req.GetCommunityLocationOptIn(),
+		CommunityCountryCode:   normalizeOptionalString(req.GetCommunityCountryCode()),
+		CommunityRegionCode:    normalizeOptionalString(req.GetCommunityRegionCode()),
+	})
+	if err != nil {
+		logger.Error("Failed to update community settings", "user_id", req.GetUserId(), "error", err)
+		return nil, status.Error(codes.Internal, ErrUpdateCommunity.Error())
+	}
+
+	updatedAt := ""
+	if u.ModifiedAt.Valid {
+		updatedAt = u.ModifiedAt.Time.Format(time.RFC3339)
+	}
+
+	return &pb.UpdateCommunitySettingsResponse{
+		UserId:                 u.ID.String(),
+		CommunityInsightsOptIn: u.CommunityInsightsOptIn,
+		CommunityLocationOptIn: u.CommunityLocationOptIn,
+		CommunityCountryCode:   stringOrEmpty(u.CommunityCountryCode),
+		CommunityRegionCode:    stringOrEmpty(u.CommunityRegionCode),
+		UpdatedAt:              updatedAt,
+	}, nil
+}
+
+func normalizeOptionalString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func stringOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }

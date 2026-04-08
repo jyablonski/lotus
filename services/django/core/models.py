@@ -43,6 +43,20 @@ class User(models.Model):
         default="UTC",
         db_default="UTC",
     )
+    community_insights_opt_in = models.BooleanField(default=False, db_default=False)
+    community_location_opt_in = models.BooleanField(default=False, db_default=False)
+    community_country_code = models.CharField(
+        max_length=8,
+        null=True,
+        blank=True,
+        db_default=None,
+    )
+    community_region_code = models.CharField(
+        max_length=32,
+        null=True,
+        blank=True,
+        db_default=None,
+    )
 
     class Meta:
         db_table = "users"
@@ -216,6 +230,180 @@ class JournalContentFlag(models.Model):
 
     def __str__(self):
         return f"{self.flag_type} ({self.severity}) for Journal {self.journal.id}"
+
+
+class JournalCommunityProjection(models.Model):
+    """Privacy-safe journal attributes available to the community system."""
+
+    journal = models.OneToOneField(
+        Journal,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        db_column="journal_id",
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column="user_id")
+    eligible_for_community = models.BooleanField(default=False, db_default=False)
+    entry_local_date = models.DateField(null=True, blank=True)
+    primary_mood = models.CharField(max_length=32, null=True, blank=True)
+    primary_sentiment = models.CharField(max_length=32, null=True, blank=True)
+    theme_names = ArrayField(models.TextField(), default=list, blank=True)
+    country_code = models.CharField(max_length=8, null=True, blank=True)
+    region_code = models.CharField(max_length=32, null=True, blank=True)
+    analysis_version = models.CharField(max_length=64, default="v1", db_default="v1")
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+
+    class Meta:
+        db_table = "journal_community_projections"
+        indexes = [
+            models.Index(
+                fields=["eligible_for_community", "entry_local_date"],
+                name="idx_jcp_eligible_date",
+            ),
+            models.Index(
+                fields=["region_code", "entry_local_date"],
+                name="idx_jcp_region_date",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Community projection for Journal {self.journal_id}"
+
+
+class CommunityThemeRollup(models.Model):
+    """Aggregated theme counts for community views."""
+
+    id = models.AutoField(primary_key=True)
+    bucket_date = models.DateField()
+    time_grain = models.CharField(max_length=16)
+    scope_type = models.CharField(max_length=16)
+    scope_value = models.CharField(max_length=64)
+    theme_name = models.CharField(max_length=100)
+    entry_count = models.IntegerField()
+    unique_user_count = models.IntegerField()
+    rank = models.IntegerField()
+    delta_vs_previous = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "community_theme_rollups"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value", "theme_name"],
+                name="uniq_community_theme_rollup",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value"],
+                name="idx_ctr_bucket_scope",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.theme_name} on {self.bucket_date} ({self.scope_type}:{self.scope_value})"
+
+
+class CommunityMoodRollup(models.Model):
+    """Aggregated mood counts for community views."""
+
+    id = models.AutoField(primary_key=True)
+    bucket_date = models.DateField()
+    time_grain = models.CharField(max_length=16)
+    scope_type = models.CharField(max_length=16)
+    scope_value = models.CharField(max_length=64)
+    mood_name = models.CharField(max_length=100)
+    entry_count = models.IntegerField()
+    unique_user_count = models.IntegerField()
+    rank = models.IntegerField()
+    delta_vs_previous = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "community_mood_rollups"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value", "mood_name"],
+                name="uniq_community_mood_rollup",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value"],
+                name="idx_cmr_bucket_scope",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.mood_name} on {self.bucket_date} ({self.scope_type}:{self.scope_value})"
+
+
+class CommunitySummary(models.Model):
+    """Stored privacy-safe summary for a community bucket."""
+
+    id = models.AutoField(primary_key=True)
+    bucket_date = models.DateField()
+    time_grain = models.CharField(max_length=16)
+    scope_type = models.CharField(max_length=16)
+    scope_value = models.CharField(max_length=64)
+    summary_text = models.TextField()
+    source_theme_names = ArrayField(models.TextField(), default=list, blank=True)
+    source_mood_names = ArrayField(models.TextField(), default=list, blank=True)
+    generation_method = models.CharField(max_length=32, default="template", db_default="template")
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+
+    class Meta:
+        db_table = "community_summaries"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value"],
+                name="uniq_community_summary",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value"],
+                name="idx_cs_bucket_scope",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Summary on {self.bucket_date} ({self.scope_type}:{self.scope_value})"
+
+
+class CommunityPromptSet(models.Model):
+    """Stored prompt set for a community bucket."""
+
+    id = models.AutoField(primary_key=True)
+    bucket_date = models.DateField()
+    time_grain = models.CharField(max_length=16)
+    scope_type = models.CharField(max_length=16)
+    scope_value = models.CharField(max_length=64)
+    prompt_set_json = models.JSONField(default=list, blank=True)
+    source_theme_names = ArrayField(models.TextField(), default=list, blank=True)
+    source_mood_names = ArrayField(models.TextField(), default=list, blank=True)
+    generation_method = models.CharField(max_length=32, default="template", db_default="template")
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+
+    class Meta:
+        db_table = "community_prompt_sets"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value"],
+                name="uniq_community_prompt_set",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["bucket_date", "time_grain", "scope_type", "scope_value"],
+                name="idx_cps_bucket_scope",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Prompt set on {self.bucket_date} ({self.scope_type}:{self.scope_value})"
 
 
 class ActiveMLModel(models.Model):

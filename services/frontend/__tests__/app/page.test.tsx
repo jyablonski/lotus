@@ -57,11 +57,37 @@ describe("LoggedInDashboard", () => {
     },
   ];
 
+  const mockTodayTogether = {
+    bucketDate: "2026-04-07",
+    periodApplied: "today",
+    themes: [
+      {
+        name: "rest",
+        entryCount: 12,
+        uniqueUserCount: 11,
+        rank: 1,
+        deltaVsPrevious: null,
+      },
+    ],
+    dominantMood: "hopeful",
+    communityNote: "People are trying to soften the pace today.",
+    appliedScopeType: "global" as const,
+    appliedScopeValue: "global",
+    privacy: {
+      state: "ready" as const,
+      scopeFallbackApplied: false,
+      periodFallbackApplied: false,
+    },
+    generatedAt: "2026-04-07T10:00:00Z",
+    isEmpty: false,
+  };
+
   test("renders welcome message with user name", () => {
     render(
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
       />,
@@ -75,6 +101,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
         timezone="UTC"
       />,
     );
@@ -87,6 +114,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
       />,
@@ -109,6 +137,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
       />,
@@ -126,6 +155,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={null}
         recentJournals={[]}
+        todayTogether={null}
         userName="John"
         timezone="UTC"
       />,
@@ -140,6 +170,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
       />,
@@ -153,6 +184,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
       />,
@@ -161,5 +193,23 @@ describe("LoggedInDashboard", () => {
     expect(screen.getByText("View Calendar")).toBeInTheDocument();
     expect(screen.getByText("Insights")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
+  });
+
+  test("renders the Today, Together community card", () => {
+    render(
+      <LoggedInDashboard
+        analytics={mockAnalytics}
+        recentJournals={mockJournals}
+        todayTogether={mockTodayTogether}
+        userName="John"
+        timezone="UTC"
+      />,
+    );
+
+    expect(screen.getByText("Today, Together")).toBeInTheDocument();
+    expect(
+      screen.getByText("People are trying to soften the pace today."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Explore Community Pulse")).toBeInTheDocument();
   });
 });

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package community;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/community;community_pb";
+
+import "google/api/annotations.proto";
+import "proto/community/community.proto";
+
+service CommunityService {
+  rpc GetCommunityPulse(GetCommunityPulseRequest) returns (GetCommunityPulseResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/pulse"
+    };
+  }
+
+  rpc GetTodayTogether(GetTodayTogetherRequest) returns (GetTodayTogetherResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/today-together"
+    };
+  }
+
+  rpc GetCommunityPrompts(GetCommunityPromptsRequest) returns (GetCommunityPromptsResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/prompts"
+    };
+  }
+}

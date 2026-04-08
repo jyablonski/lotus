@@ -61,6 +61,15 @@ func TestNewClientWorkersRegistered(t *testing.T) {
 
 	_, err = client.Insert(ctx, jobs.HelloCronArgs{}, nil)
 	require.NoError(t, err, "should be able to insert HelloCronArgs")
+
+	_, err = client.Insert(ctx, jobs.RefreshCommunityProjectionArgs{JournalID: 300}, nil)
+	require.NoError(t, err, "should be able to insert RefreshCommunityProjectionArgs")
+
+	_, err = client.Insert(ctx, jobs.RefreshCommunityRollupsArgs{AnchorDate: "2026-04-07"}, nil)
+	require.NoError(t, err, "should be able to insert RefreshCommunityRollupsArgs")
+
+	_, err = client.Insert(ctx, jobs.RepairCommunityDataArgs{DaysBack: 35}, nil)
+	require.NoError(t, err, "should be able to insert RepairCommunityDataArgs")
 }
 
 // TestNewInsertOnlyClient verifies the insert-only client can enqueue jobs.

@@ -12,6 +12,11 @@ from waffle.models import Flag, Sample, Switch
 
 from .models import (
     ActiveMLModel,
+    CommunityMoodRollup,
+    CommunityPromptSet,
+    CommunitySummary,
+    CommunityThemeRollup,
+    JournalCommunityProjection,
     JournalContentFlag,
     RuntimeConfig,
     User as LotusUser,
@@ -127,13 +132,39 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
 
 @admin.register(LotusUser, site=admin_site)
 class LotusUserAdmin(ModelAdmin):
-    list_display = ("email", "role", "oauth_provider", "created_at", "modified_at")
-    list_filter = ("role", "oauth_provider", "created_at", "modified_at")
+    list_display = (
+        "email",
+        "role",
+        "community_insights_opt_in",
+        "community_location_opt_in",
+        "oauth_provider",
+        "created_at",
+        "modified_at",
+    )
+    list_filter = (
+        "role",
+        "community_insights_opt_in",
+        "community_location_opt_in",
+        "oauth_provider",
+        "created_at",
+        "modified_at",
+    )
     search_fields = ("email",)
     readonly_fields = ("id", "created_at", "modified_at")
     fieldsets = (
         (None, {"fields": ("id", "email", "role", "timezone")}),
         ("Authentication", {"fields": ("password", "salt", "oauth_provider")}),
+        (
+            "Community",
+            {
+                "fields": (
+                    "community_insights_opt_in",
+                    "community_location_opt_in",
+                    "community_country_code",
+                    "community_region_code",
+                )
+            },
+        ),
         ("Timestamps", {"fields": ("created_at", "modified_at")}),
     )
 
@@ -149,6 +180,99 @@ class JournalContentFlagAdmin(ModelAdmin):
         ("Analysis", {"fields": ("matched_terms", "analysis_summary")}),
         ("Timestamps", {"fields": ("created_at",)}),
     )
+
+
+@admin.register(JournalCommunityProjection, site=admin_site)
+class JournalCommunityProjectionAdmin(ModelAdmin):
+    list_display = (
+        "journal",
+        "user",
+        "eligible_for_community",
+        "entry_local_date",
+        "primary_mood",
+        "primary_sentiment",
+        "updated_at",
+    )
+    list_filter = (
+        "eligible_for_community",
+        "entry_local_date",
+        "primary_mood",
+        "primary_sentiment",
+    )
+    search_fields = ("journal__id", "user__email", "region_code", "country_code")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(CommunityThemeRollup, site=admin_site)
+class CommunityThemeRollupAdmin(ModelAdmin):
+    list_display = (
+        "bucket_date",
+        "time_grain",
+        "scope_type",
+        "scope_value",
+        "theme_name",
+        "entry_count",
+        "unique_user_count",
+        "rank",
+    )
+    list_filter = ("bucket_date", "time_grain", "scope_type", "theme_name")
+    search_fields = ("scope_value", "theme_name")
+    readonly_fields = ("updated_at",)
+
+
+@admin.register(CommunityMoodRollup, site=admin_site)
+class CommunityMoodRollupAdmin(ModelAdmin):
+    list_display = (
+        "bucket_date",
+        "time_grain",
+        "scope_type",
+        "scope_value",
+        "mood_name",
+        "entry_count",
+        "unique_user_count",
+        "rank",
+    )
+    list_filter = ("bucket_date", "time_grain", "scope_type", "mood_name")
+    search_fields = ("scope_value", "mood_name")
+    readonly_fields = ("updated_at",)
+
+
+@admin.register(CommunitySummary, site=admin_site)
+class CommunitySummaryAdmin(ModelAdmin):
+    list_display = (
+        "bucket_date",
+        "time_grain",
+        "scope_type",
+        "scope_value",
+        "summary_preview",
+        "generation_method",
+        "updated_at",
+    )
+    list_filter = ("bucket_date", "time_grain", "scope_type", "generation_method")
+    search_fields = ("scope_value", "summary_text")
+    readonly_fields = ("created_at", "updated_at")
+
+    @admin.display(description="Summary")
+    def summary_preview(self, obj):
+        text = obj.summary_text
+        if len(text) > 80:
+            return text[:80] + "..."
+        return text
+
+
+@admin.register(CommunityPromptSet, site=admin_site)
+class CommunityPromptSetAdmin(ModelAdmin):
+    list_display = (
+        "bucket_date",
+        "time_grain",
+        "scope_type",
+        "scope_value",
+        "generation_method",
+        "updated_at",
+    )
+    list_filter = ("bucket_date", "time_grain", "scope_type", "generation_method")
+    search_fields = ("scope_value",)
+    readonly_fields = ("created_at", "updated_at")
 
 
 # Register Waffle models with custom admin site

@@ -20,12 +20,15 @@ import { RelativeDate } from "@/components/ui/RelativeDate";
 import { CardHeader } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { ROUTES } from "@/lib/routes";
+import { TodayTogetherCard } from "@/components/community/TodayTogetherCard";
+import type { TodayTogetherData } from "@/types/community";
 
 interface LoggedInDashboardProps {
   analytics: UserJournalSummary | null;
   recentJournals: JournalEntry[];
   userName?: string;
   timezone?: string;
+  todayTogether?: TodayTogetherData | null;
 }
 
 export const LoggedInDashboard = ({
@@ -33,6 +36,7 @@ export const LoggedInDashboard = ({
   recentJournals,
   userName,
   timezone,
+  todayTogether = null,
 }: LoggedInDashboardProps) => {
   // Derive display values from analytics (or use defaults for new users)
   const totalEntries = analytics?.totalJournals ?? 0;
@@ -93,6 +97,8 @@ export const LoggedInDashboard = ({
             </button>
           </Link>
         </div>
+
+        <TodayTogetherCard snapshot={todayTogether} />
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

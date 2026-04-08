@@ -3,6 +3,7 @@ package jobs_test
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -113,7 +114,7 @@ func TestAnalyzeEntryWorkerSuccess(t *testing.T) {
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
-		http.DefaultClient, analyzerSrv.URL, "", testinfra.DiscardLogger(), false,
+		http.DefaultClient, analyzerSrv.URL, "", testinfra.DiscardLogger(), false, nil,
 	))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
@@ -151,7 +152,7 @@ func TestAnalyzeEntryWorkerRetry(t *testing.T) {
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
-		http.DefaultClient, failingSrv.URL, "", testinfra.DiscardLogger(), false,
+		http.DefaultClient, failingSrv.URL, "", testinfra.DiscardLogger(), false, nil,
 	))
 
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
@@ -178,4 +179,58 @@ func TestAnalyzeEntryWorkerRetry(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("timed out waiting for failure event")
 	}
+}
+
+func TestAnalyzeEntryWorkerEnqueuesCommunityProjectionRefresh(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	requestPaths := make(chan string, 3)
+	analyzerSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestPaths <- r.URL.Path
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer analyzerSrv.Close()
+
+	producer := newInsertOnlyClient(t)
+
+	workers := river.NewWorkers()
+	river.AddWorker(workers, jobs.NewAnalyzeEntryWorker(
+		http.DefaultClient, analyzerSrv.URL, "", testinfra.DiscardLogger(), false, producer,
+	))
+
+	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
+		Queues:  map[string]river.QueueConfig{jobs.QueueAnalysis: {MaxWorkers: 2}},
+		Workers: workers,
+		Logger:  testinfra.DiscardLogger(),
+	})
+	require.NoError(t, err)
+	require.NoError(t, client.Start(ctx))
+	defer client.Stop(context.Background()) //nolint:errcheck
+
+	completedCh, _ := client.Subscribe(river.EventKindJobCompleted)
+
+	_, err = client.Insert(ctx, jobs.AnalyzeEntryArgs{
+		EntryID: 3001,
+		UserID:  "00000000-0000-0000-0000-000000000001",
+	}, nil)
+	require.NoError(t, err)
+
+	select {
+	case <-completedCh:
+	case <-ctx.Done():
+		t.Fatal("timed out waiting for analyze_entry completion")
+	}
+
+	paths := []string{<-requestPaths, <-requestPaths, <-requestPaths}
+	assert.Contains(t, paths, "/v1/journals/3001/topics/internal")
+	assert.Contains(t, paths, "/v1/journals/3001/sentiment/analyze")
+	assert.Contains(t, paths, "/v1/journals/3001/embeddings")
+
+	var queued int
+	require.NoError(t, testPgxPool.QueryRow(ctx,
+		`SELECT count(*) FROM river_job WHERE kind = $1`,
+		"refresh_community_projection",
+	).Scan(&queued))
+	assert.GreaterOrEqual(t, queued, 1)
 }

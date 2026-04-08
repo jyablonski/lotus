@@ -31,6 +31,10 @@ message GetUserResponse {
   string timezone = 4;
   string created_at = 5;
   string updated_at = 6;
+  bool community_insights_opt_in = 7;
+  bool community_location_opt_in = 8;
+  string community_country_code = 9;
+  string community_region_code = 10;
 }
 
 message UpdateUserTimezoneRequest {
@@ -42,4 +46,21 @@ message UpdateUserTimezoneResponse {
   string user_id = 1;
   string timezone = 2;
   string updated_at = 3;
+}
+
+message UpdateCommunitySettingsRequest {
+  string user_id = 1;
+  bool community_insights_opt_in = 2;
+  bool community_location_opt_in = 3;
+  string community_country_code = 4;
+  string community_region_code = 5;
+}
+
+message UpdateCommunitySettingsResponse {
+  string user_id = 1;
+  bool community_insights_opt_in = 2;
+  bool community_location_opt_in = 3;
+  string community_country_code = 4;
+  string community_region_code = 5;
+  string updated_at = 6;
 }

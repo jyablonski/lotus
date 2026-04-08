@@ -10,6 +10,15 @@ export interface UpdateTimezoneResult {
   error?: string;
 }
 
+export interface UpdateCommunitySettingsResult {
+  success: boolean;
+  communityInsightsOptIn?: boolean;
+  communityLocationOptIn?: boolean;
+  communityCountryCode?: string;
+  communityRegionCode?: string;
+  error?: string;
+}
+
 /**
  * Server action to update the user's timezone preference.
  * Calls PATCH /v1/users/{userId}/timezone on the Go backend.
@@ -49,6 +58,72 @@ export async function updateTimezone(
       success: false,
       error:
         error instanceof Error ? error.message : "Failed to update timezone",
+    };
+  }
+}
+
+export async function updateCommunitySettings(input: {
+  communityInsightsOptIn: boolean;
+  communityLocationOptIn: boolean;
+  communityCountryCode: string;
+  communityRegionCode: string;
+}): Promise<UpdateCommunitySettingsResult> {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const response = await fetch(
+      `${BACKEND_URL}/v1/users/${session.user.id}/community-settings`,
+      {
+        method: "PATCH",
+        headers: backendHeaders(),
+        body: JSON.stringify({
+          community_insights_opt_in: input.communityInsightsOptIn,
+          community_location_opt_in: input.communityLocationOptIn,
+          community_country_code: input.communityCountryCode
+            .trim()
+            .toUpperCase(),
+          community_region_code: input.communityRegionCode.trim().toUpperCase(),
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Backend error updating community settings:", errorText);
+      return {
+        success: false,
+        error: `Failed to update community settings: ${response.status}`,
+      };
+    }
+
+    const data = (await response.json()) as Record<string, unknown>;
+    return {
+      success: true,
+      communityInsightsOptIn: Boolean(
+        data.communityInsightsOptIn ?? data.community_insights_opt_in,
+      ),
+      communityLocationOptIn: Boolean(
+        data.communityLocationOptIn ?? data.community_location_opt_in,
+      ),
+      communityCountryCode: String(
+        data.communityCountryCode ?? data.community_country_code ?? "",
+      ),
+      communityRegionCode: String(
+        data.communityRegionCode ?? data.community_region_code ?? "",
+      ),
+    };
+  } catch (error) {
+    console.error("Error updating community settings:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update community settings",
     };
   }
 }

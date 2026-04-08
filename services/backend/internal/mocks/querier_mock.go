@@ -32,6 +32,18 @@ var _ db.Querier = &QuerierMock{}
 //			CreateUserOauthFunc: func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error) {
 //				panic("mock out the CreateUserOauth method")
 //			},
+//			DeleteCommunityMoodRollupsForBucketFunc: func(ctx context.Context, arg db.DeleteCommunityMoodRollupsForBucketParams) error {
+//				panic("mock out the DeleteCommunityMoodRollupsForBucket method")
+//			},
+//			DeleteCommunityPromptSetsForBucketFunc: func(ctx context.Context, arg db.DeleteCommunityPromptSetsForBucketParams) error {
+//				panic("mock out the DeleteCommunityPromptSetsForBucket method")
+//			},
+//			DeleteCommunitySummariesForBucketFunc: func(ctx context.Context, arg db.DeleteCommunitySummariesForBucketParams) error {
+//				panic("mock out the DeleteCommunitySummariesForBucket method")
+//			},
+//			DeleteCommunityThemeRollupsForBucketFunc: func(ctx context.Context, arg db.DeleteCommunityThemeRollupsForBucketParams) error {
+//				panic("mock out the DeleteCommunityThemeRollupsForBucket method")
+//			},
 //			DeleteJournalForUserFunc: func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
 //				panic("mock out the DeleteJournalForUser method")
 //			},
@@ -44,11 +56,26 @@ var _ db.Querier = &QuerierMock{}
 //			GetActiveMLModelFunc: func(ctx context.Context, mlModel string) (bool, error) {
 //				panic("mock out the GetActiveMLModel method")
 //			},
+//			GetCommunityProjectionSourceByJournalIdFunc: func(ctx context.Context, id int32) (db.GetCommunityProjectionSourceByJournalIdRow, error) {
+//				panic("mock out the GetCommunityProjectionSourceByJournalId method")
+//			},
+//			GetCommunityPromptSetByBucketAndScopeFunc: func(ctx context.Context, arg db.GetCommunityPromptSetByBucketAndScopeParams) (db.SourceCommunityPromptSet, error) {
+//				panic("mock out the GetCommunityPromptSetByBucketAndScope method")
+//			},
+//			GetCommunitySettingsByUserIdFunc: func(ctx context.Context, id pgtype.UUID) (db.GetCommunitySettingsByUserIdRow, error) {
+//				panic("mock out the GetCommunitySettingsByUserId method")
+//			},
+//			GetCommunitySummaryByBucketAndScopeFunc: func(ctx context.Context, arg db.GetCommunitySummaryByBucketAndScopeParams) (db.SourceCommunitySummary, error) {
+//				panic("mock out the GetCommunitySummaryByBucketAndScope method")
+//			},
 //			GetFeatureFlagByNameFunc: func(ctx context.Context, name string) (db.SourceWaffleFlag, error) {
 //				panic("mock out the GetFeatureFlagByName method")
 //			},
 //			GetJournalByIdFunc: func(ctx context.Context, id int32) (db.SourceJournal, error) {
 //				panic("mock out the GetJournalById method")
+//			},
+//			GetJournalCommunityProjectionByJournalIdFunc: func(ctx context.Context, journalID int32) (db.SourceJournalCommunityProjection, error) {
+//				panic("mock out the GetJournalCommunityProjectionByJournalId method")
 //			},
 //			GetJournalCountByUserIdFunc: func(ctx context.Context, userID pgtype.UUID) (int64, error) {
 //				panic("mock out the GetJournalCountByUserId method")
@@ -62,8 +89,14 @@ var _ db.Querier = &QuerierMock{}
 //			GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
 //				panic("mock out the GetJournalsByUserIdPaginated method")
 //			},
+//			GetMoodRollupsByBucketAndScopeFunc: func(ctx context.Context, arg db.GetMoodRollupsByBucketAndScopeParams) ([]db.SourceCommunityMoodRollup, error) {
+//				panic("mock out the GetMoodRollupsByBucketAndScope method")
+//			},
 //			GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
 //				panic("mock out the GetRuntimeConfigByKey method")
+//			},
+//			GetThemeRollupsByBucketAndScopeFunc: func(ctx context.Context, arg db.GetThemeRollupsByBucketAndScopeParams) ([]db.SourceCommunityThemeRollup, error) {
+//				panic("mock out the GetThemeRollupsByBucketAndScope method")
 //			},
 //			GetTopicsByJournalIdsFunc: func(ctx context.Context, dollar_1 []int32) ([]db.GetTopicsByJournalIdsRow, error) {
 //				panic("mock out the GetTopicsByJournalIds method")
@@ -86,11 +119,20 @@ var _ db.Querier = &QuerierMock{}
 //			InsertUserGameBetFunc: func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error) {
 //				panic("mock out the InsertUserGameBet method")
 //			},
+//			ListCommunityRepairJournalIdsFunc: func(ctx context.Context, createdAt pgtype.Timestamp) ([]int32, error) {
+//				panic("mock out the ListCommunityRepairJournalIds method")
+//			},
+//			ListEligibleCommunityProjectionsByDateRangeFunc: func(ctx context.Context, arg db.ListEligibleCommunityProjectionsByDateRangeParams) ([]db.SourceJournalCommunityProjection, error) {
+//				panic("mock out the ListEligibleCommunityProjectionsByDateRange method")
+//			},
 //			SearchJournalsKeywordFunc: func(ctx context.Context, arg db.SearchJournalsKeywordParams) ([]db.SearchJournalsKeywordRow, error) {
 //				panic("mock out the SearchJournalsKeyword method")
 //			},
 //			SearchJournalsSemanticFunc: func(ctx context.Context, arg db.SearchJournalsSemanticParams) ([]db.SearchJournalsSemanticRow, error) {
 //				panic("mock out the SearchJournalsSemantic method")
+//			},
+//			UpdateCommunitySettingsByUserIdFunc: func(ctx context.Context, arg db.UpdateCommunitySettingsByUserIdParams) (db.SourceUser, error) {
+//				panic("mock out the UpdateCommunitySettingsByUserId method")
 //			},
 //			UpdateJournalExportCompleteFunc: func(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error) {
 //				panic("mock out the UpdateJournalExportComplete method")
@@ -106,6 +148,21 @@ var _ db.Querier = &QuerierMock{}
 //			},
 //			UpdateUserTimezoneFunc: func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error) {
 //				panic("mock out the UpdateUserTimezone method")
+//			},
+//			UpsertCommunityMoodRollupFunc: func(ctx context.Context, arg db.UpsertCommunityMoodRollupParams) (db.SourceCommunityMoodRollup, error) {
+//				panic("mock out the UpsertCommunityMoodRollup method")
+//			},
+//			UpsertCommunityPromptSetFunc: func(ctx context.Context, arg db.UpsertCommunityPromptSetParams) (db.SourceCommunityPromptSet, error) {
+//				panic("mock out the UpsertCommunityPromptSet method")
+//			},
+//			UpsertCommunitySummaryFunc: func(ctx context.Context, arg db.UpsertCommunitySummaryParams) (db.SourceCommunitySummary, error) {
+//				panic("mock out the UpsertCommunitySummary method")
+//			},
+//			UpsertCommunityThemeRollupFunc: func(ctx context.Context, arg db.UpsertCommunityThemeRollupParams) (db.SourceCommunityThemeRollup, error) {
+//				panic("mock out the UpsertCommunityThemeRollup method")
+//			},
+//			UpsertJournalCommunityProjectionFunc: func(ctx context.Context, arg db.UpsertJournalCommunityProjectionParams) (db.SourceJournalCommunityProjection, error) {
+//				panic("mock out the UpsertJournalCommunityProjection method")
 //			},
 //			UpsertRuntimeConfigValueFunc: func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error) {
 //				panic("mock out the UpsertRuntimeConfigValue method")
@@ -132,6 +189,18 @@ type QuerierMock struct {
 	// CreateUserOauthFunc mocks the CreateUserOauth method.
 	CreateUserOauthFunc func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error)
 
+	// DeleteCommunityMoodRollupsForBucketFunc mocks the DeleteCommunityMoodRollupsForBucket method.
+	DeleteCommunityMoodRollupsForBucketFunc func(ctx context.Context, arg db.DeleteCommunityMoodRollupsForBucketParams) error
+
+	// DeleteCommunityPromptSetsForBucketFunc mocks the DeleteCommunityPromptSetsForBucket method.
+	DeleteCommunityPromptSetsForBucketFunc func(ctx context.Context, arg db.DeleteCommunityPromptSetsForBucketParams) error
+
+	// DeleteCommunitySummariesForBucketFunc mocks the DeleteCommunitySummariesForBucket method.
+	DeleteCommunitySummariesForBucketFunc func(ctx context.Context, arg db.DeleteCommunitySummariesForBucketParams) error
+
+	// DeleteCommunityThemeRollupsForBucketFunc mocks the DeleteCommunityThemeRollupsForBucket method.
+	DeleteCommunityThemeRollupsForBucketFunc func(ctx context.Context, arg db.DeleteCommunityThemeRollupsForBucketParams) error
+
 	// DeleteJournalForUserFunc mocks the DeleteJournalForUser method.
 	DeleteJournalForUserFunc func(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error)
 
@@ -144,11 +213,26 @@ type QuerierMock struct {
 	// GetActiveMLModelFunc mocks the GetActiveMLModel method.
 	GetActiveMLModelFunc func(ctx context.Context, mlModel string) (bool, error)
 
+	// GetCommunityProjectionSourceByJournalIdFunc mocks the GetCommunityProjectionSourceByJournalId method.
+	GetCommunityProjectionSourceByJournalIdFunc func(ctx context.Context, id int32) (db.GetCommunityProjectionSourceByJournalIdRow, error)
+
+	// GetCommunityPromptSetByBucketAndScopeFunc mocks the GetCommunityPromptSetByBucketAndScope method.
+	GetCommunityPromptSetByBucketAndScopeFunc func(ctx context.Context, arg db.GetCommunityPromptSetByBucketAndScopeParams) (db.SourceCommunityPromptSet, error)
+
+	// GetCommunitySettingsByUserIdFunc mocks the GetCommunitySettingsByUserId method.
+	GetCommunitySettingsByUserIdFunc func(ctx context.Context, id pgtype.UUID) (db.GetCommunitySettingsByUserIdRow, error)
+
+	// GetCommunitySummaryByBucketAndScopeFunc mocks the GetCommunitySummaryByBucketAndScope method.
+	GetCommunitySummaryByBucketAndScopeFunc func(ctx context.Context, arg db.GetCommunitySummaryByBucketAndScopeParams) (db.SourceCommunitySummary, error)
+
 	// GetFeatureFlagByNameFunc mocks the GetFeatureFlagByName method.
 	GetFeatureFlagByNameFunc func(ctx context.Context, name string) (db.SourceWaffleFlag, error)
 
 	// GetJournalByIdFunc mocks the GetJournalById method.
 	GetJournalByIdFunc func(ctx context.Context, id int32) (db.SourceJournal, error)
+
+	// GetJournalCommunityProjectionByJournalIdFunc mocks the GetJournalCommunityProjectionByJournalId method.
+	GetJournalCommunityProjectionByJournalIdFunc func(ctx context.Context, journalID int32) (db.SourceJournalCommunityProjection, error)
 
 	// GetJournalCountByUserIdFunc mocks the GetJournalCountByUserId method.
 	GetJournalCountByUserIdFunc func(ctx context.Context, userID pgtype.UUID) (int64, error)
@@ -162,8 +246,14 @@ type QuerierMock struct {
 	// GetJournalsByUserIdPaginatedFunc mocks the GetJournalsByUserIdPaginated method.
 	GetJournalsByUserIdPaginatedFunc func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error)
 
+	// GetMoodRollupsByBucketAndScopeFunc mocks the GetMoodRollupsByBucketAndScope method.
+	GetMoodRollupsByBucketAndScopeFunc func(ctx context.Context, arg db.GetMoodRollupsByBucketAndScopeParams) ([]db.SourceCommunityMoodRollup, error)
+
 	// GetRuntimeConfigByKeyFunc mocks the GetRuntimeConfigByKey method.
 	GetRuntimeConfigByKeyFunc func(ctx context.Context, key string) (db.SourceRuntimeConfig, error)
+
+	// GetThemeRollupsByBucketAndScopeFunc mocks the GetThemeRollupsByBucketAndScope method.
+	GetThemeRollupsByBucketAndScopeFunc func(ctx context.Context, arg db.GetThemeRollupsByBucketAndScopeParams) ([]db.SourceCommunityThemeRollup, error)
 
 	// GetTopicsByJournalIdsFunc mocks the GetTopicsByJournalIds method.
 	GetTopicsByJournalIdsFunc func(ctx context.Context, dollar_1 []int32) ([]db.GetTopicsByJournalIdsRow, error)
@@ -186,11 +276,20 @@ type QuerierMock struct {
 	// InsertUserGameBetFunc mocks the InsertUserGameBet method.
 	InsertUserGameBetFunc func(ctx context.Context, arg db.InsertUserGameBetParams) (db.SourceUserGameBet, error)
 
+	// ListCommunityRepairJournalIdsFunc mocks the ListCommunityRepairJournalIds method.
+	ListCommunityRepairJournalIdsFunc func(ctx context.Context, createdAt pgtype.Timestamp) ([]int32, error)
+
+	// ListEligibleCommunityProjectionsByDateRangeFunc mocks the ListEligibleCommunityProjectionsByDateRange method.
+	ListEligibleCommunityProjectionsByDateRangeFunc func(ctx context.Context, arg db.ListEligibleCommunityProjectionsByDateRangeParams) ([]db.SourceJournalCommunityProjection, error)
+
 	// SearchJournalsKeywordFunc mocks the SearchJournalsKeyword method.
 	SearchJournalsKeywordFunc func(ctx context.Context, arg db.SearchJournalsKeywordParams) ([]db.SearchJournalsKeywordRow, error)
 
 	// SearchJournalsSemanticFunc mocks the SearchJournalsSemantic method.
 	SearchJournalsSemanticFunc func(ctx context.Context, arg db.SearchJournalsSemanticParams) ([]db.SearchJournalsSemanticRow, error)
+
+	// UpdateCommunitySettingsByUserIdFunc mocks the UpdateCommunitySettingsByUserId method.
+	UpdateCommunitySettingsByUserIdFunc func(ctx context.Context, arg db.UpdateCommunitySettingsByUserIdParams) (db.SourceUser, error)
 
 	// UpdateJournalExportCompleteFunc mocks the UpdateJournalExportComplete method.
 	UpdateJournalExportCompleteFunc func(ctx context.Context, arg db.UpdateJournalExportCompleteParams) (db.SourceJournalExport, error)
@@ -206,6 +305,21 @@ type QuerierMock struct {
 
 	// UpdateUserTimezoneFunc mocks the UpdateUserTimezone method.
 	UpdateUserTimezoneFunc func(ctx context.Context, arg db.UpdateUserTimezoneParams) (db.SourceUser, error)
+
+	// UpsertCommunityMoodRollupFunc mocks the UpsertCommunityMoodRollup method.
+	UpsertCommunityMoodRollupFunc func(ctx context.Context, arg db.UpsertCommunityMoodRollupParams) (db.SourceCommunityMoodRollup, error)
+
+	// UpsertCommunityPromptSetFunc mocks the UpsertCommunityPromptSet method.
+	UpsertCommunityPromptSetFunc func(ctx context.Context, arg db.UpsertCommunityPromptSetParams) (db.SourceCommunityPromptSet, error)
+
+	// UpsertCommunitySummaryFunc mocks the UpsertCommunitySummary method.
+	UpsertCommunitySummaryFunc func(ctx context.Context, arg db.UpsertCommunitySummaryParams) (db.SourceCommunitySummary, error)
+
+	// UpsertCommunityThemeRollupFunc mocks the UpsertCommunityThemeRollup method.
+	UpsertCommunityThemeRollupFunc func(ctx context.Context, arg db.UpsertCommunityThemeRollupParams) (db.SourceCommunityThemeRollup, error)
+
+	// UpsertJournalCommunityProjectionFunc mocks the UpsertJournalCommunityProjection method.
+	UpsertJournalCommunityProjectionFunc func(ctx context.Context, arg db.UpsertJournalCommunityProjectionParams) (db.SourceJournalCommunityProjection, error)
 
 	// UpsertRuntimeConfigValueFunc mocks the UpsertRuntimeConfigValue method.
 	UpsertRuntimeConfigValueFunc func(ctx context.Context, arg db.UpsertRuntimeConfigValueParams) (db.SourceRuntimeConfig, error)
@@ -243,6 +357,34 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.CreateUserOauthParams
 		}
+		// DeleteCommunityMoodRollupsForBucket holds details about calls to the DeleteCommunityMoodRollupsForBucket method.
+		DeleteCommunityMoodRollupsForBucket []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.DeleteCommunityMoodRollupsForBucketParams
+		}
+		// DeleteCommunityPromptSetsForBucket holds details about calls to the DeleteCommunityPromptSetsForBucket method.
+		DeleteCommunityPromptSetsForBucket []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.DeleteCommunityPromptSetsForBucketParams
+		}
+		// DeleteCommunitySummariesForBucket holds details about calls to the DeleteCommunitySummariesForBucket method.
+		DeleteCommunitySummariesForBucket []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.DeleteCommunitySummariesForBucketParams
+		}
+		// DeleteCommunityThemeRollupsForBucket holds details about calls to the DeleteCommunityThemeRollupsForBucket method.
+		DeleteCommunityThemeRollupsForBucket []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.DeleteCommunityThemeRollupsForBucketParams
+		}
 		// DeleteJournalForUser holds details about calls to the DeleteJournalForUser method.
 		DeleteJournalForUser []struct {
 			// Ctx is the ctx argument value.
@@ -269,6 +411,34 @@ type QuerierMock struct {
 			// MlModel is the mlModel argument value.
 			MlModel string
 		}
+		// GetCommunityProjectionSourceByJournalId holds details about calls to the GetCommunityProjectionSourceByJournalId method.
+		GetCommunityProjectionSourceByJournalId []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int32
+		}
+		// GetCommunityPromptSetByBucketAndScope holds details about calls to the GetCommunityPromptSetByBucketAndScope method.
+		GetCommunityPromptSetByBucketAndScope []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetCommunityPromptSetByBucketAndScopeParams
+		}
+		// GetCommunitySettingsByUserId holds details about calls to the GetCommunitySettingsByUserId method.
+		GetCommunitySettingsByUserId []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID pgtype.UUID
+		}
+		// GetCommunitySummaryByBucketAndScope holds details about calls to the GetCommunitySummaryByBucketAndScope method.
+		GetCommunitySummaryByBucketAndScope []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetCommunitySummaryByBucketAndScopeParams
+		}
 		// GetFeatureFlagByName holds details about calls to the GetFeatureFlagByName method.
 		GetFeatureFlagByName []struct {
 			// Ctx is the ctx argument value.
@@ -282,6 +452,13 @@ type QuerierMock struct {
 			Ctx context.Context
 			// ID is the id argument value.
 			ID int32
+		}
+		// GetJournalCommunityProjectionByJournalId holds details about calls to the GetJournalCommunityProjectionByJournalId method.
+		GetJournalCommunityProjectionByJournalId []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// JournalID is the journalID argument value.
+			JournalID int32
 		}
 		// GetJournalCountByUserId holds details about calls to the GetJournalCountByUserId method.
 		GetJournalCountByUserId []struct {
@@ -311,12 +488,26 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.GetJournalsByUserIdPaginatedParams
 		}
+		// GetMoodRollupsByBucketAndScope holds details about calls to the GetMoodRollupsByBucketAndScope method.
+		GetMoodRollupsByBucketAndScope []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetMoodRollupsByBucketAndScopeParams
+		}
 		// GetRuntimeConfigByKey holds details about calls to the GetRuntimeConfigByKey method.
 		GetRuntimeConfigByKey []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Key is the key argument value.
 			Key string
+		}
+		// GetThemeRollupsByBucketAndScope holds details about calls to the GetThemeRollupsByBucketAndScope method.
+		GetThemeRollupsByBucketAndScope []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetThemeRollupsByBucketAndScopeParams
 		}
 		// GetTopicsByJournalIds holds details about calls to the GetTopicsByJournalIds method.
 		GetTopicsByJournalIds []struct {
@@ -367,6 +558,20 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertUserGameBetParams
 		}
+		// ListCommunityRepairJournalIds holds details about calls to the ListCommunityRepairJournalIds method.
+		ListCommunityRepairJournalIds []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CreatedAt is the createdAt argument value.
+			CreatedAt pgtype.Timestamp
+		}
+		// ListEligibleCommunityProjectionsByDateRange holds details about calls to the ListEligibleCommunityProjectionsByDateRange method.
+		ListEligibleCommunityProjectionsByDateRange []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.ListEligibleCommunityProjectionsByDateRangeParams
+		}
 		// SearchJournalsKeyword holds details about calls to the SearchJournalsKeyword method.
 		SearchJournalsKeyword []struct {
 			// Ctx is the ctx argument value.
@@ -380,6 +585,13 @@ type QuerierMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.SearchJournalsSemanticParams
+		}
+		// UpdateCommunitySettingsByUserId holds details about calls to the UpdateCommunitySettingsByUserId method.
+		UpdateCommunitySettingsByUserId []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateCommunitySettingsByUserIdParams
 		}
 		// UpdateJournalExportComplete holds details about calls to the UpdateJournalExportComplete method.
 		UpdateJournalExportComplete []struct {
@@ -416,6 +628,41 @@ type QuerierMock struct {
 			// Arg is the arg argument value.
 			Arg db.UpdateUserTimezoneParams
 		}
+		// UpsertCommunityMoodRollup holds details about calls to the UpsertCommunityMoodRollup method.
+		UpsertCommunityMoodRollup []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertCommunityMoodRollupParams
+		}
+		// UpsertCommunityPromptSet holds details about calls to the UpsertCommunityPromptSet method.
+		UpsertCommunityPromptSet []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertCommunityPromptSetParams
+		}
+		// UpsertCommunitySummary holds details about calls to the UpsertCommunitySummary method.
+		UpsertCommunitySummary []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertCommunitySummaryParams
+		}
+		// UpsertCommunityThemeRollup holds details about calls to the UpsertCommunityThemeRollup method.
+		UpsertCommunityThemeRollup []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertCommunityThemeRollupParams
+		}
+		// UpsertJournalCommunityProjection holds details about calls to the UpsertJournalCommunityProjection method.
+		UpsertJournalCommunityProjection []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertJournalCommunityProjectionParams
+		}
 		// UpsertRuntimeConfigValue holds details about calls to the UpsertRuntimeConfigValue method.
 		UpsertRuntimeConfigValue []struct {
 			// Ctx is the ctx argument value.
@@ -431,37 +678,56 @@ type QuerierMock struct {
 			Arg db.UpsertUserGameBalanceParams
 		}
 	}
-	lockCreateJournal                 sync.RWMutex
-	lockCreateJournalExport           sync.RWMutex
-	lockCreateUser                    sync.RWMutex
-	lockCreateUserOauth               sync.RWMutex
-	lockDeleteJournalForUser          sync.RWMutex
-	lockDeleteUserById                sync.RWMutex
-	lockGetActiveFeatureFlags         sync.RWMutex
-	lockGetActiveMLModel              sync.RWMutex
-	lockGetFeatureFlagByName          sync.RWMutex
-	lockGetJournalById                sync.RWMutex
-	lockGetJournalCountByUserId       sync.RWMutex
-	lockGetJournalExport              sync.RWMutex
-	lockGetJournalsByUserId           sync.RWMutex
-	lockGetJournalsByUserIdPaginated  sync.RWMutex
-	lockGetRuntimeConfigByKey         sync.RWMutex
-	lockGetTopicsByJournalIds         sync.RWMutex
-	lockGetUserByEmail                sync.RWMutex
-	lockGetUserById                   sync.RWMutex
-	lockGetUserGameBalance            sync.RWMutex
-	lockGetUserGameBets               sync.RWMutex
-	lockGetUserJournalSummaryByUserId sync.RWMutex
-	lockInsertUserGameBet             sync.RWMutex
-	lockSearchJournalsKeyword         sync.RWMutex
-	lockSearchJournalsSemantic        sync.RWMutex
-	lockUpdateJournalExportComplete   sync.RWMutex
-	lockUpdateJournalExportFailed     sync.RWMutex
-	lockUpdateJournalExportProcessing sync.RWMutex
-	lockUpdateJournalForUser          sync.RWMutex
-	lockUpdateUserTimezone            sync.RWMutex
-	lockUpsertRuntimeConfigValue      sync.RWMutex
-	lockUpsertUserGameBalance         sync.RWMutex
+	lockCreateJournal                               sync.RWMutex
+	lockCreateJournalExport                         sync.RWMutex
+	lockCreateUser                                  sync.RWMutex
+	lockCreateUserOauth                             sync.RWMutex
+	lockDeleteCommunityMoodRollupsForBucket         sync.RWMutex
+	lockDeleteCommunityPromptSetsForBucket          sync.RWMutex
+	lockDeleteCommunitySummariesForBucket           sync.RWMutex
+	lockDeleteCommunityThemeRollupsForBucket        sync.RWMutex
+	lockDeleteJournalForUser                        sync.RWMutex
+	lockDeleteUserById                              sync.RWMutex
+	lockGetActiveFeatureFlags                       sync.RWMutex
+	lockGetActiveMLModel                            sync.RWMutex
+	lockGetCommunityProjectionSourceByJournalId     sync.RWMutex
+	lockGetCommunityPromptSetByBucketAndScope       sync.RWMutex
+	lockGetCommunitySettingsByUserId                sync.RWMutex
+	lockGetCommunitySummaryByBucketAndScope         sync.RWMutex
+	lockGetFeatureFlagByName                        sync.RWMutex
+	lockGetJournalById                              sync.RWMutex
+	lockGetJournalCommunityProjectionByJournalId    sync.RWMutex
+	lockGetJournalCountByUserId                     sync.RWMutex
+	lockGetJournalExport                            sync.RWMutex
+	lockGetJournalsByUserId                         sync.RWMutex
+	lockGetJournalsByUserIdPaginated                sync.RWMutex
+	lockGetMoodRollupsByBucketAndScope              sync.RWMutex
+	lockGetRuntimeConfigByKey                       sync.RWMutex
+	lockGetThemeRollupsByBucketAndScope             sync.RWMutex
+	lockGetTopicsByJournalIds                       sync.RWMutex
+	lockGetUserByEmail                              sync.RWMutex
+	lockGetUserById                                 sync.RWMutex
+	lockGetUserGameBalance                          sync.RWMutex
+	lockGetUserGameBets                             sync.RWMutex
+	lockGetUserJournalSummaryByUserId               sync.RWMutex
+	lockInsertUserGameBet                           sync.RWMutex
+	lockListCommunityRepairJournalIds               sync.RWMutex
+	lockListEligibleCommunityProjectionsByDateRange sync.RWMutex
+	lockSearchJournalsKeyword                       sync.RWMutex
+	lockSearchJournalsSemantic                      sync.RWMutex
+	lockUpdateCommunitySettingsByUserId             sync.RWMutex
+	lockUpdateJournalExportComplete                 sync.RWMutex
+	lockUpdateJournalExportFailed                   sync.RWMutex
+	lockUpdateJournalExportProcessing               sync.RWMutex
+	lockUpdateJournalForUser                        sync.RWMutex
+	lockUpdateUserTimezone                          sync.RWMutex
+	lockUpsertCommunityMoodRollup                   sync.RWMutex
+	lockUpsertCommunityPromptSet                    sync.RWMutex
+	lockUpsertCommunitySummary                      sync.RWMutex
+	lockUpsertCommunityThemeRollup                  sync.RWMutex
+	lockUpsertJournalCommunityProjection            sync.RWMutex
+	lockUpsertRuntimeConfigValue                    sync.RWMutex
+	lockUpsertUserGameBalance                       sync.RWMutex
 }
 
 // CreateJournal calls CreateJournalFunc.
@@ -608,6 +874,150 @@ func (mock *QuerierMock) CreateUserOauthCalls() []struct {
 	return calls
 }
 
+// DeleteCommunityMoodRollupsForBucket calls DeleteCommunityMoodRollupsForBucketFunc.
+func (mock *QuerierMock) DeleteCommunityMoodRollupsForBucket(ctx context.Context, arg db.DeleteCommunityMoodRollupsForBucketParams) error {
+	if mock.DeleteCommunityMoodRollupsForBucketFunc == nil {
+		panic("QuerierMock.DeleteCommunityMoodRollupsForBucketFunc: method is nil but Querier.DeleteCommunityMoodRollupsForBucket was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.DeleteCommunityMoodRollupsForBucketParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockDeleteCommunityMoodRollupsForBucket.Lock()
+	mock.calls.DeleteCommunityMoodRollupsForBucket = append(mock.calls.DeleteCommunityMoodRollupsForBucket, callInfo)
+	mock.lockDeleteCommunityMoodRollupsForBucket.Unlock()
+	return mock.DeleteCommunityMoodRollupsForBucketFunc(ctx, arg)
+}
+
+// DeleteCommunityMoodRollupsForBucketCalls gets all the calls that were made to DeleteCommunityMoodRollupsForBucket.
+// Check the length with:
+//
+//	len(mockedQuerier.DeleteCommunityMoodRollupsForBucketCalls())
+func (mock *QuerierMock) DeleteCommunityMoodRollupsForBucketCalls() []struct {
+	Ctx context.Context
+	Arg db.DeleteCommunityMoodRollupsForBucketParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.DeleteCommunityMoodRollupsForBucketParams
+	}
+	mock.lockDeleteCommunityMoodRollupsForBucket.RLock()
+	calls = mock.calls.DeleteCommunityMoodRollupsForBucket
+	mock.lockDeleteCommunityMoodRollupsForBucket.RUnlock()
+	return calls
+}
+
+// DeleteCommunityPromptSetsForBucket calls DeleteCommunityPromptSetsForBucketFunc.
+func (mock *QuerierMock) DeleteCommunityPromptSetsForBucket(ctx context.Context, arg db.DeleteCommunityPromptSetsForBucketParams) error {
+	if mock.DeleteCommunityPromptSetsForBucketFunc == nil {
+		panic("QuerierMock.DeleteCommunityPromptSetsForBucketFunc: method is nil but Querier.DeleteCommunityPromptSetsForBucket was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.DeleteCommunityPromptSetsForBucketParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockDeleteCommunityPromptSetsForBucket.Lock()
+	mock.calls.DeleteCommunityPromptSetsForBucket = append(mock.calls.DeleteCommunityPromptSetsForBucket, callInfo)
+	mock.lockDeleteCommunityPromptSetsForBucket.Unlock()
+	return mock.DeleteCommunityPromptSetsForBucketFunc(ctx, arg)
+}
+
+// DeleteCommunityPromptSetsForBucketCalls gets all the calls that were made to DeleteCommunityPromptSetsForBucket.
+// Check the length with:
+//
+//	len(mockedQuerier.DeleteCommunityPromptSetsForBucketCalls())
+func (mock *QuerierMock) DeleteCommunityPromptSetsForBucketCalls() []struct {
+	Ctx context.Context
+	Arg db.DeleteCommunityPromptSetsForBucketParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.DeleteCommunityPromptSetsForBucketParams
+	}
+	mock.lockDeleteCommunityPromptSetsForBucket.RLock()
+	calls = mock.calls.DeleteCommunityPromptSetsForBucket
+	mock.lockDeleteCommunityPromptSetsForBucket.RUnlock()
+	return calls
+}
+
+// DeleteCommunitySummariesForBucket calls DeleteCommunitySummariesForBucketFunc.
+func (mock *QuerierMock) DeleteCommunitySummariesForBucket(ctx context.Context, arg db.DeleteCommunitySummariesForBucketParams) error {
+	if mock.DeleteCommunitySummariesForBucketFunc == nil {
+		panic("QuerierMock.DeleteCommunitySummariesForBucketFunc: method is nil but Querier.DeleteCommunitySummariesForBucket was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.DeleteCommunitySummariesForBucketParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockDeleteCommunitySummariesForBucket.Lock()
+	mock.calls.DeleteCommunitySummariesForBucket = append(mock.calls.DeleteCommunitySummariesForBucket, callInfo)
+	mock.lockDeleteCommunitySummariesForBucket.Unlock()
+	return mock.DeleteCommunitySummariesForBucketFunc(ctx, arg)
+}
+
+// DeleteCommunitySummariesForBucketCalls gets all the calls that were made to DeleteCommunitySummariesForBucket.
+// Check the length with:
+//
+//	len(mockedQuerier.DeleteCommunitySummariesForBucketCalls())
+func (mock *QuerierMock) DeleteCommunitySummariesForBucketCalls() []struct {
+	Ctx context.Context
+	Arg db.DeleteCommunitySummariesForBucketParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.DeleteCommunitySummariesForBucketParams
+	}
+	mock.lockDeleteCommunitySummariesForBucket.RLock()
+	calls = mock.calls.DeleteCommunitySummariesForBucket
+	mock.lockDeleteCommunitySummariesForBucket.RUnlock()
+	return calls
+}
+
+// DeleteCommunityThemeRollupsForBucket calls DeleteCommunityThemeRollupsForBucketFunc.
+func (mock *QuerierMock) DeleteCommunityThemeRollupsForBucket(ctx context.Context, arg db.DeleteCommunityThemeRollupsForBucketParams) error {
+	if mock.DeleteCommunityThemeRollupsForBucketFunc == nil {
+		panic("QuerierMock.DeleteCommunityThemeRollupsForBucketFunc: method is nil but Querier.DeleteCommunityThemeRollupsForBucket was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.DeleteCommunityThemeRollupsForBucketParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockDeleteCommunityThemeRollupsForBucket.Lock()
+	mock.calls.DeleteCommunityThemeRollupsForBucket = append(mock.calls.DeleteCommunityThemeRollupsForBucket, callInfo)
+	mock.lockDeleteCommunityThemeRollupsForBucket.Unlock()
+	return mock.DeleteCommunityThemeRollupsForBucketFunc(ctx, arg)
+}
+
+// DeleteCommunityThemeRollupsForBucketCalls gets all the calls that were made to DeleteCommunityThemeRollupsForBucket.
+// Check the length with:
+//
+//	len(mockedQuerier.DeleteCommunityThemeRollupsForBucketCalls())
+func (mock *QuerierMock) DeleteCommunityThemeRollupsForBucketCalls() []struct {
+	Ctx context.Context
+	Arg db.DeleteCommunityThemeRollupsForBucketParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.DeleteCommunityThemeRollupsForBucketParams
+	}
+	mock.lockDeleteCommunityThemeRollupsForBucket.RLock()
+	calls = mock.calls.DeleteCommunityThemeRollupsForBucket
+	mock.lockDeleteCommunityThemeRollupsForBucket.RUnlock()
+	return calls
+}
+
 // DeleteJournalForUser calls DeleteJournalForUserFunc.
 func (mock *QuerierMock) DeleteJournalForUser(ctx context.Context, arg db.DeleteJournalForUserParams) (int64, error) {
 	if mock.DeleteJournalForUserFunc == nil {
@@ -748,6 +1158,150 @@ func (mock *QuerierMock) GetActiveMLModelCalls() []struct {
 	return calls
 }
 
+// GetCommunityProjectionSourceByJournalId calls GetCommunityProjectionSourceByJournalIdFunc.
+func (mock *QuerierMock) GetCommunityProjectionSourceByJournalId(ctx context.Context, id int32) (db.GetCommunityProjectionSourceByJournalIdRow, error) {
+	if mock.GetCommunityProjectionSourceByJournalIdFunc == nil {
+		panic("QuerierMock.GetCommunityProjectionSourceByJournalIdFunc: method is nil but Querier.GetCommunityProjectionSourceByJournalId was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int32
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetCommunityProjectionSourceByJournalId.Lock()
+	mock.calls.GetCommunityProjectionSourceByJournalId = append(mock.calls.GetCommunityProjectionSourceByJournalId, callInfo)
+	mock.lockGetCommunityProjectionSourceByJournalId.Unlock()
+	return mock.GetCommunityProjectionSourceByJournalIdFunc(ctx, id)
+}
+
+// GetCommunityProjectionSourceByJournalIdCalls gets all the calls that were made to GetCommunityProjectionSourceByJournalId.
+// Check the length with:
+//
+//	len(mockedQuerier.GetCommunityProjectionSourceByJournalIdCalls())
+func (mock *QuerierMock) GetCommunityProjectionSourceByJournalIdCalls() []struct {
+	Ctx context.Context
+	ID  int32
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int32
+	}
+	mock.lockGetCommunityProjectionSourceByJournalId.RLock()
+	calls = mock.calls.GetCommunityProjectionSourceByJournalId
+	mock.lockGetCommunityProjectionSourceByJournalId.RUnlock()
+	return calls
+}
+
+// GetCommunityPromptSetByBucketAndScope calls GetCommunityPromptSetByBucketAndScopeFunc.
+func (mock *QuerierMock) GetCommunityPromptSetByBucketAndScope(ctx context.Context, arg db.GetCommunityPromptSetByBucketAndScopeParams) (db.SourceCommunityPromptSet, error) {
+	if mock.GetCommunityPromptSetByBucketAndScopeFunc == nil {
+		panic("QuerierMock.GetCommunityPromptSetByBucketAndScopeFunc: method is nil but Querier.GetCommunityPromptSetByBucketAndScope was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetCommunityPromptSetByBucketAndScopeParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetCommunityPromptSetByBucketAndScope.Lock()
+	mock.calls.GetCommunityPromptSetByBucketAndScope = append(mock.calls.GetCommunityPromptSetByBucketAndScope, callInfo)
+	mock.lockGetCommunityPromptSetByBucketAndScope.Unlock()
+	return mock.GetCommunityPromptSetByBucketAndScopeFunc(ctx, arg)
+}
+
+// GetCommunityPromptSetByBucketAndScopeCalls gets all the calls that were made to GetCommunityPromptSetByBucketAndScope.
+// Check the length with:
+//
+//	len(mockedQuerier.GetCommunityPromptSetByBucketAndScopeCalls())
+func (mock *QuerierMock) GetCommunityPromptSetByBucketAndScopeCalls() []struct {
+	Ctx context.Context
+	Arg db.GetCommunityPromptSetByBucketAndScopeParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetCommunityPromptSetByBucketAndScopeParams
+	}
+	mock.lockGetCommunityPromptSetByBucketAndScope.RLock()
+	calls = mock.calls.GetCommunityPromptSetByBucketAndScope
+	mock.lockGetCommunityPromptSetByBucketAndScope.RUnlock()
+	return calls
+}
+
+// GetCommunitySettingsByUserId calls GetCommunitySettingsByUserIdFunc.
+func (mock *QuerierMock) GetCommunitySettingsByUserId(ctx context.Context, id pgtype.UUID) (db.GetCommunitySettingsByUserIdRow, error) {
+	if mock.GetCommunitySettingsByUserIdFunc == nil {
+		panic("QuerierMock.GetCommunitySettingsByUserIdFunc: method is nil but Querier.GetCommunitySettingsByUserId was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  pgtype.UUID
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetCommunitySettingsByUserId.Lock()
+	mock.calls.GetCommunitySettingsByUserId = append(mock.calls.GetCommunitySettingsByUserId, callInfo)
+	mock.lockGetCommunitySettingsByUserId.Unlock()
+	return mock.GetCommunitySettingsByUserIdFunc(ctx, id)
+}
+
+// GetCommunitySettingsByUserIdCalls gets all the calls that were made to GetCommunitySettingsByUserId.
+// Check the length with:
+//
+//	len(mockedQuerier.GetCommunitySettingsByUserIdCalls())
+func (mock *QuerierMock) GetCommunitySettingsByUserIdCalls() []struct {
+	Ctx context.Context
+	ID  pgtype.UUID
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  pgtype.UUID
+	}
+	mock.lockGetCommunitySettingsByUserId.RLock()
+	calls = mock.calls.GetCommunitySettingsByUserId
+	mock.lockGetCommunitySettingsByUserId.RUnlock()
+	return calls
+}
+
+// GetCommunitySummaryByBucketAndScope calls GetCommunitySummaryByBucketAndScopeFunc.
+func (mock *QuerierMock) GetCommunitySummaryByBucketAndScope(ctx context.Context, arg db.GetCommunitySummaryByBucketAndScopeParams) (db.SourceCommunitySummary, error) {
+	if mock.GetCommunitySummaryByBucketAndScopeFunc == nil {
+		panic("QuerierMock.GetCommunitySummaryByBucketAndScopeFunc: method is nil but Querier.GetCommunitySummaryByBucketAndScope was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetCommunitySummaryByBucketAndScopeParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetCommunitySummaryByBucketAndScope.Lock()
+	mock.calls.GetCommunitySummaryByBucketAndScope = append(mock.calls.GetCommunitySummaryByBucketAndScope, callInfo)
+	mock.lockGetCommunitySummaryByBucketAndScope.Unlock()
+	return mock.GetCommunitySummaryByBucketAndScopeFunc(ctx, arg)
+}
+
+// GetCommunitySummaryByBucketAndScopeCalls gets all the calls that were made to GetCommunitySummaryByBucketAndScope.
+// Check the length with:
+//
+//	len(mockedQuerier.GetCommunitySummaryByBucketAndScopeCalls())
+func (mock *QuerierMock) GetCommunitySummaryByBucketAndScopeCalls() []struct {
+	Ctx context.Context
+	Arg db.GetCommunitySummaryByBucketAndScopeParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetCommunitySummaryByBucketAndScopeParams
+	}
+	mock.lockGetCommunitySummaryByBucketAndScope.RLock()
+	calls = mock.calls.GetCommunitySummaryByBucketAndScope
+	mock.lockGetCommunitySummaryByBucketAndScope.RUnlock()
+	return calls
+}
+
 // GetFeatureFlagByName calls GetFeatureFlagByNameFunc.
 func (mock *QuerierMock) GetFeatureFlagByName(ctx context.Context, name string) (db.SourceWaffleFlag, error) {
 	if mock.GetFeatureFlagByNameFunc == nil {
@@ -817,6 +1371,42 @@ func (mock *QuerierMock) GetJournalByIdCalls() []struct {
 	mock.lockGetJournalById.RLock()
 	calls = mock.calls.GetJournalById
 	mock.lockGetJournalById.RUnlock()
+	return calls
+}
+
+// GetJournalCommunityProjectionByJournalId calls GetJournalCommunityProjectionByJournalIdFunc.
+func (mock *QuerierMock) GetJournalCommunityProjectionByJournalId(ctx context.Context, journalID int32) (db.SourceJournalCommunityProjection, error) {
+	if mock.GetJournalCommunityProjectionByJournalIdFunc == nil {
+		panic("QuerierMock.GetJournalCommunityProjectionByJournalIdFunc: method is nil but Querier.GetJournalCommunityProjectionByJournalId was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		JournalID int32
+	}{
+		Ctx:       ctx,
+		JournalID: journalID,
+	}
+	mock.lockGetJournalCommunityProjectionByJournalId.Lock()
+	mock.calls.GetJournalCommunityProjectionByJournalId = append(mock.calls.GetJournalCommunityProjectionByJournalId, callInfo)
+	mock.lockGetJournalCommunityProjectionByJournalId.Unlock()
+	return mock.GetJournalCommunityProjectionByJournalIdFunc(ctx, journalID)
+}
+
+// GetJournalCommunityProjectionByJournalIdCalls gets all the calls that were made to GetJournalCommunityProjectionByJournalId.
+// Check the length with:
+//
+//	len(mockedQuerier.GetJournalCommunityProjectionByJournalIdCalls())
+func (mock *QuerierMock) GetJournalCommunityProjectionByJournalIdCalls() []struct {
+	Ctx       context.Context
+	JournalID int32
+} {
+	var calls []struct {
+		Ctx       context.Context
+		JournalID int32
+	}
+	mock.lockGetJournalCommunityProjectionByJournalId.RLock()
+	calls = mock.calls.GetJournalCommunityProjectionByJournalId
+	mock.lockGetJournalCommunityProjectionByJournalId.RUnlock()
 	return calls
 }
 
@@ -964,6 +1554,42 @@ func (mock *QuerierMock) GetJournalsByUserIdPaginatedCalls() []struct {
 	return calls
 }
 
+// GetMoodRollupsByBucketAndScope calls GetMoodRollupsByBucketAndScopeFunc.
+func (mock *QuerierMock) GetMoodRollupsByBucketAndScope(ctx context.Context, arg db.GetMoodRollupsByBucketAndScopeParams) ([]db.SourceCommunityMoodRollup, error) {
+	if mock.GetMoodRollupsByBucketAndScopeFunc == nil {
+		panic("QuerierMock.GetMoodRollupsByBucketAndScopeFunc: method is nil but Querier.GetMoodRollupsByBucketAndScope was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetMoodRollupsByBucketAndScopeParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetMoodRollupsByBucketAndScope.Lock()
+	mock.calls.GetMoodRollupsByBucketAndScope = append(mock.calls.GetMoodRollupsByBucketAndScope, callInfo)
+	mock.lockGetMoodRollupsByBucketAndScope.Unlock()
+	return mock.GetMoodRollupsByBucketAndScopeFunc(ctx, arg)
+}
+
+// GetMoodRollupsByBucketAndScopeCalls gets all the calls that were made to GetMoodRollupsByBucketAndScope.
+// Check the length with:
+//
+//	len(mockedQuerier.GetMoodRollupsByBucketAndScopeCalls())
+func (mock *QuerierMock) GetMoodRollupsByBucketAndScopeCalls() []struct {
+	Ctx context.Context
+	Arg db.GetMoodRollupsByBucketAndScopeParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetMoodRollupsByBucketAndScopeParams
+	}
+	mock.lockGetMoodRollupsByBucketAndScope.RLock()
+	calls = mock.calls.GetMoodRollupsByBucketAndScope
+	mock.lockGetMoodRollupsByBucketAndScope.RUnlock()
+	return calls
+}
+
 // GetRuntimeConfigByKey calls GetRuntimeConfigByKeyFunc.
 func (mock *QuerierMock) GetRuntimeConfigByKey(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
 	if mock.GetRuntimeConfigByKeyFunc == nil {
@@ -997,6 +1623,42 @@ func (mock *QuerierMock) GetRuntimeConfigByKeyCalls() []struct {
 	mock.lockGetRuntimeConfigByKey.RLock()
 	calls = mock.calls.GetRuntimeConfigByKey
 	mock.lockGetRuntimeConfigByKey.RUnlock()
+	return calls
+}
+
+// GetThemeRollupsByBucketAndScope calls GetThemeRollupsByBucketAndScopeFunc.
+func (mock *QuerierMock) GetThemeRollupsByBucketAndScope(ctx context.Context, arg db.GetThemeRollupsByBucketAndScopeParams) ([]db.SourceCommunityThemeRollup, error) {
+	if mock.GetThemeRollupsByBucketAndScopeFunc == nil {
+		panic("QuerierMock.GetThemeRollupsByBucketAndScopeFunc: method is nil but Querier.GetThemeRollupsByBucketAndScope was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetThemeRollupsByBucketAndScopeParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetThemeRollupsByBucketAndScope.Lock()
+	mock.calls.GetThemeRollupsByBucketAndScope = append(mock.calls.GetThemeRollupsByBucketAndScope, callInfo)
+	mock.lockGetThemeRollupsByBucketAndScope.Unlock()
+	return mock.GetThemeRollupsByBucketAndScopeFunc(ctx, arg)
+}
+
+// GetThemeRollupsByBucketAndScopeCalls gets all the calls that were made to GetThemeRollupsByBucketAndScope.
+// Check the length with:
+//
+//	len(mockedQuerier.GetThemeRollupsByBucketAndScopeCalls())
+func (mock *QuerierMock) GetThemeRollupsByBucketAndScopeCalls() []struct {
+	Ctx context.Context
+	Arg db.GetThemeRollupsByBucketAndScopeParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetThemeRollupsByBucketAndScopeParams
+	}
+	mock.lockGetThemeRollupsByBucketAndScope.RLock()
+	calls = mock.calls.GetThemeRollupsByBucketAndScope
+	mock.lockGetThemeRollupsByBucketAndScope.RUnlock()
 	return calls
 }
 
@@ -1252,6 +1914,78 @@ func (mock *QuerierMock) InsertUserGameBetCalls() []struct {
 	return calls
 }
 
+// ListCommunityRepairJournalIds calls ListCommunityRepairJournalIdsFunc.
+func (mock *QuerierMock) ListCommunityRepairJournalIds(ctx context.Context, createdAt pgtype.Timestamp) ([]int32, error) {
+	if mock.ListCommunityRepairJournalIdsFunc == nil {
+		panic("QuerierMock.ListCommunityRepairJournalIdsFunc: method is nil but Querier.ListCommunityRepairJournalIds was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		CreatedAt pgtype.Timestamp
+	}{
+		Ctx:       ctx,
+		CreatedAt: createdAt,
+	}
+	mock.lockListCommunityRepairJournalIds.Lock()
+	mock.calls.ListCommunityRepairJournalIds = append(mock.calls.ListCommunityRepairJournalIds, callInfo)
+	mock.lockListCommunityRepairJournalIds.Unlock()
+	return mock.ListCommunityRepairJournalIdsFunc(ctx, createdAt)
+}
+
+// ListCommunityRepairJournalIdsCalls gets all the calls that were made to ListCommunityRepairJournalIds.
+// Check the length with:
+//
+//	len(mockedQuerier.ListCommunityRepairJournalIdsCalls())
+func (mock *QuerierMock) ListCommunityRepairJournalIdsCalls() []struct {
+	Ctx       context.Context
+	CreatedAt pgtype.Timestamp
+} {
+	var calls []struct {
+		Ctx       context.Context
+		CreatedAt pgtype.Timestamp
+	}
+	mock.lockListCommunityRepairJournalIds.RLock()
+	calls = mock.calls.ListCommunityRepairJournalIds
+	mock.lockListCommunityRepairJournalIds.RUnlock()
+	return calls
+}
+
+// ListEligibleCommunityProjectionsByDateRange calls ListEligibleCommunityProjectionsByDateRangeFunc.
+func (mock *QuerierMock) ListEligibleCommunityProjectionsByDateRange(ctx context.Context, arg db.ListEligibleCommunityProjectionsByDateRangeParams) ([]db.SourceJournalCommunityProjection, error) {
+	if mock.ListEligibleCommunityProjectionsByDateRangeFunc == nil {
+		panic("QuerierMock.ListEligibleCommunityProjectionsByDateRangeFunc: method is nil but Querier.ListEligibleCommunityProjectionsByDateRange was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.ListEligibleCommunityProjectionsByDateRangeParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockListEligibleCommunityProjectionsByDateRange.Lock()
+	mock.calls.ListEligibleCommunityProjectionsByDateRange = append(mock.calls.ListEligibleCommunityProjectionsByDateRange, callInfo)
+	mock.lockListEligibleCommunityProjectionsByDateRange.Unlock()
+	return mock.ListEligibleCommunityProjectionsByDateRangeFunc(ctx, arg)
+}
+
+// ListEligibleCommunityProjectionsByDateRangeCalls gets all the calls that were made to ListEligibleCommunityProjectionsByDateRange.
+// Check the length with:
+//
+//	len(mockedQuerier.ListEligibleCommunityProjectionsByDateRangeCalls())
+func (mock *QuerierMock) ListEligibleCommunityProjectionsByDateRangeCalls() []struct {
+	Ctx context.Context
+	Arg db.ListEligibleCommunityProjectionsByDateRangeParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.ListEligibleCommunityProjectionsByDateRangeParams
+	}
+	mock.lockListEligibleCommunityProjectionsByDateRange.RLock()
+	calls = mock.calls.ListEligibleCommunityProjectionsByDateRange
+	mock.lockListEligibleCommunityProjectionsByDateRange.RUnlock()
+	return calls
+}
+
 // SearchJournalsKeyword calls SearchJournalsKeywordFunc.
 func (mock *QuerierMock) SearchJournalsKeyword(ctx context.Context, arg db.SearchJournalsKeywordParams) ([]db.SearchJournalsKeywordRow, error) {
 	if mock.SearchJournalsKeywordFunc == nil {
@@ -1321,6 +2055,42 @@ func (mock *QuerierMock) SearchJournalsSemanticCalls() []struct {
 	mock.lockSearchJournalsSemantic.RLock()
 	calls = mock.calls.SearchJournalsSemantic
 	mock.lockSearchJournalsSemantic.RUnlock()
+	return calls
+}
+
+// UpdateCommunitySettingsByUserId calls UpdateCommunitySettingsByUserIdFunc.
+func (mock *QuerierMock) UpdateCommunitySettingsByUserId(ctx context.Context, arg db.UpdateCommunitySettingsByUserIdParams) (db.SourceUser, error) {
+	if mock.UpdateCommunitySettingsByUserIdFunc == nil {
+		panic("QuerierMock.UpdateCommunitySettingsByUserIdFunc: method is nil but Querier.UpdateCommunitySettingsByUserId was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateCommunitySettingsByUserIdParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateCommunitySettingsByUserId.Lock()
+	mock.calls.UpdateCommunitySettingsByUserId = append(mock.calls.UpdateCommunitySettingsByUserId, callInfo)
+	mock.lockUpdateCommunitySettingsByUserId.Unlock()
+	return mock.UpdateCommunitySettingsByUserIdFunc(ctx, arg)
+}
+
+// UpdateCommunitySettingsByUserIdCalls gets all the calls that were made to UpdateCommunitySettingsByUserId.
+// Check the length with:
+//
+//	len(mockedQuerier.UpdateCommunitySettingsByUserIdCalls())
+func (mock *QuerierMock) UpdateCommunitySettingsByUserIdCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateCommunitySettingsByUserIdParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateCommunitySettingsByUserIdParams
+	}
+	mock.lockUpdateCommunitySettingsByUserId.RLock()
+	calls = mock.calls.UpdateCommunitySettingsByUserId
+	mock.lockUpdateCommunitySettingsByUserId.RUnlock()
 	return calls
 }
 
@@ -1501,6 +2271,186 @@ func (mock *QuerierMock) UpdateUserTimezoneCalls() []struct {
 	mock.lockUpdateUserTimezone.RLock()
 	calls = mock.calls.UpdateUserTimezone
 	mock.lockUpdateUserTimezone.RUnlock()
+	return calls
+}
+
+// UpsertCommunityMoodRollup calls UpsertCommunityMoodRollupFunc.
+func (mock *QuerierMock) UpsertCommunityMoodRollup(ctx context.Context, arg db.UpsertCommunityMoodRollupParams) (db.SourceCommunityMoodRollup, error) {
+	if mock.UpsertCommunityMoodRollupFunc == nil {
+		panic("QuerierMock.UpsertCommunityMoodRollupFunc: method is nil but Querier.UpsertCommunityMoodRollup was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertCommunityMoodRollupParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertCommunityMoodRollup.Lock()
+	mock.calls.UpsertCommunityMoodRollup = append(mock.calls.UpsertCommunityMoodRollup, callInfo)
+	mock.lockUpsertCommunityMoodRollup.Unlock()
+	return mock.UpsertCommunityMoodRollupFunc(ctx, arg)
+}
+
+// UpsertCommunityMoodRollupCalls gets all the calls that were made to UpsertCommunityMoodRollup.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertCommunityMoodRollupCalls())
+func (mock *QuerierMock) UpsertCommunityMoodRollupCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertCommunityMoodRollupParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertCommunityMoodRollupParams
+	}
+	mock.lockUpsertCommunityMoodRollup.RLock()
+	calls = mock.calls.UpsertCommunityMoodRollup
+	mock.lockUpsertCommunityMoodRollup.RUnlock()
+	return calls
+}
+
+// UpsertCommunityPromptSet calls UpsertCommunityPromptSetFunc.
+func (mock *QuerierMock) UpsertCommunityPromptSet(ctx context.Context, arg db.UpsertCommunityPromptSetParams) (db.SourceCommunityPromptSet, error) {
+	if mock.UpsertCommunityPromptSetFunc == nil {
+		panic("QuerierMock.UpsertCommunityPromptSetFunc: method is nil but Querier.UpsertCommunityPromptSet was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertCommunityPromptSetParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertCommunityPromptSet.Lock()
+	mock.calls.UpsertCommunityPromptSet = append(mock.calls.UpsertCommunityPromptSet, callInfo)
+	mock.lockUpsertCommunityPromptSet.Unlock()
+	return mock.UpsertCommunityPromptSetFunc(ctx, arg)
+}
+
+// UpsertCommunityPromptSetCalls gets all the calls that were made to UpsertCommunityPromptSet.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertCommunityPromptSetCalls())
+func (mock *QuerierMock) UpsertCommunityPromptSetCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertCommunityPromptSetParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertCommunityPromptSetParams
+	}
+	mock.lockUpsertCommunityPromptSet.RLock()
+	calls = mock.calls.UpsertCommunityPromptSet
+	mock.lockUpsertCommunityPromptSet.RUnlock()
+	return calls
+}
+
+// UpsertCommunitySummary calls UpsertCommunitySummaryFunc.
+func (mock *QuerierMock) UpsertCommunitySummary(ctx context.Context, arg db.UpsertCommunitySummaryParams) (db.SourceCommunitySummary, error) {
+	if mock.UpsertCommunitySummaryFunc == nil {
+		panic("QuerierMock.UpsertCommunitySummaryFunc: method is nil but Querier.UpsertCommunitySummary was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertCommunitySummaryParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertCommunitySummary.Lock()
+	mock.calls.UpsertCommunitySummary = append(mock.calls.UpsertCommunitySummary, callInfo)
+	mock.lockUpsertCommunitySummary.Unlock()
+	return mock.UpsertCommunitySummaryFunc(ctx, arg)
+}
+
+// UpsertCommunitySummaryCalls gets all the calls that were made to UpsertCommunitySummary.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertCommunitySummaryCalls())
+func (mock *QuerierMock) UpsertCommunitySummaryCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertCommunitySummaryParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertCommunitySummaryParams
+	}
+	mock.lockUpsertCommunitySummary.RLock()
+	calls = mock.calls.UpsertCommunitySummary
+	mock.lockUpsertCommunitySummary.RUnlock()
+	return calls
+}
+
+// UpsertCommunityThemeRollup calls UpsertCommunityThemeRollupFunc.
+func (mock *QuerierMock) UpsertCommunityThemeRollup(ctx context.Context, arg db.UpsertCommunityThemeRollupParams) (db.SourceCommunityThemeRollup, error) {
+	if mock.UpsertCommunityThemeRollupFunc == nil {
+		panic("QuerierMock.UpsertCommunityThemeRollupFunc: method is nil but Querier.UpsertCommunityThemeRollup was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertCommunityThemeRollupParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertCommunityThemeRollup.Lock()
+	mock.calls.UpsertCommunityThemeRollup = append(mock.calls.UpsertCommunityThemeRollup, callInfo)
+	mock.lockUpsertCommunityThemeRollup.Unlock()
+	return mock.UpsertCommunityThemeRollupFunc(ctx, arg)
+}
+
+// UpsertCommunityThemeRollupCalls gets all the calls that were made to UpsertCommunityThemeRollup.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertCommunityThemeRollupCalls())
+func (mock *QuerierMock) UpsertCommunityThemeRollupCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertCommunityThemeRollupParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertCommunityThemeRollupParams
+	}
+	mock.lockUpsertCommunityThemeRollup.RLock()
+	calls = mock.calls.UpsertCommunityThemeRollup
+	mock.lockUpsertCommunityThemeRollup.RUnlock()
+	return calls
+}
+
+// UpsertJournalCommunityProjection calls UpsertJournalCommunityProjectionFunc.
+func (mock *QuerierMock) UpsertJournalCommunityProjection(ctx context.Context, arg db.UpsertJournalCommunityProjectionParams) (db.SourceJournalCommunityProjection, error) {
+	if mock.UpsertJournalCommunityProjectionFunc == nil {
+		panic("QuerierMock.UpsertJournalCommunityProjectionFunc: method is nil but Querier.UpsertJournalCommunityProjection was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertJournalCommunityProjectionParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertJournalCommunityProjection.Lock()
+	mock.calls.UpsertJournalCommunityProjection = append(mock.calls.UpsertJournalCommunityProjection, callInfo)
+	mock.lockUpsertJournalCommunityProjection.Unlock()
+	return mock.UpsertJournalCommunityProjectionFunc(ctx, arg)
+}
+
+// UpsertJournalCommunityProjectionCalls gets all the calls that were made to UpsertJournalCommunityProjection.
+// Check the length with:
+//
+//	len(mockedQuerier.UpsertJournalCommunityProjectionCalls())
+func (mock *QuerierMock) UpsertJournalCommunityProjectionCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertJournalCommunityProjectionParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertJournalCommunityProjectionParams
+	}
+	mock.lockUpsertJournalCommunityProjection.RLock()
+	calls = mock.calls.UpsertJournalCommunityProjection
+	mock.lockUpsertJournalCommunityProjection.RUnlock()
 	return calls
 }
 
