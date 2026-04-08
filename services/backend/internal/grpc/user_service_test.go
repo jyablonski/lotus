@@ -246,6 +246,41 @@ func TestUserServer_CreateUserOauth_Success(t *testing.T) {
 	assert.Len(t, mockQuerier.CreateUserOauthCalls(), 1)
 }
 
+func TestUserServer_CreateUserOauth_DBError(t *testing.T) {
+	mockQuerier := &mocks.QuerierMock{
+		CreateUserOauthFunc: func(ctx context.Context, arg db.CreateUserOauthParams) (db.SourceUser, error) {
+			return db.SourceUser{}, errors.New("database error")
+		},
+	}
+
+	server := &internalgrpc.UserServer{}
+	resp, err := server.CreateUserOauth(testCtx(mockQuerier), &pb.CreateUserOauthRequest{
+		Email:         "oauth@example.com",
+		OauthProvider: "github",
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "could not create user")
+}
+
+func TestUserServer_GetUser_InternalError(t *testing.T) {
+	mockQuerier := &mocks.QuerierMock{
+		GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
+			return db.SourceUser{}, errors.New("db unavailable")
+		},
+	}
+
+	server := &internalgrpc.UserServer{}
+	resp, err := server.GetUser(testCtx(mockQuerier), &pb.GetUserRequest{
+		Email: "test@example.com",
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "failed to get user")
+}
+
 func TestUserServer_UpdateUserTimezone_Success(t *testing.T) {
 	expectedUserID := uuid.New()
 	expectedTimezone := "America/Los_Angeles"
@@ -393,4 +428,25 @@ func TestUserServer_UpdateCommunitySettings_InvalidUserID(t *testing.T) {
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "invalid user ID")
 	assert.Len(t, mockQuerier.UpdateCommunitySettingsByUserIdCalls(), 0)
+}
+
+func TestUserServer_UpdateCommunitySettings_DBError(t *testing.T) {
+	expectedUserID := uuid.New()
+
+	mockQuerier := &mocks.QuerierMock{
+		UpdateCommunitySettingsByUserIdFunc: func(ctx context.Context, arg db.UpdateCommunitySettingsByUserIdParams) (db.SourceUser, error) {
+			return db.SourceUser{}, errors.New("database error")
+		},
+	}
+
+	server := &internalgrpc.UserServer{}
+	resp, err := server.UpdateCommunitySettings(testCtx(mockQuerier), &pb.UpdateCommunitySettingsRequest{
+		UserId:                 expectedUserID.String(),
+		CommunityInsightsOptIn: true,
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "failed to update community settings")
+	assert.Len(t, mockQuerier.UpdateCommunitySettingsByUserIdCalls(), 1)
 }
