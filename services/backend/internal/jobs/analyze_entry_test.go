@@ -208,7 +208,11 @@ func TestAnalyzeEntryWorkerEnqueuesCommunityProjectionRefresh(t *testing.T) {
 	require.NoError(t, client.Start(ctx))
 	defer client.Stop(context.Background()) //nolint:errcheck
 
-	completedCh, _ := client.Subscribe(river.EventKindJobCompleted)
+	var beforeQueued int
+	require.NoError(t, testPgxPool.QueryRow(ctx,
+		`SELECT count(*) FROM river_job WHERE kind = $1`,
+		"refresh_community_projection",
+	).Scan(&beforeQueued))
 
 	_, err = client.Insert(ctx, jobs.AnalyzeEntryArgs{
 		EntryID: 3001,
@@ -216,21 +220,41 @@ func TestAnalyzeEntryWorkerEnqueuesCommunityProjectionRefresh(t *testing.T) {
 	}, nil)
 	require.NoError(t, err)
 
-	select {
-	case <-completedCh:
-	case <-ctx.Done():
-		t.Fatal("timed out waiting for analyze_entry completion")
+	expectedPaths := map[string]bool{
+		"/v1/journals/3001/topics/internal":   false,
+		"/v1/journals/3001/sentiment/analyze": false,
+		"/v1/journals/3001/embeddings":        false,
 	}
 
-	paths := []string{<-requestPaths, <-requestPaths, <-requestPaths}
-	assert.Contains(t, paths, "/v1/journals/3001/topics/internal")
-	assert.Contains(t, paths, "/v1/journals/3001/sentiment/analyze")
-	assert.Contains(t, paths, "/v1/journals/3001/embeddings")
+	for {
+		allSeen := true
+		for _, seen := range expectedPaths {
+			if !seen {
+				allSeen = false
+				break
+			}
+		}
+		if allSeen {
+			break
+		}
 
-	var queued int
-	require.NoError(t, testPgxPool.QueryRow(ctx,
-		`SELECT count(*) FROM river_job WHERE kind = $1`,
-		"refresh_community_projection",
-	).Scan(&queued))
-	assert.GreaterOrEqual(t, queued, 1)
+		select {
+		case path := <-requestPaths:
+			if _, ok := expectedPaths[path]; ok {
+				expectedPaths[path] = true
+			}
+		case <-ctx.Done():
+			t.Fatalf("timed out waiting for analyzer requests, got: %#v", expectedPaths)
+		}
+	}
+
+	require.Eventually(t, func() bool {
+		var queued int
+		err := testPgxPool.QueryRow(ctx,
+			`SELECT count(*) FROM river_job WHERE kind = $1`,
+			"refresh_community_projection",
+		).Scan(&queued)
+		require.NoError(t, err)
+		return queued >= beforeQueued+1
+	}, 5*time.Second, 100*time.Millisecond)
 }
