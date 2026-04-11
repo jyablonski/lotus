@@ -3,7 +3,10 @@ Tests for Django User synchronization signals.
 """
 
 from core.models import User as LotusUser
-from django.contrib.auth.models import User as DjangoUser
+from django.contrib.auth.models import (
+    Group,
+    User as DjangoUser,
+)
 from django.test import override_settings
 import pytest
 
@@ -16,7 +19,7 @@ class TestSyncDjangoUserSignal:
         self,
     ):
         """Creating a LotusUser with Admin role should create Django User with is_staff=True and is_superuser=True."""
-        lotus_user = LotusUser.objects.create(
+        LotusUser.objects.create(
             email="admin@test.com",
             role="Admin",
             timezone="UTC",
@@ -31,7 +34,7 @@ class TestSyncDjangoUserSignal:
         self,
     ):
         """Creating a LotusUser with Consumer role should create Django User with is_staff=False and is_superuser=False."""
-        lotus_user = LotusUser.objects.create(
+        LotusUser.objects.create(
             email="consumer@test.com",
             role="Consumer",
             timezone="UTC",
@@ -46,7 +49,7 @@ class TestSyncDjangoUserSignal:
         self,
     ):
         """Creating a LotusUser with a custom role should create Django User without admin privileges."""
-        lotus_user = LotusUser.objects.create(
+        LotusUser.objects.create(
             email="custom@test.com",
             role="CustomRole",
             timezone="UTC",
@@ -60,7 +63,7 @@ class TestSyncDjangoUserSignal:
     @override_settings(ADMIN_ROLE_NAME="SuperAdmin")
     def test_create_lotus_user_with_custom_admin_role_name(self):
         """Creating a LotusUser with custom ADMIN_ROLE_NAME should grant admin privileges."""
-        lotus_user = LotusUser.objects.create(
+        LotusUser.objects.create(
             email="superadmin@test.com",
             role="SuperAdmin",
             timezone="UTC",
@@ -169,22 +172,47 @@ class TestSyncDjangoUserSignal:
         existing_django_user.save()
 
         # Create LotusUser with same email
-        lotus_user = LotusUser.objects.create(
+        LotusUser.objects.create(
             email="existing@test.com",
             role="Admin",
             timezone="UTC",
         )
 
         # Should update existing Django User, not create new one
-        django_user_count = DjangoUser.objects.filter(
-            username="existing@test.com"
-        ).count()
+        django_user_count = DjangoUser.objects.filter(username="existing@test.com").count()
         assert django_user_count == 1
 
         existing_django_user.refresh_from_db()
         assert existing_django_user.email == "existing@test.com"
         assert existing_django_user.is_staff is True
         assert existing_django_user.is_superuser is True
+
+    def test_allowed_group_membership_grants_staff_without_superuser(self):
+        """Adding an allowed admin group should grant Django staff access."""
+        lotus_user = LotusUser.objects.create(
+            email="product_group@test.com",
+            role="Consumer",
+            timezone="UTC",
+        )
+
+        django_user = DjangoUser.objects.get(username="product_group@test.com")
+        assert django_user.is_staff is False
+        assert django_user.is_superuser is False
+
+        product_group, _ = Group.objects.get_or_create(name="product")
+        django_user.groups.add(product_group)
+
+        django_user.refresh_from_db()
+        assert django_user.is_staff is True
+        assert django_user.is_superuser is False
+
+        lotus_user.refresh_from_db()
+        lotus_user.timezone = "America/Los_Angeles"
+        lotus_user.save()
+
+        django_user.refresh_from_db()
+        assert django_user.is_staff is True
+        assert django_user.is_superuser is False
 
 
 @pytest.mark.django_db

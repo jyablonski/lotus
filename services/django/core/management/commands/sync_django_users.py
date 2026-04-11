@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User as DjangoUser
 from django.core.management.base import BaseCommand
 
+from core.auth_utils import desired_django_access_flags
 from core.models import User as LotusUser
 
 
@@ -25,9 +26,7 @@ class Command(BaseCommand):
         skipped_count = 0
 
         for lotus_user in lotus_users:
-            django_user_exists = DjangoUser.objects.filter(
-                username=lotus_user.email
-            ).exists()
+            django_user_exists = DjangoUser.objects.filter(username=lotus_user.email).exists()
 
             if django_user_exists:
                 django_user = DjangoUser.objects.get(username=lotus_user.email)
@@ -39,16 +38,18 @@ class Command(BaseCommand):
                     if not dry_run:
                         django_user.email = lotus_user.email
 
-                # Check if admin privileges need updating
-                is_admin = lotus_user.role == "Admin"
+                desired_is_staff, desired_is_superuser = desired_django_access_flags(
+                    django_user=django_user,
+                    lotus_user=lotus_user,
+                )
                 if (
-                    django_user.is_staff != is_admin
-                    or django_user.is_superuser != is_admin
+                    django_user.is_staff != desired_is_staff
+                    or django_user.is_superuser != desired_is_superuser
                 ):
                     needs_update = True
                     if not dry_run:
-                        django_user.is_staff = is_admin
-                        django_user.is_superuser = is_admin
+                        django_user.is_staff = desired_is_staff
+                        django_user.is_superuser = desired_is_superuser
 
                 if needs_update:
                     if not dry_run:
@@ -57,21 +58,20 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.SUCCESS(
                             f"  ✓ Updated Django User for {lotus_user.email} "
-                            f"(role: {lotus_user.role}, is_staff: {is_admin})"
+                            f"(role: {lotus_user.role}, is_staff: {desired_is_staff})"
                         )
                     )
                 else:
                     skipped_count += 1
-                    self.stdout.write(
-                        f"  - Skipped {lotus_user.email} (already in sync)"
-                    )
+                    self.stdout.write(f"  - Skipped {lotus_user.email} (already in sync)")
             else:
                 if not dry_run:
+                    is_admin = lotus_user.role == "Admin"
                     django_user = DjangoUser.objects.create(
                         username=lotus_user.email,
                         email=lotus_user.email,
-                        is_staff=(lotus_user.role == "Admin"),
-                        is_superuser=(lotus_user.role == "Admin"),
+                        is_staff=is_admin,
+                        is_superuser=is_admin,
                     )
                 created_count += 1
                 self.stdout.write(

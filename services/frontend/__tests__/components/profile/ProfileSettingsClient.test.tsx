@@ -33,6 +33,7 @@ describe("ProfileSettingsClient", () => {
     render(
       <ProfileSettingsClient
         timezone="UTC"
+        showCommunityPulse={true}
         communityInsightsOptIn={true}
         communityLocationOptIn={false}
         communityCountryCode="US"
@@ -45,5 +46,23 @@ describe("ProfileSettingsClient", () => {
     expect(screen.getByTestId("community-settings-card")).toHaveTextContent(
       "insights:true location:false",
     );
+  });
+
+  it("hides community settings when community pulse is disabled", () => {
+    render(
+      <ProfileSettingsClient
+        timezone="UTC"
+        showCommunityPulse={false}
+        communityInsightsOptIn={true}
+        communityLocationOptIn={false}
+        communityCountryCode="US"
+        communityRegionCode="US-CA"
+      />,
+    );
+
+    expect(screen.getByTestId("timezone-selector")).toHaveTextContent("UTC");
+    expect(
+      screen.queryByTestId("community-settings-card"),
+    ).not.toBeInTheDocument();
   });
 });

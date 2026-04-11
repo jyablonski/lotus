@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import {
+  fetchFeatureFlags,
   fetchUserAnalytics,
   fetchRecentJournals,
   fetchTodayTogether,
@@ -15,17 +16,26 @@ export default async function HomePage() {
     return <LandingPage />;
   }
 
-  // Fetch data in parallel on the server
+  const userRole = session.user.role ?? "";
+  const analyticsPromise = fetchUserAnalytics(session.user.id);
+  const recentJournalsPromise = fetchRecentJournals(session.user.id, 5);
+  const flags = await fetchFeatureFlags(userRole);
+  const showCommunityPulse = flags.community_pulse === true;
+  const todayTogetherPromise = showCommunityPulse
+    ? fetchTodayTogether(session.user.id, "nearby")
+    : Promise.resolve(null);
+
   const [analytics, recentJournals, todayTogether] = await Promise.all([
-    fetchUserAnalytics(session.user.id),
-    fetchRecentJournals(session.user.id, 5),
-    fetchTodayTogether(session.user.id, "nearby"),
+    analyticsPromise,
+    recentJournalsPromise,
+    todayTogetherPromise,
   ]);
 
   return (
     <LoggedInDashboard
       analytics={analytics}
       recentJournals={recentJournals}
+      showCommunityPulse={showCommunityPulse}
       todayTogether={todayTogether}
       userName={session.user.name ?? undefined}
       timezone={session.user.timezone ?? "UTC"}

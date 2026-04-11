@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CommunityPulsePage } from "@/components/community/CommunityPulsePage";
 import { ROUTES } from "@/lib/routes";
 import {
+  fetchFeatureFlags,
   fetchCommunityPrompts,
   fetchCommunityPulse,
   fetchUserCommunitySettings,
@@ -34,6 +35,12 @@ export default async function CommunityPage({
   const session = await auth();
 
   if (!session?.user?.id) {
+    redirect(ROUTES.home);
+  }
+
+  const userRole = session.user.role ?? "";
+  const flags = await fetchFeatureFlags(userRole);
+  if (flags.community_pulse !== true) {
     redirect(ROUTES.home);
   }
 

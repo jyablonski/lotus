@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ProfileSettingsClient } from "@/components/profile/ProfileSettingsClient";
-import { fetchUserCommunitySettings } from "@/lib/server";
+import { fetchFeatureFlags, fetchUserCommunitySettings } from "@/lib/server";
 import { ROUTES } from "@/lib/routes";
 
 export default async function ProfileSettingsPage() {
@@ -12,11 +12,17 @@ export default async function ProfileSettingsPage() {
   }
 
   const timezone = session.user?.timezone ?? "UTC";
-  const settings = await fetchUserCommunitySettings(session.user.email ?? "");
+  const userRole = session.user.role ?? "";
+  const flags = await fetchFeatureFlags(userRole);
+  const showCommunityPulse = flags.community_pulse === true;
+  const settings = showCommunityPulse
+    ? await fetchUserCommunitySettings(session.user.email ?? "")
+    : null;
 
   return (
     <ProfileSettingsClient
       timezone={timezone}
+      showCommunityPulse={showCommunityPulse}
       communityInsightsOptIn={settings?.communityInsightsOptIn ?? false}
       communityLocationOptIn={settings?.communityLocationOptIn ?? false}
       communityCountryCode={settings?.communityCountryCode ?? ""}

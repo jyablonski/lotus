@@ -90,3 +90,31 @@ The `AdminOnlyMiddleware` restricts access to the admin interface. Users can acc
    - `ml_ops` - ML Operations team members
    - `infrastructure` - Infrastructure team members
    - `engineering` - Engineering team members
+
+## Stakeholder-Controlled Toggles
+
+One useful pattern is giving non-technical teammates access to a very small part of the system so they can safely flip functionality on or off without needing code changes or a full deploy.
+
+In this repo, `product` and `ml_ops` group members can manage the `ActiveMLModel` admin screen, which writes to the `active_ml_models` table. That makes the Django admin a lightweight control panel for turning specific model-backed behavior on or off.
+
+This is a good fit for:
+
+- Enabling or disabling a specific ML model version
+- Giving product or ML stakeholders a safe way to test rollout decisions
+- Letting internal teams control operational switches without broader admin ownership
+
+The same general approach also works for other "flip the bit" surfaces such as feature flags, runtime config, or model-backed booleans:
+
+1. Store the toggle in the database
+2. Register the model in Django admin
+3. Restrict access with group-based admin permissions
+4. Seed or assign the relevant Django groups for the stakeholders who should control it
+
+### Example Test Users
+
+Migration [`0022_seed_ml_model_admin_test_users.py`](./core/migrations/0022_seed_ml_model_admin_test_users.py) creates two example stakeholder accounts you can use locally:
+
+- `product-test@lotus.dev` in the `product` group
+- `mlops-test@lotus.dev` in the `ml_ops` group
+
+Both use the password `testpass123`.

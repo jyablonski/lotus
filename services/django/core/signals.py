@@ -4,9 +4,10 @@ Keeps Django auth.User in sync with core.User for admin access.
 """
 
 from django.contrib.auth.models import User as DjangoUser
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
 from django.dispatch import receiver
 
+from .auth_utils import desired_django_access_flags
 from .models import User as LotusUser
 
 # Store old email before save to handle email updates
@@ -32,8 +33,6 @@ def sync_django_user(sender, instance, created, **kwargs):
     - Admin role users get is_staff=True and is_superuser=True
     - Other users get basic Django User (created for consistency)
     """
-    from django.conf import settings
-
     # Get old email if this was an update
     old_email = _old_email_cache.pop(instance.pk, None) if not created else None
 
@@ -54,11 +53,35 @@ def sync_django_user(sender, instance, created, **kwargs):
         django_user.email = instance.email
         django_user.save()
 
-    # Set admin privileges based on role
-    is_admin = instance.role == getattr(settings, "ADMIN_ROLE_NAME", "Admin")
-    django_user.is_staff = is_admin
-    django_user.is_superuser = is_admin
+    is_staff, is_superuser = desired_django_access_flags(
+        django_user=django_user,
+        lotus_user=instance,
+    )
+    django_user.is_staff = is_staff
+    django_user.is_superuser = is_superuser
     django_user.save()
+
+
+@receiver(m2m_changed, sender=DjangoUser.groups.through)
+def sync_django_user_group_access(sender, instance, action, **kwargs):
+    """Keep Django staff access aligned when admin-allowed groups change."""
+    if action not in {"post_add", "post_remove", "post_clear"}:
+        return
+
+    lotus_user = LotusUser.objects.filter(email=instance.email).first()
+    if not lotus_user:
+        return
+
+    is_staff, is_superuser = desired_django_access_flags(
+        django_user=instance,
+        lotus_user=lotus_user,
+    )
+    if instance.is_staff == is_staff and instance.is_superuser == is_superuser:
+        return
+
+    instance.is_staff = is_staff
+    instance.is_superuser = is_superuser
+    instance.save(update_fields=["is_staff", "is_superuser"])
 
 
 @receiver(post_delete, sender=LotusUser)
