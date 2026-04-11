@@ -11,7 +11,10 @@ from core.models import (
     Journal,
     User as LotusUser,
 )
-from django.contrib.auth.models import User as DjangoUser
+from django.contrib.auth.models import (
+    Group,
+    User as DjangoUser,
+)
 from django.core.management import call_command
 from django.core.management.base import CommandError
 import pytest
@@ -329,6 +332,31 @@ class TestSyncDjangoUsersCommand:
         assert "sync_new@test.com" in output
         assert "sync_update@test.com" in output
         assert "sync_skip@test.com" in output
+
+    def test_sync_django_users_preserves_staff_for_allowed_group_user(self):
+        """Allowed stakeholder groups should keep Django staff access after sync."""
+        lotus_user = LotusUser.objects.create(
+            email="stakeholder@test.com",
+            role="Consumer",
+            timezone="UTC",
+        )
+        django_user = DjangoUser.objects.get(username="stakeholder@test.com")
+        product_group, _ = Group.objects.get_or_create(name="product")
+        django_user.groups.add(product_group)
+
+        django_user.refresh_from_db()
+        assert django_user.is_staff is True
+        assert django_user.is_superuser is False
+
+        out = StringIO()
+        call_command("sync_django_users", stdout=out)
+
+        django_user.refresh_from_db()
+        assert django_user.is_staff is True
+        assert django_user.is_superuser is False
+
+        output = out.getvalue()
+        assert f"Skipped {lotus_user.email} (already in sync)" in output
 
 
 @pytest.mark.django_db
