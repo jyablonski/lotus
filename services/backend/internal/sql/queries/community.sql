@@ -191,19 +191,24 @@ SELECT
     u.community_location_opt_in,
     u.community_country_code,
     u.community_region_code,
-    sentiment.sentiment AS primary_sentiment,
-    sentiment.ml_model_version AS sentiment_model_version,
+    COALESCE((
+        SELECT js.sentiment
+        FROM source.journal_sentiments js
+        WHERE js.journal_id = j.id AND js.is_reliable = TRUE
+        ORDER BY js.created_at DESC, js.id DESC
+        LIMIT 1
+    ), '') AS primary_sentiment,
+    COALESCE((
+        SELECT js.ml_model_version
+        FROM source.journal_sentiments js
+        WHERE js.journal_id = j.id AND js.is_reliable = TRUE
+        ORDER BY js.created_at DESC, js.id DESC
+        LIMIT 1
+    ), '') AS sentiment_model_version,
     COALESCE(topics.topic_names, ARRAY[]::text[]) AS theme_names,
     topics.topic_model_version
 FROM source.journals j
 JOIN source.users u ON u.id = j.user_id
-LEFT JOIN LATERAL (
-    SELECT js.sentiment, js.ml_model_version
-    FROM source.journal_sentiments js
-    WHERE js.journal_id = j.id AND js.is_reliable = TRUE
-    ORDER BY js.created_at DESC, js.id DESC
-    LIMIT 1
-) sentiment ON TRUE
 LEFT JOIN LATERAL (
     SELECT
         ARRAY_AGG(jt.topic_name ORDER BY jt.confidence DESC, jt.topic_name ASC) AS topic_names,

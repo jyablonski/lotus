@@ -90,7 +90,10 @@ func BuildProjection(source db.GetCommunityProjectionSourceByJournalIdRow) Proje
 		primarySentiment != nil &&
 		len(themeNames) > 0
 
-	analysisVersion := buildAnalysisVersion(normalizeStringValue(source.TopicModelVersion), normalizeSentimentModelVersion(source.SentimentModelVersion))
+	analysisVersion := buildAnalysisVersion(
+		normalizeStringValue(source.TopicModelVersion),
+		normalizeSentimentModelVersion(source.SentimentModelVersion),
+	)
 
 	return Projection{
 		JournalID:            source.JournalID,
@@ -295,7 +298,7 @@ func BucketForDate(date time.Time, grain string) time.Time {
 
 func normalizeThemes(raw []string) []string {
 	if len(raw) == 0 {
-		return nil
+		return []string{}
 	}
 
 	seen := map[string]struct{}{}
@@ -310,6 +313,9 @@ func normalizeThemes(raw []string) []string {
 		}
 		seen[normalized] = struct{}{}
 		result = append(result, normalized)
+	}
+	if len(result) == 0 {
+		return []string{}
 	}
 	return result
 }
@@ -337,11 +343,25 @@ func normalizeSentimentPtr(raw *string) *string {
 	}
 }
 
-func normalizeSentimentValue(raw string) *string {
-	if strings.TrimSpace(raw) == "" {
+func normalizeSentimentValue(raw interface{}) *string {
+	switch v := raw.(type) {
+	case string:
+		if strings.TrimSpace(v) == "" {
+			return nil
+		}
+		return normalizeSentimentPtr(&v)
+	case *string:
+		if v == nil || strings.TrimSpace(*v) == "" {
+			return nil
+		}
+		return normalizeSentimentPtr(v)
+	default:
 		return nil
 	}
-	return normalizeSentimentPtr(&raw)
+}
+
+func normalizeSentimentModelVersion(raw interface{}) *string {
+	return normalizeStringValue(raw)
 }
 
 func normalizeThemeValue(raw interface{}) []string {
@@ -357,7 +377,7 @@ func normalizeThemeValue(raw interface{}) []string {
 		}
 		return normalizeThemes(values)
 	default:
-		return nil
+		return []string{}
 	}
 }
 
@@ -436,13 +456,6 @@ func normalizeStringValue(raw interface{}) *string {
 	default:
 		return nil
 	}
-}
-
-func normalizeSentimentModelVersion(raw string) *string {
-	if strings.TrimSpace(raw) == "" {
-		return nil
-	}
-	return &raw
 }
 
 func groupByRegion(items []db.SourceJournalCommunityProjection) map[string][]db.SourceJournalCommunityProjection {

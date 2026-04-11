@@ -4,9 +4,16 @@ Tests for Django management commands.
 
 from io import StringIO
 
-from core.models import User as LotusUser
+from core.management.commands import (
+    generate_example_journal_data as generate_example_journal_data_command,
+)
+from core.models import (
+    Journal,
+    User as LotusUser,
+)
 from django.contrib.auth.models import User as DjangoUser
 from django.core.management import call_command
+from django.core.management.base import CommandError
 import pytest
 
 
@@ -84,10 +91,7 @@ class TestCreateAdminUserCommand:
 
         # Verify output mentions update
         output = out.getvalue()
-        assert (
-            "Updated existing Django user" in output
-            or "Successfully created/updated" in output
-        )
+        assert "Updated existing Django user" in output or "Successfully created/updated" in output
 
     def test_create_admin_user_fails_when_lotus_user_does_not_exist(self):
         """Command should fail when LotusUser doesn't exist."""
@@ -145,12 +149,8 @@ class TestSyncDjangoUsersCommand:
     def test_sync_django_users_creates_new_users(self):
         """Command should create Django Users for Lotus Users that don't have Django Users."""
         # Create LotusUsers (signals will create Django Users)
-        LotusUser.objects.create(
-            email="sync_user1@test.com", role="Consumer", timezone="UTC"
-        )
-        LotusUser.objects.create(
-            email="sync_admin1@test.com", role="Admin", timezone="UTC"
-        )
+        LotusUser.objects.create(email="sync_user1@test.com", role="Consumer", timezone="UTC")
+        LotusUser.objects.create(email="sync_admin1@test.com", role="Admin", timezone="UTC")
 
         # Delete Django Users created by signals to test command creation
         DjangoUser.objects.filter(
@@ -229,8 +229,6 @@ class TestSyncDjangoUsersCommand:
 
         # Get Django User created by signal
         django_user = DjangoUser.objects.get(username="original@test.com")
-        original_email = django_user.email
-
         # Update LotusUser email (signal will update Django User email)
         lotus_user.email = "updated@test.com"
         lotus_user.save()
@@ -297,15 +295,9 @@ class TestSyncDjangoUsersCommand:
     def test_sync_django_users_mixed_scenarios(self):
         """Command should handle mix of creates, updates, and skips."""
         # Create LotusUsers (signals will create Django Users)
-        LotusUser.objects.create(
-            email="sync_new@test.com", role="Consumer", timezone="UTC"
-        )
-        LotusUser.objects.create(
-            email="sync_update@test.com", role="Consumer", timezone="UTC"
-        )
-        LotusUser.objects.create(
-            email="sync_skip@test.com", role="Consumer", timezone="UTC"
-        )
+        LotusUser.objects.create(email="sync_new@test.com", role="Consumer", timezone="UTC")
+        LotusUser.objects.create(email="sync_update@test.com", role="Consumer", timezone="UTC")
+        LotusUser.objects.create(email="sync_skip@test.com", role="Consumer", timezone="UTC")
 
         # Delete Django User for "new" to test creation
         DjangoUser.objects.filter(username="sync_new@test.com").delete()
@@ -337,3 +329,181 @@ class TestSyncDjangoUsersCommand:
         assert "sync_new@test.com" in output
         assert "sync_update@test.com" in output
         assert "sync_skip@test.com" in output
+
+
+@pytest.mark.django_db
+class TestGenerateExampleJournalDataCommand:
+    """Tests for generate_example_journal_data management command."""
+
+    @staticmethod
+    def _mock_backend_create(monkeypatch):
+        backend_calls = []
+
+        def fake_create(
+            self,
+            *,
+            session,
+            backend_base_url,
+            backend_api_key,
+            user_id,
+            journal_text,
+            mood_score,
+            timeout,
+            max_retries,
+        ):
+            journal = Journal.objects.create(
+                user_id=user_id,
+                journal_text=journal_text,
+                mood_score=mood_score,
+            )
+            backend_calls.append(
+                {
+                    "backend_base_url": backend_base_url,
+                    "backend_api_key": backend_api_key,
+                    "user_id": user_id,
+                    "journal_text": journal_text,
+                    "mood_score": mood_score,
+                    "timeout": timeout,
+                    "max_retries": max_retries,
+                    "journal_id": journal.id,
+                }
+            )
+            return journal.id
+
+        monkeypatch.setattr(
+            generate_example_journal_data_command.Command,
+            "_create_journal_via_backend",
+            fake_create,
+        )
+        return backend_calls
+
+    def test_generate_example_journal_data_creates_users_and_journals(self, monkeypatch):
+        prefix = "cmd-seed"
+        out = StringIO()
+        backend_calls = self._mock_backend_create(monkeypatch)
+
+        call_command(
+            "generate_example_journal_data",
+            "--users",
+            "3",
+            "--journals",
+            "12",
+            "--seed",
+            "7",
+            "--email-prefix",
+            prefix,
+            "--backend-base-url",
+            "http://backend.test:8080",
+            "--backend-api-key",
+            "test-backend-key",
+            stdout=out,
+        )
+
+        generated_users = LotusUser.objects.filter(email__startswith=f"{prefix}-").order_by("email")
+        generated_journals = Journal.objects.filter(user__email__startswith=f"{prefix}-")
+        django_users = DjangoUser.objects.filter(username__startswith=f"{prefix}-")
+
+        assert generated_users.count() == 3
+        assert generated_journals.count() == 12
+        assert django_users.count() == 3
+        assert len(backend_calls) == 12
+        assert all(call["backend_base_url"] == "http://backend.test:8080" for call in backend_calls)
+        assert all(call["backend_api_key"] == "test-backend-key" for call in backend_calls)
+        assert all(call["max_retries"] == 6 for call in backend_calls)
+        assert all(journal.mood_score is not None for journal in generated_journals)
+        assert all(1 <= journal.mood_score <= 10 for journal in generated_journals)
+        assert generated_journals.first().journal_text.startswith("Entry ")
+
+        output = out.getvalue()
+        assert "Generated 3 users and 12 journals" in output
+        assert "Created 12/12 journals via backend" in output
+        assert f"{prefix}-" in output
+
+    def test_generate_example_journal_data_reset_prefix_replaces_existing_data(self, monkeypatch):
+        prefix = "cmd-reset"
+        self._mock_backend_create(monkeypatch)
+
+        call_command(
+            "generate_example_journal_data",
+            "--users",
+            "2",
+            "--journals",
+            "5",
+            "--seed",
+            "10",
+            "--email-prefix",
+            prefix,
+        )
+
+        call_command(
+            "generate_example_journal_data",
+            "--users",
+            "1",
+            "--journals",
+            "2",
+            "--seed",
+            "10",
+            "--email-prefix",
+            prefix,
+            "--reset-prefix",
+        )
+
+        assert LotusUser.objects.filter(email__startswith=f"{prefix}-").count() == 1
+        assert DjangoUser.objects.filter(username__startswith=f"{prefix}-").count() == 1
+        assert Journal.objects.filter(user__email__startswith=f"{prefix}-").count() == 2
+
+    def test_generate_example_journal_data_surfaces_backend_errors(self, monkeypatch):
+        def fake_create(
+            self,
+            *,
+            session,
+            backend_base_url,
+            backend_api_key,
+            user_id,
+            journal_text,
+            mood_score,
+            timeout,
+            max_retries,
+        ):
+            raise CommandError("backend journal creation failed with status 503")
+
+        monkeypatch.setattr(
+            generate_example_journal_data_command.Command,
+            "_create_journal_via_backend",
+            fake_create,
+        )
+
+        with pytest.raises(CommandError, match="status 503"):
+            call_command(
+                "generate_example_journal_data",
+                "--users",
+                "1",
+                "--journals",
+                "1",
+                "--email-prefix",
+                "cmd-backend-fail",
+            )
+
+        assert Journal.objects.filter(user__email__startswith="cmd-backend-fail-").count() == 0
+
+    def test_generate_example_journal_data_requires_backend_api_key(self):
+        with pytest.raises(CommandError, match="BACKEND_API_KEY must be set"):
+            call_command(
+                "generate_example_journal_data",
+                "--users",
+                "1",
+                "--journals",
+                "1",
+                "--email-prefix",
+                "cmd-no-backend-key",
+                "--backend-api-key",
+                "",
+            )
+
+    def test_generate_example_journal_data_rejects_invalid_counts(self):
+        with pytest.raises(CommandError, match="--users must be greater than 0"):
+            call_command("generate_example_journal_data", "--users", "0")
+
+    def test_generate_example_journal_data_rejects_invalid_request_rate(self):
+        with pytest.raises(CommandError, match="--requests-per-second must be greater than 0"):
+            call_command("generate_example_journal_data", "--requests-per-second", "0")

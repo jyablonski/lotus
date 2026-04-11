@@ -17,6 +17,7 @@ func TestBuildProjectionEligibleWithNormalizedSignals(t *testing.T) {
 	country := "us"
 	region := "us-ca"
 	topicModel := "topics_v1"
+	sentimentModel := "sentiment_v1"
 
 	projection := BuildProjection(db.GetCommunityProjectionSourceByJournalIdRow{
 		JournalID:              42,
@@ -29,7 +30,7 @@ func TestBuildProjectionEligibleWithNormalizedSignals(t *testing.T) {
 		CommunityCountryCode:   &country,
 		CommunityRegionCode:    &region,
 		PrimarySentiment:       sentiment,
-		SentimentModelVersion:  "sentiment_v1",
+		SentimentModelVersion:  sentimentModel,
 		ThemeNames:             []string{" Work and Career ", "stress and overwhelm", "work and career"},
 		TopicModelVersion:      &topicModel,
 	})
@@ -62,6 +63,7 @@ func TestBuildProjectionIneligibleWithoutConsentOrThemes(t *testing.T) {
 	assert.False(t, projection.EligibleForCommunity)
 	assert.Nil(t, projection.CountryCode)
 	assert.Nil(t, projection.RegionCode)
+	assert.Empty(t, projection.ThemeNames)
 }
 
 func TestBuildSummaryAndPromptSetDeterministic(t *testing.T) {

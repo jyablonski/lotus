@@ -57,6 +57,45 @@ func TestRefreshCommunityProjectionWorkerCreatesProjection(t *testing.T) {
 	assert.Equal(t, "US-CA", derefStr(projection.RegionCode))
 }
 
+func TestRefreshCommunityProjectionWorkerHandlesMissingAnalysisRows(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	userID := createCommunityUser(t, ctx, "projection-worker-missing-analysis@test.example", true, true, "UTC", "US", "US-CA")
+	journalID := createJournal(t, ctx, userID, "No analysis rows yet", 6)
+
+	producer := newInsertOnlyClient(t)
+	workers := river.NewWorkers()
+	river.AddWorker(workers, jobs.NewRefreshCommunityProjectionWorker(testQueries, testinfra.DiscardLogger(), producer))
+
+	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
+		Queues:  map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 2}},
+		Workers: workers,
+		Logger:  testinfra.DiscardLogger(),
+	})
+	require.NoError(t, err)
+	require.NoError(t, client.Start(ctx))
+	defer client.Stop(context.Background()) //nolint:errcheck
+
+	completedCh, _ := client.Subscribe(river.EventKindJobCompleted)
+	_, err = client.Insert(ctx, jobs.RefreshCommunityProjectionArgs{JournalID: int64(journalID)}, nil)
+	require.NoError(t, err)
+
+	select {
+	case <-completedCh:
+	case <-ctx.Done():
+		t.Fatal("timed out waiting for projection refresh without analysis rows")
+	}
+
+	projection, err := testQueries.GetJournalCommunityProjectionByJournalId(ctx, journalID)
+	require.NoError(t, err)
+	assert.False(t, projection.EligibleForCommunity)
+	assert.Equal(t, "steady", derefStr(projection.PrimaryMood))
+	assert.Nil(t, projection.PrimarySentiment)
+	assert.Empty(t, projection.ThemeNames)
+	assert.Equal(t, "v1", projection.AnalysisVersion)
+}
+
 func TestRefreshCommunityRollupsWorkerPersistsRollupsSummaryAndPrompts(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
