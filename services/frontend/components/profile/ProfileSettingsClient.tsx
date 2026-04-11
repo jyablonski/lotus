@@ -3,14 +3,23 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { TimezoneSelector } from "./TimezoneSelector";
+import { CommunitySettingsCard } from "./CommunitySettingsCard";
 import { ROUTES } from "@/lib/routes";
 
 interface ProfileSettingsClientProps {
   timezone: string;
+  communityInsightsOptIn: boolean;
+  communityLocationOptIn: boolean;
+  communityCountryCode: string;
+  communityRegionCode: string;
 }
 
 export function ProfileSettingsClient({
   timezone,
+  communityInsightsOptIn,
+  communityLocationOptIn,
+  communityCountryCode,
+  communityRegionCode,
 }: ProfileSettingsClientProps) {
   return (
     <div className="page-container">
@@ -34,6 +43,17 @@ export function ProfileSettingsClient({
         <Card>
           <CardContent className="p-6">
             <TimezoneSelector currentTimezone={timezone} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <CommunitySettingsCard
+              initialInsightsOptIn={communityInsightsOptIn}
+              initialLocationOptIn={communityLocationOptIn}
+              initialCountryCode={communityCountryCode}
+              initialRegionCode={communityRegionCode}
+            />
           </CardContent>
         </Card>
       </div>

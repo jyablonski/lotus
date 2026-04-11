@@ -7,7 +7,7 @@ jest.mock("@/auth", () => ({
   auth: jest.fn(),
 }));
 
-import { updateTimezone } from "@/actions/user";
+import { updateCommunitySettings, updateTimezone } from "@/actions/user";
 import { auth } from "@/auth";
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
@@ -112,5 +112,60 @@ describe("updateTimezone", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("Failed to update timezone");
+  });
+});
+
+describe("updateCommunitySettings", () => {
+  it("returns Unauthorized when session has no user id", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+
+    const result = await updateCommunitySettings({
+      communityInsightsOptIn: true,
+      communityLocationOptIn: true,
+      communityCountryCode: "US",
+      communityRegionCode: "US-CA",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Unauthorized");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls PATCH /v1/users/{userId}/community-settings and returns success", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user-123" },
+      expires: "",
+    } as never);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        communityInsightsOptIn: true,
+        communityLocationOptIn: true,
+        communityCountryCode: "US",
+        communityRegionCode: "US-CA",
+      }),
+    });
+
+    const result = await updateCommunitySettings({
+      communityInsightsOptIn: true,
+      communityLocationOptIn: true,
+      communityCountryCode: "us",
+      communityRegionCode: "us-ca",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.communityCountryCode).toBe("US");
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/v1/users/user-123/community-settings"),
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          community_insights_opt_in: true,
+          community_location_opt_in: true,
+          community_country_code: "US",
+          community_region_code: "US-CA",
+        }),
+      }),
+    );
   });
 });

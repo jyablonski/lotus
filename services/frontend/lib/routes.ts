@@ -4,6 +4,7 @@
  */
 export const ROUTES = {
   home: "/",
+  community: "/community",
   signin: "/signin",
   verifyRequest: "/verify-request",
   journal: {

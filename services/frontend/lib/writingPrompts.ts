@@ -12,6 +12,26 @@ export const WRITING_PROMPTS: readonly string[] = [
   "If today were a chapter title, what would it be?",
 ];
 
+export interface WritingPromptOption {
+  promptId: string;
+  promptText: string;
+  inspirationTags: string[];
+  tone: string;
+  category: string;
+  source: "static" | "community";
+}
+
+export function getStaticPromptOptions(): WritingPromptOption[] {
+  return WRITING_PROMPTS.map((prompt, index) => ({
+    promptId: `static-${index + 1}`,
+    promptText: prompt,
+    inspirationTags: [],
+    tone: "gentle",
+    category: "reflection",
+    source: "static",
+  }));
+}
+
 export function getPromptByIndex(index: number): string {
   return WRITING_PROMPTS[index % WRITING_PROMPTS.length] ?? WRITING_PROMPTS[0]!;
 }

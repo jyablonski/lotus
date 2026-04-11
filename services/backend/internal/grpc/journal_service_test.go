@@ -462,3 +462,176 @@ func TestJournalServer_GetJournal_Forbidden(t *testing.T) {
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrJournalForbidden)
 }
+
+func TestJournalServer_RequestJournalExport_InvalidUserID(t *testing.T) {
+	server := &internalgrpc.JournalServer{}
+
+	resp, err := server.RequestJournalExport(context.Background(), &pb.RequestJournalExportRequest{
+		UserId: "not-a-uuid",
+		Format: "csv",
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
+}
+
+func TestJournalServer_RequestJournalExport_UnsupportedFormat(t *testing.T) {
+	server := &internalgrpc.JournalServer{}
+
+	resp, err := server.RequestJournalExport(context.Background(), &pb.RequestJournalExportRequest{
+		UserId: uuid.New().String(),
+		Format: "pdf",
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "unsupported export format")
+}
+
+func TestJournalServer_RequestJournalExport_Success(t *testing.T) {
+	queries := newDirectQueries(t)
+	userID := createTestUser(t, queries)
+
+	server := &internalgrpc.JournalServer{}
+	ctx := inject.WithLogger(context.Background(), newTestLogger())
+	ctx = inject.WithPgxPool(ctx, testPgxPool)
+	ctx = inject.WithRiverClient(ctx, testRiverClient)
+
+	resp, err := server.RequestJournalExport(ctx, &pb.RequestJournalExportRequest{
+		UserId: userID.String(),
+		Format: "markdown",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "pending", resp.Status)
+
+	exportID, err := uuid.Parse(resp.ExportId)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = testPgxPool.Exec(context.Background(), `DELETE FROM source.journal_exports WHERE id = $1`, exportID)
+		_ = queries.DeleteUserById(context.Background(), pgtype.UUID{Bytes: userID, Valid: true})
+	})
+
+	export, err := queries.GetJournalExport(context.Background(), db.GetJournalExportParams{
+		ID:     pgtype.UUID{Bytes: exportID, Valid: true},
+		UserID: pgtype.UUID{Bytes: userID, Valid: true},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, db.SourceExportFormatMarkdown, export.Format)
+	assert.Equal(t, db.SourceExportStatusPending, export.Status)
+}
+
+func TestJournalServer_GetJournalExport_InvalidUserID(t *testing.T) {
+	server := &internalgrpc.JournalServer{}
+
+	resp, err := server.GetJournalExport(context.Background(), &pb.GetJournalExportRequest{
+		UserId:   "not-a-uuid",
+		ExportId: uuid.New().String(),
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.ErrorIs(t, err, internalgrpc.ErrInvalidUserID)
+}
+
+func TestJournalServer_GetJournalExport_InvalidExportID(t *testing.T) {
+	server := &internalgrpc.JournalServer{}
+
+	resp, err := server.GetJournalExport(journalTestCtx(&mocks.QuerierMock{}, noopHTTPClient()), &pb.GetJournalExportRequest{
+		UserId:   uuid.New().String(),
+		ExportId: "not-a-uuid",
+	})
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+	assert.Contains(t, err.Error(), "invalid export_id")
+}
+
+func TestJournalServer_GetJournalExport_ResponseShapes(t *testing.T) {
+	userID := uuid.New()
+	now := time.Date(2026, 4, 7, 10, 0, 0, 0, time.UTC)
+	content := "# export"
+
+	tests := []struct {
+		name             string
+		export           db.SourceJournalExport
+		wantFilename     string
+		wantMimeType     string
+		wantContent      string
+		wantEmptyContent bool
+	}{
+		{
+			name: "complete markdown",
+			export: db.SourceJournalExport{
+				ID:        pgtype.UUID{Bytes: uuid.New(), Valid: true},
+				UserID:    pgtype.UUID{Bytes: userID, Valid: true},
+				Format:    db.SourceExportFormatMarkdown,
+				Status:    db.SourceExportStatusComplete,
+				Content:   &content,
+				CreatedAt: pgtype.Timestamp{Time: now, Valid: true},
+			},
+			wantFilename: "lotus-journal-export-2026-04-07.md",
+			wantMimeType: "text/markdown;charset=utf-8",
+			wantContent:  "# export",
+		},
+		{
+			name: "pending export",
+			export: db.SourceJournalExport{
+				ID:     pgtype.UUID{Bytes: uuid.New(), Valid: true},
+				UserID: pgtype.UUID{Bytes: userID, Valid: true},
+				Format: db.SourceExportFormatCsv,
+				Status: db.SourceExportStatusPending,
+			},
+			wantEmptyContent: true,
+		},
+		{
+			name: "complete csv",
+			export: db.SourceJournalExport{
+				ID:        pgtype.UUID{Bytes: uuid.New(), Valid: true},
+				UserID:    pgtype.UUID{Bytes: userID, Valid: true},
+				Format:    db.SourceExportFormatCsv,
+				Status:    db.SourceExportStatusComplete,
+				Content:   &content,
+				CreatedAt: pgtype.Timestamp{Time: now, Valid: true},
+			},
+			wantFilename: "lotus-journal-export-2026-04-07.csv",
+			wantMimeType: "text/csv;charset=utf-8",
+			wantContent:  "# export",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockQuerier := &mocks.QuerierMock{
+				GetJournalExportFunc: func(ctx context.Context, arg db.GetJournalExportParams) (db.SourceJournalExport, error) {
+					assert.Equal(t, pgtype.UUID{Bytes: userID, Valid: true}, arg.UserID)
+					return tt.export, nil
+				},
+			}
+
+			resp, err := (&internalgrpc.JournalServer{}).GetJournalExport(
+				journalTestCtx(mockQuerier, noopHTTPClient()),
+				&pb.GetJournalExportRequest{
+					UserId:   userID.String(),
+					ExportId: tt.export.ID.String(),
+				},
+			)
+
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			assert.Equal(t, tt.export.ID.String(), resp.ExportId)
+			assert.Equal(t, string(tt.export.Status), resp.Status)
+			if tt.wantEmptyContent {
+				assert.Empty(t, resp.Content)
+				assert.Empty(t, resp.Filename)
+				assert.Empty(t, resp.MimeType)
+			} else {
+				assert.Equal(t, tt.wantContent, resp.Content)
+				assert.Equal(t, tt.wantFilename, resp.Filename)
+				assert.Equal(t, tt.wantMimeType, resp.MimeType)
+			}
+		})
+	}
+}

@@ -46,11 +46,11 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger)
 }
 
 // NewClient creates a fully-configured River client with all workers and the
-// hello_cron periodic job scheduled every 15 minutes.
+// periodic cron jobs scheduled every 15 minutes.
 // The caller is responsible for calling Start and Stop on the returned client.
 func NewClient(
 	pool *pgxpool.Pool,
-	queries db.Querier,
+	queries *db.Queries,
 	httpClient *http.Client,
 	analyzerURL string,
 	analyzerAPIKey string,
@@ -59,11 +59,11 @@ func NewClient(
 	return NewClientWithPeriodicInterval(pool, queries, httpClient, analyzerURL, analyzerAPIKey, logger, 15*time.Minute)
 }
 
-// NewClientWithPeriodicInterval is like NewClient but allows overriding the hello_cron
-// schedule. Useful in tests where a 15-minute interval would be impractical.
+// NewClientWithPeriodicInterval is like NewClient but allows overriding the periodic
+// cron schedule. Useful in tests where a 15-minute interval would be impractical.
 func NewClientWithPeriodicInterval(
 	pool *pgxpool.Pool,
-	queries db.Querier,
+	queries *db.Queries,
 	httpClient *http.Client,
 	analyzerURL string,
 	analyzerAPIKey string,
@@ -77,14 +77,19 @@ func NewClientWithPeriodicInterval(
 	}
 
 	workers := river.NewWorkers()
+	producer, err := NewInsertOnlyClient(pool)
+	if err != nil {
+		return nil, fmt.Errorf("create job producer: %w", err)
+	}
 
-	river.AddWorker(workers, &AnalyzeEntryWorker{
-		httpClient:      httpClient,
-		analyzerURL:     analyzerURL,
-		analyzerAPIKey:  analyzerAPIKey,
-		logger:          logger,
-		useOpenAITopics: useOpenAITopics,
-	})
+	river.AddWorker(workers, NewAnalyzeEntryWorker(
+		httpClient,
+		analyzerURL,
+		analyzerAPIKey,
+		logger,
+		useOpenAITopics,
+		producer,
+	))
 
 	river.AddWorker(workers, &HelloCronWorker{
 		queries: queries,
@@ -95,6 +100,10 @@ func NewClientWithPeriodicInterval(
 		queries: queries,
 		logger:  logger,
 	})
+
+	river.AddWorker(workers, NewRefreshCommunityProjectionWorker(queries, logger, producer))
+	river.AddWorker(workers, NewRefreshCommunityRollupsWorker(queries, logger))
+	river.AddWorker(workers, NewRepairCommunityDataWorker(queries, logger, producer))
 
 	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -109,6 +118,22 @@ func NewClientWithPeriodicInterval(
 				river.PeriodicInterval(cronInterval),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return HelloCronArgs{}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(cronInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return RepairCommunityDataArgs{DaysBack: 35}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(cronInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return RefreshCommunityRollupsArgs{
+						AnchorDate: time.Now().UTC().Format("2006-01-02"),
+					}, &river.InsertOpts{Queue: QueueCron}
 				},
 				&river.PeriodicJobOpts{RunOnStart: true},
 			),

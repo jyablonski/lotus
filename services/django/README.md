@@ -69,7 +69,16 @@ The entrypoint will reject startup if migrations are missing.
 uv run python manage.py makemigrations # generate new migration files
 uv run python manage.py migrate core 0006_remove_featureflag # rollback to specific migration
 uv run python manage.py migrate # run migrations
+uv run python manage.py generate_example_journal_data # create 100 users + 10000 journals via backend + analyzer flow
 ```
+
+Example:
+
+```bash
+uv run python manage.py generate_example_journal_data --users 10 --journals 1000 --reset-prefix
+```
+
+`generate_example_journal_data` creates journals through `POST /v1/journals`, so keep the backend running at `BACKEND_BASE_URL` (defaults to `http://localhost:8080`) and set `BACKEND_API_KEY` so the command can send `Authorization: Bearer ...`.
 
 ## Admin Access Control
 

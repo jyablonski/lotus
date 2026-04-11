@@ -35,4 +35,11 @@ service UserService {
       body: "*"
     };
   }
+
+  rpc UpdateCommunitySettings(UpdateCommunitySettingsRequest) returns (UpdateCommunitySettingsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/users/{user_id}/community-settings"
+      body: "*"
+    };
+  }
 }

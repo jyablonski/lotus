@@ -1,0 +1,17 @@
+meta {
+  name: Get Community Pulse
+  type: http
+}
+
+get {
+  url: {{backend_url}}/v1/community/pulse?viewerUserId=&timeRange=&scopeType=&scopeValue=
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~viewerUserId:
+  ~timeRange:
+  ~scopeType:
+  ~scopeValue:
+}

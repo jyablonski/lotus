@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package community;
+
+option go_package = "github.com/jyablonski/lotus/internal/pb/proto/community;community_pb";
+
+message CommunityMetric {
+  string name = 1;
+  int32 entry_count = 2;
+  int32 unique_user_count = 3;
+  int32 rank = 4;
+  optional double delta_vs_previous = 5;
+}
+
+message CommunityPrompt {
+  string prompt_id = 1;
+  string prompt_text = 2;
+  repeated string inspiration_tags = 3;
+  string tone = 4;
+  string time_range_applied = 5;
+  string scope_applied = 6;
+  string generation_method = 7;
+  string category = 8;
+}
+
+message PrivacyMetadata {
+  string state = 1;
+  bool scope_fallback_applied = 2;
+  bool period_fallback_applied = 3;
+}
+
+message GetCommunityPulseRequest {
+  string viewer_user_id = 1;
+  string time_range = 2;
+  string scope_type = 3;
+  string scope_value = 4;
+}
+
+message GetCommunityPulseResponse {
+  string requested_time_range = 1;
+  string applied_time_range = 2;
+  string requested_scope_type = 3;
+  string requested_scope_value = 4;
+  string applied_scope_type = 5;
+  string applied_scope_value = 6;
+  repeated CommunityMetric top_themes = 7;
+  repeated CommunityMetric top_moods = 8;
+  repeated CommunityMetric rising_themes = 9;
+  string community_summary = 10;
+  PrivacyMetadata privacy = 11;
+  string generated_at = 12;
+}
+
+message GetTodayTogetherRequest {
+  string viewer_user_id = 1;
+  string scope_preference = 2;
+}
+
+message GetTodayTogetherResponse {
+  string bucket_date = 1;
+  string period_applied = 2;
+  repeated CommunityMetric themes = 3;
+  string dominant_mood = 4;
+  string community_note = 5;
+  string scope_type_applied = 6;
+  string scope_value_applied = 7;
+  PrivacyMetadata privacy = 8;
+  string generated_at = 9;
+}
+
+message GetCommunityPromptsRequest {
+  string viewer_user_id = 1;
+  string surface = 2;
+  string scope_preference = 3;
+}
+
+message GetCommunityPromptsResponse {
+  CommunityPrompt featured_prompt = 1;
+  repeated CommunityPrompt alternate_prompts = 2;
+  string time_range_applied = 3;
+  string scope_type_applied = 4;
+  string scope_value_applied = 5;
+  PrivacyMetadata privacy = 6;
+  string generated_at = 7;
+}
