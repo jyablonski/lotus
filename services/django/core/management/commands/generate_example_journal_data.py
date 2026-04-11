@@ -182,14 +182,14 @@ class Command(BaseCommand):
             raise CommandError("--email-prefix cannot be blank")
         if not backend_base_url:
             raise CommandError("--backend-base-url cannot be blank")
-        if not backend_api_key:
-            raise CommandError("--backend-api-key cannot be blank and BACKEND_API_KEY must be set")
         if request_timeout <= 0:
             raise CommandError("--request-timeout must be greater than 0")
         if requests_per_second <= 0:
             raise CommandError("--requests-per-second must be greater than 0")
         if max_retries < 1:
             raise CommandError("--max-retries must be greater than 0")
+        if not backend_api_key:
+            raise CommandError("--backend-api-key cannot be blank and BACKEND_API_KEY must be set")
 
         rng = Random(seed)
         now = timezone.now()

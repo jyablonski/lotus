@@ -433,6 +433,8 @@ class TestGenerateExampleJournalDataCommand:
             "10",
             "--email-prefix",
             prefix,
+            "--backend-api-key",
+            "test-backend-key",
         )
 
         call_command(
@@ -446,6 +448,8 @@ class TestGenerateExampleJournalDataCommand:
             "--email-prefix",
             prefix,
             "--reset-prefix",
+            "--backend-api-key",
+            "test-backend-key",
         )
 
         assert LotusUser.objects.filter(email__startswith=f"{prefix}-").count() == 1
@@ -482,6 +486,8 @@ class TestGenerateExampleJournalDataCommand:
                 "1",
                 "--email-prefix",
                 "cmd-backend-fail",
+                "--backend-api-key",
+                "test-backend-key",
             )
 
         assert Journal.objects.filter(user__email__startswith="cmd-backend-fail-").count() == 0
