@@ -29,6 +29,11 @@ func TestRefreshCommunityProjectionWorkerCreatesProjection(t *testing.T) {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewRefreshCommunityProjectionWorker(testQueries, testinfra.DiscardLogger(), producer))
 
+	var rollupsBefore int
+	require.NoError(t, testPgxPool.QueryRow(ctx, `
+		SELECT count(*) FROM river_job WHERE kind = 'refresh_community_rollups'
+	`).Scan(&rollupsBefore))
+
 	client, err := river.NewClient(riverpgxv5.New(testPgxPool), &river.Config{
 		Queues:  map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 2}},
 		Workers: workers,
@@ -60,7 +65,7 @@ func TestRefreshCommunityProjectionWorkerCreatesProjection(t *testing.T) {
 	require.NoError(t, testPgxPool.QueryRow(ctx, `
 		SELECT count(*) FROM river_job WHERE kind = 'refresh_community_rollups'
 	`).Scan(&queuedRollups))
-	assert.Equal(t, 0, queuedRollups)
+	assert.Equal(t, rollupsBefore, queuedRollups)
 }
 
 func TestRefreshCommunityProjectionWorkerHandlesMissingAnalysisRows(t *testing.T) {
