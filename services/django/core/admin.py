@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import (
     GroupAdmin as BaseGroupAdmin,
@@ -43,6 +44,8 @@ class LotusAdminSite(UnfoldAdminSite):
 # Create custom admin site instance
 admin_site = LotusAdminSite(name="lotus_admin")
 
+ACTIVE_ML_MODEL_ALLOWED_GROUPS = ("product", "ml_ops")
+
 
 @admin.register(RuntimeConfig, site=admin_site)
 class RuntimeConfigAdmin(ModelAdmin):
@@ -69,12 +72,18 @@ class RuntimeConfigAdmin(ModelAdmin):
 def has_ml_model_permission(user):
     """
     Check if user has permission to manage ML models.
-    Allows users with Admin role or users in allowed groups.
-    Uses the same logic as middleware for consistency.
+    Allows users with the Admin role or members of the product/ml_ops groups.
     """
-    from .middleware import _has_admin_access
+    if not user.is_authenticated:
+        return False
 
-    return _has_admin_access(user)
+    has_admin_role = LotusUser.objects.filter(
+        email=user.email,
+        role=getattr(settings, "ADMIN_ROLE_NAME", "Admin"),
+    ).exists()
+    is_in_allowed_group = user.groups.filter(name__in=ACTIVE_ML_MODEL_ALLOWED_GROUPS).exists()
+
+    return has_admin_role or is_in_allowed_group
 
 
 @admin.register(ActiveMLModel, site=admin_site)
@@ -90,19 +99,23 @@ class ActiveMLModelAdmin(ModelAdmin):
     list_editable = ("is_enabled",)  # Allow quick editing of enabled status from list view
 
     def has_add_permission(self, request):
-        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to add."""
+        """Only allow Admin role or product/ml_ops groups to add."""
         return has_ml_model_permission(request.user)
 
     def has_change_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to change."""
+        """Only allow Admin role or product/ml_ops groups to change."""
         return has_ml_model_permission(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to delete."""
+        """Only allow Admin role or product/ml_ops groups to delete."""
         return has_ml_model_permission(request.user)
 
     def has_view_permission(self, request, obj=None):
-        """Only allow Admin role or allowed groups (product, ml_ops, infrastructure, engineering) to view."""
+        """Only allow Admin role or product/ml_ops groups to view."""
+        return has_ml_model_permission(request.user)
+
+    def has_module_permission(self, request):
+        """Keep the model visible on the admin index for allowed users."""
         return has_ml_model_permission(request.user)
 
 

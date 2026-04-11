@@ -98,6 +98,34 @@ class TestActiveMLModelAdmin:
         assert response.status_code == 200
         assert "test_model" in response.content.decode()
 
+    def test_product_manager_group_can_see_model_on_admin_index(self, client):
+        from django.core.cache import cache
+
+        cache.clear()
+
+        group, _ = Group.objects.get_or_create(name="product")
+        django_user = DjangoUser.objects.create_user(
+            username="pm_index_user",
+            email="pm-index@test.com",
+            password="testpass123",
+        )
+        django_user.groups.add(group)
+        django_user.save()
+
+        LotusUser.objects.get_or_create(
+            email="pm-index@test.com",
+            defaults={"role": "Consumer", "timezone": "UTC"},
+        )
+
+        client.force_login(django_user)
+
+        url = reverse("lotus_admin:index")
+        changelist_url = reverse("lotus_admin:core_activemlmodel_changelist")
+        response = client.get(url)
+
+        assert response.status_code == 200
+        assert changelist_url in response.content.decode()
+
     def test_product_manager_group_can_add(self, client):
         from django.core.cache import cache
 
@@ -272,6 +300,34 @@ class TestActiveMLModelAdmin:
         response = client.get(url)
         assert response.status_code == 200
         assert "test_model" in response.content.decode()
+
+    def test_ml_engineer_group_can_see_model_on_admin_index(self, client):
+        from django.core.cache import cache
+
+        cache.clear()
+
+        group, _ = Group.objects.get_or_create(name="ml_ops")
+        django_user = DjangoUser.objects.create_user(
+            username="ml_index_user",
+            email="ml-index@test.com",
+            password="testpass123",
+        )
+        django_user.groups.add(group)
+        django_user.save()
+
+        LotusUser.objects.get_or_create(
+            email="ml-index@test.com",
+            defaults={"role": "Consumer", "timezone": "UTC"},
+        )
+
+        client.force_login(django_user)
+
+        url = reverse("lotus_admin:index")
+        changelist_url = reverse("lotus_admin:core_activemlmodel_changelist")
+        response = client.get(url)
+
+        assert response.status_code == 200
+        assert changelist_url in response.content.decode()
 
     def test_ml_engineer_group_can_add(self, client):
         from django.core.cache import cache
