@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -43,14 +42,6 @@ func NewRefreshCommunityProjectionWorker(queries *db.Queries, logger *slog.Logge
 func (w *RefreshCommunityProjectionWorker) Work(ctx context.Context, job *river.Job[RefreshCommunityProjectionArgs]) error {
 	journalID := int32(job.Args.JournalID)
 
-	var existing *db.SourceJournalCommunityProjection
-	currentProjection, err := w.queries.GetJournalCommunityProjectionByJournalId(ctx, journalID)
-	if err == nil {
-		existing = &currentProjection
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("load existing community projection: %w", err)
-	}
-
 	source, err := w.queries.GetCommunityProjectionSourceByJournalId(ctx, journalID)
 	if err != nil {
 		return fmt.Errorf("load community projection source: %w", err)
@@ -71,26 +62,6 @@ func (w *RefreshCommunityProjectionWorker) Work(ctx context.Context, job *river.
 	})
 	if err != nil {
 		return fmt.Errorf("upsert community projection: %w", err)
-	}
-
-	if w.producer == nil {
-		return nil
-	}
-
-	datesToRefresh := map[string]struct{}{}
-	if existing != nil && existing.EntryLocalDate.Valid {
-		datesToRefresh[existing.EntryLocalDate.Time.Format("2006-01-02")] = struct{}{}
-	}
-	if projection.HasEntryLocalDate {
-		datesToRefresh[projection.EntryLocalDate.Format("2006-01-02")] = struct{}{}
-	}
-
-	for date := range datesToRefresh {
-		if _, err := w.producer.Insert(ctx, RefreshCommunityRollupsArgs{
-			AnchorDate: date,
-		}, nil); err != nil {
-			return fmt.Errorf("enqueue community rollup refresh for %s: %w", date, err)
-		}
 	}
 
 	return nil

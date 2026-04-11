@@ -55,6 +55,12 @@ func TestRefreshCommunityProjectionWorkerCreatesProjection(t *testing.T) {
 	assert.Equal(t, "hopeful", derefStr(projection.PrimaryMood))
 	assert.Equal(t, "positive", derefStr(projection.PrimarySentiment))
 	assert.Equal(t, "US-CA", derefStr(projection.RegionCode))
+
+	var queuedRollups int
+	require.NoError(t, testPgxPool.QueryRow(ctx, `
+		SELECT count(*) FROM river_job WHERE kind = 'refresh_community_rollups'
+	`).Scan(&queuedRollups))
+	assert.Equal(t, 0, queuedRollups)
 }
 
 func TestRefreshCommunityProjectionWorkerHandlesMissingAnalysisRows(t *testing.T) {

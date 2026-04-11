@@ -46,7 +46,7 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger)
 }
 
 // NewClient creates a fully-configured River client with all workers and the
-// hello_cron periodic job scheduled every 15 minutes.
+// periodic cron jobs scheduled every 15 minutes.
 // The caller is responsible for calling Start and Stop on the returned client.
 func NewClient(
 	pool *pgxpool.Pool,
@@ -59,8 +59,8 @@ func NewClient(
 	return NewClientWithPeriodicInterval(pool, queries, httpClient, analyzerURL, analyzerAPIKey, logger, 15*time.Minute)
 }
 
-// NewClientWithPeriodicInterval is like NewClient but allows overriding the hello_cron
-// schedule. Useful in tests where a 15-minute interval would be impractical.
+// NewClientWithPeriodicInterval is like NewClient but allows overriding the periodic
+// cron schedule. Useful in tests where a 15-minute interval would be impractical.
 func NewClientWithPeriodicInterval(
 	pool *pgxpool.Pool,
 	queries *db.Queries,
@@ -125,6 +125,15 @@ func NewClientWithPeriodicInterval(
 				river.PeriodicInterval(cronInterval),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return RepairCommunityDataArgs{DaysBack: 35}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(cronInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return RefreshCommunityRollupsArgs{
+						AnchorDate: time.Now().UTC().Format("2006-01-02"),
+					}, &river.InsertOpts{Queue: QueueCron}
 				},
 				&river.PeriodicJobOpts{RunOnStart: true},
 			),
