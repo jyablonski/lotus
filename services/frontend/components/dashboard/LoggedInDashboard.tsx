@@ -28,6 +28,7 @@ interface LoggedInDashboardProps {
   recentJournals: JournalEntry[];
   userName?: string;
   timezone?: string;
+  showCommunityPulse: boolean;
   todayTogether?: TodayTogetherData | null;
 }
 
@@ -36,6 +37,7 @@ export const LoggedInDashboard = ({
   recentJournals,
   userName,
   timezone,
+  showCommunityPulse,
   todayTogether = null,
 }: LoggedInDashboardProps) => {
   // Derive display values from analytics (or use defaults for new users)
@@ -98,7 +100,7 @@ export const LoggedInDashboard = ({
           </Link>
         </div>
 
-        <TodayTogetherCard snapshot={todayTogether} />
+        {showCommunityPulse && <TodayTogetherCard snapshot={todayTogether} />}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

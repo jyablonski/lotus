@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { fetchCommunityPrompts } from "@/lib/server";
+import { fetchCommunityPrompts, fetchFeatureFlags } from "@/lib/server";
 import { ROUTES } from "@/lib/routes";
 import CreateJournalPageClient from "@/components/journal/CreateJournalPageClient";
 
@@ -11,10 +11,15 @@ export default async function CreateJournalPage() {
     redirect(ROUTES.home);
   }
 
-  const communityPromptSet = await fetchCommunityPrompts(session.user.id, {
-    surface: "journal_create",
-    scope: "nearby",
-  });
+  const userRole = session.user.role ?? "";
+  const flags = await fetchFeatureFlags(userRole);
+  const communityPromptSet =
+    flags.community_pulse === true
+      ? await fetchCommunityPrompts(session.user.id, {
+          surface: "journal_create",
+          scope: "nearby",
+        })
+      : null;
 
   return <CreateJournalPageClient communityPromptSet={communityPromptSet} />;
 }

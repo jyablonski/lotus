@@ -8,6 +8,7 @@ import { ROUTES } from "@/lib/routes";
 
 interface ProfileSettingsClientProps {
   timezone: string;
+  showCommunityPulse: boolean;
   communityInsightsOptIn: boolean;
   communityLocationOptIn: boolean;
   communityCountryCode: string;
@@ -16,6 +17,7 @@ interface ProfileSettingsClientProps {
 
 export function ProfileSettingsClient({
   timezone,
+  showCommunityPulse,
   communityInsightsOptIn,
   communityLocationOptIn,
   communityCountryCode,
@@ -46,16 +48,18 @@ export function ProfileSettingsClient({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <CommunitySettingsCard
-              initialInsightsOptIn={communityInsightsOptIn}
-              initialLocationOptIn={communityLocationOptIn}
-              initialCountryCode={communityCountryCode}
-              initialRegionCode={communityRegionCode}
-            />
-          </CardContent>
-        </Card>
+        {showCommunityPulse && (
+          <Card>
+            <CardContent className="p-6">
+              <CommunitySettingsCard
+                initialInsightsOptIn={communityInsightsOptIn}
+                initialLocationOptIn={communityLocationOptIn}
+                initialCountryCode={communityCountryCode}
+                initialRegionCode={communityRegionCode}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

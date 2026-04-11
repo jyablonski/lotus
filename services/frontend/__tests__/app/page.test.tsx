@@ -87,6 +87,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
@@ -101,6 +102,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         timezone="UTC"
       />,
@@ -114,19 +116,17 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
       />,
     );
 
-    // Check stats labels are displayed
     expect(screen.getByText("Last 30 Days")).toBeInTheDocument();
     expect(screen.getByText("Current Streak")).toBeInTheDocument();
     expect(screen.getByText("Mood Trend")).toBeInTheDocument();
     expect(screen.getByText("Total Entries")).toBeInTheDocument();
-
-    // Check writing stats section
     expect(screen.getByText("Writing Stats")).toBeInTheDocument();
     expect(screen.getByText("Total entries:")).toBeInTheDocument();
     expect(screen.getByText("Active days:")).toBeInTheDocument();
@@ -137,6 +137,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
@@ -144,7 +145,6 @@ describe("LoggedInDashboard", () => {
     );
 
     expect(screen.getByText("Recent Entries")).toBeInTheDocument();
-    // Check entry previews are rendered
     expect(
       screen.getByText(/This is my first journal entry/),
     ).toBeInTheDocument();
@@ -155,6 +155,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={null}
         recentJournals={[]}
+        showCommunityPulse={false}
         todayTogether={null}
         userName="John"
         timezone="UTC"
@@ -170,6 +171,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
@@ -184,6 +186,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
@@ -200,6 +203,7 @@ describe("LoggedInDashboard", () => {
       <LoggedInDashboard
         analytics={mockAnalytics}
         recentJournals={mockJournals}
+        showCommunityPulse={true}
         todayTogether={mockTodayTogether}
         userName="John"
         timezone="UTC"
@@ -211,5 +215,23 @@ describe("LoggedInDashboard", () => {
       screen.getByText("People are trying to soften the pace today."),
     ).toBeInTheDocument();
     expect(screen.getByText("Explore Community Pulse")).toBeInTheDocument();
+  });
+
+  test("hides the Today, Together community card when disabled", () => {
+    render(
+      <LoggedInDashboard
+        analytics={mockAnalytics}
+        recentJournals={mockJournals}
+        showCommunityPulse={false}
+        todayTogether={mockTodayTogether}
+        userName="John"
+        timezone="UTC"
+      />,
+    );
+
+    expect(screen.queryByText("Today, Together")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Explore Community Pulse"),
+    ).not.toBeInTheDocument();
   });
 });
