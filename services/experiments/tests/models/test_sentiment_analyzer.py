@@ -4,7 +4,6 @@ from src.models.sentiment_analyzer import JournalSentimentAnalyzer, SentimentAna
 
 class TestJournalSentimentAnalyzer:
     def test_model_initialization(self):
-        """Test model initializes with correct parameters"""
         model = JournalSentimentAnalyzer(model_version="1.0.0")
         assert model.model_version == "1.0.0"
         assert model.sentiment_pipeline is None
@@ -12,7 +11,6 @@ class TestJournalSentimentAnalyzer:
         assert model.confidence_thresholds == {"high": 0.7, "medium": 0.5, "low": 0.3}
 
     def test_training_creates_pipeline(self, sentiment_training_data):
-        """Test that training creates the necessary pipeline"""
         model = JournalSentimentAnalyzer()
         model.train(sentiment_training_data)
 
@@ -21,14 +19,12 @@ class TestJournalSentimentAnalyzer:
         assert "classifier" in model.sentiment_pipeline.named_steps
 
     def test_predict_requires_trained_model(self):
-        """Test that prediction fails on untrained model"""
         model = JournalSentimentAnalyzer()
 
         with pytest.raises(ValueError, match="Model must be trained before making predictions"):
             model.predict_sentiment("test text")
 
     def test_predict_sentiment_output_format(self, trained_sentiment_model):
-        """Test that predictions have correct format"""
         result = trained_sentiment_model.predict_sentiment("I feel great today!")
 
         assert "sentiment" in result
@@ -43,14 +39,12 @@ class TestJournalSentimentAnalyzer:
         assert isinstance(result["all_scores"], dict)
 
     def test_predict_sentiment_all_scores_sum_to_one(self, trained_sentiment_model):
-        """Test that all_scores probabilities sum to approximately 1"""
         result = trained_sentiment_model.predict_sentiment("Test journal entry")
 
         total = sum(result["all_scores"].values())
-        assert abs(total - 1.0) < 0.01  # Allow small floating point error
+        assert abs(total - 1.0) < 0.01
 
     def test_predict_batch(self, trained_sentiment_model):
-        """Test batch prediction works correctly"""
         texts = ["Great day!", "Terrible experience", "Nothing special"]
         results = trained_sentiment_model.predict_batch(texts)
 
@@ -60,8 +54,6 @@ class TestJournalSentimentAnalyzer:
             assert "confidence" in result
 
     def test_confidence_levels(self, trained_sentiment_model):
-        """Test that confidence levels are assigned correctly based on thresholds"""
-        # We can't guarantee specific confidence values, but we can check the logic
         result = trained_sentiment_model.predict_sentiment("I am so incredibly happy!")
 
         if result["confidence"] >= 0.7:
@@ -72,7 +64,6 @@ class TestJournalSentimentAnalyzer:
             assert result["confidence_level"] == "low"
 
     def test_analyze_sentiment_trends(self, trained_sentiment_model):
-        """Test sentiment trend analysis"""
         entries = [
             {"text": "Great start to the week!", "date": "2024-01-01"},
             {"text": "Feeling stressed about work", "date": "2024-01-02"},
@@ -92,7 +83,6 @@ class TestJournalSentimentAnalyzer:
         assert trends["dominant_sentiment"] in ["positive", "negative", "neutral"]
 
     def test_analyze_sentiment_trends_includes_dates(self, trained_sentiment_model):
-        """Test that trend analysis preserves dates"""
         entries = [
             {"text": "Happy day!", "date": "2024-01-01"},
             {"text": "Sad day!", "date": "2024-01-02"},
@@ -104,14 +94,12 @@ class TestJournalSentimentAnalyzer:
             assert "date" in result
 
     def test_get_model_info_untrained(self):
-        """Test model info for untrained model"""
         model = JournalSentimentAnalyzer()
         info = model.get_model_info()
 
         assert info["status"] == "not_trained"
 
     def test_get_model_info_trained(self, trained_sentiment_model):
-        """Test model info for trained model"""
         info = trained_sentiment_model.get_model_info()
 
         assert info["status"] == "trained"
@@ -122,28 +110,19 @@ class TestJournalSentimentAnalyzer:
         assert info["vocabulary_size"] > 0
 
     def test_text_preprocessing(self):
-        """Test that text preprocessing works correctly"""
         model = JournalSentimentAnalyzer()
 
-        # Test lowercase conversion
         assert model._preprocess_text("HELLO WORLD") == "hello world"
-
-        # Test whitespace normalization
         assert model._preprocess_text("hello   world") == "hello world"
-
-        # Test stripping
         assert model._preprocess_text("  hello  ") == "hello"
 
     def test_empty_text_handling(self, trained_sentiment_model):
-        """Test behavior with empty text"""
         result = trained_sentiment_model.predict_sentiment("")
 
-        # Should still return a valid result structure
         assert "sentiment" in result
         assert "confidence" in result
 
     def test_reproducible_results(self, sentiment_training_data):
-        """Test that same training data produces same predictions"""
         text = "I feel great today!"
 
         model1 = JournalSentimentAnalyzer()
@@ -162,14 +141,12 @@ class TestSentimentAnalyzerWithFeatures:
     """Tests for the extended SentimentAnalyzerWithFeatures class"""
 
     def test_model_initialization(self):
-        """Test model initializes with correct parameters"""
         model = SentimentAnalyzerWithFeatures(model_version="1.0.0")
         assert model.model_version == "1.0.0"
         assert model.pipeline is None
         assert model.sentiment_labels == {0: "negative", 1: "neutral", 2: "positive"}
 
     def test_build_pipeline_text_only(self):
-        """Test building pipeline with text column only"""
         model = SentimentAnalyzerWithFeatures()
         pipeline = model.build_pipeline(text_column="text")
 
@@ -178,7 +155,6 @@ class TestSentimentAnalyzerWithFeatures:
         assert "classifier" in pipeline.named_steps
 
     def test_build_pipeline_with_numeric_columns(self):
-        """Test building pipeline with text and numeric columns"""
         model = SentimentAnalyzerWithFeatures()
         pipeline = model.build_pipeline(
             text_column="text",
@@ -192,7 +168,6 @@ class TestSentimentAnalyzerWithFeatures:
         assert "numeric" in transformer_names
 
     def test_build_pipeline_with_categorical_columns(self):
-        """Test building pipeline with text and categorical columns"""
         model = SentimentAnalyzerWithFeatures()
         pipeline = model.build_pipeline(
             text_column="text",
@@ -206,7 +181,6 @@ class TestSentimentAnalyzerWithFeatures:
         assert "categorical" in transformer_names
 
     def test_build_pipeline_with_all_column_types(self):
-        """Test building pipeline with all column types"""
         model = SentimentAnalyzerWithFeatures()
         pipeline = model.build_pipeline(
             text_column="text",
@@ -226,7 +200,6 @@ class TestSentimentAnalyzerPerformance:
     """Performance tests for sentiment analyzer"""
 
     def test_inference_speed(self, trained_sentiment_model):
-        """Test that inference completes quickly"""
         import time
 
         text = "Today was a wonderful day with great achievements and happy moments"
@@ -235,11 +208,10 @@ class TestSentimentAnalyzerPerformance:
         result = trained_sentiment_model.predict_sentiment(text)
         duration = time.time() - start_time
 
-        assert duration < 1.0  # Should complete in under 1 second
+        assert duration < 1.0
         assert "sentiment" in result
 
     def test_batch_inference_speed(self, trained_sentiment_model):
-        """Test that batch inference is reasonably fast"""
         import time
 
         texts = ["Text number " + str(i) for i in range(100)]

@@ -37,8 +37,8 @@ func (s *UtilServer) GenerateRandomString(ctx context.Context, req *pb.GenerateR
 	logger := inject.LoggerFrom(ctx)
 	dbq := inject.DBFrom(ctx)
 
-	// This is just an example of how to read and write from the runtime_config table
-	// Read the current runtime config for the "ml" key and log the last run timestamp
+	// Example of reading and writing runtime_config. Reads the current value and
+	// logs the last run timestamp if set, then writes an updated timestamp below.
 	config, err := dbq.GetRuntimeConfigByKey(ctx, runtimeConfigKey)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		logger.Error("Failed to read runtime config", "key", runtimeConfigKey, "error", err)
@@ -60,7 +60,6 @@ func (s *UtilServer) GenerateRandomString(ctx context.Context, req *pb.GenerateR
 		}
 	}
 
-	// Generate random string (16 random bytes -> 32 hex characters)
 	b := make([]byte, 16)
 	_, err = rand.Read(b)
 	if err != nil {
@@ -71,7 +70,6 @@ func (s *UtilServer) GenerateRandomString(ctx context.Context, req *pb.GenerateR
 	randomStr := hex.EncodeToString(b)
 	logger.Info("Generated random string", "length", len(randomStr))
 
-	// Write updated LAST_RUN_TIMESTAMP back to the runtime config
 	now := time.Now().UTC().Format(time.RFC3339)
 	updatedVal := runtimeConfigValue{
 		Enabled:          true,

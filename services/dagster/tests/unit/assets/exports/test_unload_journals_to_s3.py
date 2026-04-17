@@ -19,10 +19,7 @@ def _make_mock_postgres(df: pl.DataFrame) -> MagicMock:
 
 @pytest.mark.unit
 class TestUnloadJournalsToS3:
-    """Test the unload_journals_to_s3 asset."""
-
     def test_unload_journals_to_s3_success(self):
-        """Test successful unload of journals from Postgres."""
         expected_df = pl.DataFrame(
             {
                 "id": [1, 2, 3],
@@ -50,7 +47,6 @@ class TestUnloadJournalsToS3:
         assert list(result.columns) == ["id", "user_name", "amount", "date"]
 
     def test_unload_journals_to_s3_empty_result(self):
-        """Test handling of empty query result."""
         expected_df = pl.DataFrame(
             {
                 "id": [],
@@ -74,7 +70,6 @@ class TestUnloadJournalsToS3:
         assert len(result) == 0
 
     def test_unload_journals_to_s3_logs_info(self):
-        """Test that asset logs information about the dataframe."""
         expected_df = pl.DataFrame(
             {
                 "id": [1],

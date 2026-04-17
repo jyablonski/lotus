@@ -60,7 +60,6 @@ func TestUtilServer_GenerateRandomString_Success(t *testing.T) {
 	require.NotNil(t, resp)
 	assert.Len(t, resp.RandomString, 32)
 
-	// Verify DB interactions
 	assert.Len(t, mockQuerier.GetRuntimeConfigByKeyCalls(), 1)
 	assert.Equal(t, "go_config_example", mockQuerier.GetRuntimeConfigByKeyCalls()[0].Key)
 	assert.Len(t, mockQuerier.UpsertRuntimeConfigValueCalls(), 1)
@@ -77,7 +76,6 @@ func TestUtilServer_GenerateRandomString_IsHex(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
-	// Verify the string only contains valid hex characters
 	for _, c := range resp.RandomString {
 		assert.True(t, (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'), "expected hex character, got %c", c)
 	}
@@ -94,12 +92,10 @@ func TestUtilServer_GenerateRandomString_Unique(t *testing.T) {
 	resp2, err := server.GenerateRandomString(ctx, &pb.GenerateRandomStringRequest{})
 	require.NoError(t, err)
 
-	// Two calls should produce different strings (extremely unlikely to collide)
 	assert.NotEqual(t, resp1.RandomString, resp2.RandomString)
 }
 
 func TestUtilServer_GenerateRandomString_NoExistingConfig(t *testing.T) {
-	// Simulate first run where no config exists yet
 	mockQuerier := &mocks.QuerierMock{
 		GetRuntimeConfigByKeyFunc: func(ctx context.Context, key string) (db.SourceRuntimeConfig, error) {
 			return db.SourceRuntimeConfig{}, pgx.ErrNoRows
@@ -126,8 +122,6 @@ func TestUtilServer_GenerateRandomString_NoExistingConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Len(t, resp.RandomString, 32)
-
-	// Should still write the config even on first run
 	assert.Len(t, mockQuerier.UpsertRuntimeConfigValueCalls(), 1)
 }
 
@@ -142,7 +136,6 @@ func TestUtilServer_GenerateRandomString_WritesUpdatedTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
-	// Verify the upserted value contains an updated timestamp
 	upsertCall := mockQuerier.UpsertRuntimeConfigValueCalls()[0]
 	var written map[string]interface{}
 	err = json.Unmarshal(upsertCall.Arg.Value, &written)

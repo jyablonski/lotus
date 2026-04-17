@@ -43,8 +43,6 @@ function makeStreakEntries(days: number, endDateStr: string): JournalEntry[] {
 }
 
 describe("profileStats", () => {
-  // ── getUniqueDateStrings ──────────────────────────────────────────────
-
   describe("getUniqueDateStrings", () => {
     test("returns empty set for no journals", () => {
       expect(getUniqueDateStrings([]).size).toBe(0);
@@ -62,8 +60,6 @@ describe("profileStats", () => {
       expect(dates.has("2025-06-02")).toBe(true);
     });
   });
-
-  // ── calculateBasicCounts ──────────────────────────────────────────────
 
   describe("calculateBasicCounts", () => {
     test("returns zeros for empty array", () => {
@@ -83,7 +79,7 @@ describe("profileStats", () => {
 
     test("counts entries this week", () => {
       const now = new Date();
-      const recent = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
+      const recent = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
       const old = new Date("2020-01-01");
       const entries = [
         makeEntry({ createdAt: recent.toISOString() }),
@@ -93,8 +89,6 @@ describe("profileStats", () => {
       expect(counts.thisWeek).toBe(1);
     });
   });
-
-  // ── calculateAverageMood ──────────────────────────────────────────────
 
   describe("calculateAverageMood", () => {
     test("returns 0 for no journals", () => {
@@ -117,8 +111,6 @@ describe("profileStats", () => {
     });
   });
 
-  // ── getFirstEntryDate ─────────────────────────────────────────────────
-
   describe("getFirstEntryDate", () => {
     test("returns null for no journals", () => {
       expect(getFirstEntryDate([])).toBeNull();
@@ -133,16 +125,13 @@ describe("profileStats", () => {
     });
   });
 
-  // ── getMostActiveDay ──────────────────────────────────────────────────
-
   describe("getMostActiveDay", () => {
     test('returns "No data" for empty array', () => {
       expect(getMostActiveDay([])).toBe("No data");
     });
 
     test("returns the day with the most entries", () => {
-      // Create 3 entries on a Monday, 1 on a Tuesday
-      // 2025-06-02 is a Monday, 2025-06-03 is a Tuesday
+      // 2025-06-02 is a Monday (3 entries), 2025-06-03 is a Tuesday (1 entry).
       const entries = [
         makeEntry({ createdAt: "2025-06-02T08:00:00Z" }),
         makeEntry({ createdAt: "2025-06-02T12:00:00Z" }),
@@ -152,8 +141,6 @@ describe("profileStats", () => {
       expect(getMostActiveDay(entries)).toBe("Monday");
     });
   });
-
-  // ── getFavoriteMoodCategory ───────────────────────────────────────────
 
   describe("getFavoriteMoodCategory", () => {
     test('returns "No data" for empty array', () => {
@@ -189,8 +176,6 @@ describe("profileStats", () => {
       expect(getFavoriteMoodCategory(entries)).toBe("Negative");
     });
   });
-
-  // ── calculateTotalWords ───────────────────────────────────────────────
 
   describe("calculateTotalWords", () => {
     test("returns 0 for no journals", () => {
@@ -232,8 +217,6 @@ describe("profileStats", () => {
     });
   });
 
-  // ── calculateCurrentStreak ────────────────────────────────────────────
-
   describe("calculateCurrentStreak", () => {
     test("returns 0 for no journals", () => {
       expect(calculateCurrentStreak([])).toBe(0);
@@ -274,8 +257,6 @@ describe("profileStats", () => {
     });
   });
 
-  // ── calculateLongestStreak ────────────────────────────────────────────
-
   describe("calculateLongestStreak", () => {
     test("returns 0 for no journals", () => {
       expect(calculateLongestStreak([])).toBe(0);
@@ -287,13 +268,11 @@ describe("profileStats", () => {
     });
 
     test("calculates longest streak from non-consecutive groups", () => {
+      // Two streaks separated by a gap: Jun 1-3 (3 days) and Jun 10-14 (5 days).
       const entries = [
-        // Streak of 3: Jun 1-3
         makeEntry({ journalId: "1", createdAt: "2025-06-01T12:00:00Z" }),
         makeEntry({ journalId: "2", createdAt: "2025-06-02T12:00:00Z" }),
         makeEntry({ journalId: "3", createdAt: "2025-06-03T12:00:00Z" }),
-        // Gap
-        // Streak of 5: Jun 10-14
         makeEntry({ journalId: "4", createdAt: "2025-06-10T12:00:00Z" }),
         makeEntry({ journalId: "5", createdAt: "2025-06-11T12:00:00Z" }),
         makeEntry({ journalId: "6", createdAt: "2025-06-12T12:00:00Z" }),
@@ -312,8 +291,6 @@ describe("profileStats", () => {
       expect(calculateLongestStreak(entries)).toBe(2);
     });
   });
-
-  // ── calculateProfileStats ─────────────────────────────────────────────
 
   describe("calculateProfileStats", () => {
     test("returns default values for empty journals", () => {
@@ -348,8 +325,8 @@ describe("profileStats", () => {
       ];
       const stats = calculateProfileStats(entries);
       expect(stats.totalEntries).toBe(2);
-      expect(stats.averageMood).toBe(6); // (7+5)/2 = 6
-      expect(stats.totalWords).toBe(6); // 3 + 3
+      expect(stats.averageMood).toBe(6);
+      expect(stats.totalWords).toBe(6);
       expect(stats.currentStreak).toBe(1);
       expect(stats.longestStreak).toBe(1);
     });
@@ -373,7 +350,6 @@ describe("profileStats", () => {
         }),
       ];
       const stats = calculateProfileStats(entries);
-      // (7+5+3)/3 = 5.0
       expect(stats.averageMood).toBe(5);
     });
   });

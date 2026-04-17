@@ -1,13 +1,7 @@
-/**
- * E2E tests for feature-flag-gated search modes (keyword + semantic).
- *
- * Feature flags in seed data:
- *   - keyword_search: everyone=true  -> visible for all users
- *   - semantic_search: superusers=true -> visible for Admin only
- *
- * Tests use conditional skips when a flag isn't active so they remain
- * green regardless of backend flag state.
- */
+// Seeded feature flags gate the search modes:
+//   - keyword_search=everyone  -> visible for all users
+//   - semantic_search=superusers -> visible for Admin only
+// Tests use conditional skips so they stay green regardless of backend flag state.
 import { test, expect } from "@playwright/test";
 import {
   authenticateContext,
@@ -27,7 +21,6 @@ test.describe("Search Modes: Consumer User", () => {
 
     const keywordButton = page.getByRole("button", { name: "Keyword" });
 
-    // Skip if the flag isn't active for this user
     test.skip(
       !(await keywordButton.isVisible().catch(() => false)),
       "keyword_search flag not active for Consumer",
@@ -41,7 +34,6 @@ test.describe("Search Modes: Consumer User", () => {
   }) => {
     await page.goto("/journal/home");
 
-    // semantic_search is superusers-only, so Consumer should not see it
     await expect(
       page.getByRole("button", { name: "Semantic" }),
     ).not.toBeVisible();
@@ -79,7 +71,7 @@ test.describe("Search Modes: Consumer User", () => {
     const searchInput = page.getByPlaceholder("Keyword search your entries...");
     await searchInput.fill("walk");
 
-    // Wait for the debounced search and filter badge
+    // Generous timeout because the search input is debounced.
     await expect(page.getByText(/keyword: walk/i)).toBeVisible({
       timeout: 10000,
     });
@@ -96,13 +88,11 @@ test.describe("Search Modes: Consumer User", () => {
       "keyword_search flag not active",
     );
 
-    // Switch to keyword
     await keywordButton.click();
     await expect(
       page.getByPlaceholder("Keyword search your entries..."),
     ).toBeVisible();
 
-    // Switch back to exact
     await page.getByRole("button", { name: "Exact" }).click();
     await expect(page.getByPlaceholder("Search your entries...")).toBeVisible();
   });
@@ -121,7 +111,6 @@ test.describe("Search Modes: Admin User", () => {
     const keywordButton = page.getByRole("button", { name: "Keyword" });
     const semanticButton = page.getByRole("button", { name: "Semantic" });
 
-    // Skip if flags aren't active for Admin
     test.skip(
       !(await keywordButton.isVisible().catch(() => false)),
       "keyword_search flag not active for Admin",
@@ -179,7 +168,7 @@ test.describe("Search Modes: Admin User", () => {
     );
     await searchInput.fill("deployment");
 
-    // Wait for the debounced search and filter badge
+    // Generous timeout because the search input is debounced.
     await expect(page.getByText(/semantic: deployment/i)).toBeVisible({
       timeout: 10000,
     });
@@ -196,7 +185,6 @@ test.describe("Search Modes: Admin User", () => {
       "semantic_search flag not active",
     );
 
-    // Enter semantic search
     await semanticButton.click();
     const searchInput = page.getByPlaceholder(
       "Semantic search your entries...",
@@ -206,7 +194,7 @@ test.describe("Search Modes: Admin User", () => {
       timeout: 10000,
     });
 
-    // Switch back to exact — the text stays in the input but mode label changes
+    // Switching back to Exact keeps the input text but swaps the mode label.
     await page.getByRole("button", { name: "Exact" }).click();
     await expect(page.getByText(/text: deployment/i)).toBeVisible();
   });
@@ -230,10 +218,8 @@ test.describe("Search Modes: Admin User", () => {
       timeout: 10000,
     });
 
-    // Clear filters
     await page.getByRole("button", { name: /clear filters/i }).click();
 
-    // Search should be empty, filter summary gone
     await expect(
       page.getByText(/showing \d+ of \d+ entries/i),
     ).not.toBeVisible();

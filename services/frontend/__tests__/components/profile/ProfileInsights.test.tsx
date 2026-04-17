@@ -21,7 +21,7 @@ describe("ProfileInsights", () => {
 
   it("renders mood badge for average mood (1-10 scale)", () => {
     render(<ProfileInsights {...defaultProps} />);
-    // Badge shows mood label (number); exact match avoids "7/10"
+    // Exact match avoids also matching the "7/10" text rendered elsewhere.
     expect(screen.getByText("7", { exact: true })).toBeInTheDocument();
   });
 
@@ -51,8 +51,7 @@ describe("ProfileInsights", () => {
     render(
       <ProfileInsights {...defaultProps} favoriteModCategory="Positive" />,
     );
-    // The component renders 😊 for Positive, plus we also get 😊 from the mood config
-    // Check the specific section
+    // 😊 appears both for the Positive category and in the mood config, so match any occurrence.
     const moodCategoryEmojis = screen.getAllByText("😊");
     expect(moodCategoryEmojis.length).toBeGreaterThanOrEqual(1);
   });

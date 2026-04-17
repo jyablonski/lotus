@@ -1,12 +1,7 @@
 import { trackEvent, getTimeOfDay, countWords } from "@/lib/analytics";
 
-// ---------------------------------------------------------------------------
-// trackEvent
-// ---------------------------------------------------------------------------
-
 describe("trackEvent", () => {
   afterEach(() => {
-    // Restore window.gtag between tests
     if (typeof window !== "undefined") {
       delete (window as unknown as Record<string, unknown>).gtag;
     }
@@ -45,10 +40,6 @@ describe("trackEvent", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// getTimeOfDay
-// ---------------------------------------------------------------------------
-
 describe("getTimeOfDay", () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -80,10 +71,6 @@ describe("getTimeOfDay", () => {
     expect(getTimeOfDay()).toBe(expected);
   });
 });
-
-// ---------------------------------------------------------------------------
-// countWords
-// ---------------------------------------------------------------------------
 
 describe("countWords", () => {
   it("counts words in a normal sentence", () => {

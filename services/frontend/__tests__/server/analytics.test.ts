@@ -1,18 +1,9 @@
-/**
- * Tests for lib/server/analytics.ts
- *
- * Tests fetchUserAnalytics by mocking the journals fetcher and verifying
- * that analytics are correctly computed from raw journal entries.
- */
-
 import { JournalEntry } from "@/types/journal";
 
-// Mock the journals module so fetchUserAnalytics uses our test data
 jest.mock("@/lib/server/journals", () => ({
   fetchAllJournalsForUser: jest.fn(),
 }));
 
-// Must import after jest.mock
 import { fetchUserAnalytics } from "@/lib/server/analytics";
 import { fetchAllJournalsForUser } from "@/lib/server/journals";
 
@@ -29,9 +20,6 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 function makeJournal(
   overrides: Partial<JournalEntry> & { createdAt: string },
 ): JournalEntry {
@@ -74,9 +62,6 @@ const sampleJournals: JournalEntry[] = [
   }),
 ];
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 describe("fetchUserAnalytics", () => {
   test("returns computed analytics from journals", async () => {
     mockFetchAll.mockResolvedValueOnce({
@@ -90,8 +75,8 @@ describe("fetchUserAnalytics", () => {
     expect(result).not.toBeNull();
     expect(result!.userId).toBe("u1");
     expect(result!.totalJournals).toBe(3);
-    expect(result!.positiveEntries).toBe(2); // mood 7 and 8
-    expect(result!.negativeEntries).toBe(1); // mood 3
+    expect(result!.positiveEntries).toBe(2);
+    expect(result!.negativeEntries).toBe(1);
     expect(result!.neutralEntries).toBe(0);
     expect(result!.minMoodScore).toBe(3);
     expect(result!.maxMoodScore).toBe(8);
@@ -137,7 +122,6 @@ describe("fetchUserAnalytics", () => {
 
     expect(result).not.toBeNull();
     expect(result!.totalJournals).toBe(4);
-    // The old journal is outside 30 days, so 30d count should be 3
     expect(result!.totalJournals30d).toBe(3);
   });
 
@@ -151,7 +135,6 @@ describe("fetchUserAnalytics", () => {
     const result = await fetchUserAnalytics("u1");
 
     expect(result).not.toBeNull();
-    // 3 consecutive days: today, yesterday, two days ago
     expect(result!.dailyStreak).toBe(3);
   });
 
@@ -165,7 +148,6 @@ describe("fetchUserAnalytics", () => {
     const result = await fetchUserAnalytics("u1");
 
     expect(result).not.toBeNull();
-    // 2 out of 3 are positive (mood >= 7)
     expect(result!.positivePercentage).toBeCloseTo(66.67, 1);
   });
 });

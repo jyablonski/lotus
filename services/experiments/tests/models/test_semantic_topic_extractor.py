@@ -16,10 +16,6 @@ from src.models.semantic_topic_extractor import (
     SemanticTopicExtractor,
 )
 
-# ---------------------------------------------------------------------------
-# Helpers / fixtures
-# ---------------------------------------------------------------------------
-
 
 def _make_mock_extractor(taxonomy: list[str] | None = None) -> SemanticTopicExtractor:
     """Return a SemanticTopicExtractor with mocked sentence-transformer and KeyBERT.
@@ -55,11 +51,6 @@ def _make_mock_extractor(taxonomy: list[str] | None = None) -> SemanticTopicExtr
     return extractor
 
 
-# ---------------------------------------------------------------------------
-# Taxonomy tests
-# ---------------------------------------------------------------------------
-
-
 class TestTaxonomy:
     def test_default_taxonomy_not_empty(self):
         assert len(JOURNAL_TOPIC_TAXONOMY) > 0
@@ -69,11 +60,6 @@ class TestTaxonomy:
 
     def test_no_duplicate_taxonomy_entries(self):
         assert len(JOURNAL_TOPIC_TAXONOMY) == len(set(JOURNAL_TOPIC_TAXONOMY))
-
-
-# ---------------------------------------------------------------------------
-# Initialisation tests
-# ---------------------------------------------------------------------------
 
 
 class TestSemanticTopicExtractorInit:
@@ -92,11 +78,6 @@ class TestSemanticTopicExtractorInit:
     def test_default_min_confidence(self):
         extractor = _make_mock_extractor()
         assert extractor.min_confidence == 0.25
-
-
-# ---------------------------------------------------------------------------
-# extract_topics output format tests
-# ---------------------------------------------------------------------------
 
 
 class TestExtractTopicsFormat:
@@ -123,14 +104,13 @@ class TestExtractTopicsFormat:
         extractor = self._extractor_with_keyphrases([("work stress", 0.80)])
         result = extractor.extract_topics("Some text about work")
         for topic in result:
-            # confidence should have at most 4 decimal places
             assert round(topic["confidence"], 4) == topic["confidence"]
 
     def test_sorted_by_descending_confidence(self):
         extractor = _make_mock_extractor(taxonomy=["topic a", "topic b", "topic c"])
         extractor.taxonomy_embeddings = np.eye(3, dtype="float32")
 
-        # Simulate three distinct keyphrases mapping to different taxonomy entries
+        # Map each keyphrase to a distinct taxonomy entry so confidences differ.
         def mock_encode(text, **kwargs):
             phrase_map = {
                 "first phrase": np.array([[1.0, 0.0, 0.0]], dtype="float32"),
@@ -164,18 +144,13 @@ class TestExtractTopicsFormat:
 
     def test_low_confidence_keyphrases_filtered(self):
         extractor = _make_mock_extractor()
-        # All below min_confidence of 0.25
+        # All scores below the default min_confidence of 0.25.
         extractor.kw_model.extract_keywords.return_value = [
             ("low score phrase", 0.10),
             ("another low one", 0.20),
         ]
         result = extractor.extract_topics("Some text")
         assert result == []
-
-
-# ---------------------------------------------------------------------------
-# Adaptive keyphrase count tests
-# ---------------------------------------------------------------------------
 
 
 class TestAdaptiveKeyphraseCount:
@@ -211,16 +186,10 @@ class TestAdaptiveKeyphraseCount:
         assert captured[0] == 6
 
 
-# ---------------------------------------------------------------------------
-# Deduplication tests
-# ---------------------------------------------------------------------------
-
-
 class TestDeduplication:
     def test_duplicate_taxonomy_mappings_deduplicated(self):
         """Two keyphrases mapping to the same taxonomy entry should yield one topic."""
         extractor = _make_mock_extractor(taxonomy=["work and career"])
-        # Both keyphrases map to the only taxonomy entry (index 0).
         extractor.taxonomy_embeddings = np.ones((1, 4), dtype="float32")
         extractor.sentence_model.encode = lambda text, **kwargs: np.ones((1, 4), dtype="float32")
         extractor.kw_model.extract_keywords.return_value = [
@@ -229,7 +198,6 @@ class TestDeduplication:
         ]
 
         result = extractor.extract_topics("x " * 30)
-        # Should be deduplicated to a single topic
         assert len(result) == 1
         assert result[0]["topic_name"] == "work and career"
 
@@ -238,20 +206,14 @@ class TestDeduplication:
         extractor.taxonomy_embeddings = np.ones((1, 4), dtype="float32")
         extractor.sentence_model.encode = lambda text, **kwargs: np.ones((1, 4), dtype="float32")
         extractor.kw_model.extract_keywords.return_value = [
-            ("work deadline", 0.90),  # higher keyphrase score
-            ("office project", 0.40),  # lower
+            ("work deadline", 0.90),
+            ("office project", 0.40),
         ]
 
         result = extractor.extract_topics("x " * 30)
-        # Combined score for "work deadline": (0.90 + 1.0) / 2 = 0.95
-        # Combined score for "office project": (0.40 + 1.0) / 2 = 0.70
-        # Should keep the higher one
+        # Combined scores: "work deadline" → (0.90 + 1.0) / 2 = 0.95,
+        # "office project" → (0.40 + 1.0) / 2 = 0.70. The higher wins.
         assert result[0]["confidence"] > 0.70
-
-
-# ---------------------------------------------------------------------------
-# Batch extraction tests
-# ---------------------------------------------------------------------------
 
 
 class TestBatchExtraction:
@@ -272,11 +234,6 @@ class TestBatchExtraction:
         texts = ["a", "b", "c", "d", "e"]
         result = extractor.extract_topics_batch(texts)
         assert len(result) == len(texts)
-
-
-# ---------------------------------------------------------------------------
-# Integration test (skipped by default — requires real model)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.integration

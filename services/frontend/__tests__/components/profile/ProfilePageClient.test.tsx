@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { ProfilePageClient } from "@/components/profile/ProfilePageClient";
 import type { ProfileStats } from "@/lib/utils/profileStats";
 
-// Mock child components to test composition
 jest.mock("@/components/profile/ProfileHeader", () => ({
   ProfileHeader: ({ name, email }: { name: string; email: string }) => (
     <div data-testid="profile-header">

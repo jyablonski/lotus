@@ -1,17 +1,8 @@
-/**
- * Tests for actions/journals.ts (createJournal server action)
- *
- * Mocks auth(), revalidatePath(), and global fetch to test the full
- * server action logic: auth checks, validation, backend calls, and
- * cache revalidation.
- */
-
-// Mock next/cache before importing the module under test
+// next/cache must be mocked before importing the module under test so revalidatePath is the jest mock.
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
-// Mock auth
 jest.mock("@/auth", () => ({
   auth: jest.fn(),
 }));
@@ -27,9 +18,6 @@ const mockRevalidatePath = revalidatePath as jest.MockedFunction<
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
 beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(console, "error").mockImplementation(() => {});
@@ -39,9 +27,6 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 describe("createJournal", () => {
   test("returns Unauthorized when session has no user id", async () => {
     mockAuth.mockResolvedValueOnce(null as never);
@@ -96,7 +81,6 @@ describe("createJournal", () => {
       moodScore: 7,
     });
 
-    // Verify fetch was called with correct payload
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/v1/journals"),
       expect.objectContaining({

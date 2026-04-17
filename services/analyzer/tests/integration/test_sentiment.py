@@ -98,7 +98,6 @@ def test_batch_sentiment_analysis(client_fixture, real_sentiment_client):
         data = response.json()
         assert len(data) == 3
 
-        # All should have sentiment analysis
         for analysis in data:
             assert "sentiment" in analysis
             assert "confidence" in analysis
@@ -113,13 +112,11 @@ def test_sentiment_trends(client_fixture, real_sentiment_client):
     app.dependency_overrides[get_sentiment_client] = lambda: real_sentiment_client
 
     try:
-        # Analyze a few entries first
         client_fixture.post(
             "/v1/journals/sentiment/analyze-batch",
             json={"journal_ids": [1, 2, 4], "force_reanalyze": False},
         )
 
-        # Get trends
         response = client_fixture.get("/v1/journals/sentiment/trends?days_back=1&group_by=day")
 
         assert response.status_code == 200

@@ -1,13 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import SignInPage from "@/app/signin/page";
 
-// Mock @/auth
 jest.mock("@/auth", () => ({
-  auth: jest.fn().mockResolvedValue(null), // unauthenticated
+  auth: jest.fn().mockResolvedValue(null),
   signIn: jest.fn(),
 }));
 
-// Mock next/navigation
 jest.mock("next/navigation", () => ({
   redirect: jest.fn(),
   useRouter: jest.fn(() => ({
@@ -30,10 +28,7 @@ jest.mock("lucide-react", () => ({
   Mail: () => <svg data-testid="mail-icon" />,
 }));
 
-/**
- * Helper to render the async server component.
- * Server components are async functions — we call them and await the JSX.
- */
+// SignInPage is an async server component, so we invoke it and render the resolved JSX.
 async function renderSignInPage(searchParams = {}) {
   const jsx = await SignInPage({
     searchParams: Promise.resolve(searchParams),

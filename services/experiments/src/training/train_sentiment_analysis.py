@@ -40,13 +40,11 @@ class SentimentAnalyzerWrapper(mlflow.pyfunc.PythonModel):
         """
         self.pipeline = mlflow.sklearn.load_model(context.artifacts["sklearn_pipeline"])
 
-        # Load label encoder
         import pickle
 
         with open(context.artifacts["label_encoder"], "rb") as f:
             self.label_encoder = pickle.load(f)
 
-        # Load sentiment labels mapping
         self.sentiment_labels = pd.read_parquet(context.artifacts["sentiment_labels"])
         self._label_map = dict(
             zip(
@@ -83,17 +81,14 @@ class SentimentAnalyzerWrapper(mlflow.pyfunc.PythonModel):
 
     def _predict_single(self, text: str) -> dict[str, Any]:
         """Predict sentiment for a single text."""
-        # Preprocess text
         processed_text = self._preprocess_text(text)
 
-        # Get prediction and probabilities
         prediction = self.pipeline.predict([processed_text])[0]
         probabilities = self.pipeline.predict_proba([processed_text])[0]
 
         sentiment = self._label_map[prediction]
         confidence = float(max(probabilities))
 
-        # Determine confidence level
         if confidence >= self.confidence_thresholds["high"]:
             confidence_level = "high"
         elif confidence >= self.confidence_thresholds["medium"]:
@@ -319,23 +314,18 @@ def build_sentiment_pipeline() -> Pipeline:
 def train_and_register():
     """Train and register the sentiment analysis model."""
 
-    # Set MLflow tracking
     mlflow.set_tracking_uri("http://localhost:5000")
     mlflow.set_experiment("journal_sentiment_analysis")
 
-    # Get training data
     training_data = get_training_data()
 
     with mlflow.start_run(run_name="sentiment_analyzer"):
-        # Prepare data
         texts = [item["text"] for item in training_data]
         sentiments = [item["sentiment"] for item in training_data]
 
-        # Encode labels
         label_encoder = LabelEncoder()
         labels = label_encoder.fit_transform(sentiments)
 
-        # Create sentiment labels dataframe
         sentiment_labels_df = pd.DataFrame(
             {
                 "label_id": range(len(label_encoder.classes_)),
@@ -343,28 +333,23 @@ def train_and_register():
             }
         )
 
-        # Split data for validation
         X_train, X_test, y_train, y_test = train_test_split(
             texts, labels, test_size=0.2, random_state=42, stratify=labels
         )
 
-        # Build and train pipeline
         pipeline = build_sentiment_pipeline()
         pipeline.fit(X_train, y_train)
 
-        # Log parameters
         mlflow.log_param("model_type", "multinomial_nb")
         mlflow.log_param("training_samples", len(X_train))
         mlflow.log_param("test_samples", len(X_test))
         mlflow.log_param("sentiment_classes", len(label_encoder.classes_))
 
-        # Evaluate
         y_pred = pipeline.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
         y_proba = pipeline.predict_proba(X_test)
         avg_confidence = float(np.mean(np.max(y_proba, axis=1)))
 
-        # Log metrics
         mlflow.log_metric("accuracy", accuracy)
         mlflow.log_metric("avg_confidence", avg_confidence)
 
@@ -373,7 +358,6 @@ def train_and_register():
         print("\nClassification Report:")
         print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
 
-        # Test with sample cases
         test_cases = [
             "I feel amazing today! Everything is going perfectly.",
             "I'm worried about the future and feel overwhelmed.",
@@ -391,31 +375,25 @@ def train_and_register():
             mlflow.log_metric(f"test_case_{i}_confidence", confidence)
             print(f"{i}. '{test_text[:50]}...' -> {sentiment} ({confidence:.3f})")
 
-        # Save artifacts to temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
-            # Save the sklearn pipeline
             sklearn_path = os.path.join(tmp_dir, "sklearn_pipeline")
             mlflow.sklearn.save_model(pipeline, sklearn_path)
 
-            # Save label encoder
             import pickle
 
             label_encoder_path = os.path.join(tmp_dir, "label_encoder.pkl")
             with open(label_encoder_path, "wb") as f:
                 pickle.dump(label_encoder, f)
 
-            # Save sentiment labels
             sentiment_labels_path = os.path.join(tmp_dir, "sentiment_labels.parquet")
             sentiment_labels_df.to_parquet(sentiment_labels_path, index=False)
 
-            # Define artifact paths for the wrapper
             artifact_paths = {
                 "sklearn_pipeline": sklearn_path,
                 "label_encoder": label_encoder_path,
                 "sentiment_labels": sentiment_labels_path,
             }
 
-            # Log the complete model with wrapper
             print("Logging model with pyfunc wrapper...")
             mlflow.pyfunc.log_model(
                 artifact_path="sentiment_model",
@@ -433,7 +411,6 @@ def train_and_register():
             )
             print("Model logged successfully!")
 
-        # Demonstrate trend analysis capability
         print("\nSample trend analysis:")
         sample_entries = [
             {"text": "Great start to the week!", "date": "2024-01-01"},
@@ -442,9 +419,8 @@ def train_and_register():
             {"text": "Accomplished so much today!", "date": "2024-01-04"},
         ]
 
-        # Create wrapper instance for demo
-        wrapper = SentimentAnalyzerWrapper()
         # Manually set up for demo (in production, load_context handles this)
+        wrapper = SentimentAnalyzerWrapper()
         wrapper.pipeline = pipeline
         wrapper.label_encoder = label_encoder
         wrapper._label_map = dict(enumerate(label_encoder.classes_))

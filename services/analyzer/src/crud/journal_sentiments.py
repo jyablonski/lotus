@@ -19,7 +19,6 @@ def create_or_update_sentiment(
     try:
         model_version = sentiment_data["ml_model_version"]
 
-        # Check for existing sentiment analysis
         existing = (
             db.query(JournalSentiments)
             .filter(
@@ -33,7 +32,6 @@ def create_or_update_sentiment(
 
         if existing:
             if force_update:
-                # Update existing record
                 existing.sentiment = sentiment_data["sentiment"]
                 existing.confidence = sentiment_data["confidence"]
                 existing.confidence_level = sentiment_data["confidence_level"]
@@ -43,13 +41,11 @@ def create_or_update_sentiment(
                 sentiment_record = existing
                 logger.info(f"Updated sentiment for journal {journal_id}, model {model_version}")
             else:
-                # Return existing without updating
                 logger.info(
                     f"Sentiment already exists for journal {journal_id}, model {model_version}"
                 )
                 return existing
         else:
-            # Create new record
             sentiment_record = JournalSentiments(
                 journal_id=journal_id,
                 sentiment=sentiment_data["sentiment"],
@@ -82,7 +78,6 @@ def get_sentiment_by_journal_id(
         if model_version:
             query = query.filter(JournalSentiments.ml_model_version == model_version)
 
-        # Get the most recent analysis
         sentiment = query.order_by(desc(JournalSentiments.created_at)).first()
 
         if sentiment:
@@ -128,21 +123,18 @@ def get_sentiment_trends(
 ) -> list[dict[str, Any]]:
     """Get sentiment trends over time."""
     try:
-        # Calculate date range
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_back)
 
-        # Build query
         query = db.query(JournalSentiments).filter(JournalSentiments.created_at >= start_date)
 
         if reliable_only:
             query = query.filter(JournalSentiments.is_reliable is True)
 
-        # Add user filter if provided (assuming journals table has user_id)
+        # TODO: add user filter once journals table join is wired up
         # if user_id:
         #     query = query.join(Journal).filter(Journal.user_id == user_id)
 
-        # Group by time period
         if group_by == "day":
             time_group = func.date_trunc("day", JournalSentiments.created_at)
         elif group_by == "week":
@@ -152,7 +144,6 @@ def get_sentiment_trends(
         else:
             raise ValueError("group_by must be 'day', 'week', or 'month'")
 
-        # Execute aggregation query
         results = (
             db.query(
                 time_group.label("period"),
@@ -166,7 +157,6 @@ def get_sentiment_trends(
             .all()
         )
 
-        # Transform results into response format
         trends_dict = {}
         for period, sentiment, count, avg_conf in results:
             period_str = period.strftime("%Y-%m-%d")
@@ -188,7 +178,6 @@ def get_sentiment_trends(
             trends_dict[period_str]["total_entries"] += count
             trends_dict[period_str]["avg_confidence"] = float(avg_conf or 0)
 
-        # Determine dominant sentiment for each period
         trends = []
         for period_data in trends_dict.values():
             sentiment_counts = period_data["sentiment_counts"]
@@ -221,19 +210,16 @@ def get_sentiment_stats(
 ) -> dict[str, Any]:
     """Get overall sentiment analysis statistics."""
     try:
-        # Build base query
         query = db.query(JournalSentiments)
 
-        # Add date filter if provided
         if days_back:
             start_date = datetime.now() - timedelta(days=days_back)
             query = query.filter(JournalSentiments.created_at >= start_date)
 
-        # Add user filter if provided (assuming journals table has user_id)
+        # TODO: add user filter once journals table join is wired up
         # if user_id:
         #     query = query.join(Journal).filter(Journal.user_id == user_id)
 
-        # Get all records
         all_sentiments = query.all()
 
         if not all_sentiments:
@@ -252,13 +238,11 @@ def get_sentiment_stats(
                 "latest_model_version": None,
             }
 
-        # Calculate statistics
         total_analyzed = len(all_sentiments)
         reliable_sentiments = [s for s in all_sentiments if s.is_reliable]
         reliable_count = len(reliable_sentiments)
         reliability_rate = reliable_count / total_analyzed if total_analyzed > 0 else 0
 
-        # Sentiment distribution
         sentiment_distribution = {
             "positive": 0,
             "negative": 0,
@@ -275,7 +259,6 @@ def get_sentiment_stats(
 
         avg_confidence = total_confidence / total_analyzed if total_analyzed > 0 else 0
 
-        # Get latest model version
         latest_sentiment = max(all_sentiments, key=lambda s: s.created_at)
         latest_model_version = latest_sentiment.ml_model_version
 
@@ -309,7 +292,7 @@ def get_recent_sentiments(
         if reliable_only:
             query = query.filter(JournalSentiments.is_reliable is True)
 
-        # Add user filter if provided (assuming journals table has user_id)
+        # TODO: add user filter once journals table join is wired up
         # if user_id:
         #     query = query.join(Journal).filter(Journal.user_id == user_id)
 

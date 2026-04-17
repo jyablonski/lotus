@@ -27,13 +27,9 @@ class JournalSentimentAnalyzer:
 
     def _preprocess_text(self, text: str) -> str:
         """Clean and preprocess text for sentiment analysis."""
-        # Convert to lowercase
         text = text.lower()
-
-        # Remove extra whitespace
         text = re.sub(r"\s+", " ", text)
-
-        # Keep punctuation as it can be important for sentiment
+        # Punctuation is intentionally preserved — it carries sentiment signal.
         text = text.strip()
 
         return text
@@ -49,7 +45,6 @@ class JournalSentimentAnalyzer:
         texts = []
         labels = []
 
-        # Reverse mapping for labels
         label_to_num = {v: k for k, v in self.sentiment_labels.items()}
 
         for item in training_data:
@@ -57,9 +52,8 @@ class JournalSentimentAnalyzer:
             texts.append(processed_text)
             labels.append(label_to_num[item["sentiment"]])
 
-        # Create pipeline with TF-IDF vectorizer and classifier
-        # Note: For text-only input, we use Pipeline directly.
-        # ColumnTransformer would be used if we had mixed feature types.
+        # Plain Pipeline is sufficient for text-only input; see
+        # SentimentAnalyzerWithFeatures below for the mixed-feature variant.
         self.sentiment_pipeline = Pipeline(
             [
                 (
@@ -76,7 +70,6 @@ class JournalSentimentAnalyzer:
             ]
         )
 
-        # Train the model
         self.sentiment_pipeline.fit(texts, labels)
 
         print(f"Sentiment model v{self.model_version} trained on {len(texts)} samples")
@@ -93,14 +86,12 @@ class JournalSentimentAnalyzer:
 
         processed_text = self._preprocess_text(text)
 
-        # Get prediction and probabilities
         prediction = self.sentiment_pipeline.predict([processed_text])[0]
         probabilities = self.sentiment_pipeline.predict_proba([processed_text])[0]
 
         sentiment = self.sentiment_labels[prediction]
         confidence = float(max(probabilities))
 
-        # Determine confidence level
         if confidence >= self.confidence_thresholds["high"]:
             confidence_level = "high"
         elif confidence >= self.confidence_thresholds["medium"]:
@@ -235,7 +226,6 @@ class SentimentAnalyzerWithFeatures:
         if self.pipeline is None:
             self.build_pipeline(text_column=text_column)
 
-        # Encode labels
         label_to_num = {v: k for k, v in self.sentiment_labels.items()}
         y = df[target_column].map(label_to_num)
 

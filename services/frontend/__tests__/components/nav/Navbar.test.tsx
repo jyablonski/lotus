@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import Navbar from "@/components/Navbar";
 
-// Mock auth
 jest.mock("@/auth", () => ({
   auth: jest.fn(),
 }));
@@ -89,7 +88,8 @@ describe("Navbar", () => {
     it("shows navigation links", async () => {
       const NavbarEl = await Navbar();
       render(NavbarEl);
-      expect(screen.getAllByText("Home")).toHaveLength(2); // desktop + mobile
+      // desktop + mobile layouts render each link once, so each appears twice.
+      expect(screen.getAllByText("Home")).toHaveLength(2);
       expect(screen.getAllByText("Journal")).toHaveLength(2);
       expect(screen.getAllByText("Calendar")).toHaveLength(2);
       expect(screen.getAllByText("Profile")).toHaveLength(2);
@@ -110,7 +110,6 @@ describe("Navbar", () => {
     it("renders mobile navigation", async () => {
       const NavbarEl = await Navbar();
       render(NavbarEl);
-      // Mobile nav has duplicate links
       const homeLinks = screen.getAllByText("Home");
       expect(homeLinks).toHaveLength(2);
     });

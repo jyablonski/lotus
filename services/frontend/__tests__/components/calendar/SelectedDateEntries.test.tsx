@@ -8,7 +8,6 @@ jest.mock("next/link", () => {
   );
 });
 
-// Mock JournalEntryCard since it's tested separately
 jest.mock("@/components/journal/JournalEntryCard", () => ({
   JournalEntryCard: ({ entry }: { entry: JournalEntry }) => (
     <div data-testid={`entry-card-${entry.journalId}`}>{entry.journalText}</div>
@@ -25,7 +24,7 @@ const mockEntry: JournalEntry = {
 
 describe("SelectedDateEntries", () => {
   describe("with a past date and no entries", () => {
-    const pastDate = new Date(2024, 0, 15); // Jan 15, 2024
+    const pastDate = new Date(2024, 0, 15);
 
     it("renders the formatted date", () => {
       render(
@@ -79,8 +78,8 @@ describe("SelectedDateEntries", () => {
   });
 
   describe("with a future date and no entries", () => {
-    // Use a date far in the future to ensure it's always future
-    const futureDate = new Date(2099, 11, 25); // Dec 25, 2099
+    // Far-future date so it stays "in the future" regardless of when the test runs.
+    const futureDate = new Date(2099, 11, 25);
 
     it("shows 'Future entries cannot be created' after effect", async () => {
       await act(async () => {

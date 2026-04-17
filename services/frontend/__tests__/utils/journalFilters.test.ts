@@ -49,8 +49,6 @@ const sampleEntries: JournalEntry[] = [
 ];
 
 describe("journalFilters", () => {
-  // ── filterJournalsBySearch ────────────────────────────────────────────
-
   describe("filterJournalsBySearch", () => {
     test("returns all journals when search term is empty", () => {
       expect(filterJournalsBySearch(sampleEntries, "")).toHaveLength(5);
@@ -68,7 +66,6 @@ describe("journalFilters", () => {
 
     test("matches partial words", () => {
       const result = filterJournalsBySearch(sampleEntries, "day");
-      // "great day at the park" and "neutral kind of day"
       expect(result).toHaveLength(2);
     });
 
@@ -76,8 +73,6 @@ describe("journalFilters", () => {
       expect(filterJournalsBySearch(sampleEntries, "zzzzz")).toHaveLength(0);
     });
   });
-
-  // ── filterJournalsByMood ──────────────────────────────────────────────
 
   describe("filterJournalsByMood", () => {
     test('returns all journals when selectedMood is "all"', () => {
@@ -106,8 +101,6 @@ describe("journalFilters", () => {
       expect(result[0].journalId).toBe("4");
     });
   });
-
-  // ── filterJournalsByTag ───────────────────────────────────────────────
 
   describe("filterJournalsByTag", () => {
     const entriesWithTags: JournalEntry[] = [
@@ -154,11 +147,8 @@ describe("journalFilters", () => {
     });
   });
 
-  // ── filterJournals (combined) ─────────────────────────────────────────
-
   describe("filterJournals", () => {
     test("applies both search and mood filters", () => {
-      // Search for "day" (matches entries 1 and 5) + mood 7 (entry 1)
       const result = filterJournals(sampleEntries, "day", "7");
       expect(result).toHaveLength(1);
       expect(result[0].journalId).toBe("1");
@@ -169,7 +159,6 @@ describe("journalFilters", () => {
     });
 
     test("returns empty when filters are incompatible", () => {
-      // Search for "excited" (entry 3, mood 8) but filter mood to 1
       expect(filterJournals(sampleEntries, "excited", "1")).toHaveLength(0);
     });
 
@@ -196,8 +185,6 @@ describe("journalFilters", () => {
       );
     });
   });
-
-  // ── getUniqueTagsFromJournals ─────────────────────────────────────────
 
   describe("getUniqueTagsFromJournals", () => {
     test("returns empty array when no journals have topics", () => {
@@ -241,8 +228,6 @@ describe("journalFilters", () => {
     });
   });
 
-  // ── getUniqueMoodsFromJournals ────────────────────────────────────────
-
   describe("getUniqueMoodsFromJournals", () => {
     test("returns empty array for no journals", () => {
       expect(getUniqueMoodsFromJournals([])).toHaveLength(0);
@@ -250,7 +235,6 @@ describe("journalFilters", () => {
 
     test("extracts unique moods sorted by number (1-10 scale)", () => {
       const moods = getUniqueMoodsFromJournals(sampleEntries);
-      // Moods present: 1, 4, 5, 7, 8
       expect(moods).toHaveLength(5);
       expect(moods[0]).toEqual({ key: "1", label: "1" });
       expect(moods[4]).toEqual({ key: "8", label: "8" });

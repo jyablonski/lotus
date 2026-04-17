@@ -2,7 +2,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CalendarClient } from "@/components/calendar/CalendarClient";
 import { JournalEntry } from "@/types/journal";
 
-// Mock child components to test orchestration
 jest.mock("@/components/calendar/CalendarHeader", () => ({
   CalendarHeader: ({
     currentMonth,
@@ -109,33 +108,28 @@ describe("CalendarClient", () => {
 
   it("shows current month in header", () => {
     render(<CalendarClient {...defaultProps} />);
-    // June 2025 -> month 6
     expect(screen.getByTestId("current-month")).toHaveTextContent("6/2025");
   });
 
   it("navigates to previous month", () => {
     render(<CalendarClient {...defaultProps} />);
     fireEvent.click(screen.getByText("Prev Month"));
-    // June -> May
     expect(screen.getByTestId("current-month")).toHaveTextContent("5/2025");
   });
 
   it("navigates to next month", () => {
     render(<CalendarClient {...defaultProps} />);
     fireEvent.click(screen.getByText("Next Month"));
-    // June -> July
     expect(screen.getByTestId("current-month")).toHaveTextContent("7/2025");
   });
 
   it("shows entries for the selected date", () => {
     render(<CalendarClient {...defaultProps} />);
-    // serverDate is 2025-06-15, which has 1 entry
     expect(screen.getByTestId("entry-count")).toHaveTextContent("1");
   });
 
   it("shows 0 entries for dates without journals", () => {
     render(<CalendarClient {...defaultProps} serverDate="2025-06-01" />);
-    // June 1 has no entries
     expect(screen.getByTestId("entry-count")).toHaveTextContent("0");
   });
 });

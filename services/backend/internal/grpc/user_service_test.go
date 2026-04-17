@@ -20,12 +20,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestLogger creates a logger that discards output for testing
 func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// testCtx returns a context populated with the given DB mock and a discard logger.
 func testCtx(mock db.Querier) context.Context {
 	ctx := context.Background()
 	ctx = inject.WithDB(ctx, mock)
@@ -34,13 +32,11 @@ func testCtx(mock db.Querier) context.Context {
 }
 
 func TestUserServer_CreateUser_Success(t *testing.T) {
-	// Arrange
 	expectedUserID := uuid.New()
 	expectedEmail := "test@example.com"
 
 	mockQuerier := &mocks.QuerierMock{
 		CreateUserFunc: func(ctx context.Context, arg db.CreateUserParams) (db.SourceUser, error) {
-			// Verify the email is passed correctly
 			assert.Equal(t, expectedEmail, arg.Email)
 			require.NotNil(t, arg.Password)
 			assert.Nil(t, arg.Salt) // bcrypt embeds its own salt
@@ -64,20 +60,15 @@ func TestUserServer_CreateUser_Success(t *testing.T) {
 		Password: "securepassword123",
 	}
 
-	// Act
 	resp, err := server.CreateUser(testCtx(mockQuerier), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, expectedUserID.String(), resp.UserId)
-
-	// Verify the mock was called exactly once
 	assert.Len(t, mockQuerier.CreateUserCalls(), 1)
 }
 
 func TestUserServer_CreateUser_DBError(t *testing.T) {
-	// Arrange
 	mockQuerier := &mocks.QuerierMock{
 		CreateUserFunc: func(ctx context.Context, arg db.CreateUserParams) (db.SourceUser, error) {
 			return db.SourceUser{}, errors.New("database connection failed")
@@ -91,17 +82,14 @@ func TestUserServer_CreateUser_DBError(t *testing.T) {
 		Password: "securepassword123",
 	}
 
-	// Act
 	resp, err := server.CreateUser(testCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "could not create user")
 }
 
 func TestUserServer_GetUser_Success(t *testing.T) {
-	// Arrange
 	expectedUserID := uuid.New()
 	expectedEmail := "test@example.com"
 	expectedRole := "admin"
@@ -135,10 +123,8 @@ func TestUserServer_GetUser_Success(t *testing.T) {
 		Email: expectedEmail,
 	}
 
-	// Act
 	resp, err := server.GetUser(testCtx(mockQuerier), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, expectedUserID.String(), resp.UserId)
@@ -149,13 +135,10 @@ func TestUserServer_GetUser_Success(t *testing.T) {
 	assert.True(t, resp.CommunityLocationOptIn)
 	assert.Equal(t, "US", resp.CommunityCountryCode)
 	assert.Equal(t, "US-CA", resp.CommunityRegionCode)
-
-	// Verify the mock was called
 	assert.Len(t, mockQuerier.GetUserByEmailCalls(), 1)
 }
 
 func TestUserServer_GetUser_NotFound(t *testing.T) {
-	// Arrange
 	mockQuerier := &mocks.QuerierMock{
 		GetUserByEmailFunc: func(ctx context.Context, email string) (db.SourceUser, error) {
 			return db.SourceUser{}, pgx.ErrNoRows
@@ -168,17 +151,14 @@ func TestUserServer_GetUser_NotFound(t *testing.T) {
 		Email: "nonexistent@example.com",
 	}
 
-	// Act
 	resp, err := server.GetUser(testCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "user not found")
 }
 
 func TestUserServer_GetUser_EmptyEmail(t *testing.T) {
-	// Arrange — no DB mock needed; validation fails before DB access.
 	mockQuerier := &mocks.QuerierMock{}
 
 	server := &internalgrpc.UserServer{}
@@ -187,22 +167,15 @@ func TestUserServer_GetUser_EmptyEmail(t *testing.T) {
 		Email: "",
 	}
 
-	// Act — context still needs DB because GetUser extracts it after validation,
-	// but with the new code DB is only extracted after the empty-email check,
-	// so a bare context is sufficient.
 	resp, err := server.GetUser(testCtx(mockQuerier), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.Contains(t, err.Error(), "email is required")
-
-	// Verify the mock was NOT called (validation should fail first)
 	assert.Len(t, mockQuerier.GetUserByEmailCalls(), 0)
 }
 
 func TestUserServer_CreateUserOauth_Success(t *testing.T) {
-	// Arrange
 	expectedUserID := uuid.New()
 	expectedEmail := "oauth@example.com"
 	expectedProvider := "github"
@@ -234,15 +207,11 @@ func TestUserServer_CreateUserOauth_Success(t *testing.T) {
 		OauthProvider: expectedProvider,
 	}
 
-	// Act
 	resp, err := server.CreateUserOauth(testCtx(mockQuerier), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, expectedUserID.String(), resp.UserId)
-
-	// Verify the mock was called exactly once
 	assert.Len(t, mockQuerier.CreateUserOauthCalls(), 1)
 }
 

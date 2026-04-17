@@ -56,11 +56,9 @@ def test_get_extracted_topics(client_fixture, real_topic_client):
     app.dependency_overrides[get_topic_client] = lambda: real_topic_client
 
     try:
-        # First extract topics
         extract_response = client_fixture.post("/v1/journals/1/topics/internal")
         assert extract_response.status_code == 204
 
-        # Then retrieve them
         get_response = client_fixture.get("/v1/journals/1/topics")
 
         assert get_response.status_code == 200
@@ -69,7 +67,6 @@ def test_get_extracted_topics(client_fixture, real_topic_client):
         assert "topics" in data
         assert isinstance(data["topics"], list)
 
-        # Should have at least one topic
         if data["topics"]:
             topic = data["topics"][0]
             assert "topic_name" in topic
@@ -87,14 +84,12 @@ def test_get_topics_multiple_extractions(client_fixture, real_topic_client):
     app.dependency_overrides[get_topic_client] = lambda: real_topic_client
 
     try:
-        # Extract topics from different journals
         journals_to_test = [1, 2, 3]
 
         for journal_id in journals_to_test:
             extract_response = client_fixture.post(f"/v1/journals/{journal_id}/topics/internal")
             assert extract_response.status_code == 204
 
-            # Verify we can retrieve each one
             get_response = client_fixture.get(f"/v1/journals/{journal_id}/topics")
             assert get_response.status_code == 200
 
@@ -111,7 +106,6 @@ def test_get_topics(client_fixture, real_topic_client):
     app.dependency_overrides[get_topic_client] = lambda: real_topic_client
 
     try:
-        # Try to get topics without extracting first
         response = client_fixture.get("/v1/journals/1/topics")
 
         assert response.status_code == 200

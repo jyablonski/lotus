@@ -90,7 +90,6 @@ describe("CalendarGrid", () => {
       avgMood: 7,
     });
     render(<CalendarGrid calendarDays={days} onDateSelect={jest.fn()} />);
-    // Day 6 button shows date "6" and "2 entries" and mood badge "7"
     const dayCell = screen.getByRole("button", { name: /2 entries/ });
     expect(dayCell).toHaveTextContent("7");
   });
@@ -126,7 +125,6 @@ describe("CalendarGrid", () => {
     const { container } = render(
       <CalendarGrid calendarDays={days} onDateSelect={jest.fn()} />,
     );
-    // Today dot is a small div with bg-lotus-500 rounded-full
     expect(
       container.querySelector(".bg-lotus-500.rounded-full"),
     ).toBeInTheDocument();

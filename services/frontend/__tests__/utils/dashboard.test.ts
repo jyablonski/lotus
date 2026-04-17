@@ -23,8 +23,6 @@ function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
 }
 
 describe("dashboard utils", () => {
-  // ── calculateEntriesThisWeek ──────────────────────────────────────────
-
   describe("calculateEntriesThisWeek", () => {
     test("returns 0 for no journals", () => {
       expect(calculateEntriesThisWeek([])).toBe(0);
@@ -43,8 +41,6 @@ describe("dashboard utils", () => {
     });
   });
 
-  // ── calculateStreak (delegates to profileStats.calculateCurrentStreak) ─
-
   describe("calculateStreak", () => {
     test("returns 0 for no journals", () => {
       expect(calculateStreak([])).toBe(0);
@@ -55,8 +51,6 @@ describe("dashboard utils", () => {
       expect(calculateStreak(entries)).toBe(1);
     });
   });
-
-  // ── calculateAverageMood ──────────────────────────────────────────────
 
   describe("calculateAverageMood", () => {
     test("returns 0 when no recent entries", () => {
@@ -92,8 +86,6 @@ describe("dashboard utils", () => {
     });
   });
 
-  // ── getSentimentFromMood ──────────────────────────────────────────────
-
   describe("getSentimentFromMood", () => {
     test('returns "Positive" for mood >= 7', () => {
       expect(getSentimentFromMood(7)).toBe("Positive");
@@ -111,8 +103,6 @@ describe("dashboard utils", () => {
       expect(getSentimentFromMood(1)).toBe("Negative");
     });
   });
-
-  // ── getSentimentFromMoodInt ───────────────────────────────────────────
 
   describe("getSentimentFromMoodInt", () => {
     test('returns "positive" for mood >= 7', () => {
@@ -139,8 +129,6 @@ describe("dashboard utils", () => {
     });
   });
 
-  // ── generateTitle ─────────────────────────────────────────────────────
-
   describe("generateTitle", () => {
     test("returns full text if 4 words or fewer", () => {
       expect(generateTitle("Hello world")).toBe("Hello world");
@@ -162,8 +150,6 @@ describe("dashboard utils", () => {
     });
   });
 
-  // ── formatAbsoluteDate ────────────────────────────────────────────────
-
   describe("formatAbsoluteDate", () => {
     test("returns YYYY-MM-DD format", () => {
       expect(formatAbsoluteDate("2025-06-15T14:30:00Z")).toBe("2025-06-15");
@@ -174,8 +160,6 @@ describe("dashboard utils", () => {
       expect(formatAbsoluteDate("2025-01-01T23:59:59Z")).toBe("2025-01-01");
     });
   });
-
-  // ── formatRelativeDate ────────────────────────────────────────────────
 
   describe("formatRelativeDate", () => {
     test('returns "Just now" for very recent dates', () => {
@@ -207,13 +191,10 @@ describe("dashboard utils", () => {
     test("returns locale date string for dates older than a week", () => {
       const old = "2020-01-15T12:00:00Z";
       const result = formatRelativeDate(old);
-      // Should not be "X days ago" — should be a full date
       expect(result).not.toContain("days ago");
       expect(result).not.toBe("Just now");
     });
   });
-
-  // ── formatRecentEntries ───────────────────────────────────────────────
 
   describe("formatRecentEntries", () => {
     test("returns empty array for no journals", () => {
@@ -260,9 +241,9 @@ describe("dashboard utils", () => {
 
     test("assigns correct sentiment per mood", () => {
       const entries = [
-        makeEntry({ journalId: "1", userMood: 8 }), // positive
-        makeEntry({ journalId: "2", userMood: 5 }), // neutral
-        makeEntry({ journalId: "3", userMood: 2 }), // negative
+        makeEntry({ journalId: "1", userMood: 8 }),
+        makeEntry({ journalId: "2", userMood: 5 }),
+        makeEntry({ journalId: "3", userMood: 2 }),
       ];
       const results = formatRecentEntries(entries, 3);
       expect(results[0].sentiment).toBe("positive");

@@ -275,17 +275,14 @@ def train_and_register() -> None:
         mlflow.log_param("taxonomy_subtopics", len(JOURNAL_TOPIC_TAXONOMY))
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            # 1. Save sentence-transformer model.
             st_path = os.path.join(tmpdir, "sentence_transformer")
             logger.info("Downloading and saving sentence-transformer model: %s", model_name)
             SentenceTransformer(model_name).save(st_path)
 
-            # 2. Save hierarchy (domain → subtopic list mapping).
             hierarchy_path = os.path.join(tmpdir, "hierarchy.json")
             with open(hierarchy_path, "w") as f:
                 json.dump(JOURNAL_TOPIC_HIERARCHY, f, indent=2)
 
-            # 3. Save model config.
             config_path = os.path.join(tmpdir, "model_config.json")
             with open(config_path, "w") as f:
                 json.dump(config, f, indent=2)
@@ -296,7 +293,6 @@ def train_and_register() -> None:
                 "model_config": config_path,
             }
 
-            # 4. Validate the wrapper end-to-end before registering.
             logger.info("Running validation pass on sample entries...")
             wrapper = SemanticTopicExtractorWrapper()
             wrapper.load_context(  # type: ignore[arg-type]
@@ -322,7 +318,6 @@ def train_and_register() -> None:
                     len(topics),
                 )
 
-            # 5. Log and register the pyfunc model.
             # No code_paths needed — the wrapper is self-contained and only
             # uses installed packages (keybert, sentence-transformers, numpy).
             logger.info("Logging model to MLflow...")

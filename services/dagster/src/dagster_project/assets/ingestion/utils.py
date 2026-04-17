@@ -67,14 +67,12 @@ def create_basic_metadata(
         "partition": MetadataValue.text(get_partition_date_str(context)),
     }
 
-    # Extract num_rows from DataFrame if not provided
     if num_rows is None and df is not None:
         num_rows = len(df)
 
     if num_rows is not None:
         metadata["num_rows"] = MetadataValue.int(num_rows)
 
-    # Extract date_range from DataFrame if not provided
     if date_range is None and df is not None and date_column in df.columns:
         date_range = extract_date_range(df, date_column)
 

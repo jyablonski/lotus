@@ -64,7 +64,6 @@ def extract_journal_topics(
         raise HTTPException(status_code=503, detail="Topic extraction service unavailable")
 
     try:
-        # Get the journal entry
         journal = get_journal_by_id(db, journal_id)
         if not journal:
             raise HTTPException(status_code=404, detail="Journal not found")
@@ -77,14 +76,12 @@ def extract_journal_topics(
                 "flags.types", ",".join(flag.flag_type for flag in detection_result.flags)
             )
 
-        # Extract topics from the journal content (includes model version)
         with tracer.start_as_current_span("topics.extract") as span:
             span.set_attribute("journal.id", journal_id)
             span.set_attribute("model.version", topic_client.model_version or "")
             topics = topic_client.extract_topics(journal.journal_text)
             span.set_attribute("topics.count", len(topics))
 
-        # Store topics in database
         create_or_update_topics(db, journal_id, topics)
 
         if detection_result.flags:
@@ -119,7 +116,6 @@ def get_journal_topics(
         raise HTTPException(status_code=404, detail="Journal not found")
 
     try:
-        # Get stored topics from database
         topics = get_topics_by_journal_id(db, journal_id)
 
         return {

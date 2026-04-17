@@ -1,6 +1,4 @@
 /**
- * Tests for app/api/v1/csgodouble/state/route.ts
- *
  * @jest-environment node
  */
 

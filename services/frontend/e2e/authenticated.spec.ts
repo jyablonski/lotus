@@ -1,14 +1,9 @@
-/**
- * E2E tests for authenticated pages.
- *
- * These tests inject a NextAuth session cookie to simulate a logged-in user.
- * They require:
- *   - The frontend running at BASE_URL (default: http://localhost:3000)
- *   - The backend running at the configured BACKEND_URL
- *   - PostgreSQL with the test user seeded (or the backend returning
- *     empty data gracefully)
- *   - AUTH_SECRET env var matching the frontend's secret
- */
+// These tests inject a NextAuth session cookie to simulate a logged-in user.
+// They require:
+//   - Frontend running at BASE_URL (default: http://localhost:3000)
+//   - Backend running at the configured BACKEND_URL
+//   - Postgres with the test user seeded (or backend returning empty data gracefully)
+//   - AUTH_SECRET env var matching the frontend's secret
 import { test, expect } from "@playwright/test";
 import { authenticateContext, TEST_USER } from "./helpers/auth";
 
@@ -22,12 +17,9 @@ test.describe("Authenticated: Dashboard", () => {
   }) => {
     await page.goto("/");
 
-    // Should see the welcome greeting, NOT the landing page heading
     await expect(
       page.getByRole("heading", { name: /welcome back/i }),
     ).toBeVisible();
-
-    // Landing page heading should NOT be present
     await expect(
       page.getByRole("heading", { name: /your thoughts/i }),
     ).not.toBeVisible();
@@ -36,7 +28,6 @@ test.describe("Authenticated: Dashboard", () => {
   test("dashboard displays stat cards", async ({ page }) => {
     await page.goto("/");
 
-    // The four stat card titles from LoggedInDashboard.tsx
     await expect(page.getByText("Last 30 Days")).toBeVisible();
     await expect(
       page.getByText("Current Streak", { exact: true }),
@@ -75,7 +66,6 @@ test.describe("Authenticated: Navigation", () => {
   }) => {
     await page.goto("/");
 
-    // Desktop nav links
     await expect(
       page.getByRole("link", { name: "Home" }).first(),
     ).toBeVisible();
@@ -93,7 +83,6 @@ test.describe("Authenticated: Navigation", () => {
     await page.getByRole("link", { name: "Journal" }).first().click();
     await page.waitForURL("**/journal/home");
 
-    // Journal home page should show the journal header or list
     await expect(page.locator("body")).toContainText(/journal/i);
   });
 
@@ -103,7 +92,6 @@ test.describe("Authenticated: Navigation", () => {
     await page.getByRole("link", { name: "Calendar" }).first().click();
     await page.waitForURL("**/journal/calendar");
 
-    // Calendar page should show weekday headers
     await expect(page.getByText("Mon", { exact: true })).toBeVisible();
   });
 });
@@ -116,14 +104,12 @@ test.describe("Authenticated: Journal Create", () => {
   test("journal create page loads with the form", async ({ page }) => {
     await page.goto("/journal/create");
 
-    // Should see the text editor with its placeholder
     await expect(page.getByPlaceholder(/what's on your mind/i)).toBeVisible();
   });
 
   test("journal create page shows mood slider", async ({ page }) => {
     await page.goto("/journal/create");
 
-    // Mood is a 1-10 slider; label and range input should be visible
     await expect(
       page.getByText(/how are you feeling\? \(1-10\)/i),
     ).toBeVisible();
@@ -139,14 +125,12 @@ test.describe("Authenticated: Profile", () => {
   test("profile page loads with user info", async ({ page }) => {
     await page.goto("/profile");
 
-    // Should see the test user's name
     await expect(page.getByText(TEST_USER.name)).toBeVisible();
   });
 
   test("profile page shows stat cards", async ({ page }) => {
     await page.goto("/profile");
 
-    // Profile stats include these titles
     await expect(page.getByText("Total Entries")).toBeVisible();
   });
 });

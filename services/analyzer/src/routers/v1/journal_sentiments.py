@@ -104,7 +104,6 @@ def update_journal_sentiment(
 ):
     """Re-analyze and update sentiment for a journal entry"""
 
-    # Force reanalyze when updating
     request.force_reanalyze = True
     return analyze_journal_sentiment(journal_id, request, sentiment_client, db)
 
@@ -145,7 +144,6 @@ def analyze_journals_sentiment_batch(
 ):
     """Analyze sentiment for multiple journal entries"""
 
-    # Fetch all journals
     journals = db.query(Journals).filter(Journals.id.in_(request.journal_ids)).all()
     found_ids = {j.id for j in journals}
     missing_ids = set(request.journal_ids) - found_ids
@@ -159,14 +157,12 @@ def analyze_journals_sentiment_batch(
     results = []
     for journal in journals:
         try:
-            # Run sentiment analysis
             with tracer.start_as_current_span("sentiment.predict") as span:
                 span.set_attribute("journal.id", journal.id)
                 analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
                 span.set_attribute("sentiment.label", analysis_result.get("label", ""))
                 span.set_attribute("sentiment.score", float(analysis_result.get("score", 0)))
 
-            # Store result
             sentiment_record = create_or_update_sentiment(
                 db=db,
                 journal_id=journal.id,
@@ -177,7 +173,6 @@ def analyze_journals_sentiment_batch(
 
         except Exception as e:
             logger.error(f"Failed to analyze journal {journal.id}: {e}")
-            # Continue with other journals, don't fail entire batch
             continue
 
     logger.info(f"Successfully analyzed {len(results)} out of {len(request.journal_ids)} journals")
@@ -206,7 +201,6 @@ def get_sentiment_trends_endpoint(
             user_id=user_id,
         )
 
-        # Convert to Pydantic models
         trends = [
             SentimentTrendResponse(
                 period=trend["period"],

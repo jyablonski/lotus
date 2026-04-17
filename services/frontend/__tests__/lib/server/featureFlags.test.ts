@@ -1,11 +1,3 @@
-/**
- * Tests for lib/server/featureFlags.ts
- *
- * Verifies correct flag parsing, error handling, and that every request
- * includes the Authorization Bearer header required by the backend auth
- * middleware.
- */
-
 jest.mock("@/lib/config", () => ({
   BACKEND_URL: "http://backend:8080",
   BACKEND_API_KEY: "test-api-key",

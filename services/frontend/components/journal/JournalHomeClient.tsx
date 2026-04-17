@@ -75,7 +75,6 @@ export function JournalHomeClient({
   // §3c: search_used — fire when the user stops typing (debounce 800ms)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Extract unique moods and tags from journals
   const uniqueMoods = useMemo(
     () => getUniqueMoodsFromJournals(journals),
     [journals],
@@ -85,13 +84,13 @@ export function JournalHomeClient({
     [journals],
   );
 
-  // Determine if we're in active server-side search mode with results
   const isSemanticActive =
     searchMode === "semantic" && searchTerm.trim() !== "";
   const isKeywordActive = searchMode === "keyword" && searchTerm.trim() !== "";
   const isServerSearchActive = isSemanticActive || isKeywordActive;
 
-  // Filter journals by search, mood, and tag (exact mode or no search term)
+  // In server-search modes we use the ordered results from the backend; in
+  // "exact" mode we apply the local text/mood/tag filter.
   const filteredJournals = useMemo(() => {
     if (isSemanticActive) {
       const entries = semanticResults.map((r) => r.journal);
@@ -113,7 +112,6 @@ export function JournalHomeClient({
     keywordResults,
   ]);
 
-  // Build a map of relevance scores by journal ID for rendering
   const similarityScores = useMemo(() => {
     if (isSemanticActive) {
       return new Map(
@@ -129,7 +127,6 @@ export function JournalHomeClient({
   const hasActiveFilters =
     searchTerm.trim() !== "" || selectedMood !== "all" || selectedTag !== "all";
 
-  // Paginate filtered results
   const paginatedJournals = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredJournals.slice(startIndex, startIndex + itemsPerPage);
@@ -140,7 +137,6 @@ export function JournalHomeClient({
     : totalCount;
   const totalPages = Math.ceil(displayTotalCount / itemsPerPage);
 
-  // Trigger semantic search (debounced, cached in Redis on the backend)
   const triggerSemanticSearch = useCallback((query: string) => {
     if (semanticDebounceRef.current) {
       clearTimeout(semanticDebounceRef.current);
@@ -160,7 +156,6 @@ export function JournalHomeClient({
     }, 300);
   }, []);
 
-  // Trigger keyword search (debounced, cached in Redis on the backend)
   const triggerKeywordSearch = useCallback((query: string) => {
     if (keywordDebounceRef.current) {
       clearTimeout(keywordDebounceRef.current);
@@ -180,7 +175,6 @@ export function JournalHomeClient({
     }, 300);
   }, []);
 
-  // Reset to page 1 when filters change
   const handleSearchChange = useCallback(
     (term: string) => {
       setSearchTerm(term);
@@ -196,7 +190,6 @@ export function JournalHomeClient({
         }, 800);
       }
 
-      // Trigger server-side search when in semantic or keyword mode
       if (searchMode === "semantic") {
         triggerSemanticSearch(term);
       } else if (searchMode === "keyword") {

@@ -12,8 +12,6 @@ from dagster_project.resources import S3Resource
 
 @pytest.mark.unit
 class TestS3Resource:
-    """Test the S3Resource."""
-
     def _resource(self, **overrides) -> S3Resource:
         defaults = {"bucket": "test-bucket", "region": "us-east-1", "endpoint_url": ""}
         return S3Resource(**(defaults | overrides))
@@ -59,7 +57,6 @@ class TestS3Resource:
         assert call_kwargs["Bucket"] == "test-bucket"
         assert call_kwargs["Key"] == key
 
-        # Verify body is valid parquet
         written_df = pl.read_parquet(BytesIO(call_kwargs["Body"]))
         assert written_df.shape == (2, 2)
         assert written_df["id"].to_list() == [1, 2]
