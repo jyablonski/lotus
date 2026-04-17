@@ -20,6 +20,8 @@ from .models import (
     JournalCommunityProjection,
     JournalContentFlag,
     RuntimeConfig,
+    StakeholderPrompt,
+    StakeholderPromptResponse,
     User as LotusUser,
 )
 
@@ -45,6 +47,37 @@ class LotusAdminSite(UnfoldAdminSite):
 admin_site = LotusAdminSite(name="lotus_admin")
 
 ACTIVE_ML_MODEL_ALLOWED_GROUPS = ("product", "ml_ops")
+
+# Groups that may own and edit StakeholderPrompt rows. Members see and edit
+# only the prompts that belong to their own group(s); Admin-role users bypass
+# this restriction.
+STAKEHOLDER_PROMPT_ALLOWED_GROUPS = ("sales", "product")
+
+
+def _is_admin_role(user):
+    """Return True if ``user`` has the Admin role in the LotusUser table."""
+    if not user.is_authenticated:
+        return False
+    return LotusUser.objects.filter(
+        email=user.email,
+        role=getattr(settings, "ADMIN_ROLE_NAME", "Admin"),
+    ).exists()
+
+
+def _user_stakeholder_group_names(user) -> list[str]:
+    """Names of allowed stakeholder groups the user belongs to."""
+    if not user.is_authenticated:
+        return []
+    return list(
+        user.groups.filter(name__in=STAKEHOLDER_PROMPT_ALLOWED_GROUPS).values_list(
+            "name", flat=True
+        )
+    )
+
+
+def _can_manage_stakeholder_prompts(user) -> bool:
+    """Allow Admin-role users and members of any allowed stakeholder group."""
+    return _is_admin_role(user) or bool(_user_stakeholder_group_names(user))
 
 
 @admin.register(RuntimeConfig, site=admin_site)
@@ -286,6 +319,136 @@ class CommunityPromptSetAdmin(ModelAdmin):
     list_filter = ("bucket_date", "time_grain", "scope_type", "generation_method")
     search_fields = ("scope_value",)
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(StakeholderPrompt, site=admin_site)
+class StakeholderPromptAdmin(ModelAdmin):
+    """Admin for StakeholderPrompt with strict per-group access control.
+
+    Users with the Admin role see and manage every prompt. Members of
+    ``STAKEHOLDER_PROMPT_ALLOWED_GROUPS`` only see and manage prompts that
+    belong to their own group(s); the ``stakeholder_group`` dropdown is also
+    filtered to prevent them from reassigning a prompt to another group.
+    """
+
+    list_display = (
+        "application",
+        "stakeholder_group",
+        "prompt_preview",
+        "updated_at",
+    )
+    list_filter = ("stakeholder_group", "created_at", "updated_at")
+    search_fields = ("application", "stakeholder_group__name", "prompt")
+    readonly_fields = ("id", "created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("id", "application", "stakeholder_group", "prompt")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at")}),
+    )
+
+    @admin.display(description="Prompt")
+    def prompt_preview(self, obj):
+        text = obj.prompt
+        if len(text) > 80:
+            return text[:80] + "..."
+        return text
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related("stakeholder_group")
+        if _is_admin_role(request.user):
+            return qs
+        return qs.filter(stakeholder_group__name__in=_user_stakeholder_group_names(request.user))
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "stakeholder_group" and not _is_admin_role(request.user):
+            kwargs["queryset"] = Group.objects.filter(
+                name__in=_user_stakeholder_group_names(request.user)
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def has_module_permission(self, request):
+        return _can_manage_stakeholder_prompts(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        if not _can_manage_stakeholder_prompts(request.user):
+            return False
+        if obj is None or _is_admin_role(request.user):
+            return True
+        return obj.stakeholder_group.name in _user_stakeholder_group_names(request.user)
+
+    def has_add_permission(self, request):
+        return _can_manage_stakeholder_prompts(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_view_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_view_permission(request, obj)
+
+
+@admin.register(StakeholderPromptResponse, site=admin_site)
+class StakeholderPromptResponseAdmin(ModelAdmin):
+    """Read-only history view of LLM responses, scoped to user's group(s).
+
+    Admins see everything; group members only see responses tied to prompts in
+    their own group(s). Rows are created by Dagster jobs, not through the
+    admin, so add/change/delete are disabled for everyone.
+    """
+
+    list_display = (
+        "stakeholder_prompt",
+        "model",
+        "response_preview",
+        "run_at",
+    )
+    list_filter = ("model", "run_at", "stakeholder_prompt__stakeholder_group")
+    search_fields = (
+        "stakeholder_prompt__application",
+        "stakeholder_prompt__stakeholder_group__name",
+        "response",
+    )
+    readonly_fields = ("id", "stakeholder_prompt", "model", "response", "run_at")
+    fieldsets = (
+        (None, {"fields": ("id", "stakeholder_prompt", "model", "response")}),
+        ("Timestamps", {"fields": ("run_at",)}),
+    )
+
+    @admin.display(description="Response")
+    def response_preview(self, obj):
+        text = obj.response
+        if len(text) > 80:
+            return text[:80] + "..."
+        return text
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related("stakeholder_prompt__stakeholder_group")
+        if _is_admin_role(request.user):
+            return qs
+        return qs.filter(
+            stakeholder_prompt__stakeholder_group__name__in=_user_stakeholder_group_names(
+                request.user
+            )
+        )
+
+    def has_module_permission(self, request):
+        return _can_manage_stakeholder_prompts(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        if not _can_manage_stakeholder_prompts(request.user):
+            return False
+        if obj is None or _is_admin_role(request.user):
+            return True
+        return obj.stakeholder_prompt.stakeholder_group.name in (
+            _user_stakeholder_group_names(request.user)
+        )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 # Register Waffle models with custom admin site

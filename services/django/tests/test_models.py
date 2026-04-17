@@ -11,6 +11,8 @@ from core.models import (
     JournalDetail,
     JournalSentiment,
     JournalTopic,
+    StakeholderPrompt,
+    StakeholderPromptResponse,
     User,
 )
 import pytest
@@ -160,6 +162,70 @@ class TestCommunityRollups:
         assert theme_rollup.pk is not None
         assert mood_rollup.pk is not None
         assert summary.pk is not None
+
+
+@pytest.mark.django_db
+class TestStakeholderPrompt:
+    def test_stakeholder_prompt_str_and_defaults(self):
+        from django.contrib.auth.models import Group
+
+        sales_group, _ = Group.objects.get_or_create(name="sales")
+        prompt = StakeholderPrompt.objects.create(
+            stakeholder_group=sales_group,
+            application="sales_outreach",
+            prompt="Say hello",
+        )
+        assert prompt.id is not None
+        assert prompt.created_at is not None
+        assert prompt.updated_at is not None
+        assert str(prompt) == "sales_outreach (sales)"
+
+    def test_application_is_unique(self):
+        from django.contrib.auth.models import Group
+
+        sales_group, _ = Group.objects.get_or_create(name="sales")
+        marketing_group, _ = Group.objects.get_or_create(name="marketing")
+
+        from django.db import IntegrityError
+
+        StakeholderPrompt.objects.create(
+            stakeholder_group=sales_group,
+            application="sales_outreach",
+            prompt="first",
+        )
+        with pytest.raises(IntegrityError):
+            StakeholderPrompt.objects.create(
+                stakeholder_group=marketing_group,
+                application="sales_outreach",
+                prompt="second",
+            )
+
+
+@pytest.mark.django_db
+class TestStakeholderPromptResponse:
+    def test_response_str_and_cascade(self):
+        from django.contrib.auth.models import Group
+
+        sales_group, _ = Group.objects.get_or_create(name="sales")
+        prompt = StakeholderPrompt.objects.create(
+            stakeholder_group=sales_group,
+            application="sales_outreach",
+            prompt="Say hello",
+        )
+        response = StakeholderPromptResponse.objects.create(
+            stakeholder_prompt=prompt,
+            model="gpt-4o-mini",
+            response="Hi there!",
+        )
+        assert response.id is not None
+        assert response.run_at is not None
+        assert "sales_outreach" in str(response)
+
+        prompt_id = prompt.id
+        prompt.delete()
+        assert not StakeholderPromptResponse.objects.filter(
+            stakeholder_prompt_id=prompt_id
+        ).exists()
 
 
 @pytest.mark.django_db
