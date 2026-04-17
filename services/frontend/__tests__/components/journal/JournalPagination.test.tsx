@@ -103,7 +103,6 @@ describe("JournalPagination", () => {
   describe("page number buttons", () => {
     it("renders page number buttons", () => {
       render(<JournalPagination {...defaultProps} currentPage={1} />);
-      // Should show pages 1, 2, 3, ..., 5
       expect(screen.getByText("1")).toBeInTheDocument();
       expect(screen.getByText("2")).toBeInTheDocument();
       expect(screen.getByText("3")).toBeInTheDocument();

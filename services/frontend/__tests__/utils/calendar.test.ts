@@ -17,16 +17,15 @@ function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
 }
 
 describe("calendar utils", () => {
-  // ── toLocalDateString ─────────────────────────────────────────────────
-
   describe("toLocalDateString", () => {
     test("formats date as YYYY-MM-DD", () => {
-      const date = new Date(2025, 5, 15); // June 15, 2025 (month is 0-indexed)
+      // Date month argument is 0-indexed; 5 = June.
+      const date = new Date(2025, 5, 15);
       expect(toLocalDateString(date)).toBe("2025-06-15");
     });
 
     test("pads single-digit month and day", () => {
-      const date = new Date(2025, 0, 5); // Jan 5
+      const date = new Date(2025, 0, 5);
       expect(toLocalDateString(date)).toBe("2025-01-05");
     });
 
@@ -40,8 +39,6 @@ describe("calendar utils", () => {
       expect(toLocalDateString(date)).toBe("2025-01-01");
     });
   });
-
-  // ── groupJournalsByDate ───────────────────────────────────────────────
 
   describe("groupJournalsByDate", () => {
     test("returns empty map for no journals", () => {
@@ -71,31 +68,25 @@ describe("calendar utils", () => {
     });
   });
 
-  // ── generateCalendarDays ──────────────────────────────────────────────
-
   describe("generateCalendarDays", () => {
     test("always generates exactly 42 days (6 weeks)", () => {
-      const month = new Date(2025, 5, 1); // June 2025
+      const month = new Date(2025, 5, 1);
       const days = generateCalendarDays(month, new Map(), null, "2025-06-15");
       expect(days).toHaveLength(42);
     });
 
     test("marks current month days correctly", () => {
-      // June 2025 starts on Sunday
       const month = new Date(2025, 5, 1);
       const days = generateCalendarDays(month, new Map(), null, "2025-06-15");
 
-      // First day should be June 1 (Sunday) and be in current month
       const june1 = days.find((d) => d.dateString === "2025-06-01");
       expect(june1).toBeDefined();
       expect(june1!.isCurrentMonth).toBe(true);
 
-      // June 30 should be in current month
       const june30 = days.find((d) => d.dateString === "2025-06-30");
       expect(june30).toBeDefined();
       expect(june30!.isCurrentMonth).toBe(true);
 
-      // July 1 should not be in current month
       const july1 = days.find((d) => d.dateString === "2025-07-01");
       expect(july1).toBeDefined();
       expect(july1!.isCurrentMonth).toBe(false);
@@ -148,7 +139,7 @@ describe("calendar utils", () => {
       const june15 = days.find((d) => d.dateString === "2025-06-15");
       expect(june15!.entryCount).toBe(2);
       expect(june15!.entries).toHaveLength(2);
-      expect(june15!.avgMood).toBe(6); // (8+4)/2 = 6
+      expect(june15!.avgMood).toBe(6);
     });
 
     test("days without entries have 0 entryCount and avgMood", () => {
@@ -165,7 +156,6 @@ describe("calendar utils", () => {
       const month = new Date(2025, 5, 1);
       const days = generateCalendarDays(month, new Map(), null, "2025-06-15");
 
-      // No day should be selected
       const anySelected = days.some((d) => d.isSelected);
       expect(anySelected).toBe(false);
     });

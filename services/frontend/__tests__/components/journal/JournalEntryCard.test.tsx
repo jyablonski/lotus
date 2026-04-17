@@ -7,7 +7,7 @@ describe("JournalEntryCard", () => {
     journalId: "1",
     userId: "user-1",
     journalText: "A short journal entry.",
-    userMood: 7, // happy
+    userMood: 7,
     createdAt: "2025-06-15T14:30:00Z",
   };
 
@@ -15,7 +15,7 @@ describe("JournalEntryCard", () => {
     journalId: "2",
     userId: "user-1",
     journalText: "A".repeat(250),
-    userMood: 3, // sad
+    userMood: 3,
     createdAt: "2025-01-01T09:05:00Z",
   };
 
@@ -26,8 +26,7 @@ describe("JournalEntryCard", () => {
 
   it("renders the formatted date", () => {
     render(<JournalEntryCard entry={shortEntry} timezone="UTC" />);
-    // Date formatting is locale-dependent based on the component's custom formatter
-    // Just check that some date text is rendered
+    // Formatting uses a locale-dependent custom formatter; match any plausible date text.
     const dateElement = screen.getByText(/2025|June|January/i, {
       exact: false,
     });
@@ -36,13 +35,11 @@ describe("JournalEntryCard", () => {
 
   it("renders mood badge with label (1-10 scale)", () => {
     render(<JournalEntryCard entry={shortEntry} timezone="UTC" />);
-    // userMood 7 -> badge "Mood 7"
     expect(screen.getByText("Mood 7")).toBeInTheDocument();
   });
 
   it("renders sad mood correctly (low score)", () => {
     render(<JournalEntryCard entry={longEntry} timezone="UTC" />);
-    // userMood 3 -> badge "Mood 3"
     expect(screen.getByText("Mood 3")).toBeInTheDocument();
   });
 
@@ -54,7 +51,6 @@ describe("JournalEntryCard", () => {
 
     it("truncates text longer than 200 characters", () => {
       render(<JournalEntryCard entry={longEntry} timezone="UTC" />);
-      // Should show truncated text with "..."
       const displayedText = screen.getByText(/\.\.\.$/);
       expect(displayedText).toBeInTheDocument();
     });
@@ -67,16 +63,13 @@ describe("JournalEntryCard", () => {
     it("expands text when 'Read more' is clicked", () => {
       render(<JournalEntryCard entry={longEntry} timezone="UTC" />);
       fireEvent.click(screen.getByText("Read more"));
-      // Full text should now be visible (no "...")
       expect(screen.getByText("A".repeat(250))).toBeInTheDocument();
       expect(screen.getByText("Show less")).toBeInTheDocument();
     });
 
     it("collapses text when 'Show less' is clicked", () => {
       render(<JournalEntryCard entry={longEntry} timezone="UTC" />);
-      // Expand
       fireEvent.click(screen.getByText("Read more"));
-      // Collapse
       fireEvent.click(screen.getByText("Show less"));
       expect(screen.getByText("Read more")).toBeInTheDocument();
       expect(screen.queryByText("A".repeat(250))).not.toBeInTheDocument();

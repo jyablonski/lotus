@@ -28,13 +28,11 @@ type JournalServer struct {
 }
 
 func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournalRequest) (*pb.CreateJournalResponse, error) {
-	// parse user_id from string to UUID
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
-	// parse mood_score from string to integer (1-10 scale)
 	moodScore, err := strconv.Atoi(req.UserMood)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidMoodScore, err)
@@ -43,7 +41,6 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 		return nil, fmt.Errorf("%w: must be 1-10, got %d", ErrInvalidMoodScore, moodScore)
 	}
 
-	// Extract deps after input validation.
 	pgxPool := inject.PgxPoolFrom(ctx)
 	riverClient := inject.RiverClientFrom(ctx)
 
@@ -66,7 +63,6 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 	}
 	journalID := journal.ID
 
-	// Enqueue the analysis job in the same transaction.
 	_, err = riverClient.InsertTx(ctx, tx, jobs.AnalyzeEntryArgs{
 		EntryID: int64(journalID),
 		UserID:  userID.String(),
@@ -85,21 +81,17 @@ func (s *JournalServer) CreateJournal(ctx context.Context, req *pb.CreateJournal
 }
 
 func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequest) (*pb.GetJournalsResponse, error) {
-	// parse user_id from string to UUID
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 	}
 
-	// Extract deps after input validation
 	dbq := inject.DBFrom(ctx)
 
-	// set default pagination values
 	limit := req.Limit
 	if limit <= 0 {
-		limit = 50 // reasonable default
+		limit = 50
 	}
-	// optionally set max limit to prevent abuse
 	if limit > 100 {
 		limit = 100
 	}
@@ -111,13 +103,11 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 
 	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
 
-	// fetch total count and paginated journals (separate calls)
 	totalCount, err := dbq.GetJournalCountByUserId(ctx, pgUserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get journal count: %w", err)
 	}
 
-	// Use the generated params struct
 	journals, err := dbq.GetJournalsByUserIdPaginated(ctx, db.GetJournalsByUserIdPaginatedParams{
 		UserID: pgUserID,
 		Limit:  limit,
@@ -127,24 +117,21 @@ func (s *JournalServer) GetJournals(ctx context.Context, req *pb.GetJournalsRequ
 		return nil, fmt.Errorf("failed to fetch journals: %w", err)
 	}
 
-	// Fetch topics for these journals (async-populated by analyzer; may be empty)
+	// Topics are populated asynchronously by the analyzer and may be empty.
 	journalIDs := make([]int32, 0, len(journals))
 	for _, j := range journals {
 		journalIDs = append(journalIDs, j.ID)
 	}
 	topicsByJournal := hydrateTopics(ctx, dbq, journalIDs)
 
-	// prepare journal entries for response
 	var journalEntries []*pb.JournalEntry
 	for _, j := range journals {
 		entry := sourceJournalToPB(j, topicsByJournal[j.ID])
 		journalEntries = append(journalEntries, entry)
 	}
 
-	// calculate if there are more results
 	hasMore := int64(len(journalEntries)) == int64(limit) && (int64(offset)+int64(len(journalEntries))) < totalCount
 
-	// return the paginated response
 	return &pb.GetJournalsResponse{
 		Journals:   journalEntries,
 		TotalCount: totalCount,

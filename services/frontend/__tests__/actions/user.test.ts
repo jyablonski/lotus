@@ -1,7 +1,3 @@
-/**
- * Tests for actions/user.ts (updateTimezone server action)
- */
-
 jest.mock("next/cache", () => ({}));
 jest.mock("@/auth", () => ({
   auth: jest.fn(),

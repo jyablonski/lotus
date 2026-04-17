@@ -21,7 +21,6 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-# Set random seed for reproducibility
 np.random.seed(42)
 
 
@@ -48,14 +47,8 @@ class ArticleRecommenderWrapper(mlflow.pyfunc.PythonModel):
         self.articles_df = pd.read_parquet(context.artifacts["articles_db"])
         self.article_topic_map = pd.read_parquet(context.artifacts["article_topic_map"])
 
-        # all of the preprocessing and model steps were baked into this pipeline object,
-        # stored when we called `pipeline.fit`, and then saved to MLflow.
-
-        # now the API can load the model back in and use it for predictions on new data
-        # using the those same steps
         self.pipeline = mlflow.sklearn.load_model(context.artifacts["sklearn_pipeline"])
 
-        # Cache feature columns expected by pipeline
         self._user_feature_cols = ["favorite_topics"]
         self._session_feature_cols = ["time_on_site"]
         self._article_feature_cols = ["articles_read"]
@@ -85,23 +78,20 @@ class ArticleRecommenderWrapper(mlflow.pyfunc.PythonModel):
             how="left",
         )
 
-        # Check for unknown users - use default topics for new users
+        # Fall back to a default favorite topic for unknown users so the
+        # pipeline still has a value to encode.
         unknown_mask = enriched["favorite_topics"].isna()
         if unknown_mask.any():
             enriched.loc[unknown_mask, "favorite_topics"] = enriched.loc[
                 unknown_mask, "favorite_topics"
             ].apply(lambda x: ["tech"])
 
-        # Get probabilities for each article
-        # The pipeline expects the raw features and handles all preprocessing
         probabilities = self.pipeline.predict_proba(enriched)
 
-        # Format recommendations for each input row
         results = []
         for idx, row in enumerate(model_input.itertuples()):
-            # Get probabilities for this row across all articles
             if isinstance(probabilities, list):
-                # MultiOutputClassifier returns list of arrays
+                # MultiOutputClassifier returns a list of per-article arrays.
                 row_probs = np.array(
                     [p[idx, 1] if p.shape[1] > 1 else p[idx, 0] for p in probabilities]
                 )
@@ -132,14 +122,12 @@ class ArticleRecommenderWrapper(mlflow.pyfunc.PythonModel):
         Returns:
             Dict with user_id and list of top_k recommendations sorted by score
         """
-        # Get top k article indices by probability (descending)
         top_indices = np.argsort(probabilities)[::-1]
 
         recommendations = []
         for article_idx in top_indices:
             article_id = self.articles_df.iloc[article_idx]["article_id"]
 
-            # Skip articles already read
             if article_id in articles_read:
                 continue
 
@@ -176,10 +164,8 @@ def generate_dummy_data(
 
     print("Generating dummy data...")
 
-    # Define our article universe
-    all_articles = [f"article_{i}" for i in range(1, 51)]  # 50 articles
+    all_articles = [f"article_{i}" for i in range(1, 51)]
 
-    # Define topics
     topics = [
         "tech",
         "sports",
@@ -193,22 +179,19 @@ def generate_dummy_data(
         "fashion",
     ]
 
-    # Assign topics to articles (each article has 1-3 topics)
+    # Assign 1-3 topics to each article.
     article_topic_map = {}
     for article in all_articles:
         n_topics = np.random.randint(1, 4)
         article_topics = np.random.choice(topics, n_topics, replace=False).tolist()
         article_topic_map[article] = article_topics
 
-    # Create articles dataframe
     articles_df = pd.DataFrame({"article_id": all_articles})
 
-    # Create article topic map dataframe
     article_topic_df = pd.DataFrame(
         [{"article_id": k, "topics": v} for k, v in article_topic_map.items()]
     )
 
-    # Generate user favorite topics
     user_favorite_topics = {}
     for i in range(200):
         user_id = f"user_{i}"
@@ -217,25 +200,21 @@ def generate_dummy_data(
             topics, n_fav_topics, replace=False
         ).tolist()
 
-    # Create users dataframe
     users_df = pd.DataFrame(
         [{"user_id": k, "favorite_topics": v} for k, v in user_favorite_topics.items()]
     )
 
-    # Generate training data
     data = []
     for i in range(n_samples):
-        user_id = f"user_{i % 200}"  # 200 unique users
+        user_id = f"user_{i % 200}"
         favorite_topics = user_favorite_topics[user_id]
 
-        # Generate articles read (2-8 articles)
         n_articles_read = np.random.randint(2, 9)
         articles_read = np.random.choice(all_articles, n_articles_read, replace=False).tolist()
 
-        # Time on site (in seconds) - correlated with number of articles
+        # Time on site in seconds, correlated with number of articles read.
         time_on_site = n_articles_read * np.random.randint(60, 300)
 
-        # Generate recommendations based on user preferences
         recommended = _generate_logical_recommendations(
             articles_read, favorite_topics, all_articles, article_topic_map
         )
@@ -264,31 +243,28 @@ def _generate_logical_recommendations(
 ) -> list[str]:
     """Generate logical recommendations based on rules"""
 
-    # Get topics from articles read
     read_topics = set()
     for article in articles_read:
         read_topics.update(article_topic_map[article])
 
-    # Combine with favorite topics
     relevant_topics = read_topics.union(set(favorite_topics))
 
-    # Find articles matching these topics that haven't been read
     candidates = []
     for article in all_articles:
         if article not in articles_read:
             article_topics = set(article_topic_map[article])
-            # Score based on topic overlap
             overlap = len(article_topics.intersection(relevant_topics))
             if overlap > 0:
                 candidates.append((article, overlap))
 
-    # Sort by overlap and add some randomness
+    # Jitter the sort so identical-overlap candidates don't always tie-break
+    # the same way — keeps synthetic training data from collapsing to a
+    # deterministic ordering.
     candidates.sort(key=lambda x: x[1] + np.random.random() * 0.5, reverse=True)
 
-    # Return top N
     recommended = [article for article, _ in candidates[:n_recommendations]]
 
-    # Fill with random articles if needed
+    # Backfill with random unread articles if topic overlap didn't yield enough.
     if len(recommended) < n_recommendations:
         remaining = [a for a in all_articles if a not in articles_read and a not in recommended]
         recommended.extend(
@@ -312,10 +288,9 @@ def create_training_features(
         X: DataFrame with features
         y: DataFrame with binary columns for each article (multi-label target)
     """
-    # Create features DataFrame
     X = df[["user_id", "articles_read", "time_on_site", "favorite_topics"]].copy()
 
-    # Create multi-label target (binary indicator for each article)
+    # Multi-label target: one binary indicator column per article.
     y_data = []
     for _, row in df.iterrows():
         article_indicators = {
@@ -334,19 +309,16 @@ def build_pipeline(all_articles: list[str]) -> Pipeline:
     Build sklearn pipeline with ColumnTransformer for preprocessing
     and MultiOutputClassifier for multi-label prediction.
     """
-    # Define preprocessing for different column types
-    # Note: articles_read and favorite_topics are lists, we need custom handling
-
+    # articles_read and favorite_topics are list columns handled by
+    # prepare_features_for_pipeline before reaching this transformer, so only
+    # time_on_site is scaled here.
     preprocessor = ColumnTransformer(
         transformers=[
             ("time_scaler", StandardScaler(), ["time_on_site"]),
-            # For list columns, we'll handle them differently
-            # Using passthrough for now and custom preprocessing
         ],
         remainder="drop",
     )
 
-    # Create the full pipeline
     pipeline = Pipeline(
         [
             ("preprocessor", preprocessor),
@@ -371,18 +343,16 @@ def prepare_features_for_pipeline(
     """
     result = df.copy()
 
-    # One-hot encode articles_read
     for article in all_articles:
         result[f"read_{article}"] = result["articles_read"].apply(
-            lambda x: 1 if article in x else 0
+            lambda x, article=article: 1 if article in x else 0
         )
 
-    # One-hot encode favorite_topics
     for topic in topics:
-        result[f"topic_{topic}"] = result["favorite_topics"].apply(lambda x: 1 if topic in x else 0)
+        result[f"topic_{topic}"] = result["favorite_topics"].apply(
+            lambda x, topic=topic: 1 if topic in x else 0
+        )
 
-    # Keep time_on_site as is
-    # Drop original list columns
     result = result.drop(columns=["articles_read", "favorite_topics", "user_id"])
 
     return result
@@ -398,10 +368,8 @@ def train_model(
 
     print("\nTraining model...")
 
-    # Define feature columns
     feature_cols = [col for col in X_train.columns if col != "user_id"]
 
-    # Build preprocessing pipeline
     preprocessor = ColumnTransformer(
         transformers=[
             ("scaler", StandardScaler(), ["time_on_site"]),
@@ -414,7 +382,6 @@ def train_model(
         remainder="drop",
     )
 
-    # Full pipeline
     pipeline = Pipeline(
         [
             ("preprocessor", preprocessor),
@@ -427,10 +394,8 @@ def train_model(
         ]
     )
 
-    # Fit the pipeline
     pipeline.fit(X_train, y_train)
 
-    # Evaluate
     y_pred = pipeline.predict(X_val)
 
     precision = precision_score(y_val, y_pred, average="samples", zero_division=0)
@@ -448,11 +413,9 @@ def train_model(
 def main():
     """Main training and demonstration function"""
 
-    # Set MLflow tracking
     mlflow.set_tracking_uri("http://localhost:5000")
     mlflow.set_experiment("article_recommendations")
 
-    # Define topics
     topics = [
         "tech",
         "sports",
@@ -466,43 +429,32 @@ def main():
         "fashion",
     ]
 
-    # Generate dummy data
     df, users_df, articles_df, article_topic_df = generate_dummy_data(n_samples=2000)
     all_articles = articles_df["article_id"].tolist()
 
-    # Prepare features
     X, y = create_training_features(df, all_articles)
 
-    # Convert list columns to one-hot encoded features
     X_prepared = prepare_features_for_pipeline(X, all_articles, topics)
 
-    # Split data
     X_train, X_val, y_train, y_val = train_test_split(X_prepared, y, test_size=0.2, random_state=42)
 
-    # Start MLflow run
     with mlflow.start_run(run_name="sklearn_recommender"):
-        # Log parameters
         mlflow.log_param("model_type", "random_forest_multioutput")
         mlflow.log_param("n_estimators", 100)
         mlflow.log_param("max_depth", 10)
         mlflow.log_param("n_samples", len(df))
         mlflow.log_param("n_articles", len(all_articles))
 
-        # Train model
         pipeline, metrics = train_model(X_train, y_train, X_val, y_val)
 
-        # Log metrics
         mlflow.log_metric("precision", metrics["precision"])
         mlflow.log_metric("recall", metrics["recall"])
         mlflow.log_metric("f1_score", metrics["f1"])
 
-        # Save artifacts to temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
-            # Save the sklearn pipeline
             sklearn_path = os.path.join(tmp_dir, "sklearn_pipeline")
             mlflow.sklearn.save_model(pipeline, sklearn_path)
 
-            # Save user and article data as parquet
             users_path = os.path.join(tmp_dir, "users.parquet")
             articles_path = os.path.join(tmp_dir, "articles.parquet")
             article_topic_path = os.path.join(tmp_dir, "article_topic_map.parquet")
@@ -511,7 +463,6 @@ def main():
             articles_df.to_parquet(articles_path, index=False)
             article_topic_df.to_parquet(article_topic_path, index=False)
 
-            # Define artifact paths for the wrapper
             artifact_paths = {
                 "users_db": users_path,
                 "articles_db": articles_path,
@@ -519,7 +470,6 @@ def main():
                 "sklearn_pipeline": sklearn_path,
             }
 
-            # Log the complete model with wrapper
             mlflow.pyfunc.log_model(
                 artifact_path="recommender_model",
                 python_model=ArticleRecommenderWrapper(),
@@ -537,17 +487,14 @@ def main():
 
         print("Training complete! Model logged to MLflow.")
 
-    # Demo prediction
     print("\n" + "=" * 60)
     print("DEMO PREDICTION")
     print("=" * 60)
 
-    # Load the model back
     model_uri = "models:/article_recommender/latest"
     try:
         loaded_model = mlflow.pyfunc.load_model(model_uri)
 
-        # Create sample input
         sample_input = pd.DataFrame(
             [
                 {

@@ -53,7 +53,6 @@ describe("ProfileHeader", () => {
     await act(async () => {
       render(<ProfileHeader {...defaultProps} />);
     });
-    // After useEffect, should show "X days ago"
     expect(screen.getByText(/days ago/)).toBeInTheDocument();
   });
 

@@ -19,25 +19,19 @@ class LotusUserBackend(BaseBackend):
             username = kwargs.get("email")
 
         try:
-            # Try to find user by email
             lotus_user = LotusUser.objects.get(email=username)
 
-            # For OAuth users, we can't verify password here
-            # In production, you'd want to integrate with your OAuth flow
+            # OAuth users have no local password; trust the OAuth flow upstream
+            # and mirror them into Django auth so the admin session works.
             if lotus_user.password is None and lotus_user.oauth_provider:
-                # OAuth user - create Django user if doesn't exist
                 django_user, _ = DjangoUser.objects.get_or_create(
                     username=lotus_user.email, defaults={"email": lotus_user.email}
                 )
                 return django_user
 
-            # For password-based users, verify password
-            # Note: You'll need to implement password hashing verification
-            # based on your password hashing scheme (salt + password)
+            # TODO: verify password against the project's salt+hash scheme before
+            # returning a Django user. Currently accepts any non-empty password.
             if password and lotus_user.password:
-                # TODO: Implement password verification based on your hashing scheme
-                # For now, this is a placeholder
-                # You'll need to hash the password with the salt and compare
                 django_user, _ = DjangoUser.objects.get_or_create(
                     username=lotus_user.email, defaults={"email": lotus_user.email}
                 )

@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { JournalList } from "@/components/journal/JournalList";
 import { JournalEntry } from "@/types/journal";
 
-// Mock JournalEntryCard since it's tested separately
 jest.mock("@/components/journal/JournalEntryCard", () => ({
   JournalEntryCard: ({ entry }: { entry: JournalEntry }) => (
     <div data-testid={`journal-card-${entry.journalId}`}>

@@ -1,14 +1,12 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useCreateJournal } from "@/hooks/useCreateJournal";
 
-// Mock the server action
 const mockCreateJournal = jest.fn();
 jest.mock("@/actions/journals", () => ({
   createJournal: (...args: unknown[]) => mockCreateJournal(...args),
 }));
 
-// Mock next/navigation (already partially done in jest.setup.js, but we need
-// access to the mock router for assertions)
+// Overrides the partial next/navigation mock from jest.setup.js so we can capture push calls.
 const mockPush = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -196,7 +194,6 @@ describe("useCreateJournal", () => {
 
     const { result } = renderHook(() => useCreateJournal());
 
-    // First: trigger validation error
     await act(async () => {
       await result.current.handleSubmit({
         preventDefault: jest.fn(),
@@ -204,7 +201,6 @@ describe("useCreateJournal", () => {
     });
     expect(result.current.error).toBeTruthy();
 
-    // Second: submit with valid entry — error should be cleared
     act(() => {
       result.current.setEntry("Valid entry");
     });

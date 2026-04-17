@@ -21,7 +21,6 @@ class SentimentClient(BaseMLflowClient):
         mlflow_uri: str | None = None,
     ):
         super().__init__(model_name="journal_sentiment_analyzer", mlflow_uri=mlflow_uri)
-        # Minimum confidence for reliable classification
         self.min_confidence_threshold = 0.4
 
     def predict_sentiment(self, text: str) -> dict[str, Any]:
@@ -37,14 +36,11 @@ class SentimentClient(BaseMLflowClient):
         if not self.is_ready():
             raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
-        # Create DataFrame input for pyfunc model
         input_df = pd.DataFrame({"text": [text]})
 
-        # Model returns list of prediction dicts
         results = self.model.predict(input_df)
         result = results[0] if results else {}
 
-        # Add model version and reliability check
         confidence = result.get("confidence", 0.0)
         is_reliable = confidence >= self.min_confidence_threshold
 
@@ -68,7 +64,6 @@ class SentimentClient(BaseMLflowClient):
         input_df = pd.DataFrame({"text": texts})
         results = self.model.predict(input_df)
 
-        # Add model version and reliability check to each result
         processed_results = []
         for result in results:
             confidence = result.get("confidence", 0.0)
@@ -131,11 +126,9 @@ class SentimentClient(BaseMLflowClient):
         if not self.is_ready():
             raise RuntimeError("SentimentClient model not loaded. Call load_model() first.")
 
-        # Batch predict all sentiments
         texts = [entry["text"] for entry in entries_with_dates]
         predictions = self.predict_sentiment_batch(texts)
 
-        # Combine predictions with dates
         results = []
         sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0, "uncertain": 0}
         total_confidence = 0
@@ -158,7 +151,6 @@ class SentimentClient(BaseMLflowClient):
             reliable_predictions / len(entries_with_dates) if entries_with_dates else 0
         )
 
-        # Determine dominant sentiment (excluding uncertain)
         reliable_counts = {k: v for k, v in sentiment_counts.items() if k != "uncertain"}
         dominant_sentiment = (
             max(reliable_counts, key=reliable_counts.get)

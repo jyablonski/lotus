@@ -23,10 +23,8 @@ export function AnalyticsUserProperties() {
       return;
     }
 
-    // Set user_id for cross-device tracking
     window.gtag("set", { user_id: session.user.id } as never);
 
-    // Compute days_since_signup
     let daysSinceSignup = 0;
     if (session.user.createdAt) {
       const signupDate = new Date(session.user.createdAt);

@@ -40,11 +40,9 @@ class ExampleModelWrapper(mlflow.pyfunc.PythonModel):
         """
         self.pipeline = mlflow.sklearn.load_model(context.artifacts["sklearn_pipeline"])
 
-        # Load label encoder for target variable
         with open(context.artifacts["label_encoder"], "rb") as f:
             self.label_encoder = pickle.load(f)
 
-        # Load configuration
         with open(context.artifacts["model_config"], "rb") as f:
             self.config = pickle.load(f)
 
@@ -62,24 +60,19 @@ class ExampleModelWrapper(mlflow.pyfunc.PythonModel):
             List of prediction dicts, one per input row:
             [{"prediction": "class_a", "confidence": 0.85, "probabilities": {...}}, ...]
         """
-        # Ensure required columns are present
         missing_cols = set(self._feature_cols) - set(model_input.columns)
         if missing_cols:
             raise ValueError(f"Missing required columns: {missing_cols}")
 
-        # Select only feature columns in expected order
         X = model_input[self._feature_cols]
 
-        # Get predictions and probabilities
         predictions = self.pipeline.predict(X)
         probabilities = self.pipeline.predict_proba(X)
 
         results = []
         for i, pred in enumerate(predictions):
-            # Decode the label
             pred_label = self.label_encoder.inverse_transform([pred])[0]
 
-            # Get probability for each class
             proba_dict = {
                 self.label_encoder.inverse_transform([j])[0]: round(float(prob), 4)
                 for j, prob in enumerate(probabilities[i])
@@ -121,7 +114,7 @@ def generate_dummy_data(n_samples: int = 1000) -> pd.DataFrame:
         "target": np.random.choice(["positive", "negative", "neutral"], n_samples),
     }
 
-    # Make target somewhat correlated with features
+    # Inject a non-random signal so the classifier has something to learn.
     df = pd.DataFrame(data)
     df.loc[(df["numeric_feature_1"] > 0.5) & (df["category"] == "A"), "target"] = "positive"
     df.loc[(df["numeric_feature_1"] < -0.5) & (df["category"] == "C"), "target"] = "negative"
@@ -140,7 +133,6 @@ def build_pipeline(numeric_features: list[str], categorical_features: list[str])
     Returns:
         Configured sklearn Pipeline
     """
-    # Define preprocessing for different column types
     preprocessor = ColumnTransformer(
         transformers=[
             ("numeric", StandardScaler(), numeric_features),
@@ -149,7 +141,6 @@ def build_pipeline(numeric_features: list[str], categorical_features: list[str])
         remainder="drop",
     )
 
-    # Create the full pipeline
     pipeline = Pipeline(
         [
             ("preprocessor", preprocessor),
@@ -166,66 +157,52 @@ def build_pipeline(numeric_features: list[str], categorical_features: list[str])
 def train_and_register():
     """Train and register the example model."""
 
-    # Setup MLflow
     mlflow.set_tracking_uri("http://localhost:5000")
     mlflow.set_experiment("example_experiment")
 
-    # Generate or load data
     df = generate_dummy_data(n_samples=1000)
 
-    # Define feature columns
     numeric_features = ["numeric_feature_1", "numeric_feature_2"]
     categorical_features = ["category"]
     feature_cols = numeric_features + categorical_features
 
     with mlflow.start_run(run_name="example_model"):
-        # Prepare features and target
         X = df[feature_cols]
         y_raw = df["target"]
 
-        # Encode target labels
         label_encoder = LabelEncoder()
         y = label_encoder.fit_transform(y_raw)
 
-        # Split data
         X_train, X_val, y_train, y_val = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
         )
 
-        # Build and train pipeline
         pipeline = build_pipeline(numeric_features, categorical_features)
         pipeline.fit(X_train, y_train)
 
-        # Log parameters
         mlflow.log_param("model_type", "random_forest")
         mlflow.log_param("n_estimators", 100)
         mlflow.log_param("max_depth", 10)
         mlflow.log_param("training_samples", len(X_train))
         mlflow.log_param("validation_samples", len(X_val))
 
-        # Evaluate
         train_score = pipeline.score(X_train, y_train)
         val_score = pipeline.score(X_val, y_val)
 
-        # Log metrics
         mlflow.log_metric("train_accuracy", train_score)
         mlflow.log_metric("val_accuracy", val_score)
 
         print(f"Training Accuracy: {train_score:.4f}")
         print(f"Validation Accuracy: {val_score:.4f}")
 
-        # Save artifacts to temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
-            # Save the sklearn pipeline
             sklearn_path = os.path.join(tmp_dir, "sklearn_pipeline")
             mlflow.sklearn.save_model(pipeline, sklearn_path)
 
-            # Save label encoder
             label_encoder_path = os.path.join(tmp_dir, "label_encoder.pkl")
             with open(label_encoder_path, "wb") as f:
                 pickle.dump(label_encoder, f)
 
-            # Save model configuration
             config = {
                 "feature_cols": feature_cols,
                 "numeric_features": numeric_features,
@@ -236,14 +213,12 @@ def train_and_register():
             with open(config_path, "wb") as f:
                 pickle.dump(config, f)
 
-            # Define artifact paths for the wrapper
             artifact_paths = {
                 "sklearn_pipeline": sklearn_path,
                 "label_encoder": label_encoder_path,
                 "model_config": config_path,
             }
 
-            # Log the complete model with wrapper
             print("\nLogging model with pyfunc wrapper...")
             mlflow.pyfunc.log_model(
                 artifact_path="example_model",
@@ -260,12 +235,10 @@ def train_and_register():
             )
             print("Model logged successfully!")
 
-        # Demonstrate loading and using the model
         print("\n" + "=" * 60)
         print("DEMO: Loading and using the model")
         print("=" * 60)
 
-        # Create sample input
         sample_input = pd.DataFrame(
             [
                 {"numeric_feature_1": 0.8, "numeric_feature_2": 55.0, "category": "A"},
@@ -274,7 +247,6 @@ def train_and_register():
             ]
         )
 
-        # Create wrapper instance for demo
         wrapper = ExampleModelWrapper()
         wrapper.pipeline = pipeline
         wrapper.label_encoder = label_encoder

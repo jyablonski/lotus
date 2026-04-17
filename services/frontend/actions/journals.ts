@@ -90,7 +90,8 @@ export async function createJournal(
 
     const data = await response.json();
 
-    // Fetch the updated total count so the client can detect first-entry
+    // Re-read the total count so the client can special-case the user's very
+    // first entry (welcome state, onboarding analytics, etc.).
     let totalCount: number | undefined;
     try {
       const countResp = await fetch(
@@ -105,10 +106,9 @@ export async function createJournal(
         totalCount = parseInt(countData.totalCount, 10) || undefined;
       }
     } catch {
-      // Non-critical — analytics only; swallow silently
+      // Non-critical — analytics only; swallow silently.
     }
 
-    // Revalidate cached data on pages that display journals
     revalidatePath(ROUTES.home);
     revalidatePath(ROUTES.journal.home);
     revalidatePath(ROUTES.journal.calendar);

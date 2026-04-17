@@ -12,13 +12,11 @@ def create_or_update_topics(
 ) -> list[JournalTopics]:
     """Create or update topics for a journal entry."""
     try:
-        # Delete existing topics for this journal
         db.query(JournalTopics).filter(JournalTopics.journal_id == journal_id).delete()
 
-        # Create new topic records (topic_name stored lowercase for consistency)
+        # topic_name/subtopic_name are stored lowercase for consistent matching.
         topic_records = []
         for topic in topics:
-            # always lowercase the topic name for standardization.
             topic_name = str(topic["topic_name"]).strip().lower()
             raw_subtopic = topic.get("subtopic_name")
             subtopic_name = str(raw_subtopic).strip().lower() if raw_subtopic else None

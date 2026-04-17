@@ -13,10 +13,7 @@ from dagster_project.assets.ingestion.get_game_types_from_api import (
 
 @pytest.mark.unit
 class TestGetGameTypesFromApi:
-    """Test the get_game_types_from_api asset."""
-
     def test_get_game_types_from_api_success(self):
-        """Test successful fetch of game types from API."""
         mock_data = [
             {"id": 1, "name": "Regular Season"},
             {"id": 2, "name": "Playoffs"},
@@ -43,7 +40,6 @@ class TestGetGameTypesFromApi:
         mock_response.raise_for_status.assert_called_once()
 
     def test_get_game_types_from_api_http_error(self):
-        """Test handling of HTTP errors."""
         mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")
@@ -58,7 +54,6 @@ class TestGetGameTypesFromApi:
             get_game_types_from_api(context)
 
     def test_get_game_types_from_api_json_decode_error(self):
-        """Test handling of JSON decode errors."""
         mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -76,6 +71,3 @@ class TestGetGameTypesFromApi:
 
         with pytest.raises(requests.exceptions.JSONDecodeError):
             get_game_types_from_api(context)
-
-        # Verify error logging was attempted
-        assert True  # Asset attempted to log error before raising

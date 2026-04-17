@@ -10,7 +10,6 @@
  */
 
 jest.mock("next-auth", () => {
-  // Return a function that simply returns mock exports
   const mockFn = jest.fn((config) => ({
     handlers: {},
     auth: jest.fn(),
@@ -43,19 +42,16 @@ jest.mock("@/lib/config", () => ({
   BACKEND_API_KEY: "test-api-key",
 }));
 
-// Now we can import authConfig -- NextAuth() is mocked so it won't
-// try to initialize the full auth system
+// Imported after the NextAuth mock so it doesn't try to initialize the full auth system.
 import { authConfig, __clearBackendUserCacheForTests } from "@/auth";
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
 beforeEach(() => {
   jest.clearAllMocks();
-  mockFetch.mockReset(); // clear implementation queue so no leftover mockResolvedValueOnce from previous tests
+  // clear the implementation queue so no leftover mockResolvedValueOnce from previous tests
+  mockFetch.mockReset();
   __clearBackendUserCacheForTests();
   jest.spyOn(console, "error").mockImplementation(() => {});
   jest.spyOn(console, "log").mockImplementation(() => {});
@@ -67,9 +63,6 @@ afterEach(() => {
 
 const callbacks = authConfig.callbacks!;
 
-// ---------------------------------------------------------------------------
-// signIn callback
-// ---------------------------------------------------------------------------
 describe("signIn callback", () => {
   const signIn = callbacks.signIn!;
 
@@ -107,14 +100,12 @@ describe("signIn callback", () => {
   });
 
   test("creates new user when not found in backend", async () => {
-    // fetchBackendUser returns 404
+    // fetchBackendUser -> createUserInBackend -> fetchBackendUser (post-create)
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
-    // createUserInBackend succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ userId: "new-user-456" }),
     });
-    // fetchBackendUser after creation succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -212,7 +203,6 @@ describe("signIn callback", () => {
     >;
     await signIn({ user, account: { provider: "github" } } as never);
 
-    // First fetch call is fetchBackendUser
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
@@ -224,14 +214,11 @@ describe("signIn callback", () => {
   });
 
   test("sends Authorization Bearer header on createUserInBackend", async () => {
-    // fetchBackendUser returns 404
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
-    // createUserInBackend succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ userId: "new-u" }),
     });
-    // fetchBackendUser after creation
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -247,7 +234,6 @@ describe("signIn callback", () => {
     >;
     await signIn({ user, account: { provider: "github" } } as never);
 
-    // Second fetch call is the POST to create user
     const createCall = mockFetch.mock.calls[1];
     expect(createCall[1].headers).toEqual(
       expect.objectContaining({
@@ -274,7 +260,6 @@ describe("signIn callback", () => {
     const user = { email: "new@example.com" } as Record<string, unknown>;
     await signIn({ user, account: { provider: "github" } } as never);
 
-    // Second fetch call is the POST to create the user
     const createCall = mockFetch.mock.calls[1];
     const body = JSON.parse(createCall[1].body);
     expect(body.oauth_provider).toBe("github");
@@ -282,9 +267,6 @@ describe("signIn callback", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// jwt callback
-// ---------------------------------------------------------------------------
 describe("jwt callback", () => {
   const jwt = callbacks.jwt!;
 
@@ -299,7 +281,7 @@ describe("jwt callback", () => {
   });
 
   test("preserves existing token when no user (subsequent requests)", async () => {
-    // Token already has backendId; we do not fetch (rely on JWT after login).
+    // With backendId already on the token we rely on JWT after login and do not refetch.
     const result = await jwt({
       token: {
         backendId: "existing-id",
@@ -324,9 +306,6 @@ describe("jwt callback", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// session callback
-// ---------------------------------------------------------------------------
 describe("session callback", () => {
   const session = callbacks.session!;
 
@@ -367,26 +346,22 @@ describe("session callback", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// signIn callback - magic link (email) provider
-// ---------------------------------------------------------------------------
 describe("signIn callback - magic link (email provider)", () => {
   const signIn = callbacks.signIn!;
 
   test("allows phase-1 email send when user has no id yet", async () => {
-    // Phase-1: email is being sent, user.id is not populated
+    // Phase-1: email is being sent; user.id isn't populated, so we shouldn't hit the backend.
     const result = await signIn({
       user: { email: "magic@example.com" },
       account: { provider: "resend" },
     } as never);
 
     expect(result).toBe(true);
-    // No backend calls should happen during phase-1
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("syncs with backend on phase-2 for existing user", async () => {
-    // Phase-2: user clicked the magic link, user.id is set by the adapter
+    // Phase-2: user clicked the magic link, user.id is set by the adapter.
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -411,15 +386,12 @@ describe("signIn callback - magic link (email provider)", () => {
   });
 
   test("creates new user in backend on phase-2 with provider 'email'", async () => {
-    // Phase-2: user clicked the magic link but doesn't exist in backend yet
-    // fetchBackendUser returns 404
+    // Phase-2: user clicked the magic link but doesn't exist in backend yet.
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
-    // createUserInBackend succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ userId: "new-email-user-200" }),
     });
-    // fetchBackendUser after creation succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -441,7 +413,7 @@ describe("signIn callback - magic link (email provider)", () => {
     expect(result).toBe(true);
     expect(user.backendId).toBe("new-email-user-200");
 
-    // Verify the create call used "email" as the oauth_provider
+    // The create call must use "email" as the oauth_provider (not "resend").
     const createCall = mockFetch.mock.calls[1];
     const body = JSON.parse(createCall[1].body);
     expect(body.oauth_provider).toBe("email");
@@ -449,14 +421,11 @@ describe("signIn callback - magic link (email provider)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// jwt callback - magic link fallback paths
-// ---------------------------------------------------------------------------
 describe("jwt callback - magic link fallback paths", () => {
   const jwt = callbacks.jwt!;
 
   test("falls back to user.id when user.backendId is missing (adapter user)", async () => {
-    // The adapter returns AdapterUser with id = backend UUID, no backendId field
+    // The magic-link adapter returns an AdapterUser with id = backend UUID and no backendId field.
     const result = await jwt({
       token: {},
       user: { id: "adapter-uuid-999", email: "adapter@example.com" },
@@ -467,8 +436,8 @@ describe("jwt callback - magic link fallback paths", () => {
   });
 
   test("looks up backend user by email when backendId is still missing", async () => {
-    // Scenario: token has email but no backendId (user object had neither
-    // backendId nor a useful id). JWT callback does one lookup; no refresh fetch.
+    // Token has email but no backendId (user object had neither backendId nor a useful id),
+    // so the JWT callback does a single email lookup and no refresh fetch.
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -490,14 +459,12 @@ describe("jwt callback - magic link fallback paths", () => {
   });
 
   test("creates user in backend when email lookup returns null", async () => {
-    // fetchBackendUser returns null (404)
+    // fetchBackendUser (404) -> createUserInBackend -> fetchBackendUser -> always-refresh-role lookup.
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
-    // createUserInBackend succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ userId: "auto-created-id" }),
     });
-    // fetchBackendUser after creation
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -507,7 +474,6 @@ describe("jwt callback - magic link fallback paths", () => {
         timezone: "UTC",
       }),
     });
-    // Always-refresh-role lookup
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -528,9 +494,7 @@ describe("jwt callback - magic link fallback paths", () => {
   });
 
   test("handles failed email lookup and failed creation gracefully", async () => {
-    // fetchBackendUser returns 404
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
-    // createUserInBackend fails
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -542,12 +506,11 @@ describe("jwt callback - magic link fallback paths", () => {
       user: undefined,
     } as never);
 
-    // backendId should remain unset — no crash
+    // backendId must remain unset without crashing.
     expect(result!.backendId).toBeUndefined();
   });
 
   test("does not fetch when backendId is already on the token", async () => {
-    // We rely on JWT after login; no backend refresh when backendId is already set.
     const result = await jwt({
       token: { backendId: "already-set", email: "skip@example.com" },
       user: undefined,
@@ -558,9 +521,6 @@ describe("jwt callback - magic link fallback paths", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// authConfig - structural assertions
-// ---------------------------------------------------------------------------
 describe("authConfig structure", () => {
   test("uses JWT session strategy", () => {
     expect(authConfig.session?.strategy).toBe("jwt");

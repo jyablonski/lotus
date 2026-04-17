@@ -9,7 +9,7 @@ jest.mock("lucide-react", () => ({
 
 describe("CalendarHeader", () => {
   const defaultProps = {
-    currentMonth: new Date(2025, 5, 1), // June 2025
+    currentMonth: new Date(2025, 5, 1),
     onNavigateMonth: jest.fn(),
     onGoToToday: jest.fn(),
     timezone: "UTC",
@@ -53,7 +53,6 @@ describe("CalendarHeader", () => {
     render(
       <CalendarHeader {...defaultProps} onNavigateMonth={onNavigateMonth} />,
     );
-    // ChevronLeft is the first navigation button
     const prevButton = screen.getByTestId("chevron-left").closest("button")!;
     fireEvent.click(prevButton);
     expect(onNavigateMonth).toHaveBeenCalledWith("prev");

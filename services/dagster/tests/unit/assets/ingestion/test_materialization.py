@@ -14,10 +14,7 @@ from dagster_project.resources import PostgresResource
 
 @pytest.mark.unit
 class TestMaterialization:
-    """Test asset materialization with mocked resources."""
-
     def test_materialize_get_api_users(self):
-        """Test materializing get_api_users asset."""
         mock_users = [
             {
                 "id": 1,
@@ -44,7 +41,6 @@ class TestMaterialization:
                 )
 
     def test_materialize_with_mocked_postgres(self):
-        """Test materializing users_in_postgres with mocked database."""
         mock_users = [
             {
                 "id": 1,
@@ -54,7 +50,6 @@ class TestMaterialization:
             }
         ]
 
-        # Mock the API call
         with patch(
             "dagster_project.assets.ingestion.get_api_assets.requests.get"
         ) as mock_get:
@@ -68,16 +63,14 @@ class TestMaterialization:
             mock_cursor = MagicMock()
             mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
 
-            # Patch psycopg2.connect to return our mock connection
             with patch(
                 "dagster_project.resources.postgres.psycopg2.connect",
                 return_value=mock_conn,
             ):
-                # Create a real PostgresResource instance
                 mock_postgres = PostgresResource()
 
                 with instance_for_test() as instance:
-                    # Materialize both assets - ConfigurableResource instances can be passed directly
+                    # ConfigurableResource instances can be passed directly to materialize
                     result = materialize(
                         [get_api_users, users_in_postgres],
                         instance=instance,

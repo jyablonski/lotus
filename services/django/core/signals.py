@@ -33,22 +33,20 @@ def sync_django_user(sender, instance, created, **kwargs):
     - Admin role users get is_staff=True and is_superuser=True
     - Other users get basic Django User (created for consistency)
     """
-    # Get old email if this was an update
     old_email = _old_email_cache.pop(instance.pk, None) if not created else None
 
-    # Determine lookup email: use old email if email changed, otherwise use current email
+    # Look up the existing Django User by its prior email so we can carry the row
+    # through an email change; the username stays pinned to the original address.
     lookup_email = old_email if old_email and old_email != instance.email else instance.email
 
     try:
         django_user = DjangoUser.objects.get(username=lookup_email)
     except DjangoUser.DoesNotExist:
-        # Create new Django User
         django_user = DjangoUser.objects.create(
             username=instance.email,
             email=instance.email,
         )
 
-    # Update email if it changed (username stays as original email)
     if django_user.email != instance.email:
         django_user.email = instance.email
         django_user.save()

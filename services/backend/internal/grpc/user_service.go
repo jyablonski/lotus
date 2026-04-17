@@ -37,7 +37,6 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 	logger := inject.LoggerFrom(ctx)
 	dbq := inject.DBFrom(ctx)
 
-	// Hash the password using bcrypt (salt is embedded in the hash).
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		logger.Error("Failed to hash password", "error", err)
@@ -66,8 +65,6 @@ func (s *UserServer) CreateUserOauth(ctx context.Context, req *pb.CreateUserOaut
 	logger := inject.LoggerFrom(ctx)
 	dbq := inject.DBFrom(ctx)
 
-	// create a structured log w/ `time: xxx`, `level`, `msg`, and `user_info`:`
-	// "user_info":{"email":"user_oauth2@email.com","oauth_provider":"github"}}
 	logger.Info("CreateUser request received",
 		slog.Group("user_info",
 			slog.String("email", req.Email),
@@ -97,7 +94,6 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 		return nil, status.Error(codes.InvalidArgument, ErrEmailRequired.Error())
 	}
 
-	// Extract deps after input validation
 	dbq := inject.DBFrom(ctx)
 
 	u, err := dbq.GetUserByEmail(ctx, email)
@@ -134,13 +130,11 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 func (s *UserServer) UpdateUserTimezone(ctx context.Context, req *pb.UpdateUserTimezoneRequest) (*pb.UpdateUserTimezoneResponse, error) {
 	logger := inject.LoggerFrom(ctx)
 
-	// Validate user ID
 	userID, err := uuid.Parse(req.GetUserId())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, ErrInvalidUserID.Error())
 	}
 
-	// Validate timezone is a valid IANA timezone name
 	tz := req.GetTimezone()
 	if _, err := time.LoadLocation(tz); err != nil {
 		return nil, status.Error(codes.InvalidArgument, ErrInvalidTimezone.Error())

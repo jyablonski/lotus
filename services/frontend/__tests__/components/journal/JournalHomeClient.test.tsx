@@ -94,7 +94,7 @@ function makeEntries(count: number): JournalEntry[] {
     journalId: String(i + 1),
     userId: "user-1",
     journalText: `Journal entry number ${i + 1}`,
-    userMood: 7, // happy
+    userMood: 7,
     createdAt: `2025-01-${String(i + 1).padStart(2, "0")}T10:00:00Z`,
   }));
 }
@@ -187,11 +187,9 @@ describe("JournalHomeClient", () => {
           timezone="UTC"
         />,
       );
-      // Go to page 2 first
       fireEvent.click(screen.getByText("Go to page 2"));
       expect(screen.getByTestId("current-page")).toHaveTextContent("2");
 
-      // Now set search — should reset to page 1
       fireEvent.click(screen.getByText("Set Search"));
       expect(screen.getByTestId("current-page")).toHaveTextContent("1");
     });
@@ -221,7 +219,6 @@ describe("JournalHomeClient", () => {
           timezone="UTC"
         />,
       );
-      // Activate a filter
       fireEvent.click(screen.getByText("Set Search"));
       expect(screen.getByText("Clear Filters")).toBeInTheDocument();
     });

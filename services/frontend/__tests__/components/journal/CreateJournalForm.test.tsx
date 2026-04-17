@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CreateJournalForm } from "@/components/journal/CreateJournalForm";
 
-// Mock child components since they're tested separately
 jest.mock("@/components/journal/MoodSelector", () => ({
   MoodSlider: ({
     value,

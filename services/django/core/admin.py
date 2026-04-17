@@ -43,7 +43,6 @@ class LotusAdminSite(UnfoldAdminSite):
         return _has_admin_access(request.user)
 
 
-# Create custom admin site instance
 admin_site = LotusAdminSite(name="lotus_admin")
 
 ACTIVE_ML_MODEL_ALLOWED_GROUPS = ("product", "ml_ops")
@@ -129,7 +128,7 @@ class ActiveMLModelAdmin(ModelAdmin):
         (None, {"fields": ("id", "ml_model", "is_enabled")}),
         ("Timestamps", {"fields": ("created_at", "modified_at")}),
     )
-    list_editable = ("is_enabled",)  # Allow quick editing of enabled status from list view
+    list_editable = ("is_enabled",)
 
     def has_add_permission(self, request):
         """Only allow Admin role or product/ml_ops groups to add."""
@@ -152,20 +151,18 @@ class ActiveMLModelAdmin(ModelAdmin):
         return has_ml_model_permission(request.user)
 
 
-# Unregister User and Group from default admin site
 admin.site.unregister(User)
 admin.site.unregister(Group)
 
-# Unregister Waffle models from default admin site (they auto-register there)
+# Waffle auto-registers on the default site; move its models to our custom one.
 admin.site.unregister(Flag)
 admin.site.unregister(Switch)
 admin.site.unregister(Sample)
 
 
-# Register User and Group with custom admin site
 @admin.register(User, site=admin_site)
 class UserAdmin(BaseUserAdmin, ModelAdmin):
-    # Forms loaded from `unfold.forms` for proper Unfold styling
+    # Use Unfold's forms so the auth UI matches the rest of the custom admin.
     form = UserChangeForm
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
@@ -451,7 +448,6 @@ class StakeholderPromptResponseAdmin(ModelAdmin):
         return False
 
 
-# Register Waffle models with custom admin site
 @admin.register(Flag, site=admin_site)
 class WaffleFlagAdmin(ModelAdmin):
     list_display = ("name", "everyone", "superusers", "staff", "note", "created", "modified")

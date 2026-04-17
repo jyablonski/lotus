@@ -59,15 +59,13 @@ class SlackResource(ConfigurableResource):
         response = requests.post(self.webhook_url, json=payload, timeout=10)
         response.raise_for_status()
 
-        # Slack webhooks return "ok" as plain text, not JSON
-        # Return a dict with the status for consistency
+        # Slack webhooks return plain "ok" (not JSON) on success; normalize the
+        # shape so callers always get a dict.
         if response.text.strip() == "ok":
             return {"ok": True, "text": response.text}
-        # Try to parse as JSON if it's not "ok"
         try:
             return response.json()
         except ValueError:
-            # If not JSON, return the text response
             return {"ok": True, "text": response.text}
 
     def _send_via_bot_token(self, message: str, channel: str | None) -> dict:
@@ -92,7 +90,6 @@ class SlackResource(ConfigurableResource):
         return result
 
 
-# Create default Slack resource instance
 slack_resource = SlackResource(
     webhook_url=EnvVar("SLACK_WEBHOOK_URL"),
     bot_token=EnvVar("SLACK_BOT_TOKEN"),

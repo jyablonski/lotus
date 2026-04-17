@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { LoggedInDashboard } from "@/components/dashboard/LoggedInDashboard";
 
-// Mock next/link
 jest.mock("next/link", () => {
   return ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>

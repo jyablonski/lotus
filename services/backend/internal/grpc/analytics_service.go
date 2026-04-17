@@ -44,7 +44,6 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 		DailyStreak:       summary.DailyStreak,
 	}
 
-	// Handle nullable numeric fields
 	if summary.AvgMoodScore.Valid {
 		val := numericToFloat64(summary.AvgMoodScore)
 		pbSummary.AvgMoodScore = &val
@@ -68,7 +67,6 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 		pbSummary.AvgJournalLength = &val
 	}
 
-	// Handle nullable timestamp fields
 	if summary.FirstJournalAt.Valid {
 		val := summary.FirstJournalAt.Time.Format(time.RFC3339)
 		pbSummary.FirstJournalAt = &val
@@ -82,7 +80,6 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 		pbSummary.LastModifiedAt = &val
 	}
 
-	// Handle 30-day metrics
 	if summary.AvgMoodScore30d.Valid {
 		val := numericToFloat64(summary.AvgMoodScore30d)
 		pbSummary.AvgMoodScore_30D = &val
@@ -94,7 +91,6 @@ func (s *AnalyticsServer) GetUserJournalSummary(ctx context.Context, req *pb.Get
 		pbSummary.MaxMoodScore_30D = summary.MaxMoodScore30d
 	}
 
-	// Handle calculated fields
 	if summary.PositivePercentage.Valid {
 		val := numericToFloat64(summary.PositivePercentage)
 		pbSummary.PositivePercentage = &val

@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { SuccessMessage } from "@/components/journal/SuccessMessage";
 
-// Mock lucide-react icons
 jest.mock("lucide-react", () => ({
   CheckCircle: ({ className }: { className?: string }) => (
     <svg data-testid="check-circle-icon" className={className} />

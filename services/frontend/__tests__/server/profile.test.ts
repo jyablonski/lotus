@@ -1,13 +1,5 @@
-/**
- * Tests for lib/server/profile.ts
- *
- * Tests fetchProfileStats by mocking the journals fetcher and verifying
- * it delegates correctly to calculateProfileStats.
- */
-
 import { fetchProfilePageData, fetchProfileStats } from "@/lib/server/profile";
 
-// Mock the journals module that profile.ts depends on
 jest.mock("@/lib/server/journals", () => ({
   fetchAllJournalsForUser: jest.fn(),
 }));
@@ -17,9 +9,6 @@ const mockFetchAll = fetchAllJournalsForUser as jest.MockedFunction<
   typeof fetchAllJournalsForUser
 >;
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 const mockJournals = [
   {
     journalId: "j1",
@@ -37,9 +26,6 @@ const mockJournals = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 describe("fetchProfileStats", () => {
   beforeEach(() => {
     jest.clearAllMocks();

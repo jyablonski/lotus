@@ -91,17 +91,14 @@ class MockPyfuncSentimentModel:
         results = []
 
         for text in texts:
-            # Preprocess
             processed_text = text.lower().strip()
 
-            # Get prediction and probabilities from sklearn pipeline
             prediction = self.pipeline.predict([processed_text])[0]
             probabilities = self.pipeline.predict_proba([processed_text])[0]
 
             sentiment = self.sentiment_labels[prediction]
             confidence = float(max(probabilities))
 
-            # Determine confidence level
             if confidence >= self.confidence_thresholds["high"]:
                 confidence_level = "high"
             elif confidence >= self.confidence_thresholds["medium"]:
@@ -165,11 +162,6 @@ class MockSemanticTopicModel:
         return results
 
 
-# ---------------------------------------------------------------------------
-# Testcontainers: Postgres
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture(scope="session")
 def postgres_container():
     """Spin up an isolated Postgres container for the entire test session."""
@@ -219,11 +211,6 @@ def test_db_session(test_engine):
     session.close()
 
 
-# ---------------------------------------------------------------------------
-# Existing fixtures
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture(scope="session")
 def real_sentiment_client():
     """Load pre-saved sentiment model for testing."""
@@ -236,14 +223,12 @@ def real_sentiment_client():
         with SENTIMENT_MODEL_PATH.open("rb") as f:
             test_pipeline = pickle.load(f)
 
-        # Create client and inject mock pyfunc model
         client = SentimentClient()
         client.model = MockPyfuncSentimentModel(test_pipeline)
         client.model_version = "test_v1.0.0"
         client.model_run_id = "test_run_id"
         client._is_loaded = True
 
-        # Verify it works
         test_result = client.predict_sentiment("This is a test")
         assert "sentiment" in test_result
 
@@ -268,7 +253,6 @@ def real_topic_client():
     client.model_run_id = "test_run_id"
     client._is_loaded = True
 
-    # Verify it works
     test_result = client.extract_topics("This is a test entry about work")
     assert isinstance(test_result, list)
 
@@ -287,7 +271,6 @@ def override_db_dependency(test_db_session):
 
     yield test_db_session
 
-    # Clean up dependency override
     if get_db in app.dependency_overrides:
         del app.dependency_overrides[get_db]
 
@@ -370,7 +353,6 @@ def mock_openai_topic_client():
     """Mock OpenAI topic client with realistic responses."""
 
     async def mock_analyze_topics(request):
-        # Return realistic mock data based on request
         if "work" in request.text.lower() or "meeting" in request.text.lower():
             return TopicAnalysis(
                 topics=["work", "stress", "meetings", "productivity", "deadlines"][
@@ -385,7 +367,6 @@ def mock_openai_topic_client():
                 ],
                 confidence_scores=[0.92, 0.89, 0.85, 0.80, 0.75][: request.max_topics],
             )
-        # Generic response
         return TopicAnalysis(
             topics=["general", "life", "thoughts", "feelings", "day"][: request.max_topics],
             confidence_scores=[0.70, 0.65, 0.60, 0.55, 0.50][: request.max_topics],

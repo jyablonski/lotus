@@ -1,11 +1,3 @@
-/**
- * Tests for lib/server/journals.ts
- *
- * These test the server-side data-fetching layer by mocking global fetch
- * and verifying correct URL construction, response transformation, error
- * handling, and that the Authorization header is always included.
- */
-
 jest.mock("@/lib/config", () => ({
   BACKEND_URL: "http://backend:8080",
   BACKEND_API_KEY: "test-api-key",
@@ -17,9 +9,6 @@ import {
   fetchAllJournalsForUser,
 } from "@/lib/server/journals";
 
-// ---------------------------------------------------------------------------
-// Setup: mock global fetch
-// ---------------------------------------------------------------------------
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
@@ -32,9 +21,6 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 const backendJournals = [
   {
     journalId: "j1",
@@ -52,9 +38,6 @@ const backendJournals = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// fetchJournalsForUser
-// ---------------------------------------------------------------------------
 describe("fetchJournalsForUser", () => {
   test("returns transformed journals on successful response", async () => {
     mockFetch.mockResolvedValueOnce({
@@ -73,7 +56,7 @@ describe("fetchJournalsForUser", () => {
       expect.objectContaining({ method: "GET" }),
     );
     expect(result.journals).toHaveLength(2);
-    // userMood should be transformed from string to number
+    // userMood is returned by the backend as a string but is exposed as a number.
     expect(result.journals[0].userMood).toBe(7);
     expect(result.journals[1].userMood).toBe(3);
     expect(result.totalCount).toBe(2);
@@ -185,9 +168,6 @@ describe("fetchJournalsForUser", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// fetchRecentJournals
-// ---------------------------------------------------------------------------
 describe("fetchRecentJournals", () => {
   test("returns just the journals array with default count of 5", async () => {
     mockFetch.mockResolvedValueOnce({
@@ -224,9 +204,6 @@ describe("fetchRecentJournals", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// fetchAllJournalsForUser
-// ---------------------------------------------------------------------------
 describe("fetchAllJournalsForUser", () => {
   test("paginates with limit=100 until hasMore is false", async () => {
     mockFetch.mockResolvedValueOnce({

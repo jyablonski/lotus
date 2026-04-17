@@ -40,12 +40,12 @@ export const LoggedInDashboard = ({
   showCommunityPulse,
   todayTogether = null,
 }: LoggedInDashboardProps) => {
-  // Derive display values from analytics (or use defaults for new users)
   const totalEntries = analytics?.totalJournals ?? 0;
   const entriesLast30Days = analytics?.totalJournals30d ?? 0;
   const currentStreak = analytics?.dailyStreak ?? 0;
   const activeDays = analytics?.activeDays ?? 0;
-  // Use all-time avg mood so it matches profile page (profile uses calculateAverageMood over all journals)
+  // Use the all-time average so this value matches the profile page, which
+  // computes avg mood across every journal (not just the last 30 days).
   const avgMood = analytics?.avgMoodScore ?? 0;
   const avgMoodRounded = avgMood ? Math.round(avgMood * 10) / 10 : 0;
   const positivePct = analytics?.positivePercentage ?? null;
@@ -54,7 +54,6 @@ export const LoggedInDashboard = ({
   const sentimentTrend =
     avgMood > 0 ? getSentimentFromMood(avgMood) : "No Data";
 
-  // Format recent entries for display
   const recentEntries: DashboardEntry[] = formatRecentEntries(
     recentJournals,
     3,

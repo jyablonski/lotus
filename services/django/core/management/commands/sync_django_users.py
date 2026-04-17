@@ -32,7 +32,6 @@ class Command(BaseCommand):
                 django_user = DjangoUser.objects.get(username=lotus_user.email)
                 needs_update = False
 
-                # Check if email needs updating
                 if django_user.email != lotus_user.email:
                     needs_update = True
                     if not dry_run:

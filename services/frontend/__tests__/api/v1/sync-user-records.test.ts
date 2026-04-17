@@ -1,8 +1,4 @@
 /**
- * Tests for app/api/v1/sync-user-records/route.ts
- *
- * Unit tests for the sync-user-records example API endpoint.
- *
  * @jest-environment node
  */
 

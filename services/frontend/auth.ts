@@ -340,9 +340,8 @@ export const authConfig: NextAuthConfig = {
       let backendUser = await fetchBackendUser(user.email, { skipCache: true });
 
       if (!backendUser) {
-        // Create the user in the Go backend.
-        // For email sign-ins we pass "email" as the oauth_provider value
-        // to distinguish them from GitHub-authenticated users.
+        // For email sign-ins we pass "email" as oauth_provider so the backend
+        // can distinguish them from GitHub-authenticated users.
         const providerLabel = isEmailProvider ? "email" : account?.provider;
         const createResult = await createUserInBackend(
           user.email,
@@ -366,7 +365,6 @@ export const authConfig: NextAuthConfig = {
         }
       }
 
-      // Attach backend fields to the NextAuth user object
       (user as User).backendId = backendUser.userId;
       (user as User).createdAt = backendUser.createdAt;
       (user as User).role = backendUser.role;

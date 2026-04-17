@@ -17,10 +17,7 @@ from dagster_project.assets.ingestion.get_api_assets import (
 @pytest.mark.integration
 @pytest.mark.slow
 class TestIntegration:
-    """Integration tests that require external services."""
-
     def test_get_api_users_integration(self):
-        """Test get_api_users asset with real API call."""
         context = build_asset_context()
         try:
             result = get_api_users(context)
@@ -34,8 +31,6 @@ class TestIntegration:
         assert "email" in result[0]
 
     def test_users_in_postgres_integration(self, postgres_resource_with_cleanup):
-        """Test users_in_postgres asset with a real Postgres testcontainer."""
-        # Create test users
         test_users = [
             {
                 "id": 999,
@@ -47,11 +42,9 @@ class TestIntegration:
 
         context = build_asset_context()
 
-        # Execute the asset
         users_in_postgres(context, test_users, postgres_resource_with_cleanup)
 
-        # Verify data was stored
-        # Note: search_path is set in PostgresResource, so table is in the test schema
+        # search_path is set in PostgresResource, so table is in the test schema
         with (
             postgres_resource_with_cleanup.get_connection() as conn,
             conn.cursor() as cur,

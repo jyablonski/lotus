@@ -26,7 +26,6 @@ func journalPgUUID(u uuid.UUID) pgtype.UUID { return pgtype.UUID{Bytes: u, Valid
 
 func journalPgTS(t time.Time) pgtype.Timestamp { return pgtype.Timestamp{Time: t, Valid: true} }
 
-// journalTestCtx returns a context with all deps needed by the journal service.
 func journalTestCtx(dbMock db.Querier, httpMock inject.HTTPDoer) context.Context {
 	ctx := context.Background()
 	ctx = inject.WithDB(ctx, dbMock)
@@ -36,7 +35,6 @@ func journalTestCtx(dbMock db.Querier, httpMock inject.HTTPDoer) context.Context
 	return ctx
 }
 
-// noopHTTPClient is a simple mock that returns 200 OK for all requests.
 func noopHTTPClient() *mocks.HTTPDoerMock {
 	return &mocks.HTTPDoerMock{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
@@ -93,7 +91,6 @@ func TestJournalServer_CreateJournal_MoodScoreOutOfRange(t *testing.T) {
 }
 
 func TestJournalServer_GetJournals_Success(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
 	now := time.Now()
 
@@ -139,17 +136,14 @@ func TestJournalServer_GetJournals_Success(t *testing.T) {
 		Offset: 0,
 	}
 
-	// Act
 	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Len(t, resp.Journals, 2)
 	assert.Equal(t, int64(2), resp.TotalCount)
 	assert.False(t, resp.HasMore)
 
-	// Verify first journal
 	assert.Equal(t, "1", resp.Journals[0].JournalId)
 	assert.Equal(t, "First journal entry", resp.Journals[0].JournalText)
 	assert.Equal(t, "7", resp.Journals[0].UserMood)
@@ -192,7 +186,6 @@ func TestJournalServer_GetJournals_WithTopics(t *testing.T) {
 }
 
 func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
 	now := time.Now()
 
@@ -211,7 +204,7 @@ func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
 
 	mockQuerier := &mocks.QuerierMock{
 		GetJournalCountByUserIdFunc: func(ctx context.Context, uid pgtype.UUID) (int64, error) {
-			return 25, nil // Total of 25 journals
+			return 25, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
 			assert.Equal(t, int32(10), arg.Limit)
@@ -232,19 +225,16 @@ func TestJournalServer_GetJournals_WithPagination(t *testing.T) {
 		Offset: 0,
 	}
 
-	// Act
 	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Len(t, resp.Journals, 10)
 	assert.Equal(t, int64(25), resp.TotalCount)
-	assert.True(t, resp.HasMore) // Should have more results
+	assert.True(t, resp.HasMore)
 }
 
 func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
 
 	mockQuerier := &mocks.QuerierMock{
@@ -252,7 +242,6 @@ func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
 			return 0, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
-			// Verify default limit is applied (50)
 			assert.Equal(t, int32(50), arg.Limit)
 			return []db.SourceJournal{}, nil
 		},
@@ -266,20 +255,17 @@ func TestJournalServer_GetJournals_DefaultLimit(t *testing.T) {
 
 	req := &pb.GetJournalsRequest{
 		UserId: userID.String(),
-		Limit:  0, // No limit specified
+		Limit:  0,
 		Offset: 0,
 	}
 
-	// Act
 	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
 
 func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
-	// Arrange
 	userID := uuid.New()
 
 	mockQuerier := &mocks.QuerierMock{
@@ -287,7 +273,6 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 			return 0, nil
 		},
 		GetJournalsByUserIdPaginatedFunc: func(ctx context.Context, arg db.GetJournalsByUserIdPaginatedParams) ([]db.SourceJournal, error) {
-			// Verify max limit is capped at 100
 			assert.Equal(t, int32(100), arg.Limit)
 			return []db.SourceJournal{}, nil
 		},
@@ -301,14 +286,12 @@ func TestJournalServer_GetJournals_MaxLimit(t *testing.T) {
 
 	req := &pb.GetJournalsRequest{
 		UserId: userID.String(),
-		Limit:  500, // Exceeds max
+		Limit:  500,
 		Offset: 0,
 	}
 
-	// Act
 	resp, err := server.GetJournals(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
-	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
@@ -356,7 +339,6 @@ func TestJournalServer_TriggerJournalAnalysis_JournalNotFound(t *testing.T) {
 }
 
 func TestJournalServer_TriggerJournalAnalysis_InvalidJournalId(t *testing.T) {
-	// Arrange
 	mockQuerier := &mocks.QuerierMock{}
 	mockHTTPClient := noopHTTPClient()
 
@@ -366,10 +348,8 @@ func TestJournalServer_TriggerJournalAnalysis_InvalidJournalId(t *testing.T) {
 		JournalId: "not-a-number",
 	}
 
-	// Act
 	resp, err := server.TriggerJournalAnalysis(journalTestCtx(mockQuerier, mockHTTPClient), req)
 
-	// Assert
 	require.Error(t, err)
 	require.Nil(t, resp)
 	assert.ErrorIs(t, err, internalgrpc.ErrInvalidJournalID)

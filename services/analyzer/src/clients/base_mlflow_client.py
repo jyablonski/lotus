@@ -62,7 +62,6 @@ class BaseMLflowClient:
                     "even after bypassing @trace_disabled — unexpected MLflow 3.x state."
                 )
 
-            # Get actual model version info - pass tracking URI explicitly
             client = mlflow.MlflowClient(tracking_uri=self.mlflow_uri)
             if model_version == "latest":
                 try:
@@ -80,7 +79,6 @@ class BaseMLflowClient:
             else:
                 self.model_version = model_version
 
-            # Get additional model metadata
             try:
                 model_version_details = client.get_model_version(
                     self.model_name, self.model_version

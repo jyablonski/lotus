@@ -19,48 +19,43 @@ def materialize_user_journal_features(
     with feast_store.get_store() as store:
         feature_view_name = "user_journal_summary_features"
 
-        # Try to get the feature view, apply if it doesn't exist.
-        # these exist in postgres under `feast.feature_views`
+        # Feature views are persisted in Postgres under `feast.feature_views`.
+        # If this is a fresh environment the view won't exist yet, so fall back
+        # to applying it from the repo-local definitions.
         try:
             fv = store.get_feature_view(feature_view_name)
             context.log.info(f"Found feature view: {fv.name}")
         except Exception:
-            # Feature view not found, need to apply it
             context.log.info(
                 f"Feature view '{feature_view_name}' not found, applying to registry..."
             )
 
-            # path fix to make sure we can apply the feature ddls
+            # The feast repo isn't on sys.path by default; temporarily add it so
+            # we can import the entity/feature-view definitions, then clean up.
             repo_path = Path(feast_store.repo_path)
             if str(repo_path) not in sys.path:
                 sys.path.insert(0, str(repo_path))
 
             try:
-                # Import entities and feature views
                 from entities import user_entity
                 from feature_views import user_journal_summary_fv
 
-                # Apply them to the registry
                 store.apply([user_entity, user_journal_summary_fv])
                 context.log.info("Feature views applied successfully")
 
-                # Now get the feature view
                 fv = store.get_feature_view(feature_view_name)
             except Exception as e:
-                # Remove from path if we added it
                 if str(repo_path) in sys.path:
                     sys.path.remove(str(repo_path))
                 raise ValueError(f"Failed to apply feature views: {e}") from e
             finally:
-                # Clean up sys.path
                 if str(repo_path) in sys.path:
                     sys.path.remove(str(repo_path))
 
-        # Log config for debugging
         context.log.info(f"Online store config: {store.config.online_store}")
         context.log.info(f"Offline store config: {store.config.offline_store}")
 
-        # Wide time range to capture all data
+        # Use a wide time range so we pick up historical rows on first run.
         start_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
         end_date = datetime.now(timezone.utc)
 
@@ -68,7 +63,6 @@ def materialize_user_journal_features(
             f"Materializing {feature_view_name} from {start_date} to {end_date}"
         )
 
-        # Run materialization
         store.materialize(
             feature_views=[feature_view_name],
             start_date=start_date,

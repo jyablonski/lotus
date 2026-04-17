@@ -20,16 +20,15 @@ export function JournalPagination({
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-  // Generate page numbers to show
+  // Build a compact page list: first page, a window of +/- `delta` around the
+  // current page, last page, with "..." placeholders inserted for any gaps.
   const getVisiblePages = () => {
-    const delta = 2; // Show 2 pages on each side of current page
+    const delta = 2;
     const range = [];
     const rangeWithDots = [];
 
-    // Always show first page
     range.push(1);
 
-    // Add pages around current page
     for (
       let i = Math.max(2, currentPage - delta);
       i <= Math.min(totalPages - 1, currentPage + delta);
@@ -38,15 +37,12 @@ export function JournalPagination({
       range.push(i);
     }
 
-    // Always show last page (if more than 1 page)
     if (totalPages > 1) {
       range.push(totalPages);
     }
 
-    // Remove duplicates and sort
     const uniquePages = [...new Set(range)].sort((a, b) => a - b);
 
-    // Add dots where there are gaps
     for (let i = 0; i < uniquePages.length; i++) {
       rangeWithDots.push(uniquePages[i]);
 
@@ -62,15 +58,12 @@ export function JournalPagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 py-6 border-t border-dark-600">
-      {/* Results info */}
       <div className="text-sm text-muted-dark">
         Showing {startItem}-{endItem} of {totalItems} entries
         {hasFilters && <span className="ml-1">(filtered)</span>}
       </div>
 
-      {/* Pagination controls */}
       <div className="flex items-center gap-2">
-        {/* Previous button */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -80,7 +73,6 @@ export function JournalPagination({
           Previous
         </button>
 
-        {/* Page numbers */}
         <div className="flex items-center gap-1">
           {visiblePages.map((page, index) => (
             <div key={index}>
@@ -102,7 +94,6 @@ export function JournalPagination({
           ))}
         </div>
 
-        {/* Next button */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}

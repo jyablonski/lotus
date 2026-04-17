@@ -40,12 +40,10 @@ func strp(s string) *string { return &s }
 
 func i32p(v int32) *int32 { return &v }
 
-// newAnalyticsTestLogger creates a logger that discards output for testing
 func newAnalyticsTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// analyticsTestCtx returns a context with DB and logger for analytics tests.
 func analyticsTestCtx(mock db.Querier) context.Context {
 	ctx := context.Background()
 	ctx = inject.WithDB(ctx, mock)
