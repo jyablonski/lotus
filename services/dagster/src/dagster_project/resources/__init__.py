@@ -1,5 +1,10 @@
 from .example_api import ApiClientResource, api_client
-from .google_sheets import GoogleSheetsResource, feature_flags_google_sheet
+from .google_sheets import (
+    GoogleSheetsResource,
+    feature_flags_google_sheet,
+    llm_prompt_google_sheet,
+)
+from .openai_client import OpenAIResource, openai_client
 from .postgres import PostgresResource, postgres_conn
 from .redis import RedisResource, redis_conn
 from .feast import FeastResource, feast_store
@@ -9,6 +14,7 @@ from .slack import SlackResource, slack_resource
 __all__ = [
     "ApiClientResource",
     "GoogleSheetsResource",
+    "OpenAIResource",
     "PostgresResource",
     "RedisResource",
     "FeastResource",
@@ -16,6 +22,8 @@ __all__ = [
     "SlackResource",
     "api_client",
     "feature_flags_google_sheet",
+    "llm_prompt_google_sheet",
+    "openai_client",
     "postgres_conn",
     "redis_conn",
     "feast_store",
@@ -29,6 +37,8 @@ __all__ = [
 RESOURCES: dict = {
     "api_client": api_client,
     "feature_flags_google_sheet": feature_flags_google_sheet,
+    "llm_prompt_google_sheet": llm_prompt_google_sheet,
+    "openai_client": openai_client,
     "postgres_conn": postgres_conn,
     "redis_conn": redis_conn,
     "feast_store": feast_store,

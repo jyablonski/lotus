@@ -4,6 +4,7 @@ import base64
 import json
 from unittest.mock import MagicMock, patch
 
+import gspread
 import pytest
 
 from dagster_project.resources.google_sheets import GoogleSheetsResource
@@ -178,3 +179,116 @@ class TestGoogleSheetsResource:
         mock_authorize.assert_called_once()
         # Verify get_sheet was called (via open_by_url)
         mock_client.open_by_url.assert_called_once()
+
+
+@pytest.mark.unit
+class TestGoogleSheetsResourceHelpers:
+    """Test the reusable helpers on GoogleSheetsResource."""
+
+    def _resource(self) -> GoogleSheetsResource:
+        return GoogleSheetsResource(
+            sheet_url="https://docs.google.com/spreadsheets/d/test123",
+            credentials_json_b64="unused",
+        )
+
+    def test_read_cell_strips_value(self):
+        mock_worksheet = MagicMock()
+        mock_worksheet.acell.return_value.value = "  hello  "
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.return_value = mock_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            assert self._resource().read_cell("Prompt", "B1") == "hello"
+
+        mock_sheet.worksheet.assert_called_once_with("Prompt")
+        mock_worksheet.acell.assert_called_once_with("B1")
+
+    def test_read_cell_returns_empty_when_none(self):
+        mock_worksheet = MagicMock()
+        mock_worksheet.acell.return_value.value = None
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.return_value = mock_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            assert self._resource().read_cell("Prompt", "B1") == ""
+
+    def test_get_or_create_worksheet_returns_existing(self):
+        mock_worksheet = MagicMock()
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.return_value = mock_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            result = self._resource().get_or_create_worksheet("Existing")
+
+        assert result is mock_worksheet
+        mock_sheet.worksheet.assert_called_once_with("Existing")
+        mock_sheet.add_worksheet.assert_not_called()
+
+    def test_get_or_create_worksheet_creates_when_missing(self):
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.side_effect = gspread.WorksheetNotFound("nope")
+        new_worksheet = MagicMock()
+        mock_sheet.add_worksheet.return_value = new_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            result = self._resource().get_or_create_worksheet(
+                "NewTab", rows=500, cols=10
+            )
+
+        assert result is new_worksheet
+        mock_sheet.add_worksheet.assert_called_once_with(
+            title="NewTab", rows=500, cols=10
+        )
+
+    def test_append_row_with_header_writes_header_when_empty(self):
+        mock_worksheet = MagicMock()
+        mock_worksheet.get_all_values.return_value = []
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.return_value = mock_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            self._resource().append_row_with_header(
+                "Responses", row=["1", "2"], header=["a", "b"]
+            )
+
+        mock_worksheet.update.assert_called_once_with(
+            "A1", [["a", "b"]], value_input_option="RAW"
+        )
+        mock_worksheet.append_row.assert_called_once_with(
+            ["1", "2"], value_input_option="RAW"
+        )
+
+    def test_append_row_with_header_skips_header_when_not_empty(self):
+        mock_worksheet = MagicMock()
+        mock_worksheet.get_all_values.return_value = [["a", "b"], ["x", "y"]]
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.return_value = mock_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            self._resource().append_row_with_header(
+                "Responses", row=["1", "2"], header=["a", "b"]
+            )
+
+        mock_worksheet.update.assert_not_called()
+        mock_worksheet.append_row.assert_called_once_with(
+            ["1", "2"], value_input_option="RAW"
+        )
+
+    def test_overwrite_with_rows_clears_and_updates(self):
+        mock_worksheet = MagicMock()
+        mock_sheet = MagicMock()
+        mock_sheet.worksheet.return_value = mock_worksheet
+
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            self._resource().overwrite_with_rows(
+                "Feature Flags",
+                header=["a", "b"],
+                rows=[["1", "2"], ["3", "4"]],
+            )
+
+        mock_worksheet.clear.assert_called_once()
+        mock_worksheet.update.assert_called_once_with(
+            "A1",
+            [["a", "b"], ["1", "2"], ["3", "4"]],
+            value_input_option="RAW",
+        )

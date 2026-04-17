@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 
 from dagster import AssetExecutionContext, asset
-import gspread
 import polars as pl
 
-from dagster_project.resources import PostgresResource, GoogleSheetsResource
+from dagster_project.resources import GoogleSheetsResource, PostgresResource
 from dagster_project.sql.exports import SELECT_FEATURE_FLAGS
 
 
@@ -34,28 +33,20 @@ def sync_flags_to_sheets(
         pl.lit(synced_at).alias("synced_at")
     )
 
-    # Cast all columns to strings for Google Sheets compatibility
     df_strings = df_with_timestamp.cast(
         {col: pl.Utf8 for col in df_with_timestamp.columns}
     )
 
     try:
-        sheet = feature_flags_google_sheet.get_sheet()
-        try:
-            worksheet = sheet.worksheet("Feature Flags")
-        except gspread.WorksheetNotFound:
-            worksheet = sheet.add_worksheet(title="Feature Flags", rows=1000, cols=20)
-
-        headers = df_strings.columns
-        rows = df_strings.rows()
-        all_rows = [headers] + list(rows)
-
-        worksheet.clear()
-        worksheet.update("A1", all_rows, value_input_option="RAW")
-
-        context.log.info(
-            f"Synced {len(df_strings)} feature flags to Google Sheets at {synced_at}"
+        feature_flags_google_sheet.overwrite_with_rows(
+            worksheet_name="Feature Flags",
+            header=list(df_strings.columns),
+            rows=[list(row) for row in df_strings.rows()],
         )
     except Exception as e:
         context.log.error(f"Error syncing to Google Sheets: {e}")
         raise
+
+    context.log.info(
+        f"Synced {len(df_strings)} feature flags to Google Sheets at {synced_at}"
+    )

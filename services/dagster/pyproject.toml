@@ -14,6 +14,7 @@ dependencies = [
     "feast[postgres]>=0.57.0",
     "google-auth>=2.23.0",
     "gspread>=6.0.0",
+    "openai>=1.54.0",
     "polars>=1.35.2",
     "redis>=5.0.0",
 ]

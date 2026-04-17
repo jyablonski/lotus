@@ -525,6 +525,72 @@ class JournalExport(models.Model):
         return f"Export {self.id} ({self.format}) — {self.status}"
 
 
+class StakeholderPrompt(models.Model):
+    """Prompt authored by a stakeholder for use by LLM-driven Dagster jobs.
+
+    The `application` field identifies what the prompt is used for
+    (e.g. `sales_outreach`, `weekly_summary`) and is how Dagster jobs look up
+    the right prompt. Each prompt belongs to a `stakeholder_group` (a Django
+    `auth.Group`); admin access is scoped per-group so e.g. members of the
+    `sales` group only see prompts owned by `sales`.
+    """
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    stakeholder_group = models.ForeignKey(
+        "auth.Group",
+        on_delete=models.PROTECT,
+        related_name="stakeholder_prompts",
+        db_column="stakeholder_group_id",
+    )
+    application = models.CharField(max_length=64, unique=True)
+    prompt = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "stakeholder_prompts"
+        ordering = ["application"]
+
+    def __str__(self):
+        return f"{self.application} ({self.stakeholder_group.name})"
+
+
+class StakeholderPromptResponse(models.Model):
+    """Record of an LLM response for a given StakeholderPrompt."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        editable=False,
+        db_default=UUIDGenerateV4(),
+    )
+    stakeholder_prompt = models.ForeignKey(
+        StakeholderPrompt,
+        on_delete=models.CASCADE,
+        db_column="stakeholder_prompt_id",
+        related_name="responses",
+    )
+    model = models.CharField(max_length=64)
+    response = models.TextField()
+    run_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+
+    class Meta:
+        db_table = "stakeholder_prompt_responses"
+        ordering = ["-run_at"]
+        indexes = [
+            models.Index(
+                fields=["stakeholder_prompt", "-run_at"],
+                name="idx_spr_prompt_run_at",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Response for {self.stakeholder_prompt.application} at {self.run_at}"
+
+
 class RuntimeConfig(models.Model):
     """Key-value configuration store for cross-service settings and runtime data.
 
