@@ -147,6 +147,7 @@ ADMIN_ALLOWED_GROUPS = [
     "ml_ops",
     "infrastructure",
     "engineering",
+    "sales",
 ]  # Django groups that can access admin interface
 
 # Django Waffle - Feature Flag Settings

@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from dagster import ResourceDefinition, build_op_context
+from dagster import build_op_context
 import pytest
 
 from dagster_project.assets.exports.llm_prompt_from_sheet import (
@@ -117,19 +117,9 @@ class TestRunPromptFromSheet:
         assert sheet.read_cell.call_count == 1
 
 
-def _context_with_sheet(
-    sheet_resource: MagicMock, openai_resource: MagicMock | None = None
-):
-    resources = {
-        "llm_prompt_google_sheet": ResourceDefinition(
-            resource_fn=lambda _c: sheet_resource
-        )
-    }
-    if openai_resource is not None:
-        resources["openai_client"] = ResourceDefinition(
-            resource_fn=lambda _c: openai_resource
-        )
-    context = build_op_context(resources=resources)
+def _context():
+    """Build a bare op context. Resources are passed positionally to the asset fn."""
+    context = build_op_context()
     context.log.info = MagicMock()
     return context
 
@@ -140,26 +130,23 @@ class TestReadPromptAsset:
         sheet = _build_sheet_mock(
             {("Prompt", "B1"): "summarize", ("Prompt", "B2"): "gpt-4o"}
         )
-        context = _context_with_sheet(sheet)
 
-        result = read_prompt_from_sheet(context, sheet)
+        result = read_prompt_from_sheet(_context(), sheet)
 
         assert result == {"prompt": "summarize", "model": "gpt-4o"}
 
     def test_model_none_when_b2_blank(self):
         sheet = _build_sheet_mock({("Prompt", "B1"): "summarize"})
-        context = _context_with_sheet(sheet)
 
-        result = read_prompt_from_sheet(context, sheet)
+        result = read_prompt_from_sheet(_context(), sheet)
 
         assert result == {"prompt": "summarize", "model": None}
 
     def test_raises_when_prompt_blank(self):
         sheet = _build_sheet_mock({("Prompt", "B1"): ""})
-        context = _context_with_sheet(sheet)
 
         with pytest.raises(ValueError, match="Prompt!B1 is empty"):
-            read_prompt_from_sheet(context, sheet)
+            read_prompt_from_sheet(_context(), sheet)
 
 
 @pytest.mark.unit
@@ -167,7 +154,7 @@ class TestRunPromptAndWriteResultAsset:
     def test_delegates_to_runner(self):
         sheet = _build_sheet_mock({("Prompt", "B1"): "say hi", ("Prompt", "B2"): ""})
         openai = _build_openai_mock("hello!")
-        context = _context_with_sheet(sheet, openai)
+        context = _context()
 
         result = run_prompt_and_write_result(
             context,

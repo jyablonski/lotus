@@ -172,31 +172,32 @@ class TestStakeholderPrompt:
         sales_group, _ = Group.objects.get_or_create(name="sales")
         prompt = StakeholderPrompt.objects.create(
             stakeholder_group=sales_group,
-            application="sales_outreach",
+            application="sales_test_defaults",
             prompt="Say hello",
         )
         assert prompt.id is not None
         assert prompt.created_at is not None
         assert prompt.updated_at is not None
-        assert str(prompt) == "sales_outreach (sales)"
+        assert str(prompt) == "sales_test_defaults (sales)"
 
     def test_application_is_unique(self):
         from django.contrib.auth.models import Group
+        from django.db import IntegrityError, transaction
 
         sales_group, _ = Group.objects.get_or_create(name="sales")
         marketing_group, _ = Group.objects.get_or_create(name="marketing")
 
-        from django.db import IntegrityError
-
         StakeholderPrompt.objects.create(
             stakeholder_group=sales_group,
-            application="sales_outreach",
+            application="unique_app_test",
             prompt="first",
         )
-        with pytest.raises(IntegrityError):
+        # IntegrityError aborts the surrounding transaction, so wrap the
+        # offending create in its own atomic block to keep the test DB usable.
+        with pytest.raises(IntegrityError), transaction.atomic():
             StakeholderPrompt.objects.create(
                 stakeholder_group=marketing_group,
-                application="sales_outreach",
+                application="unique_app_test",
                 prompt="second",
             )
 
@@ -209,7 +210,7 @@ class TestStakeholderPromptResponse:
         sales_group, _ = Group.objects.get_or_create(name="sales")
         prompt = StakeholderPrompt.objects.create(
             stakeholder_group=sales_group,
-            application="sales_outreach",
+            application="response_cascade_test",
             prompt="Say hello",
         )
         response = StakeholderPromptResponse.objects.create(
@@ -219,7 +220,7 @@ class TestStakeholderPromptResponse:
         )
         assert response.id is not None
         assert response.run_at is not None
-        assert "sales_outreach" in str(response)
+        assert "response_cascade_test" in str(response)
 
         prompt_id = prompt.id
         prompt.delete()

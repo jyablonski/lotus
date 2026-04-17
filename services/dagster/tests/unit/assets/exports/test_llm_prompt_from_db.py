@@ -3,7 +3,7 @@
 from contextlib import contextmanager
 from unittest.mock import MagicMock
 
-from dagster import ResourceDefinition, build_op_context
+from dagster import build_op_context
 import pytest
 
 from dagster_project.assets.exports.llm_prompt_from_db import (
@@ -159,13 +159,9 @@ class TestRunPromptFromDb:
             )
 
 
-def _context_with_resources(postgres: MagicMock, openai: MagicMock | None = None):
-    resources = {
-        "postgres_conn": ResourceDefinition(resource_fn=lambda _c: postgres),
-    }
-    if openai is not None:
-        resources["openai_client"] = ResourceDefinition(resource_fn=lambda _c: openai)
-    context = build_op_context(resources=resources)
+def _context():
+    """Build a bare op context. Resources are passed positionally to the asset fn."""
+    context = build_op_context()
     context.log.info = MagicMock()
     return context
 
@@ -176,9 +172,8 @@ class TestReadSalesOutreachPromptAsset:
         postgres = _build_postgres_mock(
             row=("abc-123", "sales", "sales_outreach", "say hi")
         )
-        context = _context_with_resources(postgres)
 
-        result = read_sales_outreach_prompt(context, postgres)
+        result = read_sales_outreach_prompt(_context(), postgres)
 
         assert result["application"] == SALES_OUTREACH_APPLICATION
         assert result["prompt"] == "say hi"
@@ -191,7 +186,7 @@ class TestRunDbPromptAndWriteResultAsset:
             row=("abc-123", "sales", "sales_outreach", "say hi")
         )
         openai = _build_openai_mock("hello!")
-        context = _context_with_resources(postgres, openai)
+        context = _context()
 
         result = run_db_prompt_and_write_result(
             context,

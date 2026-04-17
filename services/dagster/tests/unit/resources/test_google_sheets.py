@@ -185,23 +185,21 @@ class TestGoogleSheetsResource:
 class TestGoogleSheetsResourceHelpers:
     """Test the reusable helpers on GoogleSheetsResource."""
 
-    def _resource_with_mock_sheet(self, mock_sheet: MagicMock) -> GoogleSheetsResource:
-        """Build a resource whose get_sheet() returns *mock_sheet*."""
-        resource = GoogleSheetsResource(
+    def _resource(self) -> GoogleSheetsResource:
+        return GoogleSheetsResource(
             sheet_url="https://docs.google.com/spreadsheets/d/test123",
             credentials_json_b64="unused",
         )
-        resource.get_sheet = MagicMock(return_value=mock_sheet)  # type: ignore[method-assign]
-        return resource
 
     def test_read_cell_strips_value(self):
         mock_worksheet = MagicMock()
         mock_worksheet.acell.return_value.value = "  hello  "
         mock_sheet = MagicMock()
         mock_sheet.worksheet.return_value = mock_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        assert resource.read_cell("Prompt", "B1") == "hello"
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            assert self._resource().read_cell("Prompt", "B1") == "hello"
+
         mock_sheet.worksheet.assert_called_once_with("Prompt")
         mock_worksheet.acell.assert_called_once_with("B1")
 
@@ -210,17 +208,17 @@ class TestGoogleSheetsResourceHelpers:
         mock_worksheet.acell.return_value.value = None
         mock_sheet = MagicMock()
         mock_sheet.worksheet.return_value = mock_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        assert resource.read_cell("Prompt", "B1") == ""
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            assert self._resource().read_cell("Prompt", "B1") == ""
 
     def test_get_or_create_worksheet_returns_existing(self):
         mock_worksheet = MagicMock()
         mock_sheet = MagicMock()
         mock_sheet.worksheet.return_value = mock_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        result = resource.get_or_create_worksheet("Existing")
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            result = self._resource().get_or_create_worksheet("Existing")
 
         assert result is mock_worksheet
         mock_sheet.worksheet.assert_called_once_with("Existing")
@@ -231,9 +229,11 @@ class TestGoogleSheetsResourceHelpers:
         mock_sheet.worksheet.side_effect = gspread.WorksheetNotFound("nope")
         new_worksheet = MagicMock()
         mock_sheet.add_worksheet.return_value = new_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        result = resource.get_or_create_worksheet("NewTab", rows=500, cols=10)
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            result = self._resource().get_or_create_worksheet(
+                "NewTab", rows=500, cols=10
+            )
 
         assert result is new_worksheet
         mock_sheet.add_worksheet.assert_called_once_with(
@@ -245,9 +245,11 @@ class TestGoogleSheetsResourceHelpers:
         mock_worksheet.get_all_values.return_value = []
         mock_sheet = MagicMock()
         mock_sheet.worksheet.return_value = mock_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        resource.append_row_with_header("Responses", row=["1", "2"], header=["a", "b"])
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            self._resource().append_row_with_header(
+                "Responses", row=["1", "2"], header=["a", "b"]
+            )
 
         mock_worksheet.update.assert_called_once_with(
             "A1", [["a", "b"]], value_input_option="RAW"
@@ -261,9 +263,11 @@ class TestGoogleSheetsResourceHelpers:
         mock_worksheet.get_all_values.return_value = [["a", "b"], ["x", "y"]]
         mock_sheet = MagicMock()
         mock_sheet.worksheet.return_value = mock_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        resource.append_row_with_header("Responses", row=["1", "2"], header=["a", "b"])
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            self._resource().append_row_with_header(
+                "Responses", row=["1", "2"], header=["a", "b"]
+            )
 
         mock_worksheet.update.assert_not_called()
         mock_worksheet.append_row.assert_called_once_with(
@@ -274,13 +278,13 @@ class TestGoogleSheetsResourceHelpers:
         mock_worksheet = MagicMock()
         mock_sheet = MagicMock()
         mock_sheet.worksheet.return_value = mock_worksheet
-        resource = self._resource_with_mock_sheet(mock_sheet)
 
-        resource.overwrite_with_rows(
-            "Feature Flags",
-            header=["a", "b"],
-            rows=[["1", "2"], ["3", "4"]],
-        )
+        with patch.object(GoogleSheetsResource, "get_sheet", return_value=mock_sheet):
+            self._resource().overwrite_with_rows(
+                "Feature Flags",
+                header=["a", "b"],
+                rows=[["1", "2"], ["3", "4"]],
+            )
 
         mock_worksheet.clear.assert_called_once()
         mock_worksheet.update.assert_called_once_with(
