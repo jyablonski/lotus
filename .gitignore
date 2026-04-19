@@ -80,3 +80,7 @@ services/backend/pacts/
 .codex
 coverage.out
 docs/brainstorms/**
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json

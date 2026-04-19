@@ -1,11 +1,8 @@
 from dagster import AssetExecutionContext, asset
+import polars as pl
 import requests
 
 from dagster_project.resources import PostgresResource
-from dagster_project.sql.ingestion import (
-    CREATE_EXAMPLE_API_USERS_TABLE,
-    UPSERT_EXAMPLE_API_USER,
-)
 
 
 @asset(group_name="ingestion")
@@ -25,15 +22,18 @@ def users_in_postgres(
     postgres_conn: PostgresResource,
 ) -> None:
     """Store users in Postgres."""
-    with postgres_conn.get_connection() as conn, conn.cursor() as cur:
-        cur.execute(CREATE_EXAMPLE_API_USERS_TABLE)
-
-        for user in get_api_users:
-            cur.execute(
-                UPSERT_EXAMPLE_API_USER,
-                (user["id"], user["name"], user["email"], user["username"]),
-            )
-
-        conn.commit()
+    users_df = pl.DataFrame(
+        {
+            "id": [user["id"] for user in get_api_users],
+            "name": [user["name"] for user in get_api_users],
+            "email": [user["email"] for user in get_api_users],
+            "username": [user["username"] for user in get_api_users],
+        }
+    )
+    postgres_conn.write_to_postgres(
+        df=users_df,
+        table_name="example_api_users",
+        conflict_columns=["id"],
+    )
 
     context.log.info(f"Stored {len(get_api_users)} users in Postgres")

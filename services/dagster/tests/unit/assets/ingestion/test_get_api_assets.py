@@ -32,8 +32,8 @@ class TestApiUsers:
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
 
-            context = build_op_context()
-            result = get_api_users(context)
+            with build_op_context() as context:
+                result = get_api_users(context)
 
             assert result == mock_users
             mock_get.assert_called_once_with(
@@ -48,9 +48,7 @@ class TestApiUsers:
             mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")
             mock_get.return_value = mock_response
 
-            context = build_op_context()
-
-            with pytest.raises(requests.HTTPError):
+            with build_op_context() as context, pytest.raises(requests.HTTPError):
                 get_api_users(context)
 
 
@@ -77,41 +75,38 @@ class TestUsersInPostgres:
             return mock_postgres_resource
 
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
-        users_in_postgres(context, mock_users)
+        with build_op_context(
+            resources={"postgres_conn": postgres_resource_def}
+        ) as context:
+            users_in_postgres(context, mock_users)
 
-        mock_postgres_resource.get_connection.assert_called_once()
-        mock_cursor = mock_postgres_resource.get_connection.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value
-
-        create_table_calls = [
-            call
-            for call in mock_cursor.execute.call_args_list
-            if "CREATE TABLE" in str(call)
+        mock_postgres_resource.write_to_postgres.assert_called_once()
+        write_kwargs = mock_postgres_resource.write_to_postgres.call_args.kwargs
+        users_df = write_kwargs["df"]
+        assert users_df.columns == ["id", "name", "email", "username"]
+        assert users_df["id"].to_list() == [1, 2]
+        assert users_df["email"].to_list() == [
+            "test@example.com",
+            "another@example.com",
         ]
-        assert len(create_table_calls) > 0
-
-        insert_calls = [
-            call
-            for call in mock_cursor.execute.call_args_list
-            if "INSERT INTO" in str(call)
-        ]
-        assert len(insert_calls) == len(mock_users)
-
-        mock_conn = (
-            mock_postgres_resource.get_connection.return_value.__enter__.return_value
-        )
-        mock_conn.commit.assert_called_once()
+        assert write_kwargs["table_name"] == "example_api_users"
+        assert write_kwargs["conflict_columns"] == ["id"]
+        mock_postgres_resource.get_connection.assert_not_called()
 
     def test_users_in_postgres_empty_list(self, mock_postgres_resource, asset_context):
         def resource_fn(_context):
             return mock_postgres_resource
 
         postgres_resource_def = ResourceDefinition(resource_fn=resource_fn)
-        context = build_op_context(resources={"postgres_conn": postgres_resource_def})
-        users_in_postgres(context, [])
+        with build_op_context(
+            resources={"postgres_conn": postgres_resource_def}
+        ) as context:
+            users_in_postgres(context, [])
 
-        mock_postgres_resource.get_connection.assert_called_once()
-        mock_conn = (
-            mock_postgres_resource.get_connection.return_value.__enter__.return_value
-        )
-        mock_conn.commit.assert_called_once()
+        mock_postgres_resource.write_to_postgres.assert_called_once()
+        write_kwargs = mock_postgres_resource.write_to_postgres.call_args.kwargs
+        users_df = write_kwargs["df"]
+        assert users_df.is_empty()
+        assert users_df.columns == ["id", "name", "email", "username"]
+        assert write_kwargs["table_name"] == "example_api_users"
+        mock_postgres_resource.get_connection.assert_not_called()

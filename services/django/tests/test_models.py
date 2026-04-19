@@ -1,10 +1,13 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
 from core.models import (
     CommunityMoodRollup,
     CommunityPromptSet,
     CommunitySummary,
     CommunityThemeRollup,
+    ExampleApiRecord,
+    ExampleApiUser,
+    IngestionWatermark,
     Journal,
     JournalCommunityProjection,
     JournalContentFlag,
@@ -227,6 +230,43 @@ class TestStakeholderPromptResponse:
         assert not StakeholderPromptResponse.objects.filter(
             stakeholder_prompt_id=prompt_id
         ).exists()
+
+
+@pytest.mark.django_db
+class TestIngestionModels:
+    def test_ingestion_watermark_str_and_fields(self):
+        watermark_at = datetime(2026, 4, 18, 6, 0, tzinfo=UTC)
+        watermark = IngestionWatermark.objects.create(
+            source_name="example_api_records",
+            watermark_at=watermark_at,
+            last_run_id="run-123",
+        )
+
+        assert watermark.source_name == "example_api_records"
+        assert watermark.updated_at is not None
+        assert str(watermark).startswith("example_api_records through")
+
+    def test_example_api_record_str_and_payload(self):
+        modified_at = datetime(2026, 4, 18, 4, 5, tzinfo=UTC)
+        record = ExampleApiRecord.objects.create(
+            source_id="example-001",
+            payload={"id": "example-001", "status": "created"},
+            modified_at=modified_at,
+        )
+
+        assert record.payload["status"] == "created"
+        assert record.ingested_at is not None
+        assert str(record) == "Example API record example-001"
+
+    def test_example_api_user_str(self):
+        user = ExampleApiUser.objects.create(
+            id=1,
+            name="Test User",
+            email="test@example.com",
+            username="testuser",
+        )
+
+        assert str(user) == "Test User (test@example.com)"
 
 
 @pytest.mark.django_db
