@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - "services/dagster/**"
+      - "docker/db/generated/ci_source_schema.sql"
       - ".github/workflows/dagster.yaml"
   pull_request:
     paths:
       - "services/dagster/**"
+      - "docker/db/generated/ci_source_schema.sql"
       - ".github/workflows/dagster.yaml"
 
 concurrency:
@@ -33,6 +35,7 @@ jobs:
           sparse-checkout: |
             services/dagster/**
             services/dbt/**
+            docker/db/generated/ci_source_schema.sql
           sparse-checkout-cone-mode: false
 
       - name: Install uv

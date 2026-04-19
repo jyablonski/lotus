@@ -229,6 +229,42 @@ CREATE TABLE source.users (
 
 
 --
+-- Name: ingestion_watermarks; Type: TABLE; Schema: source; Owner: -
+--
+
+CREATE TABLE source.ingestion_watermarks (
+    source_name character varying(255) NOT NULL,
+    watermark_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone DEFAULT statement_timestamp() NOT NULL,
+    last_run_id character varying(255)
+);
+
+
+--
+-- Name: example_api_records; Type: TABLE; Schema: source; Owner: -
+--
+
+CREATE TABLE source.example_api_records (
+    source_id character varying(255) NOT NULL,
+    payload jsonb NOT NULL,
+    modified_at timestamp with time zone NOT NULL,
+    ingested_at timestamp with time zone DEFAULT statement_timestamp() NOT NULL
+);
+
+
+--
+-- Name: example_api_users; Type: TABLE; Schema: source; Owner: -
+--
+
+CREATE TABLE source.example_api_users (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    username character varying(255) NOT NULL
+);
+
+
+--
 -- Name: journal_content_flags journal_content_flags_pkey; Type: CONSTRAINT; Schema: source; Owner: -
 --
 
@@ -317,6 +353,30 @@ ALTER TABLE ONLY source.users
 
 
 --
+-- Name: ingestion_watermarks ingestion_watermarks_pkey; Type: CONSTRAINT; Schema: source; Owner: -
+--
+
+ALTER TABLE ONLY source.ingestion_watermarks
+    ADD CONSTRAINT ingestion_watermarks_pkey PRIMARY KEY (source_name);
+
+
+--
+-- Name: example_api_records example_api_records_pkey; Type: CONSTRAINT; Schema: source; Owner: -
+--
+
+ALTER TABLE ONLY source.example_api_records
+    ADD CONSTRAINT example_api_records_pkey PRIMARY KEY (source_id);
+
+
+--
+-- Name: example_api_users example_api_users_pkey; Type: CONSTRAINT; Schema: source; Owner: -
+--
+
+ALTER TABLE ONLY source.example_api_users
+    ADD CONSTRAINT example_api_users_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: idx_jcf_flag_type; Type: INDEX; Schema: source; Owner: -
 --
 
@@ -398,6 +458,13 @@ CREATE INDEX user_game_bets_user_id_edb9e625 ON source.user_game_bets USING btre
 --
 
 CREATE INDEX users_email_0ea73cca_like ON source.users USING btree (email varchar_pattern_ops);
+
+
+--
+-- Name: idx_example_api_modified_at; Type: INDEX; Schema: source; Owner: -
+--
+
+CREATE INDEX idx_example_api_modified_at ON source.example_api_records USING btree (modified_at);
 
 
 --

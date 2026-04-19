@@ -17,6 +17,9 @@ from .models import (
     CommunityPromptSet,
     CommunitySummary,
     CommunityThemeRollup,
+    ExampleApiRecord,
+    ExampleApiUser,
+    IngestionWatermark,
     JournalCommunityProjection,
     JournalContentFlag,
     RuntimeConfig,
@@ -77,6 +80,28 @@ def _user_stakeholder_group_names(user) -> list[str]:
 def _can_manage_stakeholder_prompts(user) -> bool:
     """Allow Admin-role users and members of any allowed stakeholder group."""
     return _is_admin_role(user) or bool(_user_stakeholder_group_names(user))
+
+
+@admin.register(IngestionWatermark, site=admin_site)
+class IngestionWatermarkAdmin(ModelAdmin):
+    list_display = ("source_name", "watermark_at", "updated_at", "last_run_id")
+    list_filter = ("updated_at",)
+    search_fields = ("source_name", "last_run_id")
+    readonly_fields = ("updated_at",)
+
+
+@admin.register(ExampleApiRecord, site=admin_site)
+class ExampleApiRecordAdmin(ModelAdmin):
+    list_display = ("source_id", "modified_at", "ingested_at")
+    list_filter = ("modified_at", "ingested_at")
+    search_fields = ("source_id",)
+    readonly_fields = ("ingested_at",)
+
+
+@admin.register(ExampleApiUser, site=admin_site)
+class ExampleApiUserAdmin(ModelAdmin):
+    list_display = ("id", "name", "email", "username")
+    search_fields = ("name", "email", "username")
 
 
 @admin.register(RuntimeConfig, site=admin_site)

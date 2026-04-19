@@ -591,6 +591,57 @@ class StakeholderPromptResponse(models.Model):
         return f"Response for {self.stakeholder_prompt.application} at {self.run_at}"
 
 
+class IngestionWatermark(models.Model):
+    """Durable cursor state for incremental Dagster ingestion jobs."""
+
+    source_name = models.CharField(max_length=255, primary_key=True)
+    watermark_at = models.DateTimeField()
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+    last_run_id = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        db_table = "ingestion_watermarks"
+        ordering = ["source_name"]
+
+    def __str__(self):
+        return f"{self.source_name} through {self.watermark_at}"
+
+
+class ExampleApiRecord(models.Model):
+    """Landing table for the example modified_at-based incremental API feed."""
+
+    source_id = models.CharField(max_length=255, primary_key=True)
+    payload = models.JSONField(default=dict)
+    modified_at = models.DateTimeField()
+    ingested_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "example_api_records"
+        ordering = ["-modified_at", "source_id"]
+        indexes = [
+            models.Index(fields=["modified_at"], name="idx_example_api_modified_at"),
+        ]
+
+    def __str__(self):
+        return f"Example API record {self.source_id}"
+
+
+class ExampleApiUser(models.Model):
+    """Landing table for the JSONPlaceholder users ingestion example."""
+
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "example_api_users"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.name} ({self.email})"
+
+
 class RuntimeConfig(models.Model):
     """Key-value configuration store for cross-service settings and runtime data.
 

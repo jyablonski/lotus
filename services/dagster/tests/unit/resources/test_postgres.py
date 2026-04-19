@@ -2,7 +2,9 @@
 
 from unittest.mock import MagicMock, patch
 
+import polars as pl
 import pytest
+from psycopg2.extras import Json
 
 from dagster_project.resources import PostgresResource
 
@@ -57,3 +59,73 @@ class TestPostgresResource:
             options="-c search_path=source",
         )
         mock_conn.close.assert_called_once()
+
+    @patch("dagster_project.resources.postgres.execute_values")
+    @patch("dagster_project.resources.postgres.psycopg2.connect")
+    def test_write_to_postgres_upserts_dataframe(
+        self, mock_connect, mock_execute_values
+    ):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mock_connect.return_value = mock_conn
+
+        df = pl.DataFrame(
+            {
+                "source_id": ["example-001", "example-002"],
+                "payload": [{"status": "created"}, {"status": "updated"}],
+                "modified_at": ["2026-04-17T06:01:00Z", "2026-04-17T07:15:00Z"],
+            }
+        )
+
+        row_count = PostgresResource().write_to_postgres(
+            df=df,
+            table_name="example_api_records",
+            conflict_columns=["source_id"],
+            json_columns=["payload"],
+        )
+
+        assert row_count == 2
+        mock_execute_values.assert_called_once()
+        query = mock_execute_values.call_args.args[1]
+        values = mock_execute_values.call_args.args[2]
+
+        assert 'INSERT INTO "example_api_records"' in query
+        assert '("source_id", "payload", "modified_at") VALUES %s' in query
+        assert 'ON CONFLICT ("source_id") DO UPDATE SET' in query
+        assert '"payload" = EXCLUDED."payload"' in query
+        assert values[0][0] == "example-001"
+        assert isinstance(values[0][1], Json)
+        assert values[0][2] == "2026-04-17T06:01:00Z"
+        mock_conn.commit.assert_called_once()
+
+    @patch("dagster_project.resources.postgres.execute_values")
+    def test_write_to_postgres_uses_existing_cursor(self, mock_execute_values):
+        mock_cursor = MagicMock()
+        df = pl.DataFrame({"id": [1], "name": ["Ada"]})
+
+        row_count = PostgresResource().write_to_postgres(
+            df=df,
+            table_name="source.people",
+            conflict_columns=["id"],
+            update_columns=["name"],
+            cursor=mock_cursor,
+        )
+
+        assert row_count == 1
+        mock_execute_values.assert_called_once()
+        query = mock_execute_values.call_args.args[1]
+        assert 'INSERT INTO "source"."people"' in query
+        assert 'ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name"' in query
+
+    @patch("dagster_project.resources.postgres.execute_values")
+    def test_write_to_postgres_noops_on_empty_dataframe(self, mock_execute_values):
+        df = pl.DataFrame(schema={"id": pl.Int64, "name": pl.String})
+
+        row_count = PostgresResource().write_to_postgres(
+            df=df,
+            table_name="people",
+        )
+
+        assert row_count == 0
+        mock_execute_values.assert_not_called()

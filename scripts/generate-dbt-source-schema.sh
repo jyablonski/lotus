@@ -64,6 +64,9 @@ for source_file in "${ROOT_DIR}"/services/dbt/models/sources/application_db/*.ym
   table_name="$(basename "${source_file}" .yml)"
   table_args+=(--table="source.${table_name}")
 done
+table_args+=(--table="source.ingestion_watermarks")
+table_args+=(--table="source.example_api_records")
+table_args+=(--table="source.example_api_users")
 
 docker exec postgres pg_dump \
   -U postgres \
