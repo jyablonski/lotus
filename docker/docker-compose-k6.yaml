@@ -77,6 +77,7 @@ services:
       - BACKEND_API_KEY=${BACKEND_API_KEY:-lotus-backend-dev-key}
       - ANALYZER_API_KEY=${ANALYZER_API_KEY:-lotus-analyzer-dev-key}
       - REDIS_URL=redis://redis:6379
+      - LOADTEST_DELAY_RANDOM_STRING_MS=${LOADTEST_DELAY_RANDOM_STRING_MS:-}
     depends_on:
       postgres:
         condition: service_healthy

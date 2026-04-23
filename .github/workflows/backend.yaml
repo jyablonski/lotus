@@ -78,6 +78,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend-pipeline
     name: Load Tests
+    env:
+      BACKEND_API_KEY: lotus-backend-dev-key
+      ANALYZER_API_KEY: lotus-analyzer-dev-key
 
     steps:
       - name: Checkout code
@@ -91,17 +94,30 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Start backend stack
-        env:
-          BACKEND_API_KEY: lotus-backend-dev-key
-          ANALYZER_API_KEY: lotus-analyzer-dev-key
         run: |
           docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --build --wait postgres redis django backend
 
       - name: Run k6 HTTP smoke test
-        env:
-          BACKEND_API_KEY: lotus-backend-dev-key
         run: |
           docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
+
+      # Ensures global http_req_duration thresholds still trip when one hot path
+      # is slow (see LOADTEST_DELAY_RANDOM_STRING_MS in services/backend/internal/main.go).
+      - name: Verify k6 fails under artificial delay
+        if: success()
+        env:
+          LOADTEST_DELAY_RANDOM_STRING_MS: "700"
+        run: |
+          docker compose -f docker/docker-compose-k6.yaml --profile load-test up -d --no-deps --force-recreate backend
+          set +e
+          docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
+          k6_exit=$?
+          set -e
+          if [ "$k6_exit" -eq 0 ]; then
+            echo "Expected k6 to exit non-zero (latency thresholds should fail with 700ms delay on /v1/util/random-string)."
+            exit 1
+          fi
+          echo "k6 exited $k6_exit as expected under artificial delay."
 
       - name: Backend logs
         if: failure()
