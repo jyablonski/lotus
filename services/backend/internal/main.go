@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -68,6 +69,27 @@ func authMiddleware(apiKey string, logger *slog.Logger, h http.Handler) http.Han
 			)
 			http.Error(w, `{"code":16,"message":"unauthorized"}`, http.StatusUnauthorized)
 			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+const loadTestRandomStringPath = "/v1/util/random-string"
+
+// loadTestRandomStringDelay sleeps before handling the util random-string HTTP
+// route when LOADTEST_DELAY_RANDOM_STRING_MS is set (>0). Used to verify k6
+// latency thresholds against a single slow endpoint. Placed after auth so
+// unauthenticated readiness checks still receive a quick 401.
+func loadTestRandomStringDelay(logger *slog.Logger, h http.Handler) http.Handler {
+	ms, err := strconv.Atoi(os.Getenv("LOADTEST_DELAY_RANDOM_STRING_MS"))
+	if err != nil || ms <= 0 {
+		return h
+	}
+	d := time.Duration(ms) * time.Millisecond
+	logger.Info("LOADTEST_DELAY_RANDOM_STRING_MS is set; adding artificial delay to "+loadTestRandomStringPath, "delay", d)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == loadTestRandomStringPath {
+			time.Sleep(d)
 		}
 		h.ServeHTTP(w, r)
 	})
@@ -292,7 +314,7 @@ func main() {
 	httpServer := &http.Server{
 		Addr:              ":8080",
 		ReadHeaderTimeout: 10 * time.Second,
-		Handler:           rateLimitMiddleware(ctx, 20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, otelhttp.NewHandler(rootMux, "http")))),
+		Handler:           rateLimitMiddleware(ctx, 20, 40, allowCORS(corsOrigin, authMiddleware(backendAPIKey, logger, loadTestRandomStringDelay(logger, otelhttp.NewHandler(rootMux, "http"))))),
 	}
 
 	g, gCtx := errgroup.WithContext(ctx)
