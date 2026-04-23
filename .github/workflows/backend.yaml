@@ -101,9 +101,9 @@ jobs:
         run: |
           docker compose -f docker/docker-compose-k6.yaml --profile load-test run k6 run /scripts/http-gateway-load.js
 
-      # Ensures global http_req_duration thresholds still trip when one hot path
-      # is slow (see LOADTEST_DELAY_RANDOM_STRING_MS in services/backend/internal/main.go).
-      - name: Verify k6 fails under artificial delay
+      # this step artificially adds latency to the /v1/util/random-string endpoint to verify that
+      # the k6 thresholds are configured and will fail as intended when the latency is beyond thresholds.
+      - name: Verify k6 thresholds work as intended
         if: success()
         env:
           LOADTEST_DELAY_RANDOM_STRING_MS: "700"
