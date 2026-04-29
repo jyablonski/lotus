@@ -28,7 +28,11 @@ dev = [
     "pytest-mock>=3.12.0",
     "testcontainers[postgres]>=4.10.0",
 ]
-local = ["ruff>=0.14.9", "ipykernel>=7.1.0"]
+local = [
+    "ruff>=0.14.9",
+    "ipykernel>=7.1.0",
+    "ty>=0.0.33",
+]
 # webserver group removed - webserver dependencies are now in main dependencies
 # since we use a single Dockerfile for all Dagster services
 
@@ -45,6 +49,12 @@ directory_type = "project"
 [tool.dg.project]
 root_module = "dagster_project"
 registry_modules = ["dagster_project.components.*"]
+
+[tool.ty.src]
+exclude = ["tests/"]
+
+[tool.ty.environment]
+extra-paths = ["feast_repo"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

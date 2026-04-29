@@ -15,7 +15,10 @@ dependencies = [
 
 [dependency-groups]
 dev = ["psutil>=7.0.0", "pytest>=8.4.1", "pytest-cov>=6.2.1"]
-local = ["ipykernel>=6.30.1"]
+local = [
+    "ipykernel>=6.30.1",
+    "ty>=0.0.33",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -50,3 +53,6 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
 ]
+
+[tool.ty.src]
+exclude = ["tests/", "src/training/"]

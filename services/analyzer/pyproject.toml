@@ -28,7 +28,11 @@ dev = [
     "pytest-cov>=6.2.1",
     "testcontainers[postgres]>=4.10.0",
 ]
-local = ["ipykernel>=6.29.5", "ruff>=0.12.4", "ty>=0.0.1a15"]
+local = [
+    "ipykernel>=6.29.5",
+    "ruff>=0.12.4",
+    "ty>=0.0.1a15",
+]
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -49,3 +53,7 @@ markers = [
     "infrastructure: mocks for dummy data (sql db, http endpoint etc)",
 ]
 addopts = "--cov=src --cov-report=term-missing --color=yes"
+
+[tool.ty.rules]
+possibly-unbound-attribute = "ignore"
+unresolved-attribute = "ignore"

@@ -1,13 +1,9 @@
 from datetime import timedelta
 from feast import FeatureView, Field
+from feast.infra.offline_stores.contrib.postgres_offline_store.postgres_source import (
+    PostgreSQLSource,
+)
 from feast.types import Float32, Int64
-
-try:
-    from feast.infra.offline_stores.contrib.postgres_offline_store.postgres_source import (
-        PostgreSQLSource,
-    )
-except ImportError:
-    from feast.data_source import PostgreSQLSource
 
 try:
     from entities import user_entity

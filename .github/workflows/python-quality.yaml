@@ -1,0 +1,112 @@
+name: Python Services Typecheck
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/analyzer/**/*.py"
+      - "services/analyzer/pyproject.toml"
+      - "services/analyzer/uv.lock"
+      - "services/dagster/**/*.py"
+      - "services/dagster/pyproject.toml"
+      - "services/dagster/uv.lock"
+      - "services/django/**/*.py"
+      - "services/django/pyproject.toml"
+      - "services/django/uv.lock"
+      - "services/experiments/**/*.py"
+      - "services/experiments/pyproject.toml"
+      - "services/experiments/uv.lock"
+      - "pyproject.toml"
+      - ".github/workflows/python-quality.yaml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "services/analyzer/**/*.py"
+      - "services/analyzer/pyproject.toml"
+      - "services/analyzer/uv.lock"
+      - "services/dagster/**/*.py"
+      - "services/dagster/pyproject.toml"
+      - "services/dagster/uv.lock"
+      - "services/django/**/*.py"
+      - "services/django/pyproject.toml"
+      - "services/django/uv.lock"
+      - "services/experiments/**/*.py"
+      - "services/experiments/pyproject.toml"
+      - "services/experiments/uv.lock"
+      - "pyproject.toml"
+      - ".github/workflows/python-quality.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.8"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  detect-changes:
+    name: Detect Python Service Changes
+    runs-on: ubuntu-latest
+    outputs:
+      services:
+        ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+        '["analyzer","dagster","django","experiments"]' ||
+        steps.filter.outputs.changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Detect changed services
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            analyzer:
+              - "services/analyzer/**"
+              - "pyproject.toml"
+              - ".github/workflows/python-quality.yaml"
+            dagster:
+              - "services/dagster/**"
+              - "pyproject.toml"
+              - ".github/workflows/python-quality.yaml"
+            django:
+              - "services/django/**"
+              - "pyproject.toml"
+              - ".github/workflows/python-quality.yaml"
+            experiments:
+              - "services/experiments/**"
+              - "pyproject.toml"
+              - ".github/workflows/python-quality.yaml"
+
+  ty:
+    name: Ty (${{ matrix.service }})
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: services/${{ matrix.service }}/uv.lock
+          working-directory: services/${{ matrix.service }}
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: uv sync --locked --all-groups
+
+      - name: Run ty
+        working-directory: services/${{ matrix.service }}
+        run: uv run ty check --output-format github
