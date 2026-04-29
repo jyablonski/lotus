@@ -5,6 +5,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import gspread
+from gspread.utils import ValueInputOption
 import pytest
 
 from dagster_project.resources.google_sheets import GoogleSheetsResource
@@ -236,10 +237,10 @@ class TestGoogleSheetsResourceHelpers:
             )
 
         mock_worksheet.update.assert_called_once_with(
-            "A1", [["a", "b"]], value_input_option="RAW"
+            [["a", "b"]], range_name="A1", value_input_option=ValueInputOption.raw
         )
         mock_worksheet.append_row.assert_called_once_with(
-            ["1", "2"], value_input_option="RAW"
+            ["1", "2"], value_input_option=ValueInputOption.raw
         )
 
     def test_append_row_with_header_skips_header_when_not_empty(self):
@@ -255,7 +256,7 @@ class TestGoogleSheetsResourceHelpers:
 
         mock_worksheet.update.assert_not_called()
         mock_worksheet.append_row.assert_called_once_with(
-            ["1", "2"], value_input_option="RAW"
+            ["1", "2"], value_input_option=ValueInputOption.raw
         )
 
     def test_overwrite_with_rows_clears_and_updates(self):
@@ -272,7 +273,7 @@ class TestGoogleSheetsResourceHelpers:
 
         mock_worksheet.clear.assert_called_once()
         mock_worksheet.update.assert_called_once_with(
-            "A1",
             [["a", "b"], ["1", "2"], ["3", "4"]],
-            value_input_option="RAW",
+            range_name="A1",
+            value_input_option=ValueInputOption.raw,
         )
