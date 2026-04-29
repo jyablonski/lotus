@@ -31,7 +31,7 @@ dev = [
 local = [
     "ipykernel>=6.29.5",
     "ruff>=0.12.4",
-    "ty>=0.0.1a15",
+    "ty>=0.0.33",
 ]
 
 [tool.pytest.ini_options]
