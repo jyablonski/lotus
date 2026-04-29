@@ -1,4 +1,5 @@
 import logging
+from typing import Any, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from opentelemetry import trace
@@ -67,10 +68,11 @@ def extract_journal_topics(
         journal = get_journal_by_id(db, journal_id)
         if not journal:
             raise HTTPException(status_code=404, detail="Journal not found")
+        journal_text = cast("str", journal.journal_text)
 
         with tracer.start_as_current_span("content_safety.detect") as span:
             span.set_attribute("journal.id", journal_id)
-            detection_result = content_safety_detector.detect(journal.journal_text)
+            detection_result = content_safety_detector.detect(journal_text)
             span.set_attribute("flags.count", len(detection_result.flags))
             span.set_attribute(
                 "flags.types", ",".join(flag.flag_type for flag in detection_result.flags)
@@ -79,7 +81,7 @@ def extract_journal_topics(
         with tracer.start_as_current_span("topics.extract") as span:
             span.set_attribute("journal.id", journal_id)
             span.set_attribute("model.version", topic_client.model_version or "")
-            topics = topic_client.extract_topics(journal.journal_text)
+            topics = topic_client.extract_topics(journal_text)
             span.set_attribute("topics.count", len(topics))
 
         create_or_update_topics(db, journal_id, topics)
@@ -90,7 +92,7 @@ def extract_journal_topics(
                 journal_id,
                 detection_result,
                 content_flag_analyzer,
-                db.get_bind(),
+                cast("Engine", db.get_bind()),
             )
 
         logger.info(
@@ -124,7 +126,7 @@ def get_journal_topics(
                 {
                     "topic_name": (topic.topic_name or "").lower(),
                     "subtopic_name": (topic.subtopic_name or "").lower() or None,
-                    "confidence": float(topic.confidence),
+                    "confidence": float(cast("Any", topic.confidence)),
                     "ml_model_version": topic.ml_model_version,
                     "created_at": topic.created_at,
                 }

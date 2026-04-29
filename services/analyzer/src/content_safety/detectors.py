@@ -7,6 +7,7 @@ from src.content_safety.schemas import (
     ContentFlagDetection,
     ContentSafetyDetectionResult,
     FlagType,
+    Severity,
 )
 
 _PROFANITY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
@@ -67,7 +68,7 @@ class RegexContentSafetyDetector(ContentSafetyDetector):
         return sorted(set(matches))
 
     @staticmethod
-    def _severity_for(flag_type: FlagType, matches: list[str]) -> str:
+    def _severity_for(flag_type: FlagType, matches: list[str]) -> Severity:
         if flag_type == "crisis":
             if any(
                 term in {"kill myself", "end my life", "suicide", "self-harm"} for term in matches

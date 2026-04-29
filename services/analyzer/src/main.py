@@ -13,7 +13,7 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.propagate import set_global_textmap
-from opentelemetry.propagators.composite import CompositeHTTPPropagator
+from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -78,7 +78,7 @@ _init_meter()
 
 # W3C TraceContext so incoming traceparent headers from the Go backend are
 # extracted and the analyzer's spans appear as children in the same Jaeger trace.
-set_global_textmap(CompositeHTTPPropagator([TraceContextTextMapPropagator()]))
+set_global_textmap(CompositePropagator([TraceContextTextMapPropagator()]))
 
 app = FastAPI(lifespan=lifespan)
 FastAPIInstrumentor.instrument_app(app)

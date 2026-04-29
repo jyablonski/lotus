@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -35,7 +37,7 @@ class JournalSentiments(Base):
         """Helper property for API responses"""
         return {
             "sentiment": self.sentiment,
-            "confidence": float(self.confidence),
+            "confidence": float(cast("Any", self.confidence)),
             "confidence_level": self.confidence_level,
             "is_reliable": self.is_reliable,
             "model_version": self.ml_model_version,
@@ -47,7 +49,7 @@ class JournalSentiments(Base):
             "id": self.id,
             "journal_id": self.journal_id,
             "sentiment": self.sentiment,
-            "confidence": float(self.confidence),
+            "confidence": float(cast("Any", self.confidence)),
             "confidence_level": self.confidence_level,
             "is_reliable": self.is_reliable,
             "ml_model_version": self.ml_model_version,

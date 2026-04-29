@@ -1,4 +1,5 @@
 import logging
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 from src.models.journal_details import JournalDetails
@@ -16,7 +17,7 @@ def create_or_update_analysis(db: Session, journal_id: int, analysis: dict) -> J
             logger.info(f"Updating existing JournalDetails for journal_id={journal_id}")
             existing.sentiment_score = analysis["sentiment_score"]
             existing.mood_label = analysis["mood_label"]
-            existing.keywords = analysis.get("keywords")
+            existing.keywords = cast("Any", analysis.get("keywords"))
             db.flush()
             return existing
 

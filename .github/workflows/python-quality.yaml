@@ -100,7 +100,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-          cache-dependency-glob: services/${{ matrix.service }}/uv.lock
+          cache-dependency-glob: uv.lock
           working-directory: services/${{ matrix.service }}
 
       - name: Install dependencies

@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from opentelemetry import trace
@@ -35,7 +36,8 @@ def generate_journal_embedding(
             span.set_attribute("journal.id", journal_id)
             span.set_attribute("model.name", embedding_client.model_name)
 
-            embedding = embedding_client.encode(journal.journal_text)
+            journal_text = cast("str", journal.journal_text)
+            embedding = embedding_client.encode(journal_text)
             span.set_attribute("embedding.dimensions", len(embedding))
 
         upsert_embedding(db, journal_id, embedding, model_version=embedding_client.model_name)

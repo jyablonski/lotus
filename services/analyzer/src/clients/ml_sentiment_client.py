@@ -153,7 +153,7 @@ class SentimentClient(BaseMLflowClient):
 
         reliable_counts = {k: v for k, v in sentiment_counts.items() if k != "uncertain"}
         dominant_sentiment = (
-            max(reliable_counts, key=reliable_counts.get)
+            max(reliable_counts, key=lambda sentiment: reliable_counts[sentiment])
             if any(reliable_counts.values())
             else "uncertain"
         )

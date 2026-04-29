@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from opentelemetry import trace
@@ -46,7 +47,8 @@ def analyze_journal_sentiment(
     try:
         with tracer.start_as_current_span("sentiment.predict") as span:
             span.set_attribute("journal.id", journal_id)
-            analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
+            journal_text = cast("str", journal.journal_text)
+            analysis_result = sentiment_client.predict_sentiment(journal_text)
             span.set_attribute("sentiment.label", analysis_result.get("label", ""))
             span.set_attribute("sentiment.score", float(analysis_result.get("score", 0)))
     except Exception as e:
@@ -157,22 +159,24 @@ def analyze_journals_sentiment_batch(
     results = []
     for journal in journals:
         try:
+            current_journal_id = cast("int", journal.id)
+            journal_text = cast("str", journal.journal_text)
             with tracer.start_as_current_span("sentiment.predict") as span:
-                span.set_attribute("journal.id", journal.id)
-                analysis_result = sentiment_client.predict_sentiment(journal.journal_text)
+                span.set_attribute("journal.id", current_journal_id)
+                analysis_result = sentiment_client.predict_sentiment(journal_text)
                 span.set_attribute("sentiment.label", analysis_result.get("label", ""))
                 span.set_attribute("sentiment.score", float(analysis_result.get("score", 0)))
 
             sentiment_record = create_or_update_sentiment(
                 db=db,
-                journal_id=journal.id,
+                journal_id=current_journal_id,
                 sentiment_data=analysis_result,
                 force_update=request.force_reanalyze,
             )
             results.append(sentiment_record)
 
         except Exception as e:
-            logger.error(f"Failed to analyze journal {journal.id}: {e}")
+            logger.error(f"Failed to analyze journal {current_journal_id}: {e}")
             continue
 
     logger.info(f"Successfully analyzed {len(results)} out of {len(request.journal_ids)} journals")
