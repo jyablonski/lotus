@@ -1,4 +1,4 @@
-name: Python Services Typecheck
+name: Python Quality Checks
 
 on:
   push:
