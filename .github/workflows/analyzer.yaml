@@ -51,12 +51,5 @@ jobs:
       - name: Run analyzer tests
         env:
           ANALYZER_API_KEY: test-key
-        run: make test-analyzer
-
-      - name: Enforce ${{ env.COVERAGE_THRESHOLD }}% coverage threshold
         working-directory: services/analyzer
-        run: |
-          uv run coverage json -o coverage.json
-          total=$(uv run python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered'])")
-          echo "Total coverage: ${total}%"
-          awk -v t="$total" -v threshold="$COVERAGE_THRESHOLD" 'BEGIN { if (t+0 < threshold+0) { print "Coverage " t "% is below " threshold "% threshold"; exit 1 } }'
+        run: uv run pytest --cov-fail-under=${COVERAGE_THRESHOLD}
