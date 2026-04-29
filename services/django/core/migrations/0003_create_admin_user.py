@@ -58,7 +58,6 @@ def reverse_create_admin_user(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0002_seed_data"),
     ]

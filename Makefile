@@ -27,7 +27,7 @@ ci-analyzer-down: ## Stop dependencies for analyzer CI (PostgreSQL and MLflow)
 
 .PHONY: test-analyzer
 test-analyzer: ## Run analyzer tests with coverage (testcontainers spins up an isolated Postgres automatically)
-	@cd services/analyzer && TESTCONTAINERS_RYUK_DISABLED=$${TESTCONTAINERS_RYUK_DISABLED:-true} uv run pytest
+	@cd services/analyzer && uv run pytest
 
 .PHONY: test-backend
 test-backend: ## Run backend tests with coverage (testcontainers spins up an isolated Postgres automatically)

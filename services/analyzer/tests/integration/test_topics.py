@@ -73,7 +73,7 @@ def test_get_extracted_topics(client_fixture, real_topic_client):
             assert "confidence" in topic
             assert "ml_model_version" in topic
             assert "created_at" in topic
-            assert isinstance(topic["confidence"], (int, float))
+            assert isinstance(topic["confidence"], int | float)
 
     finally:
         app.dependency_overrides.clear()
@@ -205,7 +205,7 @@ def test_topic_confidence_values(client_fixture, real_topic_client):
         for topic in topics:
             confidence = topic["confidence"]
             assert 0 <= confidence <= 1
-            assert isinstance(confidence, (int, float))
+            assert isinstance(confidence, int | float)
 
     finally:
         app.dependency_overrides.clear()

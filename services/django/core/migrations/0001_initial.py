@@ -9,7 +9,6 @@ import core.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -102,9 +101,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "role",
-                    models.CharField(
-                        db_default="Consumer", default="Consumer", max_length=50
-                    ),
+                    models.CharField(db_default="Consumer", default="Consumer", max_length=50),
                 ),
                 (
                     "created_at",
@@ -257,19 +254,13 @@ class Migration(migrations.Migration):
             options={
                 "db_table": "journal_topics",
                 "indexes": [
-                    models.Index(
-                        fields=["journal"], name="idx_journal_topics_journal_id"
-                    ),
-                    models.Index(
-                        fields=["topic_name"], name="idx_journal_topics_topic_name"
-                    ),
+                    models.Index(fields=["journal"], name="idx_journal_topics_journal_id"),
+                    models.Index(fields=["topic_name"], name="idx_journal_topics_topic_name"),
                 ],
             },
         ),
         migrations.AddIndex(
             model_name="journal",
-            index=models.Index(
-                fields=["user", "-created_at"], name="idx_journals_user_created"
-            ),
+            index=models.Index(fields=["user", "-created_at"], name="idx_journals_user_created"),
         ),
     ]

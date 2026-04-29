@@ -45,8 +45,27 @@ concurrency:
 env:
   UV_VERSION: "0.11.8"
   PYTHON_VERSION: "3.13"
+  RUFF_VERSION: "0.15.12"
 
 jobs:
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: ${{ env.RUFF_VERSION }}
+
+      - name: Ruff check
+        run: ruff check services/analyzer services/dagster services/django services/experiments
+
+      - name: Ruff format
+        run: ruff format --check services/analyzer services/dagster services/django services/experiments
+
   detect-changes:
     name: Detect Python Service Changes
     runs-on: ubuntu-latest
