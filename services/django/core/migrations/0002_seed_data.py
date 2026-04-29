@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0001_initial"),
     ]
@@ -14,12 +13,12 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             sql="""
                 INSERT INTO active_ml_models (ml_model, is_enabled, created_at, modified_at)
-                VALUES 
+                VALUES
                     ('sentiment_analysis', true, NOW(), NOW()),
                     ('topic_modeling', true, NOW(), NOW());
             """,
             reverse_sql="""
-                DELETE FROM active_ml_models 
+                DELETE FROM active_ml_models
                 WHERE ml_model IN ('sentiment_analysis', 'topic_modeling');
             """,
         ),

@@ -24,7 +24,6 @@ def reverse_create_user_groups(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0003_create_admin_user"),
     ]

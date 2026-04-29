@@ -137,7 +137,9 @@ class JournalSentimentAnalyzer:
             "individual_results": results,
             "overall_distribution": sentiment_counts,
             "average_confidence": avg_confidence,
-            "dominant_sentiment": max(sentiment_counts, key=sentiment_counts.get),
+            "dominant_sentiment": max(
+                sentiment_counts, key=lambda sentiment: sentiment_counts[sentiment]
+            ),
             "total_entries": len(entries_with_dates),
         }
 
@@ -187,7 +189,7 @@ class SentimentAnalyzerWithFeatures:
         """
         from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-        transformers = [
+        transformers: list[tuple[str, Any, str | list[str]]] = [
             (
                 "text",
                 TfidfVectorizer(
@@ -225,6 +227,8 @@ class SentimentAnalyzerWithFeatures:
         """Train the model on a DataFrame."""
         if self.pipeline is None:
             self.build_pipeline(text_column=text_column)
+        if self.pipeline is None:
+            raise ValueError("Pipeline must be built before training")
 
         label_to_num = {v: k for k, v in self.sentiment_labels.items()}
         y = df[target_column].map(label_to_num)
@@ -233,6 +237,9 @@ class SentimentAnalyzerWithFeatures:
 
     def predict(self, df) -> list[dict[str, Any]]:
         """Predict sentiment for a DataFrame."""
+        if self.pipeline is None:
+            raise ValueError("Model must be trained before making predictions")
+
         predictions = self.pipeline.predict(df)
         probabilities = self.pipeline.predict_proba(df)
 

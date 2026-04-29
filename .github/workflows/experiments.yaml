@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  COVERAGE_THRESHOLD: 80
   UV_VERSION: "0.8.13"
   PYTHON_VERSION: "3.13"
 
@@ -47,4 +48,4 @@ jobs:
 
       - name: Run experiments Tests
         working-directory: services/experiments
-        run: uv run pytest
+        run: uv run pytest --cov-fail-under=${COVERAGE_THRESHOLD}

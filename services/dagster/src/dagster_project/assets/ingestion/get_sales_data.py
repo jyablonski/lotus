@@ -1,4 +1,5 @@
 import random
+from typing import Any, cast
 import uuid
 
 from dagster import (
@@ -39,8 +40,8 @@ def sales_data(context: AssetExecutionContext) -> pl.DataFrame:
     )
 
     # Validate: sales values in range and no null IDs
-    min_sales = df["total_sales"].min()
-    max_sales = df["total_sales"].max()
+    min_sales = int(cast(Any, df["total_sales"].min()))
+    max_sales = int(cast(Any, df["total_sales"].max()))
     null_ids = df["id"].null_count()
     if not ((min_sales >= 10) and (max_sales <= 100) and (null_ids == 0)):
         issues = []

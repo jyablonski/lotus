@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from dagster import AssetExecutionContext, MetadataValue
 import polars as pl
 
 
-def get_partition_date(context: AssetExecutionContext) -> datetime.date:
+def get_partition_date(context: AssetExecutionContext) -> date:
     """Extract the partition date from the asset execution context.
 
     Args:
@@ -63,7 +63,7 @@ def create_basic_metadata(
     Returns:
         A dictionary of metadata values
     """
-    metadata = {
+    metadata: dict[str, MetadataValue] = {
         "partition": MetadataValue.text(get_partition_date_str(context)),
     }
 

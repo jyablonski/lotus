@@ -15,6 +15,10 @@ dependencies = [
 
 [dependency-groups]
 dev = ["pytest>=8.0.0", "pytest-django>=4.8.0", "pytest-cov>=4.1.0"]
+local = [
+    "ruff>=0.15.12",
+    "ty>=0.0.33",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -36,3 +40,6 @@ markers = [
     "django_db: Django database tests",
 ]
 DJANGO_SETTINGS_MODULE = "lotus_admin.settings"
+
+[tool.ty.rules]
+unresolved-attribute = "ignore"

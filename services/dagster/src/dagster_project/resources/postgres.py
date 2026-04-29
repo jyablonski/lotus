@@ -128,7 +128,7 @@ class PostgresResource(ConfigurableResource):
             raise ValueError("Cannot write a DataFrame with no columns")
 
         conflict_columns = list(conflict_columns or [])
-        json_columns = set(json_columns or [])
+        json_column_set = set(json_columns or [])
         if update_columns is None:
             update_columns = [
                 column for column in columns if column not in conflict_columns
@@ -161,7 +161,7 @@ class PostgresResource(ConfigurableResource):
         values = [
             tuple(
                 Json(row[column])
-                if column in json_columns and row[column] is not None
+                if column in json_column_set and row[column] is not None
                 else row[column]
                 for column in columns
             )

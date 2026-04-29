@@ -3,6 +3,7 @@ import json
 
 from dagster import ConfigurableResource, EnvVar
 import gspread
+from gspread.utils import ValueInputOption
 from google.oauth2.service_account import Credentials
 
 
@@ -53,8 +54,10 @@ class GoogleSheetsResource(ConfigurableResource):
         """Append a row to `worksheet_name`. Writes `header` first if the tab is empty."""
         ws = self.get_or_create_worksheet(worksheet_name)
         if not ws.get_all_values():
-            ws.update("A1", [header], value_input_option="RAW")
-        ws.append_row(row, value_input_option="RAW")
+            ws.update(
+                [header], range_name="A1", value_input_option=ValueInputOption.raw
+            )
+        ws.append_row(row, value_input_option=ValueInputOption.raw)
 
     def overwrite_with_rows(
         self, worksheet_name: str, header: list[str], rows: list[list[str]]
@@ -62,7 +65,9 @@ class GoogleSheetsResource(ConfigurableResource):
         """Clear `worksheet_name` and rewrite it with `header` followed by `rows`."""
         ws = self.get_or_create_worksheet(worksheet_name)
         ws.clear()
-        ws.update("A1", [header, *rows], value_input_option="RAW")
+        ws.update(
+            [header, *rows], range_name="A1", value_input_option=ValueInputOption.raw
+        )
 
 
 # generate the base64-encoded credentials from the json file w/ `cat credentials.json | base64 | tr -d '\n'`

@@ -10,6 +10,8 @@ extraction score and the cosine similarity.
 
 from __future__ import annotations
 
+from typing import cast
+
 from keybert import KeyBERT
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -247,11 +249,10 @@ class SemanticTopicExtractor:
         word_count = len(text.split())
         top_n = self._top_n(word_count)
 
-        keyphrases: list[tuple[str, float]] = self.kw_model.extract_keywords(
-            text,
-            keyphrase_ngram_range=self.keyphrase_ngram_range,
-            top_n=top_n,
+        raw_keyphrases = self.kw_model.extract_keywords(
+            text, keyphrase_ngram_range=self.keyphrase_ngram_range, top_n=top_n
         )
+        keyphrases = cast("list[tuple[str, float]]", raw_keyphrases)
 
         # Filter keyphrases below the minimum extraction confidence.
         keyphrases = [(kp, score) for kp, score in keyphrases if score >= self.min_confidence]
@@ -264,7 +265,13 @@ class SemanticTopicExtractor:
         best: dict[str, tuple[str, float]] = {}  # subtopic → (domain, confidence)
 
         for keyphrase, kp_score in keyphrases:
-            embedding = self.sentence_model.encode(keyphrase, normalize_embeddings=True)
+            embedding = np.asarray(
+                self.sentence_model.encode(
+                    keyphrase,
+                    convert_to_tensor=False,
+                    normalize_embeddings=True,
+                )
+            )
             similarities = self._cosine_similarities(embedding)
             best_idx = int(np.argmax(similarities))
             cosim = float(similarities[best_idx])

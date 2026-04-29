@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from opentelemetry import trace
@@ -35,7 +36,7 @@ async def extract_journal_topics_openai(
         span.set_attribute("model", topic_client.model)
         span.set_attribute("max_topics", max_topics)
 
-        request = AnalysisRequest(text=journal.journal_text, max_topics=max_topics)
+        request = AnalysisRequest(text=cast("str", journal.journal_text), max_topics=max_topics)
         analysis = await topic_client.analyze_topics(request)
 
     topics = [

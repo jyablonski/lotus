@@ -28,7 +28,7 @@ PACT_FILE = PACT_DIR / "LotusBackend-LotusAnalyzer.json"
 def pact_file():
     """Return the path to the pact file, or skip if it doesn't exist."""
     if not PACT_FILE.exists():
-        pytest.skip(
+        raise pytest.skip.Exception(
             f"Pact file not found at {PACT_FILE}. "
             "Generate it by running backend consumer contract tests first: "
             "cd services/backend && go test ./internal/grpc/contract_test/ -v"
@@ -40,13 +40,13 @@ def pact_file():
 def require_contract_env_and_provider():
     """Skip by default unless contract verification is explicitly requested."""
     if os.environ.get("RUN_PACT_PROVIDER_VERIFY", "").lower() not in {"1", "true", "yes"}:
-        pytest.skip(
+        raise pytest.skip.Exception(
             "Skipping provider contract verification. Set RUN_PACT_PROVIDER_VERIFY=true to enable."
         )
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         if sock.connect_ex(("127.0.0.1", 8083)) != 0:
-            pytest.skip(
+            raise pytest.skip.Exception(
                 "Analyzer provider is not running on localhost:8083. "
                 "Start it with PACT_TESTING=true before running this test."
             )

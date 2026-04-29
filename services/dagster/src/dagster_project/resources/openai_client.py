@@ -1,5 +1,6 @@
 from dagster import ConfigurableResource, EnvVar
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 
 class OpenAIResource(ConfigurableResource):
@@ -21,7 +22,7 @@ class OpenAIResource(ConfigurableResource):
 
         `model` overrides `default_model`. `system` adds an optional system message.
         """
-        messages: list[dict] = []
+        messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})

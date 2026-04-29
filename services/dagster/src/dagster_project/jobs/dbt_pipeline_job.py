@@ -8,7 +8,11 @@ from dagster_project.assets.transformations.dbt_assets import (
 )
 
 # Only create the job if dbt assets are available
-if dbt_silver_stg is not None:
+if (
+    dbt_silver_stg is not None
+    and dbt_silver_core is not None
+    and dbt_gold_analytics is not None
+):
     staging_selection = build_dbt_asset_selection(
         [dbt_silver_stg], dbt_select="tag:staging"
     )

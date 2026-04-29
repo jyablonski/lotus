@@ -217,7 +217,7 @@ def real_sentiment_client():
     logger.info("Loading test sentiment model from fixtures...")
 
     if not SENTIMENT_MODEL_PATH.exists():
-        pytest.skip(f"Test sentiment model not found at {SENTIMENT_MODEL_PATH}")
+        raise pytest.skip.Exception(f"Test sentiment model not found at {SENTIMENT_MODEL_PATH}")
 
     try:
         with SENTIMENT_MODEL_PATH.open("rb") as f:
@@ -237,7 +237,7 @@ def real_sentiment_client():
 
     except Exception as e:
         logger.error(f"Failed to load test sentiment model: {e}")
-        pytest.skip(f"Test sentiment model could not be loaded: {e}")
+        raise pytest.skip.Exception(f"Test sentiment model could not be loaded: {e}") from e
 
 
 @pytest.fixture(scope="session")

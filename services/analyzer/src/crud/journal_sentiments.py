@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import logging
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import and_, desc, func
 from sqlalchemy.orm import Session
@@ -36,7 +36,7 @@ def create_or_update_sentiment(
                 existing.confidence = sentiment_data["confidence"]
                 existing.confidence_level = sentiment_data["confidence_level"]
                 existing.is_reliable = sentiment_data["is_reliable"]
-                existing.all_scores = sentiment_data.get("all_scores")
+                existing.all_scores = cast("Any", sentiment_data.get("all_scores"))
                 existing.created_at = func.now()
                 sentiment_record = existing
                 logger.info(f"Updated sentiment for journal {journal_id}, model {model_version}")
@@ -100,7 +100,7 @@ def get_sentiments_by_journal_ids(
         query = db.query(JournalSentiments).filter(JournalSentiments.journal_id.in_(journal_ids))
 
         if reliable_only:
-            query = query.filter(JournalSentiments.is_reliable is True)
+            query = query.filter(JournalSentiments.is_reliable.is_(True))
 
         sentiments = query.order_by(desc(JournalSentiments.created_at)).all()
 
@@ -129,7 +129,7 @@ def get_sentiment_trends(
         query = db.query(JournalSentiments).filter(JournalSentiments.created_at >= start_date)
 
         if reliable_only:
-            query = query.filter(JournalSentiments.is_reliable is True)
+            query = query.filter(JournalSentiments.is_reliable.is_(True))
 
         # TODO: add user filter once journals table join is wired up
         # if user_id:
@@ -252,10 +252,11 @@ def get_sentiment_stats(
         total_confidence = 0
 
         for sentiment in all_sentiments:
-            sentiment_distribution[sentiment.sentiment] = (
-                sentiment_distribution.get(sentiment.sentiment, 0) + 1
+            sentiment_label = cast("str", sentiment.sentiment)
+            sentiment_distribution[sentiment_label] = (
+                sentiment_distribution.get(sentiment_label, 0) + 1
             )
-            total_confidence += float(sentiment.confidence)
+            total_confidence += float(cast("Any", sentiment.confidence))
 
         avg_confidence = total_confidence / total_analyzed if total_analyzed > 0 else 0
 
@@ -290,7 +291,7 @@ def get_recent_sentiments(
         query = db.query(JournalSentiments)
 
         if reliable_only:
-            query = query.filter(JournalSentiments.is_reliable is True)
+            query = query.filter(JournalSentiments.is_reliable.is_(True))
 
         # TODO: add user filter once journals table join is wired up
         # if user_id:
