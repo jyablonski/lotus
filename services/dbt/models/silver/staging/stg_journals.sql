@@ -10,7 +10,7 @@ with source as (
     from {{ source('application_db', 'journals') }}
 
     {% if is_incremental() %}
-    where modified_at > coalesce((select max(modified_at) from {{ this }}), '1970-01-01'::timestamp)
+        where modified_at > coalesce((select max(modified_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 

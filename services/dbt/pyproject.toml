@@ -8,3 +8,54 @@ dependencies = [
     "dbt-core>=1.10.13",
     "dbt-postgres>=1.9.1",
 ]
+
+[dependency-groups]
+dev = [
+    "sqlfluff>=4.1.0",
+    "sqlfluff-templater-dbt>=4.1.0",
+]
+
+[tool.sqlfluff.core]
+dialect = "postgres"
+templater = "dbt"
+rules = "aliasing.forbid,capitalisation,jinja,layout"
+sql_file_exts = ".sql"
+max_line_length = 120
+
+[tool.sqlfluff.indentation]
+indented_joins = false
+
+[tool.sqlfluff.templater.dbt]
+project_dir = "."
+profiles_dir = "./profiles"
+profile = "local"
+
+[tool.sqlfluff.layout.type.groupby_clause]
+line_position = "alone:strict"
+keyword_line_position = "leading"
+
+[tool.sqlfluff.layout.type.join_clause]
+line_position = "alone:strict"
+
+[tool.sqlfluff.layout.type.orderby_clause]
+line_position = "alone:strict"
+keyword_line_position = "leading"
+keyword_line_position_exclusions = "window_specification,aggregate_order_by,withingroup_clause,pipe_operator_clause"
+
+[tool.sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.capitalisation.identifiers]
+extended_capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.capitalisation.functions]
+extended_capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.capitalisation.literals]
+capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.capitalisation.types]
+extended_capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.aliasing.forbid]
+force_enable = true

@@ -10,7 +10,7 @@ with source as (
     from {{ source('application_db', 'journal_topics') }}
 
     {% if is_incremental() %}
-    where created_at > coalesce((select max(created_at) from {{ this }}), '1970-01-01'::timestamp)
+        where created_at > coalesce((select max(created_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 

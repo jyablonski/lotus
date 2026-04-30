@@ -9,7 +9,7 @@ with bets as (
     select * from {{ ref('stg_user_game_bets') }}
 
     {% if is_incremental() %}
-    where created_at > coalesce((select max(bet_created_at) from {{ this }}), '1970-01-01'::timestamp)
+        where created_at > coalesce((select max(bet_created_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 

@@ -9,7 +9,10 @@ with topics as (
 ),
 
 journal_entries as (
-    select journal_id, user_id from {{ ref('fct_journal_entries') }}
+    select
+        journal_id,
+        user_id
+    from {{ ref('fct_journal_entries') }}
 ),
 
 users as (
@@ -66,9 +69,16 @@ topic_ranks as (
         topic_name,
         count(*) as topic_count,
         avg(topic_confidence) as avg_confidence,
-        row_number() over (partition by user_id order by count(*) desc, avg(topic_confidence) desc) as rn
+        row_number() over (
+            partition by user_id
+            order by
+                count(*) desc,
+                avg(topic_confidence) desc
+        ) as rn
     from user_topics
-    group by user_id, topic_name
+    group by
+        user_id,
+        topic_name
 ),
 
 dominant_topic as (
@@ -90,7 +100,9 @@ subtopic_ranks as (
         row_number() over (partition by user_id order by count(*) desc) as rn
     from user_topics
     where subtopic_name is not null
-    group by user_id, subtopic_name
+    group by
+        user_id,
+        subtopic_name
 ),
 
 dominant_subtopic as (
@@ -107,11 +119,11 @@ final as (
         users.user_email,
 
         -- all-time metrics
-        coalesce(m.total_topic_assignments, 0) as total_topic_assignments,
-        coalesce(m.journals_with_topics, 0) as journals_with_topics,
-        coalesce(m.distinct_topics, 0) as distinct_topics,
-        coalesce(m.distinct_subtopics, 0) as distinct_subtopics,
-        round(m.avg_topic_confidence::numeric, 4) as avg_topic_confidence,
+        coalesce(user_topic_metrics.total_topic_assignments, 0) as total_topic_assignments,
+        coalesce(user_topic_metrics.journals_with_topics, 0) as journals_with_topics,
+        coalesce(user_topic_metrics.distinct_topics, 0) as distinct_topics,
+        coalesce(user_topic_metrics.distinct_subtopics, 0) as distinct_subtopics,
+        round(user_topic_metrics.avg_topic_confidence::numeric, 4) as avg_topic_confidence,
 
         -- dominant topic
         dominant_topic.dominant_topic,
@@ -120,17 +132,17 @@ final as (
         dominant_subtopic.dominant_subtopic,
 
         -- 30d metrics
-        coalesce(m30.total_topic_assignments_30d, 0) as total_topic_assignments_30d,
-        coalesce(m30.distinct_topics_30d, 0) as distinct_topics_30d,
-        round(m30.avg_topic_confidence_30d::numeric, 4) as avg_topic_confidence_30d,
+        coalesce(user_topic_metrics_30d.total_topic_assignments_30d, 0) as total_topic_assignments_30d,
+        coalesce(user_topic_metrics_30d.distinct_topics_30d, 0) as distinct_topics_30d,
+        round(user_topic_metrics_30d.avg_topic_confidence_30d::numeric, 4) as avg_topic_confidence_30d,
 
         -- timestamps
-        m.first_topic_at,
-        m.last_topic_at
+        user_topic_metrics.first_topic_at,
+        user_topic_metrics.last_topic_at
 
     from users
-    left join user_topic_metrics m on users.user_id = m.user_id
-    left join user_topic_metrics_30d m30 on users.user_id = m30.user_id
+    left join user_topic_metrics on users.user_id = user_topic_metrics.user_id
+    left join user_topic_metrics_30d on users.user_id = user_topic_metrics_30d.user_id
     left join dominant_topic on users.user_id = dominant_topic.user_id
     left join dominant_subtopic on users.user_id = dominant_subtopic.user_id
 )

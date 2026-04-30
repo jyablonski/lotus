@@ -63,28 +63,37 @@ user_metrics_30d as (
 -- topic metrics per user
 user_topic_metrics as (
     select
-        je.user_id,
-        count(distinct t.topic_name) as distinct_topics,
-        avg(t.topic_confidence) as avg_topic_confidence
-    from topics t
-    inner join journal_entries je on t.journal_id = je.journal_id
-    group by je.user_id
+        journal_entries.user_id,
+        count(distinct topics.topic_name) as distinct_topics,
+        avg(topics.topic_confidence) as avg_topic_confidence
+    from topics
+    inner join journal_entries on topics.journal_id = journal_entries.journal_id
+    group by journal_entries.user_id
 ),
 
 -- dominant topic per user
 topic_ranks as (
     select
-        je.user_id,
-        t.topic_name,
+        journal_entries.user_id,
+        topics.topic_name,
         count(*) as cnt,
-        row_number() over (partition by je.user_id order by count(*) desc, avg(t.topic_confidence) desc) as rn
-    from topics t
-    inner join journal_entries je on t.journal_id = je.journal_id
-    group by je.user_id, t.topic_name
+        row_number() over (
+            partition by journal_entries.user_id
+            order by
+                count(*) desc,
+                avg(topics.topic_confidence) desc
+        ) as rn
+    from topics
+    inner join journal_entries on topics.journal_id = journal_entries.journal_id
+    group by
+        journal_entries.user_id,
+        topics.topic_name
 ),
 
 dominant_topic as (
-    select user_id, topic_name as dominant_topic
+    select
+        user_id,
+        topic_name as dominant_topic
     from topic_ranks
     where rn = 1
 ),
@@ -114,7 +123,9 @@ current_streaks as (
         min(entry_date) as streak_start,
         max(entry_date) as streak_end
     from streaks
-    group by user_id, streak_group
+    group by
+        user_id,
+        streak_group
 ),
 
 active_streaks as (
@@ -184,27 +195,31 @@ final as (
 
         -- Calculated fields
         round(
-            coalesce(user_metrics.positive_entries, 0)::numeric /
-            nullif(coalesce(user_metrics.total_journals, 0), 0) * 100,
+            coalesce(user_metrics.positive_entries, 0)::numeric
+            / nullif(coalesce(user_metrics.total_journals, 0), 0) * 100,
             2
         ) as positive_percentage,
 
         case
             when user_metrics.last_journal_at is not null
-            then current_date - date_trunc('day', user_metrics.last_journal_at)::date
+                then current_date - date_trunc('day', user_metrics.last_journal_at)::date
             else null
         end as days_since_last_journal,
 
         case
-            when user_metrics.first_journal_at is not null
+            when
+                user_metrics.first_journal_at is not null
                 and user_metrics.last_journal_at is not null
-            then date_trunc('day', user_metrics.last_journal_at)::date - date_trunc('day', user_metrics.first_journal_at)::date + 1
+                then
+                    date_trunc('day', user_metrics.last_journal_at)::date
+                    - date_trunc('day', user_metrics.first_journal_at)::date
+                    + 1
             else null
         end as days_between_first_and_last_journal,
 
         round(
-            coalesce(user_metrics.total_journals, 0)::numeric /
-            nullif(coalesce(user_metrics.active_days, 0), 0),
+            coalesce(user_metrics.total_journals, 0)::numeric
+            / nullif(coalesce(user_metrics.active_days, 0), 0),
             2
         ) as journals_per_active_day
 
