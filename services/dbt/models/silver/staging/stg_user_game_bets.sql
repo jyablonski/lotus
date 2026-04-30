@@ -10,7 +10,7 @@ with source as (
     from {{ source('application_db', 'user_game_bets') }}
 
     {% if is_incremental() %}
-    where created_at > coalesce((select max(created_at) from {{ this }}), '1970-01-01'::timestamp)
+        where created_at > coalesce((select max(created_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 

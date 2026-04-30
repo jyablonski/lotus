@@ -9,7 +9,7 @@ with journals as (
     select * from {{ ref('stg_journals') }}
 
     {% if is_incremental() %}
-    where modified_at > coalesce((select max(journal_modified_at) from {{ this }}), '1970-01-01'::timestamp)
+        where modified_at > coalesce((select max(journal_modified_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 
@@ -17,7 +17,7 @@ journal_details as (
     select * from {{ ref('stg_journal_details') }}
 
     {% if is_incremental() %}
-    where modified_at > coalesce((select max(journal_modified_at) from {{ this }}), '1970-01-01'::timestamp)
+        where modified_at > coalesce((select max(journal_modified_at) from {{ this }}), '1970-01-01'::timestamp)
     {% endif %}
 ),
 
@@ -28,7 +28,7 @@ sentiments as (
     from {{ ref('stg_journal_sentiments') }}
 
     {% if is_incremental() %}
-    where journal_id in (select journal_id from journals)
+        where journal_id in (select journal_id from journals)
     {% endif %}
 ),
 
@@ -62,8 +62,9 @@ joined as (
     left join journal_details
         on journals.journal_id = journal_details.journal_id
     left join sentiments
-        on journals.journal_id = sentiments.journal_id
-        and sentiments.rn = 1
+        on
+            journals.journal_id = sentiments.journal_id
+            and sentiments.rn = 1
     left join topic_counts
         on journals.journal_id = topic_counts.journal_id
 )

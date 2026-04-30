@@ -36,11 +36,13 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
 
-  # Shell script linting
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.11.0
+  # Shell script linting (shellcheck-py bundles the binary; avoids Docker)
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
+        # Curl snippet collections, not executable shell scripts
+        exclude: ^services/(analyzer|backend)/resources/.*\.sh$
 
   # Go linters & formatters
   - repo: https://github.com/dnephin/pre-commit-golang
@@ -60,14 +62,18 @@ repos:
       # deadcode traces all reachable symbols from main + test entry points and flags unexported functions/types with no callers
       - id: go-deadcode
         name: deadcode (backend)
-        entry: bash -c 'cd services/backend && $(go env GOPATH)/bin/deadcode -test ./...'
+        entry:
+          bash -c 'cd services/backend && $(go env GOPATH)/bin/deadcode -test
+          ./...'
         language: system
         files: ^services/backend/.*\.go$
         pass_filenames: false
       # golangci-lint runs a comprehensive suite of linters (gosec, gocritic, staticcheck, etc.)
       - id: golangci-lint
         name: golangci-lint (backend)
-        entry: bash -c 'cd services/backend && $(go env GOPATH)/bin/golangci-lint run ./...'
+        entry:
+          bash -c 'cd services/backend && $(go env GOPATH)/bin/golangci-lint run
+          ./...'
         language: system
         files: ^services/backend/.*\.go$
         pass_filenames: false
@@ -85,10 +91,8 @@ repos:
     hooks:
       - id: yamllint
         args:
-          [
-            -d,
-            "{extends: default, rules: {document-start: disable, line-length: disable}}",
-          ]
+          - -d
+          - "{extends: default, rules: {document-start: disable, line-length: disable}}"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.6
@@ -98,6 +102,12 @@ repos:
 
   - repo: local
     hooks:
+      - id: sqlfluff-dbt-fix
+        name: SQLFluff fix (dbt)
+        entry: scripts/sqlfluff-dbt-fix.sh
+        language: system
+        files: ^services/dbt/.*\.sql$
+        exclude: ^services/dbt/(target|dbt_packages)/
       - id: lint-bruno
         name: Bruno auth lint
         entry: bash scripts/lint-bruno.sh
@@ -126,7 +136,9 @@ repos:
         pass_filenames: false
       - id: dbt-source-schema-sync
         name: dbt source schema sync (django)
-        entry: bash -c 'make generate-dbt-source-schema && git diff --exit-code -- docker/db/generated/ci_source_schema.sql'
+        entry:
+          bash -c 'make generate-dbt-source-schema && git diff --exit-code --
+          docker/db/generated/ci_source_schema.sql'
         language: system
         stages: [pre-push]
         files: ^(services/django/|services/dbt/models/sources/application_db/)
