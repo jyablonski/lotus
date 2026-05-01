@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/inject"
+	"github.com/jyablonski/lotus/internal/testfixtures"
 	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/stretchr/testify/require"
 )
@@ -57,12 +58,45 @@ func withAnalyzer(ctx context.Context, url string) context.Context {
 // The insert runs within the test's transaction and is rolled back on cleanup.
 func createTestUser(t *testing.T, queries *db.Queries) uuid.UUID {
 	t.Helper()
-	email := "test-" + uuid.New().String() + "@test.example"
-	provider := "test"
-	user, err := queries.CreateUserOauth(context.Background(), db.CreateUserOauthParams{
-		Email:         email,
-		OauthProvider: &provider,
+	user := testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceUser{})
+	return uuid.UUID(user.ID.Bytes)
+}
+
+func createTestJournal(t *testing.T, queries *db.Queries, userID uuid.UUID, text string, moodScore int32) db.SourceJournal {
+	t.Helper()
+	return testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceJournal{
+		UserID:      testfixtures.UUIDFromGoogle(t, userID),
+		JournalText: text,
+		MoodScore:   testfixtures.Int32Ptr(moodScore),
 	})
-	require.NoError(t, err)
+}
+
+func createTestGameBalance(t *testing.T, queries *db.Queries, userID uuid.UUID, balance int32) db.SourceUserGameBalance {
+	t.Helper()
+	return testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceUserGameBalance{
+		UserID:  testfixtures.UUIDFromGoogle(t, userID),
+		Balance: balance,
+	})
+}
+
+func createTestGameBet(t *testing.T, queries *db.Queries, userID uuid.UUID, zone string, amount, rollResult, payout int32) db.SourceUserGameBet {
+	t.Helper()
+	return testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceUserGameBet{
+		UserID:     testfixtures.UUIDFromGoogle(t, userID),
+		Zone:       zone,
+		Amount:     amount,
+		RollResult: rollResult,
+		Payout:     payout,
+	})
+}
+
+func createTestCommunityUser(t *testing.T, queries *db.Queries, countryCode, regionCode *string) uuid.UUID {
+	t.Helper()
+	user := testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceUser{
+		CommunityInsightsOptIn: true,
+		CommunityLocationOptIn: countryCode != nil || regionCode != nil,
+		CommunityCountryCode:   countryCode,
+		CommunityRegionCode:    regionCode,
+	})
 	return uuid.UUID(user.ID.Bytes)
 }

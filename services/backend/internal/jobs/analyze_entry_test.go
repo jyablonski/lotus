@@ -9,6 +9,7 @@ import (
 
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/jobs"
+	"github.com/jyablonski/lotus/internal/testfixtures"
 	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -36,10 +37,7 @@ func TestAnalyzeEntryInsertTx(t *testing.T) {
 	client := newInsertOnlyClient(t)
 
 	pq := db.New(testPgxPool)
-	email := "analyze-entry-tx-" + t.Name() + "@test.example"
-	op := "test"
-	u, err := pq.CreateUserOauth(ctx, db.CreateUserOauthParams{Email: email, OauthProvider: &op})
-	require.NoError(t, err)
+	u := testfixtures.CreateWithDefaults(t, ctx, pq, db.SourceUser{})
 	t.Cleanup(func() {
 		_ = pq.DeleteUserById(ctx, u.ID)
 	})
@@ -48,13 +46,11 @@ func TestAnalyzeEntryInsertTx(t *testing.T) {
 	require.NoError(t, err)
 	defer tx.Rollback(ctx) //nolint:errcheck
 
-	ms := int32(5)
-	journal, err := db.New(tx).CreateJournal(ctx, db.CreateJournalParams{
+	journal := testfixtures.CreateWithDefaults(t, ctx, db.New(tx), db.SourceJournal{
 		UserID:      u.ID,
 		JournalText: "tx test entry",
-		MoodScore:   &ms,
+		MoodScore:   testfixtures.Int32Ptr(5),
 	})
-	require.NoError(t, err)
 	journalID := journal.ID
 	t.Cleanup(func() {
 		_, _ = pq.DeleteJournalForUser(ctx, db.DeleteJournalForUserParams{

@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	"github.com/jyablonski/lotus/internal/jobs"
+	"github.com/jyablonski/lotus/internal/testfixtures"
 	"github.com/jyablonski/lotus/internal/testinfra"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -124,7 +125,7 @@ func TestRefreshCommunityRollupsWorkerPersistsRollupsSummaryAndPrompts(t *testin
 			"US-CA",
 		)
 		journalID := createJournal(t, ctx, userID, "Rollup seed", 8)
-		_, err := testQueries.UpsertJournalCommunityProjection(ctx, db.UpsertJournalCommunityProjectionParams{
+		testfixtures.CreateWithDefaults(t, ctx, testQueries, db.SourceJournalCommunityProjection{
 			JournalID:            journalID,
 			UserID:               userID,
 			EligibleForCommunity: true,
@@ -136,7 +137,6 @@ func TestRefreshCommunityRollupsWorkerPersistsRollupsSummaryAndPrompts(t *testin
 			RegionCode:           ptr("US-CA"),
 			AnalysisVersion:      "v1",
 		})
-		require.NoError(t, err)
 	}
 
 	workers := river.NewWorkers()
@@ -224,25 +224,26 @@ func TestRepairCommunityDataWorkerEnqueuesProjectionRefreshes(t *testing.T) {
 
 func createCommunityUser(t *testing.T, ctx context.Context, email string, insightsOptIn, locationOptIn bool, timezone, country, region string) pgtype.UUID {
 	t.Helper()
-	var userID pgtype.UUID
-	require.NoError(t, testPgxPool.QueryRow(ctx, `
-		INSERT INTO source.users (
-			email, oauth_provider, timezone, community_insights_opt_in, community_location_opt_in, community_country_code, community_region_code
-		) VALUES ($1, 'test', $2, $3, $4, $5, $6)
-		RETURNING id
-	`, email, timezone, insightsOptIn, locationOptIn, country, region).Scan(&userID))
-	return userID
+	user := testfixtures.CreateWithDefaults(t, ctx, testQueries, db.SourceUser{
+		Email:                  email,
+		OauthProvider:          ptr("test"),
+		Timezone:               timezone,
+		CommunityInsightsOptIn: insightsOptIn,
+		CommunityLocationOptIn: locationOptIn,
+		CommunityCountryCode:   ptr(country),
+		CommunityRegionCode:    ptr(region),
+	})
+	return user.ID
 }
 
 func createJournal(t *testing.T, ctx context.Context, userID pgtype.UUID, text string, moodScore int32) int32 {
 	t.Helper()
-	var journalID int32
-	require.NoError(t, testPgxPool.QueryRow(ctx, `
-		INSERT INTO source.journals (user_id, journal_text, mood_score)
-		VALUES ($1, $2, $3)
-		RETURNING id
-	`, userID, text, moodScore).Scan(&journalID))
-	return journalID
+	journal := testfixtures.CreateWithDefaults(t, ctx, testQueries, db.SourceJournal{
+		UserID:      userID,
+		JournalText: text,
+		MoodScore:   testfixtures.Int32Ptr(moodScore),
+	})
+	return journal.ID
 }
 
 func insertSentiment(t *testing.T, ctx context.Context, journalID int32, sentiment, modelVersion string) {

@@ -259,14 +259,8 @@ func TestSearchJournals_Success(t *testing.T) {
 	server := &internalgrpc.JournalServer{}
 	queries := newDirectQueries(t)
 	userID := createTestUser(t, queries)
-	mood := int32(7)
 
-	journal, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
-		JournalText: "I need a little more rest this week.",
-		MoodScore:   &mood,
-	})
-	require.NoError(t, err)
+	journal := createTestJournal(t, queries, userID, "I need a little more rest this week.", 7)
 
 	vector := make([]float64, 384)
 	vector[0] = 0.25
@@ -274,7 +268,7 @@ func TestSearchJournals_Success(t *testing.T) {
 	vector[2] = 0.75
 	vectorSQL := vectorLiteral(vector)
 
-	_, err = testPgxPool.Exec(context.Background(),
+	_, err := testPgxPool.Exec(context.Background(),
 		`INSERT INTO source.journal_embeddings (journal_id, embedding, model_version) VALUES ($1, $2::public.vector, $3)`,
 		journal.ID, vectorSQL, "all-MiniLM-L6-v2",
 	)
@@ -327,14 +321,8 @@ func TestKeywordSearchJournals_Success(t *testing.T) {
 	server := &internalgrpc.JournalServer{}
 	queries := newDirectQueries(t)
 	userID := createTestUser(t, queries)
-	mood := int32(8)
 
-	journal, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
-		JournalText: "I want to reset and rest before the weekend.",
-		MoodScore:   &mood,
-	})
-	require.NoError(t, err)
+	journal := createTestJournal(t, queries, userID, "I want to reset and rest before the weekend.", 8)
 
 	t.Cleanup(func() {
 		_, _ = queries.DeleteJournalForUser(context.Background(), db.DeleteJournalForUserParams{

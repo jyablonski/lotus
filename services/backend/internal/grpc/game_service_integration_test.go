@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/game"
@@ -33,11 +32,7 @@ func TestIntegration_GetGameBalance(t *testing.T) {
 		userID := createTestUser(t, queries)
 		svc := &grpcServer.GameServer{}
 
-		_, err := queries.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-			UserID:  integPgUUID(userID),
-			Balance: 250,
-		})
-		require.NoError(t, err)
+		createTestGameBalance(t, queries, userID, 250)
 
 		resp, err := svc.GetGameBalance(ctx, &pb.GetGameBalanceRequest{UserId: userID.String()})
 		require.NoError(t, err)
@@ -74,11 +69,7 @@ func TestIntegration_UpdateGameBalance(t *testing.T) {
 		userID := createTestUser(t, queries)
 		svc := &grpcServer.GameServer{}
 
-		_, err := queries.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-			UserID:  integPgUUID(userID),
-			Balance: 100,
-		})
-		require.NoError(t, err)
+		createTestGameBalance(t, queries, userID, 100)
 
 		resp, err := svc.UpdateGameBalance(ctx, &pb.UpdateGameBalanceRequest{UserId: userID.String(), Balance: 75})
 		require.NoError(t, err)
@@ -106,17 +97,12 @@ func TestIntegration_RecordBets_AndGetBetHistory(t *testing.T) {
 	ctx, _ := newTestCtx(t)
 	ctx = withRiverDeps(ctx)
 
-	// Create user via sqlc so RecordBets' separate tx can see it; CASCADE removes bets/balance.
-	pq := db.New(testPgxPool)
-	email := "record-bets-" + t.Name() + "@test.example"
-	op := "test"
-	u, err := pq.CreateUserOauth(context.Background(), db.CreateUserOauthParams{
-		Email: email, OauthProvider: &op,
-	})
-	require.NoError(t, err)
-	userID := u.ID.String()
+	// Create user via the direct pool so RecordBets' separate tx can see it.
+	pq := newDirectQueries(t)
+	userUUID := createTestUser(t, pq)
+	userID := userUUID.String()
 	t.Cleanup(func() {
-		_ = pq.DeleteUserById(context.Background(), u.ID)
+		_ = pq.DeleteUserById(context.Background(), integPgUUID(userUUID))
 	})
 
 	svc := &grpcServer.GameServer{}
@@ -153,21 +139,10 @@ func TestIntegration_GetBetHistory(t *testing.T) {
 		userID := createTestUser(t, queries)
 		svc := &grpcServer.GameServer{}
 
-		_, err := queries.UpsertUserGameBalance(ctx, db.UpsertUserGameBalanceParams{
-			UserID:  integPgUUID(userID),
-			Balance: 1000,
-		})
-		require.NoError(t, err)
+		createTestGameBalance(t, queries, userID, 1000)
 
 		for i := 0; i < 5; i++ {
-			_, err := queries.InsertUserGameBet(ctx, db.InsertUserGameBetParams{
-				UserID:     integPgUUID(userID),
-				Zone:       "red",
-				Amount:     int32(10 + i),
-				RollResult: 7,
-				Payout:     int32(20 + i),
-			})
-			require.NoError(t, err)
+			createTestGameBet(t, queries, userID, "red", int32(10+i), 7, int32(20+i))
 		}
 
 		resp1, err := svc.GetBetHistory(ctx, &pb.GetBetHistoryRequest{UserId: userID.String(), Limit: 2, Offset: 0})

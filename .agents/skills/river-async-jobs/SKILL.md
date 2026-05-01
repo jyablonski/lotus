@@ -33,4 +33,23 @@ Every job needs two things, then one wiring step:
 
 - Workers hold their own deps (httpClient, logger, queries) as struct fields — they run outside gRPC context
 - `InsertTx` guarantees the job is rolled back if the transaction rolls back
-- Tests: use `jobs.NewInsertOnlyClient(testPgxPool)` to enqueue without processing; use a full client with `Subscribe(EventKindJobCompleted)` to test worker execution
+
+## Testing
+
+- Package tests use `testinfra.Setup(ctx, "../sql/schema")` from `services/backend/internal/testinfra` to start Postgres, apply goose migrations, run River migrations, and start Redis.
+- Use `jobs.NewInsertOnlyClient(testPgxPool)` or the shared `newInsertOnlyClient(t)` helper to enqueue without processing.
+- Use a full River client with `Subscribe(EventKindJobCompleted)` or `Subscribe(EventKindJobFailed)` to test worker execution.
+- Use `internal/testfixtures` for supported setup rows instead of hand-writing sqlc params. For example:
+
+```go
+q := db.New(testPgxPool)
+user := testfixtures.CreateWithDefaults(t, ctx, q, db.SourceUser{})
+journal := testfixtures.CreateWithDefaults(t, ctx, q, db.SourceJournal{
+    UserID:      user.ID,
+    JournalText: "entry to analyze",
+    MoodScore:   testfixtures.Int32Ptr(5),
+})
+```
+
+- Raw SQL is still fine for unsupported analysis tables such as `source.journal_sentiments` and `source.journal_topics`.
+- When verifying `InsertTx`, create the DB row and River job in the same pgx transaction, then assert both appear only after commit.

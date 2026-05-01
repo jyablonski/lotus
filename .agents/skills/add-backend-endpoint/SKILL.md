@@ -262,29 +262,47 @@ Add integration tests in `services/backend/internal/grpc/{domain}_service_integr
 
 **How the DB container works** (`testmain_test.go`):
 
-`TestMain` starts a single ephemeral postgres container (testcontainers-go) before any test runs and terminates it after all tests finish. The container's connection string is stored in the `testDBConnStr` package-level variable. After `postgres.Run` returns, `TestMain` calls a `waitForDB` retry loop (up to 10s, 500ms intervals) to ensure postgres has truly finished running init scripts before any test connects. This means:
+`TestMain` calls `testinfra.Setup(ctx, "../sql/schema")`, which starts a single ephemeral `pgvector/pgvector:pg16` Postgres container, applies goose migrations, runs River migrations, starts Redis, and terminates everything after the package test run. This means:
 
 - No external postgres required — `make test-backend` is fully self-contained
 - Running tests never touches your local Tilt postgres
 - The container starts **once per `go test` invocation**, not once per test function
 
 **Per-test isolation: transaction rollback**
-Each `newTestCtx(t)` call opens a fresh `*sql.DB` connection and immediately begins a transaction. `db.New(tx)` is used because sqlc's `New()` accepts the `DBTX` interface, which both `*sql.DB` and `*sql.Tx` satisfy. `t.Cleanup` rolls back the transaction and closes the connection. Since the transaction is never committed, every write is discarded at cleanup — no truncation, no WAL writes.
+Each `newTestCtx(t)` call begins a fresh pgx transaction from the package test pool. `db.New(tx)` is used because sqlc's `New()` accepts the `DBTX` interface, which both `pgx.Tx` and `*pgxpool.Pool` satisfy. `t.Cleanup` rolls back the transaction. Since the transaction is never committed, every write is discarded at cleanup.
 
 One implication: if two records are inserted in the same `newTestCtx` transaction within the same millisecond, `ORDER BY created_at DESC` is non-deterministic. Use a map-based assertion or insert records in separate `newTestCtx` calls if ordering matters.
 
 **Shared setup** (`testhelpers_test.go`):
 
-- `newTestCtx(t)` — opens a connection, begins a transaction, registers `t.Cleanup` to roll back and close. Returns `(ctx context.Context, queries *db.Queries)`.
+- `newTestCtx(t)` — begins a pgx transaction, registers `t.Cleanup` to roll back, injects `queries` into context, and returns `(ctx context.Context, queries *db.Queries)`.
+- `newDirectQueries(t)` — returns sqlc queries on the shared pool for tests that must observe rows committed outside the test transaction.
 - `withAnalyzer(ctx, url)` — adds HTTP client and analyzer URL to ctx (for journal tests).
-- `mockAnalyzerServer(t)` / `failingAnalyzerServer(t)` — httptest servers with `t.Cleanup(srv.Close)` registered automatically.
-- `createTestUser(t, queries)` — inserts a minimal OAuth user and returns its UUID.
+- `withRiverDeps(ctx)` — adds the shared pgx pool and insert-only River client for handlers that enqueue jobs.
+- `testinfra.MockAnalyzerServer(t)` / `testinfra.FailingAnalyzerServer(t)` — httptest servers with `t.Cleanup(srv.Close)` registered automatically.
+- `createTestUser`, `createTestJournal`, `createTestGameBalance`, `createTestGameBet`, and `createTestCommunityUser` delegate to `internal/testfixtures`.
 
-**Schema** (`testdata/schema.sql`): mirrors `docker/db/01-bootstrap.sql` without seed data or unrelated databases (dagster, mlflow, etc.). Keep these in sync when adding new tables.
+**Fixture helpers** (`internal/testfixtures`):
+
+Use `testfixtures.CreateWithDefaults` for supported setup records instead of hand-writing sqlc params:
+
+```go
+user := testfixtures.CreateWithDefaults(t, ctx, queries, db.SourceUser{})
+journal := testfixtures.CreateWithDefaults(t, ctx, queries, db.SourceJournal{
+    UserID:      user.ID,
+    JournalText: "test body",
+    MoodScore:   testfixtures.Int32Ptr(7),
+})
+```
+
+Supported fixture models include users, journals, game balances/bets, journal exports, journal community projections, community rollups/summaries/prompt sets, and runtime config. Fixtures fill defaults, merge non-zero caller fields, recursively create supported parents when FKs are omitted, and fail loudly for invalid `fieldsToEmpty` names. Raw SQL is still appropriate for unsupported models or specialized database types, such as journal sentiments, journal topics, and pgvector embeddings.
+
+Community rollup `DeltaVsPrevious` defaults to invalid/NULL; pass `testfixtures.Numeric(t, "0")` when a test needs an explicit numeric zero.
 
 Key conventions:
 
 - Call `newTestCtx(t)` at the start of every test that touches the DB. Rollback on cleanup gives a clean slate automatically.
+- Use `testfixtures` or the shared helper wrappers for supported setup rows.
 - For tests that only check input validation (bad UUIDs, missing fields), use `context.Background()` directly — no DB setup needed.
 - Use `t.Run` for grouping related subtests within a single top-level test function (e.g., pagination variants, or multiple invalid input shapes). Each subtest that needs the DB calls `newTestCtx(t)` independently.
 - Log to `io.Discard` (the shared helpers do this automatically) — no `os.Stdout` or `slog.SetDefault` in tests.

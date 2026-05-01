@@ -10,6 +10,7 @@ import (
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	"github.com/jyablonski/lotus/internal/inject"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/journal"
+	"github.com/jyablonski/lotus/internal/testfixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,13 +20,11 @@ import (
 func insertSearchJournal(t *testing.T, userID uuid.UUID, text string, mood int32) int32 {
 	t.Helper()
 	q := db.New(testPgxPool)
-	ms := mood
-	j, err := q.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      pgtype.UUID{Bytes: userID, Valid: true},
+	j := testfixtures.CreateWithDefaults(t, context.Background(), q, db.SourceJournal{
+		UserID:      testfixtures.UUIDFromGoogle(t, userID),
 		JournalText: text,
-		MoodScore:   &ms,
+		MoodScore:   testfixtures.Int32Ptr(mood),
 	})
-	require.NoError(t, err)
 	t.Cleanup(func() {
 		_, _ = q.DeleteJournalForUser(context.Background(), db.DeleteJournalForUserParams{
 			ID:     j.ID,
@@ -39,12 +38,7 @@ func insertSearchJournal(t *testing.T, userID uuid.UUID, text string, mood int32
 func insertSearchUser(t *testing.T) uuid.UUID {
 	t.Helper()
 	q := db.New(testPgxPool)
-	email := "search-test-" + uuid.New().String() + "@test.example"
-	op := "test"
-	u, err := q.CreateUserOauth(context.Background(), db.CreateUserOauthParams{
-		Email: email, OauthProvider: &op,
-	})
-	require.NoError(t, err)
+	u := testfixtures.CreateWithDefaults(t, context.Background(), q, db.SourceUser{})
 	uid := uuid.UUID(u.ID.Bytes)
 	t.Cleanup(func() {
 		_ = q.DeleteUserById(context.Background(), u.ID)
