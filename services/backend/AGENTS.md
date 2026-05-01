@@ -145,6 +145,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 - Integration tests: `*_integration_test.go` files
 - Use `testify` for assertions and test suites
 - Use `moq` for generating mock implementations
+- Use `internal/testfixtures` for integration-test database setup when a supported model exists
 
 ### Running Tests
 
@@ -220,11 +221,64 @@ make moq-generate
 
 Mocks are automatically regenerated via pre-commit hook when `internal/db/querier.go` or `internal/inject/inject.go` change (see `.pre-commit-config.yaml`).
 
+### Integration Test Infrastructure
+
+Shared integration infrastructure lives in `internal/testinfra`.
+
+- `testinfra.Setup(ctx, schemaDir)` starts a `pgvector/pgvector:pg16` PostgreSQL container, applies goose migrations from `internal/sql/schema`, runs River migrations, starts Redis, and returns a `*testinfra.TestDB`.
+- `TestDB` exposes `Pool *pgxpool.Pool`, `ConnStr`, an insert-only `RiverClient`, and a `RedisClient`.
+- `testinfra.ApplyExtraSQL` loads extra SQL fixtures, such as dbt-managed schemas used by analytics tests.
+- `testinfra.MockAnalyzerServer(t)` and `testinfra.FailingAnalyzerServer(t)` create analyzer HTTP test servers and register cleanup automatically.
+
+Package-level `TestMain` functions in `internal/grpc` and `internal/jobs` start the shared containers once per package test run. Most gRPC integration tests call `newTestCtx(t)`, which begins a pgx transaction, wraps it with `db.New(tx)`, injects the query object into context, and rolls the transaction back with `t.Cleanup`.
+
+Use `newDirectQueries(t)` only when the code under test commits outside the test transaction and the test needs to observe committed rows.
+
+### Fixture Helpers
+
+Database fixture helpers live in `internal/testfixtures`. Prefer them over hand-written `Create*Params`, upsert params, or raw SQL for supported setup records.
+
+Supported models:
+
+- `db.SourceUser`
+- `db.SourceJournal`
+- `db.SourceUserGameBalance`
+- `db.SourceUserGameBet`
+- `db.SourceJournalExport`
+- `db.SourceJournalCommunityProjection`
+- `db.SourceCommunityThemeRollup`
+- `db.SourceCommunityMoodRollup`
+- `db.SourceCommunitySummary`
+- `db.SourceCommunityPromptSet`
+- `db.SourceRuntimeConfig`
+
+Primary API:
+
+```go
+user := testfixtures.CreateWithDefaults(t, ctx, queries, db.SourceUser{})
+journal := testfixtures.CreateWithDefaults(t, ctx, queries, db.SourceJournal{
+    UserID:      user.ID,
+    JournalText: "A test journal entry",
+    MoodScore:   testfixtures.Int32Ptr(7),
+})
+```
+
+- `BuildDefaultModel(t, model)` returns defaults without persisting.
+- `Create(t, ctx, queries, model)` persists an already-populated supported model.
+- `CreateWithDefaults(t, ctx, queries, model, fieldsToEmpty...)` merges non-zero caller fields over defaults, resolves supported foreign keys, and persists.
+- `fieldsToEmpty` takes validated Go struct field names, e.g. `"MoodScore"`, for cases where a default is non-zero but the test needs the zero value.
+- FK-aware fixtures create parent users/journals when required IDs are omitted and respect existing FK values when supplied.
+- Community rollup `DeltaVsPrevious` defaults to invalid/NULL. Pass `testfixtures.Numeric(t, "0")` when a test needs a real numeric zero.
+
+Raw SQL is still acceptable in tests for unsupported models or specialized database types, such as journal sentiments, journal topics, and pgvector embeddings.
+
 ### Test Patterns
 
 - Use table-driven tests for multiple test cases
 - Mock external dependencies (HTTP clients, etc.)
-- Integration tests require PostgreSQL running
+- Validation-only tests should use `context.Background()` and avoid DB setup
+- Integration tests should use `newTestCtx(t)` plus `testfixtures` for supported database setup
+- Unit tests should keep explicit mocked sqlc params when those params are part of the behavior being asserted
 
 ## Configuration
 

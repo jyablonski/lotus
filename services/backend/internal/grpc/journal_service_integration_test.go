@@ -104,13 +104,7 @@ func TestGetJournals(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
-	ms := int32(5)
-	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      integPgUUID(userID),
-		JournalText: "Test journal entry",
-		MoodScore:   &ms,
-	})
-	require.NoError(t, err)
+	createTestJournal(t, queries, userID, "Test journal entry", 5)
 
 	resp, err := svc.GetJournals(ctx, &pb.GetJournalsRequest{UserId: userID.String()})
 	require.NoError(t, err)
@@ -131,13 +125,7 @@ func TestGetJournalsPagination(t *testing.T) {
 	userID := createTestUser(t, queries)
 
 	for i := 0; i < 5; i++ {
-		mood := int32(i + 1)
-		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-			UserID:      integPgUUID(userID),
-			JournalText: "Test journal entry " + strconv.Itoa(i+1),
-			MoodScore:   &mood,
-		})
-		require.NoError(t, err)
+		createTestJournal(t, queries, userID, "Test journal entry "+strconv.Itoa(i+1), int32(i+1))
 	}
 
 	// First page
@@ -170,13 +158,7 @@ func TestGetJournalsPaginationDefaults(t *testing.T) {
 	userID := createTestUser(t, queries)
 
 	for i := 0; i < 2; i++ {
-		mood := int32(i + 1)
-		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-			UserID:      integPgUUID(userID),
-			JournalText: "Test journal entry " + strconv.Itoa(i+1),
-			MoodScore:   &mood,
-		})
-		require.NoError(t, err)
+		createTestJournal(t, queries, userID, "Test journal entry "+strconv.Itoa(i+1), int32(i+1))
 	}
 
 	// No pagination params → defaults
@@ -200,13 +182,7 @@ func TestGetJournalsPaginationLimitEnforcement(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
-	ms := int32(5)
-	_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      integPgUUID(userID),
-		JournalText: "Test journal entry",
-		MoodScore:   &ms,
-	})
-	require.NoError(t, err)
+	createTestJournal(t, queries, userID, "Test journal entry", 5)
 
 	// Limit > 100 should be capped at 100
 	resp, err := svc.GetJournals(ctx, &pb.GetJournalsRequest{UserId: userID.String(), Limit: 200, Offset: 0})
@@ -221,13 +197,7 @@ func TestTriggerJournalAnalysis(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
-	ms := int32(6)
-	journal, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      integPgUUID(userID),
-		JournalText: "Manual analysis test",
-		MoodScore:   &ms,
-	})
-	require.NoError(t, err)
+	journal := createTestJournal(t, queries, userID, "Manual analysis test", 6)
 
 	resp, err := svc.TriggerJournalAnalysis(ctx, &pb.TriggerAnalysisRequest{
 		JournalId: strconv.Itoa(int(journal.ID)),
@@ -309,13 +279,7 @@ func TestGetJournalByID(t *testing.T) {
 	svc := &grpcServer.JournalServer{}
 
 	userID := createTestUser(t, queries)
-	ms := int32(8)
-	row, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-		UserID:      integPgUUID(userID),
-		JournalText: "Detail view body",
-		MoodScore:   &ms,
-	})
-	require.NoError(t, err)
+	row := createTestJournal(t, queries, userID, "Detail view body", 8)
 
 	resp, err := svc.GetJournal(ctx, &pb.GetJournalRequest{
 		JournalId: strconv.Itoa(int(row.ID)),

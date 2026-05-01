@@ -5,12 +5,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/analytics"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // createTestUserWithJournals creates a user with 5 journals for analytics testing.
@@ -19,13 +17,7 @@ func createTestUserWithJournals(t *testing.T, queries *db.Queries) uuid.UUID {
 	userID := createTestUser(t, queries)
 
 	for i := 0; i < 5; i++ {
-		ms := int32(3 + i)
-		_, err := queries.CreateJournal(context.Background(), db.CreateJournalParams{
-			UserID:      pgtype.UUID{Bytes: userID, Valid: true},
-			JournalText: "Test journal entry for analytics " + string(rune('A'+i)),
-			MoodScore:   &ms,
-		})
-		require.NoError(t, err)
+		createTestJournal(t, queries, userID, "Test journal entry for analytics "+string(rune('A'+i)), int32(3+i))
 	}
 
 	return userID

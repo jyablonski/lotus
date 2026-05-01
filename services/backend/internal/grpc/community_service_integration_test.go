@@ -9,6 +9,7 @@ import (
 	"github.com/jyablonski/lotus/internal/db"
 	grpcServer "github.com/jyablonski/lotus/internal/grpc"
 	pb "github.com/jyablonski/lotus/internal/pb/proto/community"
+	"github.com/jyablonski/lotus/internal/testfixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,20 +18,12 @@ func TestCommunityServer_GetCommunityPulse_Integration(t *testing.T) {
 	ctx, queries := newTestCtx(t)
 	svc := &grpcServer.CommunityServer{}
 
-	userID := createTestUser(t, queries)
-	_, err := queries.UpdateCommunitySettingsByUserId(context.Background(), db.UpdateCommunitySettingsByUserIdParams{
-		ID:                     pgtype.UUID{Bytes: userID, Valid: true},
-		CommunityInsightsOptIn: true,
-		CommunityLocationOptIn: true,
-		CommunityCountryCode:   strp("US"),
-		CommunityRegionCode:    strp("US-CA"),
-	})
-	require.NoError(t, err)
+	userID := createTestCommunityUser(t, queries, strp("US"), strp("US-CA"))
 
 	now := time.Now().UTC()
 	bucketDate := pgtype.Date{Time: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC), Valid: true}
 
-	_, err = queries.UpsertCommunityThemeRollup(context.Background(), db.UpsertCommunityThemeRollupParams{
+	testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceCommunityThemeRollup{
 		BucketDate:      bucketDate,
 		TimeGrain:       "day",
 		ScopeType:       "global",
@@ -41,9 +34,8 @@ func TestCommunityServer_GetCommunityPulse_Integration(t *testing.T) {
 		Rank:            1,
 		DeltaVsPrevious: communityNumeric("0.1000"),
 	})
-	require.NoError(t, err)
 
-	_, err = queries.UpsertCommunityMoodRollup(context.Background(), db.UpsertCommunityMoodRollupParams{
+	testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceCommunityMoodRollup{
 		BucketDate:      bucketDate,
 		TimeGrain:       "day",
 		ScopeType:       "global",
@@ -54,9 +46,8 @@ func TestCommunityServer_GetCommunityPulse_Integration(t *testing.T) {
 		Rank:            1,
 		DeltaVsPrevious: pgtype.Numeric{},
 	})
-	require.NoError(t, err)
 
-	_, err = queries.UpsertCommunitySummary(context.Background(), db.UpsertCommunitySummaryParams{
+	testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceCommunitySummary{
 		BucketDate:       bucketDate,
 		TimeGrain:        "day",
 		ScopeType:        "global",
@@ -66,7 +57,6 @@ func TestCommunityServer_GetCommunityPulse_Integration(t *testing.T) {
 		SourceMoodNames:  []string{"steady"},
 		GenerationMethod: "template",
 	})
-	require.NoError(t, err)
 
 	resp, err := svc.GetCommunityPulse(ctx, &pb.GetCommunityPulseRequest{
 		ViewerUserId: userID.String(),
@@ -86,18 +76,12 @@ func TestCommunityServer_GetCommunityPrompts_Integration(t *testing.T) {
 	ctx, queries := newTestCtx(t)
 	svc := &grpcServer.CommunityServer{}
 
-	userID := createTestUser(t, queries)
-	_, err := queries.UpdateCommunitySettingsByUserId(context.Background(), db.UpdateCommunitySettingsByUserIdParams{
-		ID:                     pgtype.UUID{Bytes: userID, Valid: true},
-		CommunityInsightsOptIn: true,
-		CommunityLocationOptIn: false,
-	})
-	require.NoError(t, err)
+	userID := createTestCommunityUser(t, queries, nil, nil)
 
 	now := time.Now().UTC()
 	bucketDate := pgtype.Date{Time: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC), Valid: true}
 
-	_, err = queries.UpsertCommunityThemeRollup(context.Background(), db.UpsertCommunityThemeRollupParams{
+	testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceCommunityThemeRollup{
 		BucketDate:      bucketDate,
 		TimeGrain:       "day",
 		ScopeType:       "global",
@@ -108,9 +92,8 @@ func TestCommunityServer_GetCommunityPrompts_Integration(t *testing.T) {
 		Rank:            1,
 		DeltaVsPrevious: pgtype.Numeric{},
 	})
-	require.NoError(t, err)
 
-	_, err = queries.UpsertCommunityMoodRollup(context.Background(), db.UpsertCommunityMoodRollupParams{
+	testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceCommunityMoodRollup{
 		BucketDate:      bucketDate,
 		TimeGrain:       "day",
 		ScopeType:       "global",
@@ -121,9 +104,8 @@ func TestCommunityServer_GetCommunityPrompts_Integration(t *testing.T) {
 		Rank:            1,
 		DeltaVsPrevious: pgtype.Numeric{},
 	})
-	require.NoError(t, err)
 
-	_, err = queries.UpsertCommunityPromptSet(context.Background(), db.UpsertCommunityPromptSetParams{
+	testfixtures.CreateWithDefaults(t, context.Background(), queries, db.SourceCommunityPromptSet{
 		BucketDate:       bucketDate,
 		TimeGrain:        "day",
 		ScopeType:        "global",
@@ -133,7 +115,6 @@ func TestCommunityServer_GetCommunityPrompts_Integration(t *testing.T) {
 		SourceMoodNames:  []string{"steady"},
 		GenerationMethod: "template",
 	})
-	require.NoError(t, err)
 
 	resp, err := svc.GetCommunityPrompts(ctx, &pb.GetCommunityPromptsRequest{
 		ViewerUserId:    userID.String(),
