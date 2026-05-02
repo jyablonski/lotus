@@ -50,6 +50,17 @@ jobs:
       - name: Start Services
         run: make start-postgres
 
+      # `django_migration_ci` is created empty in docker/db/01-bootstrap.sql (not the seeded `postgres` DB).
+      - name: Django check and migrations
+        working-directory: services/django
+        env:
+          DB_NAME: django_migration_ci
+        run: |
+          set -euxo pipefail
+          uv run python manage.py check --database default
+          uv run python manage.py makemigrations --check --noinput
+          uv run python manage.py migrate --noinput
+
       - name: Run Test Suite
         working-directory: services/django
         run: uv run pytest --cov-fail-under=${COVERAGE_THRESHOLD}
