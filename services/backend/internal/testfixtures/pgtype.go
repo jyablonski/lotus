@@ -8,11 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func UUID(t *testing.T) pgtype.UUID {
-	t.Helper()
-	return UUIDFromGoogle(t, uuid.New())
-}
-
 func UUIDFromGoogle(t *testing.T, id uuid.UUID) pgtype.UUID {
 	t.Helper()
 
@@ -21,13 +16,6 @@ func UUIDFromGoogle(t *testing.T, id uuid.UUID) pgtype.UUID {
 		t.Fatalf("testfixtures: scan uuid: %v", err)
 	}
 	return pgID
-}
-
-func TimestampNow() pgtype.Timestamp {
-	return pgtype.Timestamp{
-		Time:  time.Now().Truncate(time.Second),
-		Valid: true,
-	}
 }
 
 func Date(year int, month time.Month, day int) pgtype.Date {
@@ -52,9 +40,5 @@ func StringPtr(value string) *string {
 }
 
 func Int32Ptr(value int32) *int32 {
-	return &value
-}
-
-func Float64Ptr(value float64) *float64 {
 	return &value
 }

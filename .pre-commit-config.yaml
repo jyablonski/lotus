@@ -62,9 +62,7 @@ repos:
       # deadcode traces all reachable symbols from main + test entry points and flags unexported functions/types with no callers
       - id: go-deadcode
         name: deadcode (backend)
-        entry:
-          bash -c 'cd services/backend && $(go env GOPATH)/bin/deadcode -test
-          ./...'
+        entry: bash -c 'cd services/backend && "$(go env GOPATH)/bin/deadcode" -test -tags contract ./...'
         language: system
         files: ^services/backend/.*\.go$
         pass_filenames: false
