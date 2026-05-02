@@ -28,9 +28,8 @@ linters:
     gocritic:
       disabled-checks:
         - exitAfterDefer
-
-issues:
-  exclude-dirs:
-    - internal/pb
-    - internal/mocks
-    - internal/db
+  exclusions:
+    paths:
+      - internal/pb
+      - internal/mocks
+      - internal/db

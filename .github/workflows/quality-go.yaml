@@ -1,0 +1,64 @@
+name: Go Quality Checks
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/backend/**"
+      - ".github/workflows/quality-go.yaml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "services/backend/**"
+      - ".github/workflows/quality-go.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Go quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            services/backend/**
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: services/backend/go.sum
+
+      - name: Verify formatting (gofmt)
+        working-directory: services/backend
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l -s .)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not formatted with gofmt -s:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.1
+          working-directory: services/backend
+
+      - name: Install deadcode
+        run: go install golang.org/x/tools/cmd/deadcode@v0.44.0
+
+      - name: Run deadcode
+        working-directory: services/backend
+        run: deadcode -test -tags contract ./...
