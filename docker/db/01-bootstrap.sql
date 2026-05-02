@@ -2,6 +2,8 @@ CREATE DATABASE dagster;
 CREATE DATABASE mlflow;
 CREATE DATABASE feast;
 CREATE DATABASE pact_broker;
+-- Empty DB for Django CI: migrate from scratch without colliding with docker/db seed on `postgres`.
+CREATE DATABASE django_migration_ci;
 CREATE SCHEMA source;
 CREATE SCHEMA silver;
 CREATE SCHEMA gold;
