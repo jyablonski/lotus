@@ -1,9 +1,12 @@
+import asyncio
+from collections.abc import Callable, Mapping
 from contextlib import asynccontextmanager
 import logging
 import os
 import secrets
+from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from opentelemetry import (
     metrics as otel_metrics,
@@ -21,7 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 
-from src.dependencies import get_sentiment_client, get_topic_client
+from src.dependencies import get_embedding_client, get_sentiment_client, get_topic_client
 from src.logger import setup_logging
 from src.routers.v1 import v1_router
 
@@ -29,6 +32,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 _service_resource = Resource({"service.name": "lotus-analyzer"})
+_MODEL_READY_TIMEOUT_SECONDS = 5.0
 
 
 def _init_tracer() -> None:
@@ -49,17 +53,27 @@ def _init_meter() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    app.state.models_ready = asyncio.Event()
+    app.state.model_load_status = {"status": "loading", "models": []}
     logger.info("Loading ML models...")
     try:
-        topic_client = get_topic_client()
-        topic_client.load_model()
-        logger.info("Topic model loaded successfully")
-
-        sentiment_client = get_sentiment_client()
-        sentiment_client.load_model()
-        logger.info("Sentiment model loaded successfully")
+        await asyncio.gather(
+            _load_startup_model("topic", lambda: get_topic_client().load_model()),
+            _load_startup_model("sentiment", lambda: get_sentiment_client().load_model()),
+            _load_startup_model("embedding", get_embedding_client),
+        )
+        app.state.model_load_status = {
+            "status": "loaded",
+            "models": _get_model_readiness(),
+        }
+        app.state.models_ready.set()
         logger.info("All ML models loaded successfully")
     except Exception as e:
+        app.state.model_load_status = {
+            "status": "failed",
+            "error": f"{type(e).__name__}: {e}",
+            "models": _get_model_readiness(),
+        }
         logger.error(f"Failed to load ML models: {type(e).__name__}: {e}", exc_info=True)
         logger.error("Application will start but ML endpoints may fail")
         # Re-raise to prevent app from starting if models are critical
@@ -81,6 +95,8 @@ _init_meter()
 set_global_textmap(CompositePropagator([TraceContextTextMapPropagator()]))
 
 app = FastAPI(lifespan=lifespan)
+app.state.models_ready = asyncio.Event()
+app.state.model_load_status = {"status": "not_started", "models": []}
 FastAPIInstrumentor.instrument_app(app)
 
 _ANALYZER_API_KEY = os.getenv("ANALYZER_API_KEY", "")
@@ -121,12 +137,67 @@ async def root():
 
 
 @app.get("/health")
-async def health():
-    logger.info("Log test")
-    return {"status": "healthy"}
+async def health(request: Request):
+    try:
+        await _wait_for_models_ready(request.app)
+    except TimeoutError:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unhealthy",
+                "service": "analyzer",
+                "models": request.app.state.model_load_status,
+            },
+        ) from None
+
+    return {
+        "status": "healthy",
+        "service": "analyzer",
+        "models": request.app.state.model_load_status["models"],
+    }
 
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc):
     detail = getattr(exc, "detail", "this doesn't exist hoe")
     return JSONResponse(status_code=404, content={"detail": detail})
+
+
+async def _wait_for_models_ready(app: FastAPI) -> None:
+    await asyncio.wait_for(
+        app.state.models_ready.wait(),
+        timeout=_MODEL_READY_TIMEOUT_SECONDS,
+    )
+
+
+async def _load_startup_model(name: str, load: Callable[[], Any]) -> None:
+    logger.info(f"Loading {name} model...")
+    await asyncio.to_thread(load)
+    logger.info(f"{name.capitalize()} model loaded successfully")
+
+
+def _get_model_readiness() -> list[dict[str, Any]]:
+    checks = [
+        ("topic", get_topic_client),
+        ("sentiment", get_sentiment_client),
+        ("embedding", get_embedding_client),
+    ]
+    readiness = []
+    for name, client_factory in checks:
+        try:
+            client = client_factory()
+            ready = client.is_ready()
+            info = client.get_model_info() if hasattr(client, "get_model_info") else {}
+            if not isinstance(info, Mapping):
+                info = {}
+        except Exception as e:
+            readiness.append(
+                {
+                    "name": name,
+                    "ready": False,
+                    "error": f"{type(e).__name__}: {e}",
+                }
+            )
+            continue
+        readiness.append({"name": name, "ready": ready, **info})
+    return readiness
