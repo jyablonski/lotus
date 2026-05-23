@@ -1,3 +1,4 @@
+from typing import cast
 from unittest.mock import AsyncMock, Mock
 
 from fastapi import HTTPException
@@ -82,7 +83,8 @@ async def test_health_waits_for_models_to_be_ready(monkeypatch):
         await main_module.health(request)
 
     assert exc_info.value.status_code == 503
-    assert exc_info.value.detail["models"]["status"] == "loading"
+    detail = cast("dict[str, dict[str, object]]", exc_info.value.detail)
+    assert detail["models"]["status"] == "loading"
     wait_for_ready.assert_awaited_once_with(request.app)
 
 
