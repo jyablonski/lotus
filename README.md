@@ -148,18 +148,3 @@ graph LR
 
 - **dbt** - Data transformation and modeling tool to structure and prepare data for analysis and reporting
 - **Dagster** - Orchestration tool to manage and schedule data workflows and pipelines
-
-## Testing
-
-The project uses a multi-layered testing strategy to ensure correctness at every level, from individual functions to cross-service boundaries.
-
-**Unit & Integration Tests** — Each service has its own unit and integration tests that run as part of its dedicated CI/CD workflow. These form the foundation of the test suite and catch the majority of bugs with fast feedback loops.
-
-- Go and Python services use [Testcontainers](https://testcontainers.com/) to spin up a real Postgres instance per test run, eliminating the need for mocks at the database layer and keeping integration tests self-contained.
-- In CI, coverage is uploaded to [Coveralls](https://coveralls.io/) on every run for tracking and PR-level delta reporting, and a minimum coverage threshold is enforced as a required check before merging.
-
-**Contract Tests** — Consumer-driven contract tests using [Pact](https://pact.io/) verify that services agree on the shape of data exchanged between them. Consumer services (frontend, backend) generate pact files defining their expectations, and provider services verify they satisfy those contracts. These run in a dedicated workflow triggered by changes to any service involved in a contract, or by adding the `contract-tests` label to a PR.
-
-**End-to-End Tests** — Playwright-based E2E tests run against the frontend and verify complete user flows across the full stack (Docker Compose). On GitHub Actions, the dedicated **E2E** workflow (`.github/workflows/e2e.yaml`) runs on pull requests when changes land under `services/backend/`, `services/frontend/`, `services/analyzer/`, `services/django/`, or `docker/`.
-
-**Load Tests** — [k6](https://k6.io/) load tests target the backend service to validate performance characteristics and ensure the system holds up under concurrent usage.

@@ -19,6 +19,7 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "sentence-transformers>=3.0.0",
     "sqlalchemy>=2.0.41",
+    "torch>=2.0.0",
 ]
 
 [dependency-groups]
@@ -33,6 +34,16 @@ local = [
     "ruff>=0.12.4",
     "ty>=0.0.33",
 ]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.pytest.ini_options]
 filterwarnings = [

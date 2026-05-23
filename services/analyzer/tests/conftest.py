@@ -182,6 +182,7 @@ def postgres_container():
                 line
                 for line in _BOOTSTRAP_SQL.read_text().splitlines()
                 if not line.strip().upper().startswith("CREATE DATABASE")
+                and not line.strip().startswith("\\")
             )
             cur.execute(bootstrap_sql)
             cur.execute(_SOURCE_SCHEMA_SQL.read_text())

@@ -10,10 +10,27 @@ def test_embedding_client_initializes_model(monkeypatch):
 
     client = embedding_module.EmbeddingClient()
 
-    constructor.assert_called_once_with(embedding_module.MODEL_NAME)
+    constructor.assert_called_once_with(embedding_module.MODEL_NAME, local_files_only=False)
     assert client.model is transformer
     assert client.model_name == embedding_module.MODEL_NAME
     assert client.dimensions == 384
+    assert client.is_ready() is True
+    assert client.get_model_info() == {
+        "model_name": embedding_module.MODEL_NAME,
+        "dimensions": 384,
+        "status": "loaded",
+    }
+
+
+def test_embedding_client_uses_local_files_when_hf_offline(monkeypatch):
+    transformer = Mock()
+    constructor = Mock(return_value=transformer)
+    monkeypatch.setattr(embedding_module, "SentenceTransformer", constructor)
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+
+    embedding_module.EmbeddingClient()
+
+    constructor.assert_called_once_with(embedding_module.MODEL_NAME, local_files_only=True)
 
 
 def test_embedding_client_encode_returns_list(monkeypatch):

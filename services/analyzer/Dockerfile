@@ -1,7 +1,9 @@
 FROM python:3.13-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
+    HF_HOME=/app/.cache/huggingface \
     PATH="/app/.venv/bin:$PATH" \
+    SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentence-transformers \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
     UV_LINK_MODE=copy
@@ -27,14 +29,21 @@ RUN if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
         uv sync --locked --no-dev --no-install-project; \
     fi
 
+RUN /app/.venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
 # ─── runtime ───────────────────────────────────────────────────────────────────
 FROM base AS runtime
 
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
+
 WORKDIR /app
 
-RUN useradd --create-home appuser
+RUN groupadd --gid 10001 appuser && \
+    useradd --uid 10001 --gid 10001 --create-home appuser
 
-COPY --link --from=deps /app/.venv /app/.venv
+COPY --from=deps /app/.venv /app/.venv
+COPY --chown=10001:10001 --from=deps /app/.cache /app/.cache
 
 USER appuser
 
