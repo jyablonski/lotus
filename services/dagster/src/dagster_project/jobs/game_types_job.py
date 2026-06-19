@@ -1,7 +1,12 @@
-from dagster import AssetSelection, define_asset_job
+from dagster_project.assets.ingestion.get_game_types_from_api import (
+    get_game_types_from_api,
+)
+from dagster_project.jobs.utils import Audience, Domain, create_job
 
-get_game_types_job = define_asset_job(
+get_game_types_job = create_job(
     name="get_game_types_job",
-    selection=AssetSelection.assets("get_game_types_from_api"),
-    tags={"audience": "internal", "domain": "game", "pii": "false"},
+    assets=[get_game_types_from_api],
+    audience=Audience.INTERNAL,
+    domain=Domain.GAME,
+    pii=False,
 )

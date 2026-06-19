@@ -8,6 +8,18 @@ Jobs consist of a collection of assets (for data pipelines) or ops (for non-data
 - Ops are Dagster's core concept for non-data tasks and are defined using the `@op` decorator.
 - Assets and ops can be sequenced together to form pipelines.
 
+## Dagster Components
+
+Tilt wires Dagster as three Compose resources, all using the same `dagster_server_image`.
+
+- `dagster_base`: gRPC code server on port 4000; it loads `dagster_project.definitions`, and `workspace.yaml` points the other Dagster services at it.
+- `dagster_webserver`: UI/API service on host port 3001; it reads `workspace.yaml`, stores metadata in Postgres, and talks to `dagster_base`.
+- `dagster_daemon`: background scheduler/queue worker that starts scheduled or queued runs; there is no separate local worker service.
+- Dockerfile stages: `base` sets Python/OS env, `deps` installs the locked uv environment, and `runtime` copies `.venv`, dbt, Feast, Dagster config, and `src`.
+- Tilt builds `dagster-base` from the `deps` stage for dependency caching, then builds the runtime image as `dagster_server_image`; `docker-compose-tilt.yaml` disables Compose builds so Tilt owns rebuilds.
+- Local dev uses `DefaultRunLauncher`, so new Dagster runs execute from the running Dagster service image, not a fresh Docker task. If `DockerRunLauncher` is enabled later, those run containers are configured to use `dagster_server_image`.
+- Demo/example assets and jobs are excluded from the default code location; set `DAGSTER_INCLUDE_EXAMPLES=true` to load them.
+
 ## Directory Structure
 
 ```
@@ -25,11 +37,11 @@ src/dagster_project/
 
 ## Auto-Loading Mechanism
 
-The `definitions.py` file automatically discovers and loads assets, jobs, schedules, and resources from their respective modules.
+The `definitions.py` file walks the Dagster packages, loads assets/jobs/schedules/sensors, and combines them with the explicit resource registry.
 
 ### Assets
 
-Assets are automatically discovered from the `assets` package using `load_assets_from_package_module()`. Any Python file containing `@asset` decorators within the `assets/` directory structure will be automatically included.
+Assets are discovered by walking importable modules under `assets/` and passing those modules to `load_assets_from_modules()`. Demo/example asset modules are skipped unless `DAGSTER_INCLUDE_EXAMPLES=true`.
 
 **Example:**
 
@@ -43,7 +55,7 @@ def api_users(context: AssetExecutionContext) -> list[dict]:
 
 ### Jobs and Schedules
 
-Jobs and schedules are auto-discovered from the `jobs` module. The `definitions.py` file scans all objects in the `jobs` module and includes:
+Jobs and schedules are discovered by walking importable modules under `jobs/`. The `definitions.py` file scans each loaded module and includes:
 
 - `JobDefinition` instances
 - `UnresolvedAssetJobDefinition` instances
@@ -52,24 +64,28 @@ Jobs and schedules are auto-discovered from the `jobs` module. The `definitions.
 **To add a new job:**
 
 1. Create a job file in `jobs/` (e.g., `jobs/my_job.py`)
-2. Import it in `jobs/__init__.py`
+2. Import the asset definitions the job should select
 3. It will automatically be available in the Dagster UI
 
 **Example:**
 
 ```python
 # jobs/game_types_job.py
-from dagster import define_asset_job, AssetSelection
+from dagster_project.assets.ingestion.get_game_types_from_api import get_game_types_from_api
+from dagster_project.jobs.utils import Audience, Domain, create_job
 
-get_game_types_job = define_asset_job(
+get_game_types_job = create_job(
     name="get_game_types_job",
-    selection=AssetSelection.assets("get_game_types_from_api"),
+    assets=[get_game_types_from_api],
+    audience=Audience.INTERNAL,
+    domain=Domain.GAME,
+    pii=False,
 )
 ```
 
 ### Resources
 
-Resources are auto-discovered from the `resources` module. The `load_resources()` function scans all `ConfigurableResource` and `ResourceDefinition` instances and adds them to the resources dictionary.
+Resources are explicitly registered in `resources.RESOURCES`. Assets refer to resources by key, so every new resource used by an asset must be added to that registry.
 
 Examples of Resources:
 
@@ -86,7 +102,7 @@ To create a resource, 2 things must be created:
 
 1. Create a resource file in `resources/` (e.g., `resources/my_resource.py`)
 2. Define a `ConfigurableResource` subclass or `ResourceDefinition` instance
-3. Import it in `resources/__init__.py`
+3. Import it in `resources/__init__.py` and add it to `RESOURCES`
 4. It will automatically be available for use in assets
 
 **Example:**

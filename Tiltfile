@@ -251,7 +251,7 @@ def setup_dagster_base():
         ".",
         dockerfile="services/dagster/Dockerfile",
         only=["services/dagster/pyproject.toml", "services/dagster/uv.lock"],
-        target="builder",
+        target="deps",
     )
     # Build runtime image - don't use only/ignore to avoid cache key issues
     # The Dockerfile handles what gets copied
