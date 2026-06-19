@@ -7,10 +7,11 @@ from dagster_project.dbt_config import dbt_project
 # separate op/step, giving visibility in the Gantt chart.
 # Only defined when dbt_project is available (test resilience).
 if dbt_project is not None:
+    manifest_path = dbt_project.manifest_path
 
     def _dbt_layer_assets(*, name: str, tag: str):
         @dbt_assets(
-            manifest=dbt_project.manifest_path,
+            manifest=manifest_path,
             select=f"tag:{tag}",
             name=name,
         )

@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 from dagster import AssetSelection, ScheduleDefinition, define_asset_job
 from dagster_dbt import build_dbt_asset_selection
@@ -69,12 +69,17 @@ def create_job(
     Returns the job when ``schedule`` is omitted. Returns ``(job, schedule_def)``
     when ``schedule`` is provided.
     """
-    if (assets is None) == (selection is None):
+    if assets is None and selection is None:
         raise ValueError("Pass exactly one of assets or selection")
 
-    job_selection = (
-        selection if selection is not None else AssetSelection.assets(*assets)
-    )
+    if assets is not None and selection is not None:
+        raise ValueError("Pass exactly one of assets or selection")
+
+    if selection is not None:
+        job_selection = selection
+    else:
+        selected_assets = cast(Iterable[Any], assets)
+        job_selection = AssetSelection.assets(*selected_assets)
 
     job = define_asset_job(
         name=name,
