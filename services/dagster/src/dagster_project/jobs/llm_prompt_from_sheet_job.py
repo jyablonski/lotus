@@ -1,11 +1,15 @@
-from dagster import AssetSelection, define_asset_job
+from dagster_project.assets.exports.llm_prompt_from_sheet import (
+    read_prompt_from_sheet,
+    run_prompt_and_write_result,
+)
+from dagster_project.jobs.utils import Audience, Domain, create_job
 
-llm_prompt_from_sheet_job = define_asset_job(
+llm_prompt_from_sheet_job = create_job(
     name="llm_prompt_from_sheet_job",
-    selection=AssetSelection.assets(
-        "read_prompt_from_sheet", "run_prompt_and_write_result"
-    ),
-    tags={"audience": "internal", "domain": "ops", "pii": "false"},
+    assets=[read_prompt_from_sheet, run_prompt_and_write_result],
+    audience=Audience.INTERNAL,
+    domain=Domain.OPS,
+    pii=False,
     description=(
         "Read a stakeholder-authored prompt from Google Sheets, call OpenAI, "
         "and append the result to the Responses tab. Manual trigger only."

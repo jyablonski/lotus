@@ -1,5 +1,5 @@
-from dagster import AssetSelection, define_asset_job
-
+from dagster_project.assets.exports.unload_journals_to_s3 import unload_journals_to_s3
+from dagster_project.jobs.utils import Audience, Domain, create_job
 from dagster_project.ops.slack_hooks import create_slack_notification_hooks
 
 # Create reusable Slack notification hooks for the unload job
@@ -12,9 +12,11 @@ unload_notification_hooks = create_slack_notification_hooks(
 
 # Define the asset job with success/failure notification hooks
 # use case here is to send a custom slack message
-unload_journal_entries_job = define_asset_job(
+unload_journal_entries_job = create_job(
     name="unload_journal_entries_job",
-    selection=AssetSelection.assets("unload_journals_to_s3"),
-    tags={"audience": "internal", "domain": "analytics", "pii": "true"},
+    assets=[unload_journals_to_s3],
+    audience=Audience.INTERNAL,
+    domain=Domain.ANALYTICS,
+    pii=True,
     hooks=unload_notification_hooks,
 )

@@ -1,12 +1,5 @@
-"""Auto-imports every module in this package.
+"""Dagster job definitions package.
 
-Drop a .py file in jobs/ that defines a JobDefinition or ScheduleDefinition
-and it's automatically registered — no manual imports needed.
+Definitions are discovered by ``dagster_project.definitions`` so that module
+filtering stays in one place.
 """
-
-import importlib
-import pkgutil
-
-# Import every submodule so their top-level objects are visible via vars(jobs)
-for _importer, module_name, _ispkg in pkgutil.iter_modules(__path__):
-    importlib.import_module(f"{__name__}.{module_name}")

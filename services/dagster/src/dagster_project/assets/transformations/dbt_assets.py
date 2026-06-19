@@ -8,25 +8,23 @@ from dagster_project.dbt_config import dbt_project
 # Only defined when dbt_project is available (test resilience).
 if dbt_project is not None:
 
-    @dbt_assets(
-        manifest=dbt_project.manifest_path, select="tag:staging", name="dbt_silver_stg"
-    )
-    def dbt_silver_stg(context: AssetExecutionContext, dbt: DbtCliResource):
-        yield from dbt.cli(["build"], context=context).stream()
+    def _dbt_layer_assets(*, name: str, tag: str):
+        @dbt_assets(
+            manifest=dbt_project.manifest_path,
+            select=f"tag:{tag}",
+            name=name,
+        )
+        def _assets(context: AssetExecutionContext, dbt: DbtCliResource):
+            yield from dbt.cli(["build"], context=context).stream()
 
-    @dbt_assets(
-        manifest=dbt_project.manifest_path, select="tag:core", name="dbt_silver_core"
-    )
-    def dbt_silver_core(context: AssetExecutionContext, dbt: DbtCliResource):
-        yield from dbt.cli(["build"], context=context).stream()
+        return _assets
 
-    @dbt_assets(
-        manifest=dbt_project.manifest_path,
-        select="tag:analytics",
+    dbt_silver_stg = _dbt_layer_assets(name="dbt_silver_stg", tag="staging")
+    dbt_silver_core = _dbt_layer_assets(name="dbt_silver_core", tag="core")
+    dbt_gold_analytics = _dbt_layer_assets(
         name="dbt_gold_analytics",
+        tag="analytics",
     )
-    def dbt_gold_analytics(context: AssetExecutionContext, dbt: DbtCliResource):
-        yield from dbt.cli(["build"], context=context).stream()
 
 else:
     dbt_silver_stg = None
