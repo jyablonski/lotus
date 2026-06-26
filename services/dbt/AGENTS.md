@@ -4,27 +4,25 @@ dbt (data build tool) for transforming and modeling data in the analytics layer.
 
 ## Technology Stack
 
-- **Tool**: dbt-core 1.10.13+
-- **Adapter**: dbt-postgres 1.9.1+
-- **Language**: SQL (with Jinja templating)
-- **Dependency Management**: uv (pyproject.toml)
+- dbt-core
+- dbt-postgres
 
 ## Architecture Patterns
 
 ### dbt Project Structure
 
-dbt follows a **layered architecture** (staging → silver → gold):
+dbt follows a layered architecture (staging → silver → gold):
 
-1. **Staging** (`models/silver/staging/`) - Raw data transformations
-2. **Silver** (`models/silver/core/`) - Cleaned, validated data models
-3. **Gold** (`models/gold/`) - Final analytics-ready models
+1. Staging (`models/silver/staging/`) - Raw data transformations
+2. Silver (`models/silver/core/`) - Cleaned, validated data models
+3. Gold (`models/gold/`) - Final analytics-ready models
 
 ### Model Organization
 
-- **Sources** (`models/sources/`) - Source table definitions
-- **Staging** - Initial transformations from sources
-- **Silver** - Business logic and core models
-- **Gold** - Final aggregated/analytics models
+- Sources (`models/sources/`) - Source table definitions
+- Staging - Initial transformations from sources
+- Silver - Business logic and core models
+- Gold - Final aggregated/analytics models
 
 ### Naming Conventions
 
@@ -147,9 +145,9 @@ models:
 
 dbt provides built-in testing:
 
-- **Generic tests**: `unique`, `not_null`, `accepted_values`, `relationships`
-- **Singular tests**: Custom SQL tests
-- **Schema tests**: Defined in `.yml` files
+- Generic tests: `unique`, `not_null`, `accepted_values`, `relationships`
+- Singular tests: Custom SQL tests
+- Schema tests: Defined in `.yml` files
 
 ### Running Tests
 
@@ -207,13 +205,13 @@ Main configuration file:
 
 Before making changes:
 
-1. **`dbt_project.yml`** - Project configuration
-2. **`profiles/profiles.yml`** - Database connection configuration
-3. **`models/sources/`** - Source table definitions
-4. **`models/silver/staging/`** - Staging models
-5. **`models/silver/core/`** - Core silver models
-6. **`models/gold/`** - Gold/analytics models
-7. **`macros/`** - Reusable SQL macros
+1. `dbt_project.yml` - Project configuration
+2. `profiles/profiles.yml` - Database connection configuration
+3. `models/sources/` - Source table definitions
+4. `models/silver/staging/` - Staging models
+5. `models/silver/core/` - Core silver models
+6. `models/gold/` - Gold/analytics models
+7. `macros/` - Reusable SQL macros
 
 ## Common Tasks
 
@@ -258,7 +256,7 @@ Before making changes:
 
 - Use consistent indentation (2 or 4 spaces)
 - Use CTEs for complex queries
-- **Do not use table aliases** - Use full table/model names for clarity and consistency
+- Do not use table aliases - Use full table/model names for clarity and consistency
 - Comment complex logic
 - Follow SQL best practices
 
@@ -314,22 +312,22 @@ dbt docs serve
 
 ## Materialization Strategies
 
-- **View**: Lightweight, always up-to-date (staging models)
-- **Table**: Materialized, faster queries (core models)
-- **Incremental**: Only process new data (large tables)
-- **Ephemeral**: CTE, not materialized (intermediate models)
+- View: Lightweight, always up-to-date (staging models)
+- Table: Materialized, faster queries (core models)
+- Incremental: Only process new data (large tables)
+- Ephemeral: CTE, not materialized (intermediate models)
 
 ## Best Practices
 
-1. **Layering**: Follow staging → silver → gold pattern
-2. **Testing**: Test all models, especially core models
-3. **Documentation**: Document all models and columns
-4. **Naming**: Use consistent naming conventions
-5. **Refs**: Always use `{{ ref() }}` for model dependencies
-6. **Sources**: Always use `{{ source() }}` for source tables
-7. **No Table Aliases**: Do not use table aliases (e.g., `j`, `u`) - use full model names for clarity
-8. **Incremental**: Use incremental models for large tables
-9. **Macros**: Create macros for reusable logic
+1. Layering: Follow staging → silver → gold pattern
+2. Testing: Test all models, especially core models
+3. Documentation: Document all models and columns
+4. Naming: Use consistent naming conventions
+5. Refs: Always use `{{ ref() }}` for model dependencies
+6. Sources: Always use `{{ source() }}` for source tables
+7. No Table Aliases: Do not use table aliases (e.g., `j`, `u`) - use full model names for clarity
+8. Incremental: Use incremental models for large tables
+9. Macros: Create macros for reusable logic
 
 ## Pre-commit Hooks
 

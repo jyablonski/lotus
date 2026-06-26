@@ -1,11 +1,8 @@
 ---
-name: dagster-asset
-description: >
-  Step-by-step workflow for adding new Dagster assets, resources, and jobs to the Lotus
-  data pipeline. Covers auto-discovery of assets, manual resource registration, job/schedule
-  definitions, dbt asset integration, and the SQL query pattern. Use this skill whenever
-  the user wants to add a new Dagster asset, resource, job, schedule, or asks how the
-  Dagster project's auto-import and resource registration works.
+name: add-dagster-asset
+description: Manual skill, do not invoke automatically. Use only when user explicitly runs add-dagster-asset by name. Step-by-step workflow for adding new Dagster assets, resources, and jobs to the Lotus data pipeline. Covers auto-discovery of assets, manual resource registration, job/schedule definitions, dbt asset integration, and the SQL query pattern. Use this skill whenever the user wants to add a new Dagster asset, resource, job, schedule, or asks how the Dagster project's auto-import and resource registration works.
+disable-model-invocation: true
+user-invocable: true
 ---
 
 # Dagster Asset Workflow
@@ -14,15 +11,15 @@ Source code: `services/dagster/src/dagster_project/` | Entry point: `definitions
 
 ## Auto-Discovery vs Manual Registration
 
-| Component     | Auto-discovered? | How to add                                         |
-| ------------- | ---------------- | -------------------------------------------------- |
-| Assets        | Yes              | Create file in `assets/`                           |
-| Jobs          | Yes              | Create file in `jobs/`                             |
-| Schedules     | Yes              | Define alongside the job                           |
-| Sensors       | Yes              | Create file in `sensors/`                          |
-| **Resources** | **No**           | Add to `RESOURCES` dict in `resources/__init__.py` |
+| Component | Auto-discovered? | How to add                                         |
+| --------- | ---------------- | -------------------------------------------------- |
+| Assets    | Yes              | Create file in `assets/`                           |
+| Jobs      | Yes              | Create file in `jobs/`                             |
+| Schedules | Yes              | Define alongside the job                           |
+| Sensors   | Yes              | Create file in `sensors/`                          |
+| Resources | No               | Add to `RESOURCES` dict in `resources/__init__.py` |
 
-Assets are found via `load_assets_from_package_module(assets)`. Jobs/schedules are found via `jobs/__init__.py` auto-importing all modules, then `_collect_from_package()` collecting top-level definitions. **Resources must be explicitly registered.**
+Assets are found via `load_assets_from_package_module(assets)`. Jobs/schedules are found via `jobs/__init__.py` auto-importing all modules, then `_collect_from_package()` collecting top-level definitions. Resources must be explicitly registered.
 
 ---
 
@@ -81,9 +78,9 @@ context.add_output_metadata({"num_rows": len(df)})
 
 ## Adding a New Resource
 
-Resources are **NOT auto-discovered**. Three steps required:
+Resources are NOT auto-discovered. Three steps required:
 
-**1. Create** `resources/my_resource.py`:
+1. Create `resources/my_resource.py`:
 
 ```python
 from dagster import ConfigurableResource, EnvVar
@@ -101,7 +98,7 @@ class MyResource(ConfigurableResource):
 my_resource = MyResource(api_key=EnvVar("MY_RESOURCE_API_KEY"), base_url=EnvVar("MY_RESOURCE_BASE_URL"))
 ```
 
-**2. Register** in `resources/__init__.py` -- key must match the parameter name assets use:
+2. Register in `resources/__init__.py` -- key must match the parameter name assets use:
 
 ```python
 from .my_resource import MyResource, my_resource
@@ -112,7 +109,7 @@ RESOURCES: dict = {
 }
 ```
 
-**3. Add env vars** to `docker/docker-compose-local.yaml` under the dagster service.
+3. Add env vars to `docker/docker-compose-local.yaml` under the dagster service.
 
 ---
 
