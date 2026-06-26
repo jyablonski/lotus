@@ -1,23 +1,18 @@
 # Frontend Service - Agent Guide
 
-Next.js 15 frontend application with React 19, TypeScript, and Tailwind CSS for the journal application UI.
+Next.js frontend application with React, TypeScript, and Tailwind CSS for the journal application UI.
 
 ## Technology Stack
 
-- **Framework**: Next.js 15.3.1
-- **React**: React 19
-- **Language**: TypeScript 5+
-- **Styling**: Tailwind CSS 4.1.4
-- **UI Components**: shadcn/ui (via components.json)
-- **Authentication**: NextAuth.js 5.0 (beta)
-- **Testing**: Jest with React Testing Library, Playwright for E2E
-- **Package Manager**: npm 11.2.0
+- Next.js
+- React
+- TypeScript
 
 ## Architecture Patterns
 
-### App Router (Next.js 15)
+### App Router
 
-Next.js 15 uses the **App Router** architecture:
+Next.js uses the App Router architecture:
 
 - Routes are defined by folder structure in `app/`
 - Server Components by default
@@ -27,15 +22,15 @@ Next.js 15 uses the **App Router** architecture:
 
 ### Component Organization
 
-- **Server Components** - Default, run on server
-- **Client Components** - Marked with `"use client"`, run in browser
-- **Server Actions** - Functions that run on server, called from client
+- Server Components - Default, run on server
+- Client Components - Marked with `"use client"`, run in browser
+- Server Actions - Functions that run on server, called from client
 
 ### Data Fetching
 
-- **Server Components** - Direct data fetching (no hooks)
-- **Client Components** - Use React hooks (`useState`, `useEffect`)
-- **Server Actions** - Mutations via `actions/` directory
+- Server Components - Direct data fetching (no hooks)
+- Client Components - Use React hooks (`useState`, `useEffect`)
+- Server Actions - Mutations via `actions/` directory
 
 ## Code Organization
 
@@ -217,13 +212,13 @@ describe("JournalCard", () => {
 
 Before making changes:
 
-1. **`app/layout.tsx`** - Root layout and providers
-2. **`app/page.tsx`** - Home page
-3. **`middleware.ts`** - Next.js middleware (auth, etc.)
-4. **`components/ui/`** - shadcn/ui components
-5. **`lib/server/`** - Server-side data fetching
-6. **`actions/`** - Server Actions for mutations
-7. **`types/`** - TypeScript type definitions
+1. `app/layout.tsx` - Root layout and providers
+2. `app/page.tsx` - Home page
+3. `middleware.ts` - Next.js middleware (auth, etc.)
+4. `components/ui/` - shadcn/ui components
+5. `lib/server/` - Server-side data fetching
+6. `actions/` - Server Actions for mutations
+7. `types/` - TypeScript type definitions
 
 ## Common Tasks
 
@@ -374,11 +369,11 @@ Before making changes:
 
 ## Best Practices
 
-1. **Server Components First**: Use Server Components by default
-2. **Type Safety**: Use TypeScript for all code
-3. **Component Composition**: Build complex UIs from simple components
-4. **Error Handling**: Handle errors gracefully
-5. **Accessibility**: Follow WCAG guidelines
-6. **Performance**: Optimize images and code splitting
-7. **Testing**: Write tests for critical components
-8. **Documentation**: Document complex logic and components
+1. Server Components First: Use Server Components by default
+2. Type Safety: Use TypeScript for all code
+3. Component Composition: Build complex UIs from simple components
+4. Error Handling: Handle errors gracefully
+5. Accessibility: Follow WCAG guidelines
+6. Performance: Optimize images and code splitting
+7. Testing: Write tests for critical components
+8. Documentation: Document complex logic and components

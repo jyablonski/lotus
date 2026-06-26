@@ -4,21 +4,19 @@ Dagster orchestration service for managing data pipelines, dbt runs, and schedul
 
 ## Technology Stack
 
-- **Framework**: Dagster 1.12.6
-- **Language**: Python 3.13
-- **Database**: PostgreSQL (for Dagster metadata)
-- **Integrations**: dbt, Feast, Redis
-- **Dependency Management**: uv (pyproject.toml)
+- Dagster
+- dbt
+- PostgreSQL
 
 ## Architecture Patterns
 
 ### Service Components
 
-Dagster runs as **three separate services**:
+Dagster runs as three separate services:
 
-1. **dagster_base** - gRPC server for code location
-2. **dagster_webserver** - Web UI for monitoring and running jobs
-3. **dagster_daemon** - Background daemon for scheduled runs
+1. dagster_base - gRPC server for code location
+2. dagster_webserver - Web UI for monitoring and running jobs
+3. dagster_daemon - Background daemon for scheduled runs
 
 All three services use the same Docker image but different entrypoints.
 
@@ -30,7 +28,7 @@ All three services use the same Docker image but different entrypoints.
 
 ### Asset-Based Architecture
 
-Dagster uses **assets** as the primary abstraction:
+Dagster uses assets as the primary abstraction:
 
 - Assets represent data products (tables, files, etc.)
 - Assets have dependencies (upstream assets)
@@ -170,12 +168,12 @@ pytest tests/test_assets.py
 
 Before making changes:
 
-1. **`workspace.yaml`** - Workspace configuration
-2. **`src/dagster_project/__init__.py`** - Code location definition
-3. **`src/dagster_project/assets/`** - Asset definitions
-4. **`src/dagster_project/jobs/`** - Job definitions
-5. **`src/dagster_project/resources/`** - Resource definitions
-6. **`src/dagster_project/schedules/`** - Schedule definitions
+1. `workspace.yaml` - Workspace configuration
+2. `src/dagster_project/__init__.py` - Code location definition
+3. `src/dagster_project/assets/` - Asset definitions
+4. `src/dagster_project/jobs/` - Job definitions
+5. `src/dagster_project/resources/` - Resource definitions
+6. `src/dagster_project/schedules/` - Schedule definitions
 
 ## Common Tasks
 
@@ -278,11 +276,11 @@ Before making changes:
 
 ## Best Practices
 
-1. **Asset Naming**: Use descriptive names that indicate data product
-2. **Dependencies**: Explicitly define asset dependencies
-3. **Resources**: Share resources across assets when possible
-4. **Error Handling**: Handle errors gracefully in assets/ops
-5. **Testing**: Test assets in isolation before integrating
-6. **Documentation**: Document asset purpose and dependencies
-7. **Scheduling**: Use appropriate cron schedules for jobs
-8. **Monitoring**: Monitor run success rates and durations
+1. Asset Naming: Use descriptive names that indicate data product
+2. Dependencies: Explicitly define asset dependencies
+3. Resources: Share resources across assets when possible
+4. Error Handling: Handle errors gracefully in assets/ops
+5. Testing: Test assets in isolation before integrating
+6. Documentation: Document asset purpose and dependencies
+7. Scheduling: Use appropriate cron schedules for jobs
+8. Monitoring: Monitor run success rates and durations

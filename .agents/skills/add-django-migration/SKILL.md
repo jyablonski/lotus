@@ -1,11 +1,8 @@
 ---
-name: django-migration
-description: >
-  Step-by-step workflow for making Django model changes and creating/applying database
-  migrations in the Lotus project. Use this skill whenever the user wants to add a field,
-  create a new model, modify an existing model, add seed data, or run makemigrations/migrate
-  commands. Also trigger for questions about the migration state, rolling back migrations,
-  or anything touching services/django/core/models.py or services/django/core/migrations/.
+name: add-django-migration
+description: Manual skill, do not invoke automatically. Use only when user explicitly runs add-django-migration by name. Step-by-step workflow for making Django model changes and creating/applying database migrations in the Lotus project. Use this skill whenever the user wants to add a field, create a new model, modify an existing model, add seed data, or run makemigrations/migrate commands. Also trigger for questions about the migration state, rolling back migrations, or anything touching services/django/core/models.py or services/django/core/migrations/.
+disable-model-invocation: true
+user-invocable: true
 ---
 
 # Django Migration Workflow
@@ -43,7 +40,7 @@ If you want to check without starting everything:
 docker compose -f docker/docker-compose-local.yaml ps django_admin postgres
 ```
 
-> The `django_admin` service has a volume mount (`services/django:/app`), so edits to local files are immediately reflected in the container — no rebuild needed.
+The `django_admin` service has a volume mount (`services/django:/app`), so edits to local files are immediately reflected in the container — no rebuild needed.
 
 ## Step 3 — Generate the migration file
 
@@ -53,7 +50,7 @@ docker compose -f docker/docker-compose-local.yaml exec django_admin python mana
 
 This creates a new file in `services/django/core/migrations/` following the pattern `000N_description.py`.
 
-After it runs, **read the generated file** and verify:
+After it runs, read the generated file and verify:
 
 - The `dependencies` list chains correctly to the previous migration
 - The operations match what you intended (correct field types, names, constraints)
@@ -115,6 +112,6 @@ Where `000N` is the migration you want to end up at (not the one you're undoing)
 
 ## Key rules
 
-- **Never edit existing migration files.** Once a migration has been applied anywhere, treat it as immutable. If something needs fixing, create a new migration.
+- Never edit existing migration files. Once a migration has been applied anywhere, treat it as immutable. If something needs fixing, create a new migration.
 - Migration files chain via `dependencies` — the order matters and must be kept linear within the `core` app.
 - The `entrypoint.sh` runs `migrate` automatically on container start, so the migration will also apply on the next `make up` / container restart.

@@ -4,34 +4,31 @@ FastAPI service for ML/LLM-powered sentiment analysis and topic extraction from 
 
 ## Technology Stack
 
-- **Framework**: FastAPI
-- **Language**: Python 3.13
-- **Database**: PostgreSQL (via SQLAlchemy)
-- **ML Framework**: MLflow for model registry
-- **LLM**: OpenAI API (via instructor library)
-- **Dependency Management**: uv (pyproject.toml)
+- FastAPI
+- MLflow (model registry)
+- OpenAI API
 
 ## Architecture Patterns
 
 ### ML Client Architecture
 
-The service uses a **base class pattern** for MLflow model clients:
+The service uses a base class pattern for MLflow model clients:
 
-1. **`BaseMLflowClient`** (`src/clients/base_mlflow_client.py`)
+1. `BaseMLflowClient` (`src/clients/base_mlflow_client.py`)
    - Handles common MLflow operations
    - Manages model loading, version resolution, metadata tracking
    - Provides `load_model()`, `is_ready()`, and `get_model_info()` methods
 
-2. **Concrete Clients**:
+2. Concrete Clients:
    - `SentimentClient` - Sentiment analysis (inherits from `BaseMLflowClient`)
    - `TopicClient` - Topic extraction (inherits from `BaseMLflowClient`)
    - `OpenAITopicClient` - LLM-based topic extraction (uses OpenAI API)
 
 ### Singleton Pattern
 
-All ML clients use **singleton pattern** via `@lru_cache` in `src/dependencies.py`:
+All ML clients use singleton pattern via `@lru_cache` in `src/dependencies.py`:
 
-- Models are loaded **once** at application startup in the `lifespan` function
+- Models are loaded once at application startup in the `lifespan` function
 - All subsequent requests reuse the same client instance
 - This ensures optimal performance (1000 requests = 1 model load, not 1000)
 
@@ -40,7 +37,7 @@ All ML clients use **singleton pattern** via `@lru_cache` in `src/dependencies.p
 Models are loaded synchronously during application startup:
 
 - Both `TopicClient` and `SentimentClient` models are loaded in `src/main.py` lifespan
-- If model loading fails, the application will **not start** (configurable)
+- If model loading fails, the application will not start (configurable)
 - Models are loaded from MLflow Model Registry using `models:/{model_name}/{version}` format
 - Default version is `"latest"`, but specific versions can be specified
 
@@ -136,7 +133,7 @@ pytest
 
 ### Model Format Requirements
 
-Models **must** be logged to MLflow as `mlflow.pyfunc.PythonModel` instances:
+Models must be logged to MLflow as `mlflow.pyfunc.PythonModel` instances:
 
 - The wrapper class must extend `mlflow.pyfunc.PythonModel`
 - Models are loaded using `mlflow.pyfunc.load_model()` with `models:/` URI format
@@ -156,12 +153,12 @@ Models **must** be logged to MLflow as `mlflow.pyfunc.PythonModel` instances:
 
 Before making changes:
 
-1. **`src/main.py`** - Application entry point, lifespan, model loading
-2. **`src/dependencies.py`** - FastAPI dependencies and singleton clients
-3. **`src/clients/base_mlflow_client.py`** - Base class for ML clients
-4. **`src/config.py`** - Configuration management
-5. **`src/routers/v1/`** - API route handlers
-6. **`tests/conftest.py`** - Test fixtures and setup
+1. `src/main.py` - Application entry point, lifespan, model loading
+2. `src/dependencies.py` - FastAPI dependencies and singleton clients
+3. `src/clients/base_mlflow_client.py` - Base class for ML clients
+4. `src/config.py` - Configuration management
+5. `src/routers/v1/` - API route handlers
+6. `tests/conftest.py` - Test fixtures and setup
 
 ## Common Tasks
 

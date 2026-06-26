@@ -4,11 +4,9 @@ Django application for database migrations, admin interface, and internal data m
 
 ## Technology Stack
 
-- **Framework**: Django 5.0+
-- **Language**: Python 3.13
-- **Database**: PostgreSQL
-- **Admin UI**: django-unfold (modern admin theme)
-- **Dependency Management**: uv (pyproject.toml)
+- Django
+- PostgreSQL
+- django-unfold
 
 ## Architecture Patterns
 
@@ -16,8 +14,8 @@ Django application for database migrations, admin interface, and internal data m
 
 The Django service serves two main purposes:
 
-1. **Database Migrations** - Manages database schema changes
-2. **Admin Interface** - Internal admin UI for managing application data and feature flags
+1. Database Migrations - Manages database schema changes
+2. Admin Interface - Internal admin UI for managing application data and feature flags
 
 ### Model Organization
 
@@ -56,7 +54,7 @@ lotus_admin/
 ### Database Migrations
 
 - Migrations are auto-generated from model changes
-- **Never edit migration files manually** (except for data migrations)
+- Never edit migration files manually (except for data migrations)
 - Create migrations: `python manage.py makemigrations`
 - Apply migrations: `python manage.py migrate`
 
@@ -146,12 +144,12 @@ pytest tests/test_models.py::TestUserModel
 
 Before making changes:
 
-1. **`core/models.py`** - Database models
-2. **`core/admin.py`** - Admin interface configuration
-3. **`core/signals.py`** - Django signals (side effects)
-4. **`core/middleware.py`** - Custom middleware
-5. **`lotus_admin/settings.py`** - Django configuration
-6. **`lotus_admin/urls.py`** - URL routing
+1. `core/models.py` - Database models
+2. `core/admin.py` - Admin interface configuration
+3. `core/signals.py` - Django signals (side effects)
+4. `core/middleware.py` - Custom middleware
+5. `lotus_admin/settings.py` - Django configuration
+6. `lotus_admin/urls.py` - URL routing
 
 ## Common Tasks
 
@@ -209,11 +207,11 @@ python manage.py migrate
 
 ### Migration Workflow
 
-1. **Modify models** in `core/models.py`
-2. **Create migration**: `python manage.py makemigrations`
-3. **Review migration** file in `core/migrations/`
-4. **Test migration**: `python manage.py migrate` (on test DB)
-5. **Commit** both model changes and migration files
+1. Modify models in `core/models.py`
+2. Create migration: `python manage.py makemigrations`
+3. Review migration file in `core/migrations/`
+4. Test migration: `python manage.py migrate` (on test DB)
+5. Commit both model changes and migration files
 
 ### Data Migrations
 
@@ -237,13 +235,13 @@ python manage.py migrate
 
 ### Secret Key
 
-- **Never commit** `DJANGO_SECRET_KEY` to version control
+- Never commit `DJANGO_SECRET_KEY` to version control
 - Use strong, random secret key in production
 - Rotate secret key periodically
 
 ### Debug Mode
 
-- **Never enable** `DJANGO_DEBUG=True` in production
+- Never enable `DJANGO_DEBUG=True` in production
 - Debug mode exposes sensitive information
 - Use environment variable to control debug mode
 

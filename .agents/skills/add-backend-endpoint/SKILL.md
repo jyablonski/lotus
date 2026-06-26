@@ -1,6 +1,8 @@
 ---
 name: add-backend-endpoint
-description: Step-by-step workflow for adding a new gRPC/HTTP endpoint to the Go backend service, including proto definitions, SQL queries, handler implementation, gateway registration, and tests.
+description: Manual skill, do not invoke automatically. Use only when user explicitly runs add-backend-endpoint by name. Step-by-step workflow for adding a new gRPC/HTTP endpoint to the Go backend service, including proto definitions, SQL queries, handler implementation, gateway registration, and tests.
+disable-model-invocation: true
+user-invocable: true
 ---
 
 ## When to use this skill
@@ -44,16 +46,16 @@ Run code generation:
 make sqlc-generate
 ```
 
-This regenerates `services/backend/internal/db/` including `querier.go`, `models.go`, and query implementation files. **Do not edit files in `internal/db/` directly.**
+This regenerates `services/backend/internal/db/` including `querier.go`, `models.go`, and query implementation files. Do not edit files in `internal/db/` directly.
 
 ### Step 2: Define proto messages and service RPCs
 
-**For an existing domain** (e.g., journal), edit the existing proto files:
+For an existing domain (e.g., journal), edit the existing proto files:
 
 - Message types: `services/backend/proto/{domain}/{domain}.proto`
 - Service RPCs: `services/backend/proto/{domain}/{domain}_service.proto`
 
-**For a new domain**, create both files under `services/backend/proto/{new_domain}/`.
+For a new domain, create both files under `services/backend/proto/{new_domain}/`.
 
 Message definition example (`{domain}.proto`):
 
@@ -112,13 +114,13 @@ Run code generation:
 make buf-generate
 ```
 
-This regenerates `services/backend/internal/pb/proto/{domain}/` with `*.pb.go`, `*_grpc.pb.go`, and `*.pb.gw.go` files. **Do not edit files in `internal/pb/` directly.**
+This regenerates `services/backend/internal/pb/proto/{domain}/` with `*.pb.go`, `*_grpc.pb.go`, and `*.pb.gw.go` files. Do not edit files in `internal/pb/` directly.
 
 ### Step 3: Implement the gRPC handler
 
-**For an existing domain**, add the method to the existing server struct in `services/backend/internal/grpc/{domain}_service.go`.
+For an existing domain, add the method to the existing server struct in `services/backend/internal/grpc/{domain}_service.go`.
 
-**For a new domain**, create `services/backend/internal/grpc/{new_domain}_service.go`:
+For a new domain, create `services/backend/internal/grpc/{new_domain}_service.go`:
 
 ```go
 package grpc
@@ -151,9 +153,9 @@ func (s *{Domain}Server) GetWidget(ctx context.Context, req *pb.GetWidgetRequest
 
 Key conventions:
 
-- Service structs are **empty** (only embed `Unimplemented*Server`). There are no `DB`, `Logger`, or other fields -- all dependencies come from context via the `internal/inject` package.
+- Service structs are empty (only embed `Unimplemented*Server`). There are no `DB`, `Logger`, or other fields -- all dependencies come from context via the `internal/inject` package.
 - A gRPC unary interceptor in `main.go` populates every request context with `db.Querier`, `*slog.Logger`, `inject.HTTPDoer`, and the analyzer URL. Service methods extract what they need via `inject.DBFrom(ctx)`, `inject.LoggerFrom(ctx)`, etc.
-- **Extract deps after input validation.** This way, tests for validation failures (bad UUIDs, missing fields) can use a bare `context.Background()` without setting up any dependencies.
+- Extract deps after input validation. This way, tests for validation failures (bad UUIDs, missing fields) can use a bare `context.Background()` without setting up any dependencies.
 - Use `log/slog` for structured logging.
 - Return gRPC status errors: `status.Errorf(codes.NotFound, "widget not found")`.
 - Log errors with context before returning them.
@@ -165,7 +167,7 @@ Skip this step if adding an RPC to an existing service.
 
 Both gRPC and gateway registration live in `services/backend/internal/grpc/server.go`. Add the new service to both functions so that `main.go` does not need any changes.
 
-**In `RegisterServices`**, add the gRPC registration:
+In `RegisterServices`, add the gRPC registration:
 
 ```go
 import pb_{domain} "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
@@ -174,7 +176,7 @@ import pb_{domain} "github.com/jyablonski/lotus/internal/pb/proto/{domain}"
 pb_{domain}.Register{Domain}ServiceServer(s, &{Domain}Server{})
 ```
 
-**In `RegisterGateway`**, add the gateway handler registration:
+In `RegisterGateway`, add the gateway handler registration:
 
 ```go
 // Add to the slice inside RegisterGateway():
@@ -191,7 +193,7 @@ If the `Querier` interface changed (new SQL queries were added):
 make moq-generate
 ```
 
-This regenerates `services/backend/internal/mocks/querier_mock.go`. **Do not edit files in `internal/mocks/` directly.**
+This regenerates `services/backend/internal/mocks/querier_mock.go`. Do not edit files in `internal/mocks/` directly.
 
 ### Step 6: Write tests
 
@@ -260,20 +262,20 @@ func Test{Domain}Server_GetWidget_InvalidInput(t *testing.T) {
 
 Add integration tests in `services/backend/internal/grpc/{domain}_service_integration_test.go`. All integration tests use `package grpc_test` (same as unit tests) and share the helpers from `testhelpers_test.go`.
 
-**How the DB container works** (`testmain_test.go`):
+How the DB container works (`testmain_test.go`):
 
 `TestMain` calls `testinfra.Setup(ctx, "../sql/schema")`, which starts a single ephemeral `pgvector/pgvector:pg16` Postgres container, applies goose migrations, runs River migrations, starts Redis, and terminates everything after the package test run. This means:
 
 - No external postgres required — `make test-backend` is fully self-contained
 - Running tests never touches your local Tilt postgres
-- The container starts **once per `go test` invocation**, not once per test function
+- The container starts once per `go test` invocation, not once per test function
 
-**Per-test isolation: transaction rollback**
+Per-test isolation: transaction rollback
 Each `newTestCtx(t)` call begins a fresh pgx transaction from the package test pool. `db.New(tx)` is used because sqlc's `New()` accepts the `DBTX` interface, which both `pgx.Tx` and `*pgxpool.Pool` satisfy. `t.Cleanup` rolls back the transaction. Since the transaction is never committed, every write is discarded at cleanup.
 
 One implication: if two records are inserted in the same `newTestCtx` transaction within the same millisecond, `ORDER BY created_at DESC` is non-deterministic. Use a map-based assertion or insert records in separate `newTestCtx` calls if ordering matters.
 
-**Shared setup** (`testhelpers_test.go`):
+Shared setup (`testhelpers_test.go`):
 
 - `newTestCtx(t)` — begins a pgx transaction, registers `t.Cleanup` to roll back, injects `queries` into context, and returns `(ctx context.Context, queries *db.Queries)`.
 - `newDirectQueries(t)` — returns sqlc queries on the shared pool for tests that must observe rows committed outside the test transaction.
@@ -282,7 +284,7 @@ One implication: if two records are inserted in the same `newTestCtx` transactio
 - `testinfra.MockAnalyzerServer(t)` / `testinfra.FailingAnalyzerServer(t)` — httptest servers with `t.Cleanup(srv.Close)` registered automatically.
 - `createTestUser`, `createTestJournal`, `createTestGameBalance`, `createTestGameBet`, and `createTestCommunityUser` delegate to `internal/testfixtures`.
 
-**Fixture helpers** (`internal/testfixtures`):
+Fixture helpers (`internal/testfixtures`):
 
 Use `testfixtures.CreateWithDefaults` for supported setup records instead of hand-writing sqlc params:
 
@@ -369,7 +371,7 @@ Test patterns to cover:
 
 After adding a new endpoint, add a corresponding `.bru` request file to the Bruno collection so the team can test it from the Bruno GUI.
 
-**Backend requests** go in `bruno/backend/`. Create a new `.bru` file named after the endpoint (e.g., `get-widget.bru`):
+Backend requests go in `bruno/backend/`. Create a new `.bru` file named after the endpoint (e.g., `get-widget.bru`):
 
 ```bru
 meta {
@@ -432,11 +434,11 @@ Service files define sentinel errors (`var ErrXxx = errors.New("...")`) for doma
 
 ### When to use sentinels
 
-Use a sentinel for **validation and domain conditions** -- things the caller could branch on:
+Use a sentinel for validation and domain conditions -- things the caller could branch on:
 
 - `ErrInvalidUserID`, `ErrEmailRequired`, `ErrUserNotFound`, `ErrInvalidJournalID`, `ErrJournalNotFound`
 
-Do **not** use sentinels for **operational wrap errors** that just add context to an underlying cause. These stay as plain `fmt.Errorf`:
+Do not use sentinels for operational wrap errors that just add context to an underlying cause. These stay as plain `fmt.Errorf`:
 
 - `fmt.Errorf("failed to create journal: %w", err)` -- the caller checks the wrapped `err`, not the message prefix
 
@@ -449,13 +451,13 @@ Do **not** use sentinels for **operational wrap errors** that just add context t
 
 There are two patterns depending on how the error is returned:
 
-**`fmt.Errorf` wrapping** (non-gRPC returns): wrap with `%w` so `errors.Is()` works:
+`fmt.Errorf` wrapping (non-gRPC returns): wrap with `%w` so `errors.Is()` works:
 
 ```go
 return nil, fmt.Errorf("%w: %w", ErrInvalidUserID, err)
 ```
 
-**`status.Error` / `status.Errorf`** (gRPC returns): embed via `.Error()` since gRPC status errors don't support `errors.Is()` on the inner sentinel:
+`status.Error` / `status.Errorf` (gRPC returns): embed via `.Error()` since gRPC status errors don't support `errors.Is()` on the inner sentinel:
 
 ```go
 return nil, status.Error(codes.NotFound, ErrUserNotFound.Error())

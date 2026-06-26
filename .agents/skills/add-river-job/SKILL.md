@@ -1,24 +1,26 @@
 ---
-name: river-async-jobs
-description: Step-by-step workflow for adding a new River background job or periodic cron task to the Go backend service.
+name: add-river-job
+description: Manual skill, do not invoke automatically. Use only when user explicitly runs add-river-job by name. Step-by-step workflow for adding a new River background job or periodic cron task to the Go backend service.
+disable-model-invocation: true
+user-invocable: true
 ---
 
 ## Pattern
 
 Every job needs two things, then one wiring step:
 
-**1. New file in `services/backend/internal/jobs/`** — e.g. `send_email.go`:
+1. New file in `services/backend/internal/jobs/` — e.g. `send_email.go`:
 
 - `Args` struct with `Kind() string` and optional `InsertOpts() river.InsertOpts` (set `Queue` and `MaxAttempts`)
 - `Worker` struct embedding `river.WorkerDefaults[Args]` with deps as fields
 - `Work(ctx, job)` method — return an error to trigger retry
 
-**2. Register in `jobs.go` `NewClientWithPeriodicInterval`**:
+2. Register in `jobs.go` `NewClientWithPeriodicInterval`:
 
 - `river.AddWorker(workers, NewMyWorker(...))`
 - For periodic jobs, add a `river.NewPeriodicJob(...)` entry with `&river.PeriodicJobOpts{RunOnStart: true}`
 
-**3. Enqueue from any gRPC handler**:
+3. Enqueue from any gRPC handler:
 
 - `riverClient.Insert(ctx, MyArgs{...}, nil)` — async, returns immediately
 - `riverClient.InsertTx(ctx, tx, MyArgs{...}, nil)` — atomic with a DB write (use for CreateX handlers)

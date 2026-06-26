@@ -4,31 +4,29 @@ ML model training service for sentiment analysis and topic extraction. Models ar
 
 ## Technology Stack
 
-- **Language**: Python 3.13
-- **ML Framework**: scikit-learn, pandas
-- **Model Registry**: MLflow 3.3.1+
-- **Database**: PostgreSQL (for MLflow backend)
-- **Dependency Management**: uv (pyproject.toml)
+- scikit-learn
+- pandas
+- MLflow
 
 ## Architecture Patterns
 
 ### Model Training Workflow
 
-1. **Train Model** - Train ML model using training scripts
-2. **Log to MLflow** - Log model, metrics, and artifacts to MLflow
-3. **Register Model** - Register model in MLflow Model Registry
-4. **Deploy** - Analyzer service loads model from registry
+1. Train Model - Train ML model using training scripts
+2. Log to MLflow - Log model, metrics, and artifacts to MLflow
+3. Register Model - Register model in MLflow Model Registry
+4. Deploy - Analyzer service loads model from registry
 
 ### Model Types
 
 The service trains two main model types:
 
-1. **Sentiment Analyzer** (`src/models/sentiment_analyzer.py`)
+1. Sentiment Analyzer (`src/models/sentiment_analyzer.py`)
    - Model name: `journal_sentiment_analyzer`
    - Purpose: Classify journal sentiment (positive/negative/neutral)
    - Framework: scikit-learn (RoBERTa-based)
 
-2. **Topic Extractor** (`src/models/topic_extractor.py`)
+2. Topic Extractor (`src/models/topic_extractor.py`)
    - Model name: `adaptive_journal_topics`
    - Purpose: Extract topics from journal entries
    - Framework: scikit-learn
@@ -160,10 +158,10 @@ pytest tests/models/test_sentiment_analyzer.py
 
 Before making changes:
 
-1. **`src/models/sentiment_analyzer.py`** - Sentiment model implementation
-2. **`src/models/topic_extractor.py`** - Topic model implementation
-3. **`src/training/train_sentiment_analysis_roberta.py`** - Example training script
-4. **`tests/models/test_sentiment_analyzer.py`** - Model tests
+1. `src/models/sentiment_analyzer.py` - Sentiment model implementation
+2. `src/models/topic_extractor.py` - Topic model implementation
+3. `src/training/train_sentiment_analysis_roberta.py` - Example training script
+4. `tests/models/test_sentiment_analyzer.py` - Model tests
 
 ## Common Tasks
 
@@ -213,21 +211,21 @@ Before making changes:
 
 ### For Analyzer Service Compatibility
 
-Models **must** be logged as `mlflow.pyfunc.PythonModel`:
+Models must be logged as `mlflow.pyfunc.PythonModel`:
 
-1. **Wrapper Class**: Extend `mlflow.pyfunc.PythonModel`
-2. **Predict Method**: Implement `predict(context, model_input)` method
-3. **Input Format**: Accept pandas DataFrame input
-4. **Output Format**: Return list of dictionaries or DataFrame
-5. **Preprocessing**: Handle all preprocessing in `predict()` method
-6. **Postprocessing**: Format predictions consistently
+1. Wrapper Class: Extend `mlflow.pyfunc.PythonModel`
+2. Predict Method: Implement `predict(context, model_input)` method
+3. Input Format: Accept pandas DataFrame input
+4. Output Format: Return list of dictionaries or DataFrame
+5. Preprocessing: Handle all preprocessing in `predict()` method
+6. Postprocessing: Format predictions consistently
 
 ### Model Input/Output
 
-- **Input**: pandas DataFrame with `text` column
-- **Output**: List of dictionaries or DataFrame with predictions
-- **Sentiment**: `{"sentiment": "positive", "confidence": 0.95, ...}`
-- **Topics**: `{"topics": ["topic1", "topic2"], ...}`
+- Input: pandas DataFrame with `text` column
+- Output: List of dictionaries or DataFrame with predictions
+- Sentiment: `{"sentiment": "positive", "confidence": 0.95, ...}`
+- Topics: `{"topics": ["topic1", "topic2"], ...}`
 
 ## Integration with Analyzer Service
 
@@ -253,14 +251,14 @@ Models **must** be logged as `mlflow.pyfunc.PythonModel`:
 
 ## Best Practices
 
-1. **Reproducibility**: Use fixed random seeds
-2. **Versioning**: Always log models with version tracking
-3. **Documentation**: Document model architecture and hyperparameters
-4. **Testing**: Test models before registering
-5. **Metrics**: Log comprehensive metrics (accuracy, precision, recall, etc.)
-6. **Artifacts**: Log training data samples and visualizations
-7. **Experiments**: Use MLflow experiments to organize runs
-8. **Comparison**: Compare model versions in MLflow UI
+1. Reproducibility: Use fixed random seeds
+2. Versioning: Always log models with version tracking
+3. Documentation: Document model architecture and hyperparameters
+4. Testing: Test models before registering
+5. Metrics: Log comprehensive metrics (accuracy, precision, recall, etc.)
+6. Artifacts: Log training data samples and visualizations
+7. Experiments: Use MLflow experiments to organize runs
+8. Comparison: Compare model versions in MLflow UI
 
 ## Pre-commit Hooks
 
@@ -269,7 +267,7 @@ Models **must** be logged as `mlflow.pyfunc.PythonModel`:
 
 ## Deployment
 
-- This service is **not deployed** as a running service
+- This service is not deployed as a running service
 - Training scripts are run manually or via scheduled jobs
 - Models are stored in MLflow Model Registry
 - Analyzer service loads models from registry
@@ -278,10 +276,10 @@ Models **must** be logged as `mlflow.pyfunc.PythonModel`:
 
 ### Model Stages
 
-- **None** - Initial registration
-- **Staging** - Testing phase
-- **Production** - Production-ready models
-- **Archived** - Deprecated models
+- None - Initial registration
+- Staging - Testing phase
+- Production - Production-ready models
+- Archived - Deprecated models
 
 ### Model Promotion
 

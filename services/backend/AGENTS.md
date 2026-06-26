@@ -4,44 +4,41 @@ Go gRPC service with HTTP gateway for core application logic, CRUD operations, a
 
 ## Technology Stack
 
-- **Language**: Go 1.25.4
-- **Framework**: gRPC with grpc-gateway for HTTP
-- **Database**: PostgreSQL
-- **Code Generation**: sqlc (SQL → Go), buf (protobuf → Go), moq (mocks)
-- **Hot Reload**: Air (development only)
-- **Testing**: testify, moq
+- Go
+- gRPC with grpc-gateway
+- PostgreSQL
 
 ## Architecture Patterns
 
 ### Service Structure
 
-The backend runs **two servers** concurrently:
+The backend runs two servers concurrently:
 
-1. **gRPC Server** (`:50051`) - Core gRPC service
-2. **gRPC-Gateway** (`:8080`) - HTTP gateway that translates HTTP → gRPC
+1. gRPC Server (`:50051`) - Core gRPC service
+2. gRPC-Gateway (`:8080`) - HTTP gateway that translates HTTP → gRPC
 
 ### Code Generation
 
-The service uses **code generation** for type safety:
+The service uses code generation for type safety:
 
-- **sqlc** - Generates Go code from SQL queries
+- sqlc - Generates Go code from SQL queries
   - SQL files: `internal/sql/queries/`
   - Generated code: `internal/db/`
   - Config: `sqlc.yaml`
   - Run: `make sqlc-generate` or `cd services/backend && sqlc generate`
 
-- **buf** - Generates gRPC/protobuf code
+- buf - Generates gRPC/protobuf code
   - Proto files: `proto/`
   - Generated code: `internal/pb/proto/`
   - Config: `buf.yaml`, `buf.gen.yaml`
   - Run: `make buf-generate` or `cd services/backend && buf generate`
 
-- **moq** - Generates mock implementations for interfaces
+- moq - Generates mock implementations for interfaces
   - Interfaces: `internal/db/querier.go`, `internal/inject/inject.go`
   - Generated mocks: `internal/mocks/`
   - Run: `make moq-generate` or `./scripts/moq-generate.sh`
 
-**Important**: Always regenerate code after changing SQL queries or proto definitions.
+Important: Always regenerate code after changing SQL queries or proto definitions.
 
 ## Code Organization
 
@@ -88,7 +85,7 @@ internal/
 
 ### gRPC Service Implementation
 
-Services use **context-based dependency injection** via the `inject` package. Dependencies (DB, Logger, HTTPClient, AnalyzerURL) are populated by an interceptor in `main.go` and extracted in handlers:
+Services use context-based dependency injection via the `inject` package. Dependencies (DB, Logger, HTTPClient, AnalyzerURL) are populated by an interceptor in `main.go` and extracted in handlers:
 
 ```go
 type UserServer struct {
@@ -125,7 +122,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 
 ### Database Access
 
-- Use **sqlc-generated** queries from `internal/db`
+- Use sqlc-generated queries from `internal/db`
 - Never write raw SQL in Go code - use sqlc queries
 - Database access is obtained via `inject.DBFrom(ctx)` (returns `db.Querier`)
 - Use `context.Context` for all database operations
@@ -302,14 +299,14 @@ Raw SQL is still acceptable in tests for unsupported models or specialized datab
 
 Before making changes:
 
-1. **`internal/main.go`** - Entry point, server startup
-2. **`internal/grpc/server.go`** - gRPC server setup and interceptors
-3. **`internal/grpc/journal_service.go`** - Example service implementation
-4. **`internal/db/`** - Generated database code (read-only, regenerated)
-5. **`internal/sql/queries/`** - SQL queries (input for sqlc)
-6. **`proto/`** - Protobuf definitions (input for buf)
-7. **`sqlc.yaml`** - sqlc configuration
-8. **`buf.yaml`** / `buf.gen.yaml` - buf configuration
+1. `internal/main.go` - Entry point, server startup
+2. `internal/grpc/server.go` - gRPC server setup and interceptors
+3. `internal/grpc/journal_service.go` - Example service implementation
+4. `internal/db/` - Generated database code (read-only, regenerated)
+5. `internal/sql/queries/` - SQL queries (input for sqlc)
+6. `proto/` - Protobuf definitions (input for buf)
+7. `sqlc.yaml` - sqlc configuration
+8. `buf.yaml` / `buf.gen.yaml` - buf configuration
 
 ## Common Tasks
 

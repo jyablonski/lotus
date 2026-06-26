@@ -1,11 +1,8 @@
 ---
-name: dbt-model
-description: >
-  Step-by-step workflow for adding new dbt models to the Lotus analytics project.
-  Covers source definitions, the silver/gold medallion architecture (staging stg_,
-  core fct_/dim_, gold analytics), incremental materialization, tagging, primary key
-  tests, and dbt-utils tests. Use this skill whenever the user wants to add a new
-  dbt model, source, or test, or asks how the dbt layer structure works.
+name: add-dbt-model
+description: Manual skill, do not invoke automatically. Use only when user explicitly runs add-dbt-model by name. Step-by-step workflow for adding new dbt models to the Lotus analytics project. Covers source definitions, the silver/gold medallion architecture (staging stg_, core fct_/dim_, gold analytics), incremental materialization, tagging, primary key tests, and dbt-utils tests. Use this skill whenever the user wants to add a new dbt model, source, or test, or asks how the dbt layer structure works.
+disable-model-invocation: true
+user-invocable: true
 ---
 
 # dbt Model Workflow
@@ -27,7 +24,7 @@ Output schemas (`silver` or `gold`) are controlled by `dbt_project.yml` + `macro
 
 ## Step 1: Define the source
 
-**Location:** `models/sources/application_db/{table_name}.yml` -- one file per table, all use `schema: source` and `name: application_db`.
+Location: `models/sources/application_db/{table_name}.yml` -- one file per table, all use `schema: source` and `name: application_db`.
 
 ```yaml
 version: 2
@@ -48,7 +45,7 @@ sources:
 
 Light transforms: rename columns, cast types. Always incremental on `modified_at` with a default value of `1970-01-01` for the initial load.
 
-**SQL:** `models/silver/staging/stg_{table_name}.sql`
+SQL: `models/silver/staging/stg_{table_name}.sql`
 
 ```sql
 {{ config(materialized='incremental', unique_key='{primary_key}') }}
@@ -71,7 +68,7 @@ renamed as (
 select * from renamed
 ```
 
-**YAML:** `models/silver/staging/stg_{table_name}.yml` -- primary key always gets `unique` + `not_null`:
+YAML: `models/silver/staging/stg_{table_name}.yml` -- primary key always gets `unique` + `not_null`:
 
 ```yaml
 version: 2
@@ -123,7 +120,7 @@ final as (
 select * from final
 ```
 
-**YAML** -- add `accepted_values` for enums, domain-level `config.tags`:
+YAML -- add `accepted_values` for enums, domain-level `config.tags`:
 
 ```yaml
 version: 2
@@ -173,7 +170,7 @@ final as (
 select * from final
 ```
 
-**YAML** -- `relationships` for FK tests, `dbt_utils.expression_is_true` for range checks:
+YAML -- `relationships` for FK tests, `dbt_utils.expression_is_true` for range checks:
 
 ```yaml
 version: 2
