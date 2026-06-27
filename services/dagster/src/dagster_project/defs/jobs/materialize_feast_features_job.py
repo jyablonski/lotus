@@ -1,10 +1,15 @@
 from dagster import AssetSelection
 
-from dagster_project.assets.exports.materialize_user_journal_features import (
+from dagster_project.defs.assets.exports.materialize_user_journal_features import (
     materialize_user_journal_features,
 )
-from dagster_project.assets.transformations.dbt_assets import dbt_gold_analytics
-from dagster_project.jobs.utils import Audience, Domain, create_job, dbt_tag_selection
+from dagster_project.defs.assets.transformations.dbt_assets import dbt_gold_analytics
+from dagster_project.defs.jobs.utils import (
+    Audience,
+    Domain,
+    create_job,
+    dbt_tag_selection,
+)
 
 # Create a job that:
 # 1. First runs dbt to build gold.user_journal_summary

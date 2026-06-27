@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from dagster import build_asset_context
 import pytest
 
-from dagster_project.assets.ingestion import incremental_example_api
-from dagster_project.assets.ingestion.incremental_example_api import (
+from dagster_project.defs.examples.assets.ingestion import incremental_example_api
+from dagster_project.defs.examples.assets.ingestion.incremental_example_api import (
     SOURCE_NAME,
     _context_run_id,
     example_api_records_incremental,

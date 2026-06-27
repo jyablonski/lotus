@@ -1,7 +1,7 @@
-from dagster_project.assets.ingestion.incremental_example_api import (
+from dagster_project.defs.examples.assets.ingestion.incremental_example_api import (
     example_api_records_incremental,
 )
-from dagster_project.jobs.utils import Audience, Domain, create_job
+from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 
 incremental_example_api_job, incremental_example_api_schedule = create_job(
     name="incremental_example_api_job",

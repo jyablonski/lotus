@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from dagster import build_op_context
 import pytest
 
-from dagster_project.assets.exports.llm_prompt_from_sheet import (
+from dagster_project.defs.assets.exports.llm_prompt_from_sheet import (
     RESPONSES_HEADER,
     read_prompt_from_sheet,
     run_prompt_and_write_result,

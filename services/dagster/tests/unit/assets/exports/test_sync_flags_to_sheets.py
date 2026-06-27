@@ -6,7 +6,7 @@ from dagster import ResourceDefinition, build_op_context
 import polars as pl
 import pytest
 
-from dagster_project.assets.exports.sync_flags_to_sheets import (
+from dagster_project.defs.assets.exports.sync_flags_to_sheets import (
     get_feature_flags_from_postgres,
     sync_flags_to_sheets,
 )

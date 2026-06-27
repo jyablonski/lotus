@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from dagster import build_op_context
 import pytest
 
-from dagster_project.assets.exports.llm_prompt_from_db import (
+from dagster_project.defs.assets.exports.llm_prompt_from_db import (
     SALES_OUTREACH_APPLICATION,
     fetch_stakeholder_prompt,
     read_sales_outreach_prompt,

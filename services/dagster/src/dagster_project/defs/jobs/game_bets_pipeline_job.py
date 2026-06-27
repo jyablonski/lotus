@@ -1,9 +1,9 @@
-from dagster_project.assets.transformations.dbt_assets import (
+from dagster_project.defs.assets.transformations.dbt_assets import (
     dbt_gold_analytics,
     dbt_silver_core,
     dbt_silver_stg,
 )
-from dagster_project.jobs.utils import (
+from dagster_project.defs.jobs.utils import (
     Audience,
     Domain,
     create_job,

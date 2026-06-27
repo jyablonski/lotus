@@ -1,5 +1,7 @@
-from dagster_project.assets.exports.unload_journals_to_s3 import unload_journals_to_s3
-from dagster_project.jobs.utils import Audience, Domain, create_job
+from dagster_project.defs.assets.exports.unload_journals_to_s3 import (
+    unload_journals_to_s3,
+)
+from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 from dagster_project.ops.slack_hooks import create_slack_notification_hooks
 
 # Create reusable Slack notification hooks for the unload job

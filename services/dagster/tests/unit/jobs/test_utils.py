@@ -1,7 +1,7 @@
 import pytest
 from dagster import AssetSelection, asset
 
-from dagster_project.jobs.utils import (
+from dagster_project.defs.jobs.utils import (
     Audience,
     Domain,
     create_job,

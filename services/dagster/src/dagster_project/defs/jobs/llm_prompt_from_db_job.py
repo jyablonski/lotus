@@ -1,8 +1,8 @@
-from dagster_project.assets.exports.llm_prompt_from_db import (
+from dagster_project.defs.assets.exports.llm_prompt_from_db import (
     read_sales_outreach_prompt,
     run_db_prompt_and_write_result,
 )
-from dagster_project.jobs.utils import Audience, Domain, create_job
+from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 
 llm_prompt_from_db_job = create_job(
     name="llm_prompt_from_db_job",

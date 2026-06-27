@@ -6,7 +6,9 @@ from dagster import ResourceDefinition, build_op_context
 import polars as pl
 import pytest
 
-from dagster_project.assets.exports.unload_journals_to_s3 import unload_journals_to_s3
+from dagster_project.defs.assets.exports.unload_journals_to_s3 import (
+    unload_journals_to_s3,
+)
 from dagster_project.sql.exports import SELECT_USER_JOURNAL_SUMMARY
 
 

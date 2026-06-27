@@ -1,9 +1,14 @@
-from dagster_project.assets.transformations.dbt_assets import (
+from dagster_project.defs.assets.transformations.dbt_assets import (
     dbt_gold_analytics,
     dbt_silver_core,
     dbt_silver_stg,
 )
-from dagster_project.jobs.utils import Audience, Domain, create_job, dbt_tag_selection
+from dagster_project.defs.jobs.utils import (
+    Audience,
+    Domain,
+    create_job,
+    dbt_tag_selection,
+)
 
 # Only create the job if dbt assets are available
 staging_selection = dbt_tag_selection([dbt_silver_stg], tag="staging")

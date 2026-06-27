@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from dagster_project.sensors.slack_on_failure import (
+from dagster_project.defs.sensors.slack_on_failure import (
     _extract_root_cause,
     slack_on_run_failure,
 )

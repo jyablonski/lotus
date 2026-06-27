@@ -3,7 +3,9 @@
 from dagster import build_op_context
 import pytest
 
-from dagster_project.assets.ingestion.example_assets import hello_world_asset
+from dagster_project.defs.examples.assets.ingestion.example_assets import (
+    hello_world_asset,
+)
 
 
 @pytest.mark.unit

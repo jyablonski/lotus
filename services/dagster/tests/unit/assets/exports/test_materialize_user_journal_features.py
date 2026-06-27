@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from dagster import build_op_context
 import pytest
 
-from dagster_project.assets.exports.materialize_user_journal_features import (
+from dagster_project.defs.assets.exports.materialize_user_journal_features import (
     materialize_user_journal_features,
 )
 
