@@ -203,11 +203,11 @@ Before making changes:
 
 ### Integrating dbt
 
-1. Use `dagster-dbt` integration
-2. Define dbt resource in `src/dagster_project/resources/dbt_resource.py`
-3. Create dbt assets using `load_assets_from_dbt_project()`
-4. Configure dbt profiles directory
-5. Test dbt runs via Dagster
+1. Use the `dagster-dbt` integration (`@dbt_assets`, `DbtCliResource`)
+2. For a new bronze source, call `build_dbt_source_pipeline()` from `dagster_project/dbt_pipeline.py` and bind its steps at module scope
+3. Regenerate the dbt manifest when models change (see service README)
+4. Configure dbt profiles directory via `DBT_PROFILES_DIR`
+5. Test dbt steps via Dagster
 
 ### Adding Resources
 
@@ -229,16 +229,25 @@ Before making changes:
 
 ### dbt Assets
 
-- dbt models are loaded as Dagster assets
-- Use `load_assets_from_dbt_project()` to create assets from dbt
-- dbt runs are executed via Dagster ops
+- dbt models are loaded as Dagster assets via the `@dbt_assets` decorator, reading the dbt manifest produced from `services/dbt`
+- The project (and manifest path) is configured in `dbt_config.py`, which returns `None` when the dbt dir/manifest isn't available (e.g. unit tests)
+- dbt commands run through the `DbtCliResource` (`dbt.cli([...]).stream()`)
 - dbt profiles are configured via `DBT_PROFILES_DIR`
+
+### dbt Pipeline Conventions
+
+Two patterns turn dbt models into Dagster assets:
+
+- **Layered tags** (`assets/transformations/dbt_assets.py`): one asset per layer tag (`staging`, `core`, `analytics`), covering the whole warehouse.
+- **Per-source pipeline** (`build_dbt_source_pipeline()` in `dagster_project/dbt_pipeline.py`): one standard chain per bronze data source — `source freshness → source tests → silver build → gold build` — selecting `source:<data_source>`, `tag:silver,tag:<data_source>`, and `tag:gold,tag:<data_source>`.
+
+The factory lives outside `assets/` because it defines no top-level Dagster objects. Each per-source module (e.g. `assets/transformations/sales_dbt_tasks.py`) calls it and binds the returned steps to module-scope names so the autoloader registers them. Silver depends on the source-tests gate (via `SourceTestsGateTranslator`); gold inherits that dependency through dbt `ref()`.
 
 ### dbt Resource
 
-- dbt resource provides dbt CLI interface
-- Configured with dbt project path and profiles directory
-- Used by dbt ops to execute dbt commands
+- `DbtCliResource` provides the dbt CLI interface
+- Configured with the dbt project path and profiles directory
+- Used by assets to execute dbt commands
 
 ## Integration with Feast
 

@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-from datetime import UTC, datetime, time
 import random
 from typing import Any, cast
 import uuid
@@ -17,26 +15,16 @@ from dagster_project.defs.assets.ingestion.utils import (
     get_partition_date_str,
 )
 from dagster_project.gates import check_for_nulls, check_min_rows
-from dagster_project.resources import PostgresResource, S3Resource
+from dagster_project.resources import PostgresResource
 
 # Define daily partitions starting from today
 daily_partitions = DailyPartitionsDefinition(start_date="2025-12-18")
 SALES_TABLE_NAME = "sales_data"
 
 
-@dataclass(frozen=True)
-class SalesDataExtractResult:
-    s3_key: str
-    row_count: int
-    total_sales: float
-
-
 @asset(group_name="ingestion", partitions_def=daily_partitions)
-def sales_data(
-    context: AssetExecutionContext,
-    s3_resource: S3Resource,
-) -> SalesDataExtractResult:
-    """Generate, gate, and persist the partition's sales data to S3."""
+def sales_data(context: AssetExecutionContext) -> pl.DataFrame:
+    """Generate and gate the partition's sales data, held in memory for the bronze load."""
     partition_date = get_partition_date(context)
     partition_date_str = get_partition_date_str(context)
 
@@ -67,50 +55,33 @@ def sales_data(
         )
 
     total_sales = df["total_sales"].sum()
-    partition_dt = datetime.combine(partition_date, time.min, tzinfo=UTC)
-    s3_key = s3_resource.write_parquet(
-        df,
-        SALES_TABLE_NAME,
-        partition_dt=partition_dt,
-    )
-
     context.add_output_metadata(
         {
             **create_basic_metadata(context, num_rows=row_count, df=df),
             "total_sales": float(total_sales),
-            "s3_key": s3_key,
         }
     )
 
-    return SalesDataExtractResult(
-        s3_key=s3_key,
-        row_count=row_count,
-        total_sales=float(total_sales),
-    )
+    return df
 
 
 @asset(group_name="ingestion", partitions_def=daily_partitions)
 def sales_data_bronze(
     context: AssetExecutionContext,
-    sales_data: SalesDataExtractResult,
-    s3_resource: S3Resource,
+    sales_data: pl.DataFrame,
     postgres_conn: PostgresResource,
 ) -> None:
-    """Copy the partition's persisted sales data from S3 into bronze Postgres."""
-    df = s3_resource.read_parquet(sales_data.s3_key)
+    """Load the partition's gated sales data into bronze Postgres."""
     written_rows = postgres_conn.write_to_postgres(
-        df=df,
+        df=sales_data,
         table_name=SALES_TABLE_NAME,
-        schema="bronze",
+        schema="source",
         conflict_columns=["id"],
     )
 
     context.log.info(
-        f"Copied {written_rows} sales row(s) from s3://{s3_resource.bucket}/{sales_data.s3_key}"
+        f"Loaded {written_rows} sales row(s) into source.{SALES_TABLE_NAME}"
     )
     context.add_output_metadata(
-        {
-            **create_basic_metadata(context, num_rows=written_rows, df=df),
-            "s3_key": sales_data.s3_key,
-        }
+        create_basic_metadata(context, num_rows=written_rows, df=sales_data)
     )

@@ -19,6 +19,7 @@ models:
 
   analytics:
     silver:
+      +tags: ["silver"]
       staging:
         +group: staging
         +tags: ["staging"]
@@ -29,6 +30,7 @@ models:
         +schema: silver
 
     gold:
+      +tags: ["gold"]
       +schema: gold
       analytics:
         +group: analytics

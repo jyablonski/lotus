@@ -160,13 +160,39 @@ from dagster_project.sql.ingestion import CREATE_MY_TABLE, UPSERT_MY_RECORD
 
 ## dbt Integration
 
-dbt models are split by tag in `assets/transformations/dbt_assets.py`:
+Two conventions turn dbt models into Dagster assets.
+
+**1. Layered tags (whole warehouse)** — split by layer tag in `assets/transformations/dbt_assets.py`:
 
 | dbt tag         | Dagster asset        | Layer          |
 | --------------- | -------------------- | -------------- |
 | `tag:staging`   | `dbt_silver_stg`     | Silver staging |
 | `tag:core`      | `dbt_silver_core`    | Silver core    |
 | `tag:analytics` | `dbt_gold_analytics` | Gold analytics |
+
+**2. Per-source pipeline (bronze → silver → gold)** — one standard chain per data source, built by `build_dbt_source_pipeline()` from `dagster_project.dbt_pipeline`. The chain is `source freshness → source tests → silver build → gold build`, selecting `source:<data_source>`, then `tag:silver,tag:<data_source>` and `tag:gold,tag:<data_source>`.
+
+To add a new source pipeline, create `assets/transformations/<source>_dbt_tasks.py`:
+
+```python
+from dagster_project.dbt_pipeline import build_dbt_source_pipeline
+from dagster_project.defs.assets.ingestion.get_my_data import my_data_bronze
+
+my_pipeline = build_dbt_source_pipeline(
+    data_source="my_data",
+    bronze_asset=my_data_bronze,   # freshness waits on this ingestion asset
+)
+
+# REQUIRED: bind each step at module scope so the autoloader registers it.
+# The factory (in dbt_pipeline.py, outside assets/) defines no top-level Dagster
+# objects, so the steps only become assets once bound here.
+my_data_dbt_source_freshness = my_pipeline.source_freshness if my_pipeline else None
+my_data_dbt_source_tests = my_pipeline.source_tests if my_pipeline else None
+my_data_dbt_silver_build = my_pipeline.silver_build if my_pipeline else None
+my_data_dbt_gold_build = my_pipeline.gold_build if my_pipeline else None
+```
+
+Silver depends on the source-tests gate; gold inherits that dependency via dbt `ref()`. `silver_build`/`gold_build` are `None` when no model carries the matching `tag:<layer>,tag:<data_source>` pair. The job selects the steps via `my_pipeline.assets()` (drops `None` layers).
 
 Tags are auto-applied by `dbt_project.yml` based on directory. New dbt models appear in Dagster automatically. Config is in `dbt_config.py` which conditionally loads the project (returns `None` if dbt dir doesn't exist).
 
@@ -180,4 +206,5 @@ Tags are auto-applied by `dbt_project.yml` based on directory. New dbt models ap
 | Jobs                 | `services/dagster/src/dagster_project/jobs/`                                       |
 | SQL queries          | `services/dagster/src/dagster_project/sql/`                                        |
 | dbt config           | `services/dagster/src/dagster_project/dbt_config.py`                               |
+| dbt source pipeline  | `services/dagster/src/dagster_project/dbt_pipeline.py`                             |
 | Slack hooks          | `services/dagster/src/dagster_project/ops/slack_hooks.py`                          |

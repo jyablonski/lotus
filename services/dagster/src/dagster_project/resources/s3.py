@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 from io import BytesIO
+import os
 
 import boto3
 import polars as pl
-from dagster import ConfigurableResource, EnvVar
+from dagster import ConfigurableResource
 
 
 class S3Resource(ConfigurableResource):
@@ -54,8 +55,11 @@ class S3Resource(ConfigurableResource):
         return pl.read_parquet(BytesIO(resp["Body"].read()))
 
 
+# Resolved at definition time with defaults so a missing bucket doesn't hard-fail
+# code-location load (no S3 infra is wired up locally yet). Set DAGSTER_S3_BUCKET
+# (and optionally region / endpoint URL for MinIO/LocalStack) to use real S3.
 s3_resource = S3Resource(
-    bucket=EnvVar("DAGSTER_S3_BUCKET"),
-    region=EnvVar("DAGSTER_S3_REGION"),
-    endpoint_url=EnvVar("DAGSTER_S3_ENDPOINT_URL"),
+    bucket=os.getenv("DAGSTER_S3_BUCKET", "lotus-local"),
+    region=os.getenv("DAGSTER_S3_REGION", "us-east-1"),
+    endpoint_url=os.getenv("DAGSTER_S3_ENDPOINT_URL", ""),
 )

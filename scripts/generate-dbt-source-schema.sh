@@ -67,6 +67,7 @@ done
 table_args+=(--table="source.ingestion_watermarks")
 table_args+=(--table="source.example_api_records")
 table_args+=(--table="source.example_api_users")
+table_args+=(--table="source.sales_data")
 
 docker exec postgres pg_dump \
   -U postgres \

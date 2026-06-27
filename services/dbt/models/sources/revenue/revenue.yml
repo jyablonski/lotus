@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: revenue
+    schema: source
+    description: Revenue data loaded by the Dagster sales pipeline
+    tables:
+      - name: sales_data
+        description: |
+          Raw daily sales rows landed by the Dagster ingestion pipeline
+        columns:
+          - name: id
+            description: Unique identifier for each sales row (UUID primary key)
+            data_tests:
+              - unique
+
+          - name: total_sales
+            description: Sales amount for the row
+
+          - name: date
+            description: Partition date the sales row belongs to
+
+          - name: created_at
+            description: Timestamp when the row was landed
