@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from dagster import ResourceDefinition, build_op_context
 import pytest
 
-from dagster_project.assets.ingestion.incremental_example_api import (
+from dagster_project.defs.examples.assets.ingestion.incremental_example_api import (
     PAGE_SIZE,
     SAFETY_LOOKBACK,
     SOURCE_NAME,

@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf 
     && chown -R appuser:appuser $DAGSTER_HOME
 
 COPY services/dagster/entrypoint.sh /app/entrypoint.sh
+COPY --chown=appuser:appuser services/dagster/pyproject.toml /app/pyproject.toml
 
 COPY --link --from=deps /app/.venv /app/.venv
 

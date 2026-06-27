@@ -676,3 +676,19 @@ class RuntimeConfig(models.Model):
 
     def __str__(self):
         return self.key
+
+
+class SalesData(models.Model):
+    """Landing table for the generated daily sales ingestion (dbt revenue source)."""
+
+    id = models.UUIDField(primary_key=True)
+    total_sales = models.IntegerField()
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+
+    class Meta:
+        db_table = "sales_data"
+        ordering = ["-date", "id"]
+
+    def __str__(self):
+        return f"Sales row {self.id}"

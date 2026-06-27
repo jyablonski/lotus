@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: fct_sales
+    description: Fact table of individual sales rows
+    config:
+      materialized: table
+      tags: ["revenue"]
+    columns:
+      - name: sale_id
+        description: Primary key for a sales row
+        data_tests:
+          - unique
+
+      - name: sale_amount
+        description: Sales amount for the row
+
+      - name: sale_date
+        description: Partition date the sales row belongs to

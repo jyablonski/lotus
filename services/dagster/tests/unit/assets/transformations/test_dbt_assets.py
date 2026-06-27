@@ -13,7 +13,7 @@ class TestDbtAssets:
 
     def test_dbt_assets_conditional_definition(self):
         """Test that dbt assets are conditionally defined based on dbt_project availability."""
-        from dagster_project.assets.transformations import dbt_assets
+        from dagster_project.defs.assets.transformations import dbt_assets
 
         for attr in ("dbt_silver_stg", "dbt_silver_core", "dbt_gold_analytics"):
             value = getattr(dbt_assets, attr)
@@ -24,7 +24,7 @@ class TestDbtAssets:
     )
     def test_dbt_asset_calls_build(self, asset_name):
         """Test each dbt asset invokes dbt build."""
-        from dagster_project.assets.transformations import dbt_assets
+        from dagster_project.defs.assets.transformations import dbt_assets
 
         asset_fn = getattr(dbt_assets, asset_name)
         if asset_fn is None:

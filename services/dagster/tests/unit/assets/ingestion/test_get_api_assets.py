@@ -6,7 +6,7 @@ from dagster import ResourceDefinition, build_op_context
 import pytest
 import requests
 
-from dagster_project.assets.ingestion.get_api_assets import (
+from dagster_project.defs.examples.assets.ingestion.get_api_assets import (
     get_api_users,
     users_in_postgres,
 )
@@ -25,7 +25,7 @@ class TestApiUsers:
         ]
 
         with patch(
-            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+            "dagster_project.defs.examples.assets.ingestion.get_api_assets.requests.get"
         ) as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users
@@ -42,7 +42,7 @@ class TestApiUsers:
 
     def test_get_api_users_http_error(self):
         with patch(
-            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+            "dagster_project.defs.examples.assets.ingestion.get_api_assets.requests.get"
         ) as mock_get:
             mock_response = MagicMock()
             mock_response.raise_for_status.side_effect = requests.HTTPError("API Error")

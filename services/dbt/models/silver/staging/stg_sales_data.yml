@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_sales_data
+    description: Staging table for raw bronze sales rows
+    config:
+      materialized: incremental
+      unique_key: sale_id
+      tags: ["revenue"]
+    columns:
+      - name: sale_id
+        description: Primary key for a sales row
+        data_tests:
+          - unique
+
+      - name: sale_amount
+        description: Sales amount for the row
+
+      - name: sale_date
+        description: Partition date the sales row belongs to

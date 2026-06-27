@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: sales_summary
+    description: Daily sales totals aggregated per partition date
+    config:
+      materialized: table
+      tags: ["revenue"]
+    columns:
+      - name: sale_date
+        description: Partition date the sales totals are aggregated for
+        data_tests:
+          - unique
+
+      - name: total_sales_count
+        description: Number of sales rows for the date
+
+      - name: total_sales_amount
+        description: Sum of sales amounts for the date

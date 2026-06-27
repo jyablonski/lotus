@@ -6,7 +6,7 @@ from dagster import build_op_context
 import pytest
 import requests
 
-from dagster_project.assets.ingestion.get_game_types_from_api import (
+from dagster_project.defs.assets.ingestion.get_game_types_from_api import (
     get_game_types_from_api,
 )
 

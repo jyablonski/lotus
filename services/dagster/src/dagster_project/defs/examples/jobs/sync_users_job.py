@@ -1,8 +1,8 @@
-from dagster_project.assets.ingestion.get_api_assets import (
+from dagster_project.defs.examples.assets.ingestion.get_api_assets import (
     get_api_users,
     users_in_postgres,
 )
-from dagster_project.jobs.utils import Audience, Domain, create_job
+from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 
 sync_users_job, sync_users_schedule = create_job(
     name="sync_users_job",

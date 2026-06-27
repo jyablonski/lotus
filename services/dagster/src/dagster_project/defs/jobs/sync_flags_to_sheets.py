@@ -1,8 +1,8 @@
-from dagster_project.assets.exports.sync_flags_to_sheets import (
+from dagster_project.defs.assets.exports.sync_flags_to_sheets import (
     get_feature_flags_from_postgres,
     sync_flags_to_sheets,
 )
-from dagster_project.jobs.utils import Audience, Domain, create_job
+from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 
 sync_flags_to_sheets_job = create_job(
     name="sync_flags_to_sheets_job",

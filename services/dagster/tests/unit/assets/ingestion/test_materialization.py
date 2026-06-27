@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from dagster import materialize
 import pytest
 
-from dagster_project.assets.ingestion.get_api_assets import (
+from dagster_project.defs.examples.assets.ingestion.get_api_assets import (
     get_api_users,
     users_in_postgres,
 )
@@ -25,7 +25,7 @@ class TestMaterialization:
         ]
 
         with patch(
-            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+            "dagster_project.defs.examples.assets.ingestion.get_api_assets.requests.get"
         ) as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users
@@ -48,7 +48,7 @@ class TestMaterialization:
         ]
 
         with patch(
-            "dagster_project.assets.ingestion.get_api_assets.requests.get"
+            "dagster_project.defs.examples.assets.ingestion.get_api_assets.requests.get"
         ) as mock_get:
             mock_response = MagicMock()
             mock_response.json.return_value = mock_users

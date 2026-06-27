@@ -129,11 +129,52 @@ def my_asset(context: AssetExecutionContext, postgres_conn: PostgresResource) ->
 
 ## dbt Integration
 
-The project integrates with a dbt project located at `../dbt` (relative to `src/dagster_project/`). The integration is configured in `dbt_config.py`.
+The project integrates with a dbt project located at `../dbt` (relative to `src/dagster_project/`). The integration is configured in `dbt_config.py`, which conditionally loads the project from its manifest (returns `None` if the dbt dir/manifest isn't available, e.g. in unit tests).
 
 ### Loading dbt Assets
 
-dbt models are loaded as Dagster assets via the `dbt_analytics` asset in `assets/transformations/dbt_assets.py`. This asset uses the dbt manifest file to discover all dbt models and expose them as Dagster assets.
+There are two conventions for turning dbt models into Dagster assets.
+
+**1. Layered tags (whole warehouse).** `assets/transformations/dbt_assets.py` splits every model by layer tag into one asset per layer, so each layer runs as its own step:
+
+| dbt tag         | Dagster asset        | Layer          |
+| --------------- | -------------------- | -------------- |
+| `tag:staging`   | `dbt_silver_stg`     | Silver staging |
+| `tag:core`      | `dbt_silver_core`    | Silver core    |
+| `tag:analytics` | `dbt_gold_analytics` | Gold analytics |
+
+**2. Per-source pipeline (bronze → silver → gold).** A single data source flows through a standard four-step chain, built by `build_dbt_source_pipeline()` from `dagster_project.dbt_pipeline`:
+
+| Step             | dbt command                                          |
+| ---------------- | ---------------------------------------------------- |
+| source freshness | `dbt source freshness --select source:<data_source>` |
+| source tests     | `dbt test --select source:<data_source>`             |
+| silver build     | `dbt build --select tag:silver,tag:<data_source>`    |
+| gold build       | `dbt build --select tag:gold,tag:<data_source>`      |
+
+```python
+# assets/transformations/sales_dbt_tasks.py
+from dagster_project.dbt_pipeline import build_dbt_source_pipeline
+from dagster_project.defs.assets.ingestion.get_sales_data import sales_data_bronze
+
+sales_pipeline = build_dbt_source_pipeline(
+    data_source="sales_data",
+    bronze_asset=sales_data_bronze,  # freshness waits on this ingestion asset
+)
+
+# Bind each step at module scope so the autoloader registers it.
+sales_data_dbt_source_freshness = sales_pipeline.source_freshness if sales_pipeline else None
+sales_data_dbt_source_tests = sales_pipeline.source_tests if sales_pipeline else None
+sales_data_dbt_silver_build = sales_pipeline.silver_build if sales_pipeline else None
+sales_data_dbt_gold_build = sales_pipeline.gold_build if sales_pipeline else None
+```
+
+Notes:
+
+- The factory lives at `dagster_project/dbt_pipeline.py`, **outside** `assets/`, because it defines no top-level Dagster objects and must not be scanned by the autoloader. The autoloader only registers top-level `AssetsDefinition` objects, so each per-source module **must** bind the returned steps to module-scope names (as above).
+- Silver assets get an explicit dependency on the source-tests gate (via `SourceTestsGateTranslator`); gold inherits it transitively because gold models `ref()` silver.
+- `silver_build` / `gold_build` are `None` when no model carries the matching `tag:<layer>,tag:<data_source>` pair, so an empty dbt selection never raises.
+- Adding a new source pipeline is one `build_dbt_source_pipeline(...)` call plus the four module-scope bindings.
 
 ### Manifest Regeneration
 

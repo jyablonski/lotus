@@ -8,7 +8,7 @@ from dagster import build_asset_context
 import pytest
 import requests
 
-from dagster_project.assets.ingestion.get_api_assets import (
+from dagster_project.defs.examples.assets.ingestion.get_api_assets import (
     get_api_users,
     users_in_postgres,
 )
