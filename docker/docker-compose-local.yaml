@@ -248,6 +248,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - LLM_PROMPT_GOOGLE_SHEET_URL=${LLM_PROMPT_GOOGLE_SHEET_URL:-}
       - LLM_PROMPT_GOOGLE_SHEET_CREDENTIALS_JSON=${LLM_PROMPT_GOOGLE_SHEET_CREDENTIALS_JSON:-}
+      - OPENMETADATA_HOST_PORT=http://openmetadata_server:8585/api
+      - OPENMETADATA_JWT_TOKEN=${OPENMETADATA_JWT_TOKEN:-}
     networks:
       - default
     healthcheck:
@@ -370,6 +372,119 @@ services:
     networks:
       - default
 
+  # ── OpenMetadata (data catalog + lineage) ───────────────────────────────────
+  # Infra only for now: server + search engine, wired to the shared postgres
+  # (new `openmetadata_db`, see docker/db/01-bootstrap.sql). Ingestion connectors
+  # for Dagster/dbt lineage are not wired yet, so the pipeline service client is
+  # disabled to avoid the server trying to reach a nonexistent Airflow ingestion
+  # container.
+  opensearch:
+    profiles: ["openmetadata"]
+    image: opensearchproject/opensearch:3.3.0
+    container_name: opensearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      # opensearchproject/opensearch bundles security-analytics, ML-commons,
+      # alerting, and anomaly-detection plugins, all needing real off-heap
+      # memory beyond the JVM heap itself — 512m was too tight and could get
+      # OOM-killed under load (observed: ~1.1GiB RSS at idle). 1024m matches
+      # what OpenMetadata's own upstream compose recommends for Elasticsearch.
+      - OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - default
+
+  openmetadata_migrate:
+    profiles: ["openmetadata"]
+    image: docker.getcollate.io/openmetadata/server:1.13.1
+    container_name: openmetadata_migrate
+    # Self-heals if it ever races opensearch/postgres becoming truly ready
+    # despite the health-gated depends_on below (e.g. under heavy concurrent
+    # load when the whole Tilt stack boots at once); a one-shot container has
+    # no restart policy by default, so a transient failure would otherwise
+    # wedge openmetadata_server forever (its depends_on needs this to exit 0).
+    restart: on-failure:5
+    command: "./bootstrap/openmetadata-ops.sh migrate"
+    environment:
+      - DB_DRIVER_CLASS=org.postgresql.Driver
+      - DB_SCHEME=postgresql
+      - DB_PARAMS=allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      - DB_USER=postgres
+      - DB_USER_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - OM_DATABASE=openmetadata_db
+      - SEARCH_TYPE=opensearch
+      - ELASTICSEARCH_HOST=opensearch
+      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_SCHEME=http
+      - PIPELINE_SERVICE_CLIENT_ENABLED=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    networks:
+      - default
+
+  openmetadata_server:
+    profiles: ["openmetadata"]
+    image: docker.getcollate.io/openmetadata/server:1.13.1
+    container_name: openmetadata_server
+    restart: unless-stopped
+    ports:
+      - "8585:8585"
+      - "8586:8586"
+    environment:
+      - DB_DRIVER_CLASS=org.postgresql.Driver
+      - DB_SCHEME=postgresql
+      - DB_PARAMS=allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      - DB_USER=postgres
+      - DB_USER_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - OM_DATABASE=openmetadata_db
+      - SEARCH_TYPE=opensearch
+      - ELASTICSEARCH_HOST=opensearch
+      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_SCHEME=http
+      - PIPELINE_SERVICE_CLIENT_ENABLED=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      openmetadata_migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://localhost:8586/healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - default
+
 networks:
   default:
     name: lotus_default
@@ -382,3 +497,4 @@ volumes:
   dagster_io_storage:
   grafana_data:
   django_venv:
+  opensearch_data:

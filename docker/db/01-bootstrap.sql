@@ -2,6 +2,7 @@ CREATE DATABASE dagster;
 CREATE DATABASE mlflow;
 CREATE DATABASE feast;
 CREATE DATABASE pact_broker;
+CREATE DATABASE openmetadata_db;
 -- Empty DB for django CI validation; separate from seeded `postgres`.
 CREATE DATABASE django_migration_ci;
 CREATE SCHEMA source;

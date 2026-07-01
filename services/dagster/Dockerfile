@@ -25,6 +25,24 @@ COPY --link services/dagster/pyproject.toml services/dagster/uv.lock ./
 
 RUN uv sync --locked --no-install-project --no-dev
 
+# ─── om-ingestion-deps ──────────────────────────────────────────────────────
+# openmetadata-ingestion pins collate-sqllineage->sqlglot==29.x, which conflicts
+# with dagster-dbt's sqlglot<28.1 pin, and only supports Python <3.13 — so it
+# gets its own venv on its own Python version, invoked via subprocess.
+# `uv python install` fetches a relocatable python-build-standalone interpreter
+# (not the base image's own system python) so the venv survives being copied
+# into the runtime stage below, which ships Python 3.13, not 3.12.
+FROM python:3.13-slim AS om-ingestion-deps
+
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+
+WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:0.9.18 /uv /bin/uv
+COPY --link services/dagster/om_ingestion/pyproject.toml services/dagster/om_ingestion/uv.lock ./
+
+RUN uv python install 3.12 && uv sync --locked --no-install-project --python 3.12
+
 # ─── runtime ───────────────────────────────────────────────────────────────────
 FROM base AS runtime
 
@@ -42,6 +60,8 @@ COPY services/dagster/entrypoint.sh /app/entrypoint.sh
 COPY --chown=appuser:appuser services/dagster/pyproject.toml /app/pyproject.toml
 
 COPY --link --from=deps /app/.venv /app/.venv
+COPY --link --from=om-ingestion-deps /opt/uv-python /opt/uv-python
+COPY --link --from=om-ingestion-deps /app/.venv /opt/om-ingestion/.venv
 
 # Regular COPY for --chown: COPY --link with named users fails because the
 # independent snapshot can't resolve usernames added by RUN in the same stage.

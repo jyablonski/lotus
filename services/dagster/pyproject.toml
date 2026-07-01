@@ -54,7 +54,11 @@ registry_modules = ["dagster_project.components.*"]
 exclude = ["tests/"]
 
 [tool.ty.environment]
-extra-paths = ["feast_repo"]
+# om_ingestion is a separate uv project (its own venv, own Python version) —
+# see dagster_project/openmetadata/README.md for why. Point ty at its
+# site-packages so imports from sync_glossary.py resolve for real, since it's
+# never installed into this project's own venv.
+extra-paths = ["feast_repo", "om_ingestion/.venv/lib/python3.12/site-packages"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

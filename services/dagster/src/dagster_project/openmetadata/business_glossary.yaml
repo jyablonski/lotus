@@ -1,0 +1,10 @@
+name: BusinessGlossary
+displayName: Business Glossary
+description: Core business vocabulary shared across Lotus data assets.
+terms:
+  - name: ActiveUser
+    displayName: Active User
+    description: A user who has logged in within the last 30 days.
+    synonyms:
+      - DAU
+      - MAU
