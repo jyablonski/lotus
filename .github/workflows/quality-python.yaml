@@ -130,10 +130,13 @@ jobs:
       # it can resolve openmetadata-ingestion's types (that package can't
       # share the main dagster venv — see dagster_project/openmetadata/README.md).
       # The venv has to actually exist here or ty hard-fails on a missing path.
+      # --python 3.12 overrides the UV_PYTHON=3.13 the setup-uv step above
+      # exported for the whole job (that pin is for the outer dagster
+      # project); om_ingestion's own pyproject.toml requires Python <3.13.
       - name: Install om_ingestion dependencies
         if: ${{ matrix.service == 'dagster' }}
         working-directory: services/dagster/om_ingestion
-        run: uv sync --locked
+        run: uv sync --locked --python 3.12
 
       - name: Run ty
         working-directory: services/${{ matrix.service }}
