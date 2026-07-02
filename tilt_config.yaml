@@ -22,7 +22,7 @@ services:
     redisinsight: true
     mlflow: true
     observability: true
-    openmetadata: true
+    openmetadata: false
 
 # note: these aren't used, but are examples of how to split out
 # local infra vs shared (cloud) infra
