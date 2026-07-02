@@ -5,6 +5,7 @@ from .google_sheets import (
     llm_prompt_google_sheet,
 )
 from .openai_client import OpenAIResource, openai_client
+from .openmetadata import OpenMetadataResource, openmetadata_resource
 from .postgres import PostgresResource, postgres_conn
 from .redis import RedisResource, redis_conn
 from .feast import FeastResource, feast_store
@@ -15,6 +16,7 @@ __all__ = [
     "ApiClientResource",
     "GoogleSheetsResource",
     "OpenAIResource",
+    "OpenMetadataResource",
     "PostgresResource",
     "RedisResource",
     "FeastResource",
@@ -24,6 +26,7 @@ __all__ = [
     "feature_flags_google_sheet",
     "llm_prompt_google_sheet",
     "openai_client",
+    "openmetadata_resource",
     "postgres_conn",
     "redis_conn",
     "feast_store",
@@ -39,6 +42,7 @@ RESOURCES: dict = {
     "feature_flags_google_sheet": feature_flags_google_sheet,
     "llm_prompt_google_sheet": llm_prompt_google_sheet,
     "openai_client": openai_client,
+    "openmetadata_resource": openmetadata_resource,
     "postgres_conn": postgres_conn,
     "redis_conn": redis_conn,
     "feast_store": feast_store,

@@ -87,6 +87,8 @@ for service, is_enabled in enabled_services.items():
 # Add infrastructure profiles that require a docker-compose profile to activate
 if infra_config.get("observability", False):
     profiles.append("observability")
+if infra_config.get("openmetadata", False):
+    profiles.append("openmetadata")
 
 # Load Docker Compose configuration with profiles
 docker_compose(
@@ -115,6 +117,20 @@ if infra_config.get("observability", False):
     dc_resource("jaeger", labels=["observability"])
     dc_resource("prometheus", labels=["observability"])
     dc_resource("grafana", resource_deps=["prometheus"], labels=["observability"])
+
+# OpenMetadata: data catalog + lineage (server + opensearch, no build step needed)
+if infra_config.get("openmetadata", False):
+    dc_resource("opensearch", labels=["catalog"])
+    dc_resource(
+        "openmetadata_migrate",
+        resource_deps=["postgres", "opensearch"],
+        labels=["catalog"],
+    )
+    dc_resource(
+        "openmetadata_server",
+        resource_deps=["openmetadata_migrate"],
+        labels=["catalog"],
+    )
 
 # Suppress warnings for intermediate base images used for caching
 update_settings(
