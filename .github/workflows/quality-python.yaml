@@ -126,6 +126,15 @@ jobs:
         working-directory: services/${{ matrix.service }}
         run: uv sync --locked --all-groups
 
+      # ty's extra-paths config points at om_ingestion's venv site-packages so
+      # it can resolve openmetadata-ingestion's types (that package can't
+      # share the main dagster venv — see dagster_project/openmetadata/README.md).
+      # The venv has to actually exist here or ty hard-fails on a missing path.
+      - name: Install om_ingestion dependencies
+        if: ${{ matrix.service == 'dagster' }}
+        working-directory: services/dagster/om_ingestion
+        run: uv sync --locked
+
       - name: Run ty
         working-directory: services/${{ matrix.service }}
         run: uv run ty check --output-format github
